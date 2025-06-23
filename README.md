@@ -17,9 +17,45 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 
 ### Installation
 
+#### From GitHub Packages
+
+This package is published to GitHub Packages. You'll need to configure your package manager to use the GitHub registry for `@thepia` scoped packages.
+
+**Using npm:**
+
 ```bash
+# Configure registry for @thepia scope
+npm config set @thepia:registry https://npm.pkg.github.com
+
+# Set authentication token (required for GitHub Packages)
+npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+
+# Install the package
 npm install @thepia/flows-auth
 ```
+
+**Using pnpm:**
+
+```bash
+# Configure registry in .npmrc file
+echo "@thepia:registry=https://npm.pkg.github.com" >> .npmrc
+echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN" >> .npmrc
+
+# Install the package
+pnpm install @thepia/flows-auth
+```
+
+**Using yarn:**
+
+```bash
+# Configure registry
+yarn config set @thepia:registry https://npm.pkg.github.com
+
+# Install the package (you'll be prompted for authentication)
+yarn add @thepia/flows-auth
+```
+
+> **Note**: You need a GitHub Personal Access Token with `read:packages` scope to install from GitHub Packages. Set the `NODE_AUTH_TOKEN` environment variable or configure it in your `.npmrc` file.
 
 ### Basic Usage
 
@@ -200,9 +236,9 @@ const config = {
 
 The library expects your API to implement these endpoints:
 
-```
+```http
 POST /auth/signin
-POST /auth/signin/passkey  
+POST /auth/signin/passkey
 POST /auth/signin/password
 POST /auth/signin/magic-link
 POST /auth/passkey/challenge
@@ -212,6 +248,33 @@ GET  /auth/profile
 ```
 
 See the [API Documentation](./docs/api.md) for detailed request/response formats.
+
+## Demo Application
+
+A comprehensive demo application is included in `src/demo-app/` that showcases all features of the flows-auth library. The demo includes:
+
+- **Live Authentication Flow**: Complete sign-in/sign-out functionality
+- **Feature Showcase**: Demonstrates WebAuthn, magic links, and password authentication
+- **Configuration Examples**: Shows different branding and configuration options
+- **Responsive Design**: Works on desktop and mobile devices
+
+### Running the Demo
+
+```bash
+# Navigate to demo app
+cd src/demo-app
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+```
+
+The demo app is also deployed automatically to GitHub Pages: [View Live Demo](https://thepia.github.io/flows-auth/)
 
 ## Examples
 

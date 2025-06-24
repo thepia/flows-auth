@@ -1,0 +1,8 @@
+# Example .npmrc configuration for GitHub Packages
+# Copy this file to .npmrc and replace YOUR_GITHUB_PERSONAL_ACCESS_TOKEN with your actual token
+
+@thepia:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+
+# Alternative: Use environment variable
+# //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}

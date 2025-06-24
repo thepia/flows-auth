@@ -1,0 +1,110 @@
+{
+  "$description": "Demo Company brand colors - extracted from existing CSS",
+  "color": {
+    "text": {
+      "$description": "Text colors in order of hierarchy",
+      "1": { "value": "#111827", "type": "color", "$description": "Primary text - highest importance" },
+      "2": { "value": "#4b5563", "type": "color", "$description": "Secondary text" },
+      "3": { "value": "#6b7280", "type": "color", "$description": "Tertiary text" },
+      "4": { "value": "#9ca3af", "type": "color", "$description": "Quaternary text - least important" },
+      "primary": { "value": "{color.text.1}", "type": "color", "$description": "Primary text - semantic alias" },
+      "secondary": { "value": "{color.text.2}", "type": "color", "$description": "Secondary text - semantic alias" },
+      "inverse": { "value": "#ffffff", "type": "color", "$description": "Inverse text for dark backgrounds" },
+      "brand": { "value": "{color.brand.primary}", "type": "color", "$description": "Brand-colored text" },
+      "success": { "value": "#10b981", "type": "color", "$description": "Success state text" },
+      "warning": { "value": "#f59e0b", "type": "color", "$description": "Warning state text" },
+      "error": { "value": "#ef4444", "type": "color", "$description": "Error state text" },
+      "info": { "value": "{color.brand.primary}", "type": "color", "$description": "Info state text" }
+    },
+    "bg": {
+      "$description": "Background colors in order of hierarchy",
+      "1": { "value": "#ffffff", "type": "color", "$description": "Primary background - base surface" },
+      "2": { "value": "#f9fafb", "type": "color", "$description": "Secondary background - cards/panels" },
+      "3": { "value": "#f3f4f6", "type": "color", "$description": "Tertiary background - subtle divisions" },
+      "primary": { "value": "{color.bg.1}", "type": "color", "$description": "Primary background - semantic alias" },
+      "inverse": { "value": "#111827", "type": "color", "$description": "Inverse background for dark themes" },
+      "brand": { "value": "{color.brand.primary}", "type": "color", "$description": "Brand background" },
+      "brand-subtle": { "value": "{color.brand.primarySubtle}", "type": "color", "$description": "Subtle brand background" },
+      "success": { "value": "#dcfce7", "type": "color", "$description": "Success state background" },
+      "warning": { "value": "#fef3c7", "type": "color", "$description": "Warning state background" },
+      "error": { "value": "#fee2e2", "type": "color", "$description": "Error state background" },
+      "info": { "value": "{color.brand.primarySubtle}", "type": "color", "$description": "Info state background" }
+    },
+    "border": {
+      "$description": "Border colors in order of strength",
+      "1": { "value": "#e5e7eb", "type": "color", "$description": "Primary border - default" },
+      "2": { "value": "#d1d5db", "type": "color", "$description": "Secondary border - stronger" },
+      "3": { "value": "#9ca3af", "type": "color", "$description": "Tertiary border - strongest" },
+      "default": { "value": "{color.border.1}", "type": "color", "$description": "Default border - semantic alias" },
+      "subtle": { "value": "#f3f4f6", "type": "color", "$description": "Subtle border - light separation" },
+      "brand": { "value": "{color.brand.primary}", "type": "color", "$description": "Brand border for focus states" },
+      "success": { "value": "#22c55e", "type": "color", "$description": "Success state border" },
+      "warning": { "value": "#f59e0b", "type": "color", "$description": "Warning state border" },
+      "error": { "value": "#ef4444", "type": "color", "$description": "Error state border" },
+      "info": { "value": "{color.brand.primary}", "type": "color", "$description": "Info state border" }
+    },
+    "interactive": {
+      "$description": "Interactive element colors with states",
+      "default": { "value": "{color.brand.primary}", "type": "color", "$description": "Default interactive color" },
+      "hover": { "value": "{color.brand.primaryHover}", "type": "color", "$description": "Hover state" },
+      "active": { "value": "{color.brand.primaryActive}", "type": "color", "$description": "Active/pressed state" },
+      "focus": { "value": "{color.brand.primary}", "type": "color", "$description": "Focus state indicator" },
+      "disabled": { "value": "#d1d5db", "type": "color", "$description": "Disabled state" }
+    },
+    "palette": {
+      "$description": "Color palette scales for demo company brand and neutral colors",
+      "demo": {
+        "$description": "Demo company primary brand color scale (blue)",
+        "50": { "value": "#eff6ff", "type": "color", "$description": "Lightest demo brand blue" },
+        "100": { "value": "#dbeafe", "type": "color", "$description": "Very light demo brand blue" },
+        "200": { "value": "#bfdbfe", "type": "color", "$description": "Light demo brand blue" },
+        "300": { "value": "#93c5fd", "type": "color", "$description": "Medium light demo brand blue" },
+        "400": { "value": "#60a5fa", "type": "color", "$description": "Medium demo brand blue" },
+        "500": { "value": "#3b82f6", "type": "color", "$description": "Medium dark demo brand blue" },
+        "600": { "value": "#0066cc", "type": "color", "$description": "Primary demo brand blue" },
+        "700": { "value": "#0052a3", "type": "color", "$description": "Darker demo brand blue" },
+        "800": { "value": "#1e40af", "type": "color", "$description": "Dark demo brand blue" },
+        "900": { "value": "#1e3a8a", "type": "color", "$description": "Darkest demo brand blue" },
+        "950": { "value": "#172554", "type": "color", "$description": "Extra darkest demo brand blue" }
+      },
+      "accent": {
+        "$description": "Demo company accent color scale (orange)",
+        "50": { "value": "#fffbeb", "type": "color", "$description": "Lightest accent orange" },
+        "100": { "value": "#fef3c7", "type": "color", "$description": "Very light accent orange" },
+        "200": { "value": "#fde68a", "type": "color", "$description": "Light accent orange" },
+        "300": { "value": "#fcd34d", "type": "color", "$description": "Medium light accent orange" },
+        "400": { "value": "#fbbf24", "type": "color", "$description": "Medium accent orange" },
+        "500": { "value": "#f59e0b", "type": "color", "$description": "Medium dark accent orange" },
+        "600": { "value": "#ed8b00", "type": "color", "$description": "Primary accent orange" },
+        "700": { "value": "#d97706", "type": "color", "$description": "Darker accent orange" },
+        "800": { "value": "#b45309", "type": "color", "$description": "Dark accent orange" },
+        "900": { "value": "#92400e", "type": "color", "$description": "Darkest accent orange" },
+        "950": { "value": "#451a03", "type": "color", "$description": "Extra darkest accent orange" }
+      },
+      "neutral": {
+        "$description": "Neutral color scale for text and backgrounds",
+        "50": { "value": "#f9fafb", "type": "color", "$description": "Lightest neutral" },
+        "100": { "value": "#f3f4f6", "type": "color", "$description": "Very light neutral" },
+        "200": { "value": "#e5e7eb", "type": "color", "$description": "Light neutral" },
+        "300": { "value": "#d1d5db", "type": "color", "$description": "Medium light neutral" },
+        "400": { "value": "#9ca3af", "type": "color", "$description": "Medium neutral" },
+        "500": { "value": "#6b7280", "type": "color", "$description": "Medium dark neutral" },
+        "600": { "value": "#4b5563", "type": "color", "$description": "Dark neutral" },
+        "700": { "value": "#374151", "type": "color", "$description": "Darker neutral" },
+        "800": { "value": "#1f2937", "type": "color", "$description": "Very dark neutral" },
+        "900": { "value": "#111827", "type": "color", "$description": "Darkest neutral" }
+      }
+    },
+    "brand": {
+      "$description": "Brand-specific color tokens",
+      "primary": { "value": "{color.palette.demo.600}", "type": "color", "$description": "Primary brand color - Demo blue #0066cc" },
+      "primaryHover": { "value": "{color.palette.demo.700}", "type": "color", "$description": "Primary brand hover state" },
+      "primaryActive": { "value": "{color.palette.demo.800}", "type": "color", "$description": "Primary brand active state" },
+      "primarySubtle": { "value": "{color.palette.demo.50}", "type": "color", "$description": "Subtle brand background" },
+      "primaryMuted": { "value": "{color.palette.demo.100}", "type": "color", "$description": "Muted brand background" },
+      "accent": { "value": "{color.palette.accent.600}", "type": "color", "$description": "Brand accent color - orange" },
+      "accentHover": { "value": "{color.palette.accent.700}", "type": "color", "$description": "Brand accent hover state" },
+      "accentActive": { "value": "{color.palette.accent.800}", "type": "color", "$description": "Brand accent active state" }
+    }
+  }
+}

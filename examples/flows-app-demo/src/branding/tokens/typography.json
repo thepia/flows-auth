@@ -1,0 +1,49 @@
+{
+  "$description": "Demo Company typography tokens - extracted from existing CSS",
+  "typography": {
+    "fontFamily": {
+      "$description": "Font family definitions for demo company typography",
+      "brand": {
+        "primary": {
+          "value": [
+            "-apple-system",
+            "BlinkMacSystemFont",
+            "Segoe UI",
+            "Roboto",
+            "Oxygen",
+            "Ubuntu",
+            "Cantarell",
+            "sans-serif"
+          ],
+          "type": "fontFamily",
+          "$description": "Primary brand font for UI and most content"
+        }
+      }
+    },
+    "fontWeight": {
+      "$description": "Font weight values",
+      "normal": { "value": "400", "type": "fontWeight", "$description": "Normal weight" },
+      "medium": { "value": "500", "type": "fontWeight", "$description": "Medium weight" },
+      "semibold": { "value": "600", "type": "fontWeight", "$description": "Semibold weight" },
+      "bold": { "value": "700", "type": "fontWeight", "$description": "Bold weight" }
+    },
+    "fontSize": {
+      "$description": "Font size values matching existing design system", 
+      "xs": { "value": "0.75rem", "type": "dimension", "$description": "12px - extra small" },
+      "sm": { "value": "0.875rem", "type": "dimension", "$description": "14px - small" },
+      "base": { "value": "1rem", "type": "dimension", "$description": "16px - base size" },
+      "lg": { "value": "1.125rem", "type": "dimension", "$description": "18px - large" },
+      "xl": { "value": "1.25rem", "type": "dimension", "$description": "20px - extra large" },
+      "2xl": { "value": "1.5rem", "type": "dimension", "$description": "24px - 2x large" },
+      "3xl": { "value": "1.875rem", "type": "dimension", "$description": "30px - 3x large" },
+      "4xl": { "value": "2.25rem", "type": "dimension", "$description": "36px - 4x large" }
+    },
+    "lineHeight": {
+      "$description": "Line height values",
+      "tight": { "value": "1.25", "type": "number", "$description": "Tight line height" },
+      "snug": { "value": "1.375", "type": "number", "$description": "Snug line height" },
+      "normal": { "value": "1.5", "type": "number", "$description": "Normal line height" },
+      "relaxed": { "value": "1.625", "type": "number", "$description": "Relaxed line height" }
+    }
+  }
+}

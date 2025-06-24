@@ -1,0 +1,6 @@
+<!-- Demo Company Logo Placeholder -->
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="20" height="20" rx="4" fill="#0066cc"/>
+  <rect x="15" y="15" width="10" height="10" rx="2" fill="#ffffff"/>
+  <text x="40" y="25" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#111827">Demo Co</text>
+</svg>

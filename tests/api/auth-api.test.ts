@@ -482,21 +482,29 @@ describe('AuthApiClient', () => {
 
   describe('Utility Methods', () => {
     it('should check email existence', async () => {
-      const mockResponse = {
+      // Mock the actual API response format
+      const mockApiResponse = {
+        exists: true,
+        hasWebAuthn: true,
+        userId: '123'
+      };
+
+      // Expected result after mapping
+      const expectedResult = {
         exists: true,
         hasPasskey: true,
         hasPassword: false,
-        socialProviders: ['google']
+        socialProviders: []
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockApiResponse)
       });
 
       const result = await apiClient.checkEmail('test@example.com');
 
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(expectedResult);
     });
 
     it('should request password reset', async () => {

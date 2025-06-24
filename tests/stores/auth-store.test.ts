@@ -191,13 +191,28 @@ describe('Auth Store', () => {
     });
 
     it('should handle token refresh', async () => {
-      // Set up initial state with tokens
-      const initialState = get(authStore);
-      authStore.reset();
-      
-      // Mock initial authenticated state
-      localStorage.setItem('auth_refresh_token', 'refresh-token');
-      
+      // First sign in to establish a refresh token
+      const mockSignInResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z'
+        },
+        accessToken: 'initial-token',
+        refreshToken: 'initial-refresh-token',
+        expiresIn: 3600
+      };
+
+      const mockApi = authStore.api as any;
+      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+
+      // Sign in to establish refresh token
+      await authStore.signInWithPassword('test@example.com', 'password');
+
+      // Now set up refresh response
       const mockRefreshResponse: SignInResponse = {
         step: 'success',
         accessToken: 'new-access-token',
@@ -205,7 +220,6 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
       mockApi.refreshToken.mockResolvedValue(mockRefreshResponse);
 
       await authStore.refreshTokens();
@@ -217,25 +231,54 @@ describe('Auth Store', () => {
   });
 
   describe('Helper Methods', () => {
-    it('should correctly identify authenticated state', () => {
+    it('should correctly identify authenticated state', async () => {
       expect(authStore.isAuthenticated()).toBe(false);
 
-      // Simulate authenticated state
-      localStorage.setItem('auth_access_token', 'token');
-      localStorage.setItem('auth_expires_at', (Date.now() + 3600000).toString());
-      
-      const authenticatedStore = createAuthStore(mockConfig);
-      expect(authenticatedStore.isAuthenticated()).toBe(true);
+      // First sign in to establish authenticated state properly
+      const mockSignInResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z'
+        },
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+        expiresIn: 3600
+      };
+
+      const mockApi = authStore.api as any;
+      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+
+      await authStore.signInWithPassword('test@example.com', 'password');
+      expect(authStore.isAuthenticated()).toBe(true);
     });
 
-    it('should return access token when authenticated', () => {
+    it('should return access token when authenticated', async () => {
       expect(authStore.getAccessToken()).toBeNull();
 
-      localStorage.setItem('auth_access_token', 'token');
-      localStorage.setItem('auth_expires_at', (Date.now() + 3600000).toString());
-      
-      const authenticatedStore = createAuthStore(mockConfig);
-      expect(authenticatedStore.getAccessToken()).toBe('token');
+      // First sign in to establish authenticated state properly
+      const mockSignInResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z'
+        },
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+        expiresIn: 3600
+      };
+
+      const mockApi = authStore.api as any;
+      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+
+      await authStore.signInWithPassword('test@example.com', 'password');
+      expect(authStore.getAccessToken()).toBe('token');
     });
 
     it('should reset store to initial state', () => {

@@ -1,168 +1,273 @@
 # Getting Started with @thepia/flows-auth
 
-This guide will help you integrate the Thepia Auth Library into your Svelte application.
+This guide will help you get started with the Thepia Flows Authentication library.
 
 ## Installation
 
 ```bash
-npm install @thepia/flows-auth
+pnpm add @thepia/flows-auth
 ```
 
-## Quick Setup
+## Quick Start
 
-### 1. Configure Your API
-
-The library expects your API server to implement the authentication endpoints. See [API Integration](./api.md) for details.
-
-### 2. Basic Implementation
+### 1. Basic Setup
 
 ```svelte
-<!-- App.svelte -->
 <script>
   import { SignInForm, createAuthStore } from '@thepia/flows-auth';
 
+  // Configure for your domain
   const authConfig = {
-    apiBaseUrl: 'https://api.yourapp.com',
-    clientId: 'your-client-id',
-    domain: 'yourapp.com',
+    apiBaseUrl: 'https://api.thepia.com',
     enablePasskeys: true,
     enableMagicLinks: true,
-    branding: {
-      companyName: 'Your Company',
-      logoUrl: '/logo.svg',
-      primaryColor: '#0066cc'
-    }
+    domain: 'thepia.net' // or 'thepia.com'
   };
 
-  const auth = createAuthStore(authConfig);
+  // Create auth store
+  const authStore = createAuthStore(authConfig);
 
-  function handleSuccess({ detail }) {
-    console.log('User signed in:', detail.user);
-    // Redirect to app or update UI
+  // Handle authentication events
+  function handleAuthSuccess(event) {
+    console.log('User signed in:', event.detail.user);
   }
+
+  function handleAuthError(event) {
+    console.error('Auth error:', event.detail.error);
+  }
+
+  // Subscribe to auth state
+  $: currentUser = $authStore.user;
+  $: isAuthenticated = !!currentUser;
 </script>
 
-<SignInForm 
-  config={authConfig}
-  on:success={handleSuccess}
-/>
+{#if isAuthenticated}
+  <div class="authenticated-content">
+    <h1>Welcome, {currentUser.name}!</h1>
+    <button on:click={() => authStore.signOut()}>Sign Out</button>
 
-{#if $auth.isAuthenticated}
-  <p>Welcome, {$auth.user.name}!</p>
-  <button on:click={() => auth.signOut()}>Sign Out</button>
+    <!-- Your app content -->
+    <slot />
+  </div>
+{:else}
+  <div class="auth-required">
+    <h1>Sign In Required</h1>
+    <p>Please sign in to access this application.</p>
+
+    <SignInForm
+      config={authConfig}
+      on:success={handleAuthSuccess}
+      on:error={handleAuthError}
+    />
+  </div>
 {/if}
 ```
 
-### 3. SvelteKit Integration
+### 3. Client-Only Architecture
 
-For SvelteKit apps, you'll want to integrate with the auth store in your layout:
+The flows-auth library is designed as a **client-only** solution that works in the browser:
 
 ```svelte
-<!-- src/routes/+layout.svelte -->
+<!-- Your Svelte component -->
 <script>
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { createAuthStore } from '@thepia/flows-auth';
   import { onMount } from 'svelte';
 
   const authConfig = {
-    // Your config
+    apiBaseUrl: 'https://api.thepia.com',
+    enablePasskeys: true,
+    enableMagicLinks: true,
+    domain: 'thepia.net'
   };
 
-  const auth = createAuthStore(authConfig);
+  const authStore = createAuthStore(authConfig);
 
   onMount(() => {
-    // Initialize auth state
-    auth.initialize();
-
-    // Redirect to sign-in if not authenticated
-    const protectedRoutes = ['/dashboard', '/profile'];
-    if (protectedRoutes.some(route => $page.url.pathname.startsWith(route))) {
-      if (!auth.isAuthenticated()) {
-        goto('/signin');
-      }
-    }
+    // Initialize auth state on client
+    authStore.checkSession();
   });
+
+  $: isAuthenticated = !!$authStore.user;
 </script>
 
-<slot />
+{#if isAuthenticated}
+  <!-- Authenticated content -->
+  <slot />
+{:else}
+  <!-- Show sign-in form -->
+  <SignInForm config={authConfig} />
+{/if}
+```
+
+**Important**: This library is client-only and designed for CDN deployment.
+
+### SvelteKit Support
+
+SvelteKit can be used for **testing and development only**. The library functionality is entirely client-side:
+
+- ✅ **Development**: Use SvelteKit for local development and testing
+- ✅ **Testing**: Write tests using SvelteKit's testing utilities
+- ❌ **Production**: SvelteKit server-side features are not supported
+- ✅ **Deployment**: Build to static assets for CDN deployment
+
+```svelte
+<!-- Testing example with SvelteKit -->
+<script>
+  import { browser } from '$app/environment';
+  import { createAuthStore } from '@thepia/flows-auth';
+
+  // Only initialize on client-side
+  const authStore = browser ? createAuthStore(config) : null;
+</script>
 ```
 
 ## Configuration Options
 
-### Required Configuration
+### API Server Configuration
+
+The flows-auth library connects to the Thepia authentication API server. **Important**: The API server source code is maintained in the [thepia.com repository](https://github.com/thepia/thepia.com), not in flows-auth.
+
+#### Production Configuration (Default)
+
+```typescript
+// Production configuration - connects to api.thepia.com
+const authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',  // Production API server
+  enablePasskeys: true,
+  enableMagicLinks: true,
+  domain: 'thepia.net'
+};
+```
+
+#### Local Development Configuration
+
+```typescript
+// Local development - connects to local API server
+const authConfig = {
+  apiBaseUrl: 'https://dev.thepia.com:8443',  // Local development API
+  enablePasskeys: true,
+  enableMagicLinks: true,
+  domain: 'thepia.net'
+};
+```
+
+#### Required Configuration Interface
 
 ```typescript
 interface AuthConfig {
-  apiBaseUrl: string;    // Your API server URL
-  clientId: string;      // Your application client ID
-  domain: string;        // Your application domain
+  apiBaseUrl: string;           // API server URL
+  enablePasskeys?: boolean;     // Enable WebAuthn passkeys (default: true)
+  enableMagicLinks?: boolean;   // Enable magic link fallback (default: true)
+  domain?: string;              // Domain for storage scope (thepia.com or thepia.net)
 }
 ```
 
-### Feature Flags
+#### API Server Architecture
+
+- **Production**: `api.thepia.com` - Deployed via Bunny Edge Scripting
+- **Local Development**: `dev.thepia.com:8443` - Started from thepia.com repo
+- **Source Code**: Located in `thepia.com/src/api/` directory
+- **Deployment**: Automated via GitHub Actions from thepia.com repo
+
+### Authentication Methods
+
+The library supports **passwordless-only** authentication:
 
 ```typescript
 {
-  enablePasskeys: true,        // Enable WebAuthn/passkey authentication
-  enableMagicLinks: true,      // Enable magic link authentication  
-  enablePasswordLogin: true,   // Enable password authentication
-  enableSocialLogin: false,    // Enable social provider authentication
-}
-```
+  enablePasskeys: true,        // WebAuthn/passkey authentication (recommended)
+  enableMagicLinks: true,      // Email-based fallback for unsupported devices
 
-### Branding Configuration
-
-```typescript
-{
-  branding: {
-    companyName: 'Your Company',
-    logoUrl: '/logo.svg',
-    primaryColor: '#0066cc',
-    secondaryColor: '#e6f3ff', 
-    showPoweredBy: true,        // Show "Powered by Thepia"
-    customCSS: `
-      .auth-form { border-radius: 0; }
-    `
+  // Enterprise options (when required by customers)
+  enterprise: {
+    enableSAML: false,         // SAML/SSO integration
+    enableLegacyAuth: false,   // Legacy system support
   }
 }
 ```
 
+**Note**: Traditional passwords and social login are not supported. The library is designed for passwordless authentication only.
+
 ## Authentication Flow
 
-The library implements a multi-step authentication flow:
+The library implements a **cookie-free**, passwordless authentication flow:
 
 1. **Email Entry** - User enters their email address
 2. **Method Detection** - Server determines available auth methods
 3. **Authentication** - User completes authentication via:
-   - Passkey (WebAuthn)
-   - Password
-   - Magic link
-4. **Success** - User is signed in with access/refresh tokens
+   - **Passkey (WebAuthn)** - Primary method using biometrics
+   - **Magic link** - Email-based fallback for unsupported devices
+4. **Success** - User is signed in with tokens stored in browser storage
 
-## Using the Auth Store
+### 🍪 Privacy-First Approach
 
-The auth store provides reactive authentication state:
+**Default: Zero-Cookie Operation**
+- **No cookie banners** - Clean, uninterrupted user experience
+- **No consent popups** - Simplified onboarding flow
+- **Complete privacy** - Session data stays in user's browser under their control
+- **Future-proof** - Aligned with browser cookie deprecation trends
+
+**Enterprise Flexibility**
+- **Additional auth methods** - SAML/SSO when required by customers
+- **Still privacy-conscious** - Minimal additional storage, no cookies
+- **Transparent to users** - Clear disclosure of any session storage
+- **User controlled** - Users can still clear all data
+
+## Working with Auth State
+
+The auth store provides reactive authentication state for client-side applications:
+
+### Auth Store Properties
+
+```typescript
+interface AuthStore {
+  state: 'authenticated' | 'unauthenticated' | 'authenticating' | 'error';
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresAt: number | null;
+  error: string | null;
+}
+```
+
+### Reactive Auth State
+
+```svelte
+<script>
+  import { createAuthStore } from '@thepia/flows-auth';
+
+  const authStore = createAuthStore(config);
+
+  // Reactive statements automatically update when auth state changes
+  $: user = $authStore.user;
+  $: isAuthenticated = $authStore.state === 'authenticated';
+  $: isLoading = $authStore.state === 'authenticating';
+  $: error = $authStore.error;
+</script>
+
+{#if isLoading}
+  <div class="loading">Signing in...</div>
+{:else if error}
+  <div class="error">Error: {error}</div>
+{:else if isAuthenticated}
+  <div class="authenticated">Welcome, {user.name}!</div>
+{:else}
+  <div class="unauthenticated">Please sign in</div>
+{/if}
+```
+
+### Authentication Methods
 
 ```javascript
-const auth = createAuthStore(config);
-
-// Subscribe to state changes
-auth.subscribe($auth => {
-  console.log('State:', $auth.state);      // 'authenticated' | 'unauthenticated' | 'loading'
-  console.log('User:', $auth.user);        // User object or null
-  console.log('Token:', $auth.accessToken); // JWT access token
-});
-
-// Authentication methods
-await auth.signIn('user@example.com');
-await auth.signInWithPasskey('user@example.com');
-await auth.signInWithPassword('user@example.com', 'password');
-await auth.signOut();
+// Available methods (passwordless only)
+await authStore.signInWithPasskey(email);     // WebAuthn authentication
+await authStore.signInWithMagicLink(email);   // Email-based authentication
+await authStore.refreshTokens();              // Refresh access token
+await authStore.signOut();                    // Sign out user
 
 // Utility methods
-const isAuthenticated = auth.isAuthenticated();
-const token = auth.getAccessToken();
+const isAuthenticated = authStore.isAuthenticated();
+const token = authStore.getAccessToken();
 ```
 
 ## Error Handling
@@ -224,10 +329,84 @@ The library uses CSS custom properties for theming:
 }
 ```
 
+## Examples
+
+### Complete Flows App Example
+
+See the [flows-app-demo](../examples/flows-app-demo) for a complete working example that demonstrates:
+
+- **Client-only architecture** - No server-side dependencies
+- **Employee-only access patterns** - Flows-specific authentication
+- **HTTPS development setup** - Required for WebAuthn
+- **Proper error handling** - Comprehensive error management
+- **Session management** - Browser-based session storage
+- **CDN deployment ready** - Static assets only
+
+### Running the Demo
+
+#### From Library Root (Recommended)
+
+```bash
+# Run flows-app-demo with smart API detection
+pnpm run example:flows-app-demo
+
+# Run flows-app-demo with local API server (requires local server running)
+pnpm run example:flows-app-demo:local
+
+# Run flows-app-demo with production API server
+pnpm run example:flows-app-demo:production
+```
+
+#### From Example Directory
+
+```bash
+cd examples/flows-app-demo
+
+# Smart API detection (auto-detects local, falls back to production)
+pnpm run dev:auto
+
+# Force local API server
+pnpm run dev:local
+
+# Force production API server
+pnpm run dev:production
+
+# Traditional start (uses environment variables)
+pnpm dev
+```
+
+Then visit https://localhost:5175/ to see the authentication flow in action.
+
+#### API Server Context
+
+The development scripts automatically detect and configure the appropriate API server:
+
+- **Local Development**: `https://dev.thepia.com:8443` (when available)
+- **Production Fallback**: `https://api.thepia.com` (always available)
+- **Context Logging**: Always displays which API server is being used
+
+**Note**: The demo uses Vite for development but builds to static assets suitable for CDN deployment.
+
 ## Next Steps
 
-- [API Integration Guide](./api.md) - Set up your authentication API
-- [Component Reference](./components.md) - Detailed component documentation
-- [Theming Guide](./theming.md) - Complete styling and branding options
-- [WebAuthn Setup](./webauthn.md) - Configure passkey authentication
-- [Examples](../examples/) - See complete example implementations
+1. **[Zero-Cookie Architecture](./privacy/zero-cookie-architecture.md)** - Understand the privacy advantages
+2. **[Authentication Overview](./auth/README.md)** - Complete system architecture
+3. **[Flows Integration](./flows/README.md)** - Multi-domain authentication
+4. **[Authentication Flow](./auth/flow.md)** - Detailed flow diagrams and state management
+
+## Troubleshooting
+
+### Common Issues
+
+1. **WebAuthn not working**: Ensure HTTPS is enabled (required for WebAuthn)
+2. **CORS errors**: Verify your domain is configured in the API server
+3. **Token refresh failing**: Check localStorage for stored tokens
+4. **Magic links not working**: Verify email service configuration
+
+### Getting Help
+
+- Check the [Troubleshooting Guide](./troubleshooting/README.md)
+- Review the [examples](../examples/) directory
+- Check [GitHub Issues](https://github.com/thepia/flows-auth/issues)
+
+For more detailed information, see the complete documentation in the [docs](./README.md) directory.

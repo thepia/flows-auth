@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite build --watch",
+    "build:watch": "vite build --watch",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -52,8 +52,9 @@
     "check:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "example:basic": "cd examples/basic && npm run dev",
-    "example:whitelabel": "cd examples/whitelabel && npm run dev"
+    "example:flows-app-demo": "cd examples/flows-app-demo && pnpm dev",
+    "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
+    "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
   "keywords": [
     "svelte",

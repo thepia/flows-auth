@@ -7,8 +7,8 @@ This document outlines comprehensive test scenarios for the flows-auth library, 
 ## Test Environment Setup
 
 ### API Endpoints
-- **Local Development**: `https://api.dev.thepia.net` (requires local API server)
-- **Staging Environment**: `https://api.staging.thepia.net` 
+- **Local Development**: `https://dev.thepia.com:8443` (requires local API server)
+- **Production Environment**: `https://api.thepia.com`
 - **Test Environment**: Configurable via `TEST_API_URL` environment variable
 
 ### Test Accounts Required
@@ -55,7 +55,7 @@ const TEST_ACCOUNTS = {
 - [ ] **New User Registration Flow**
   - Start → Combined Auth → Email Entry → User Not Found → Registration
   - Verify state transitions: `checkingSession` → `sessionInvalid` → `combinedAuth` → `conditionalMediation` → `explicitAuth` → `auth0UserLookup` → `newUserRegistration`
-  - Test API calls: `/auth/check-email` returns `exists: false`
+  - Test API calls: `/auth/check-user` returns `exists: false`
   - Expected outcome: User registration form or magic link sent
 
 - [ ] **Returning User with Passkey Flow**
@@ -134,10 +134,10 @@ const TEST_ACCOUNTS = {
 
 ### 3. API Integration Tests
 
-#### 3.1 Email Check Endpoint
+#### 3.1 User Check Endpoint
 - [ ] **Existing User Detection**
   ```http
-  POST /auth/check-email
+  POST /auth/check-user
   Content-Type: application/json
   
   { "email": "test-with-passkey@thepia.net" }
@@ -153,7 +153,7 @@ const TEST_ACCOUNTS = {
 
 - [ ] **New User Detection**
   ```http
-  POST /auth/check-email
+  POST /auth/check-user
   Content-Type: application/json
   
   { "email": "new-user@thepia.net" }
@@ -170,7 +170,7 @@ const TEST_ACCOUNTS = {
 #### 3.2 Passkey Challenge Endpoint
 - [ ] **Valid Challenge Generation**
   ```http
-  POST /auth/passkey/challenge
+  POST /auth/webauthn/challenge
   Content-Type: application/json
   
   { "email": "test-with-passkey@thepia.net" }
@@ -191,7 +191,7 @@ const TEST_ACCOUNTS = {
 
 - [ ] **Invalid Email Handling**
   ```http
-  POST /auth/passkey/challenge
+  POST /auth/webauthn/challenge
   Content-Type: application/json
   
   { "email": "nonexistent@thepia.net" }

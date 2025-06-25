@@ -1,13 +1,46 @@
+<!--
+  ⚠️  WARNING: MOCK AUTHENTICATION COMPONENT - DO NOT USE IN PRODUCTION ⚠️
+
+  This component provides FAKE authentication for demo/testing purposes only.
+  It does NOT connect to real API servers and will sign in ANY email address.
+
+  For REAL authentication, use the actual flows-auth SignInForm component.
+
+  Purpose: Visual demo of authentication UI without backend dependencies
+  Context: Only for showcasing UI/UX flows in isolated environments
+  Safe to remove: YES - this should NEVER be used in production
+-->
+
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import type { User, AuthMethod } from '@thepia/flows-auth';
+  import { validateAuthConfig, isMockAuthConfig, type MockAuthConfig } from './types';
+
+  // 🚨 MOCK AUTHENTICATION - NOT REAL SECURITY 🚨
+  console.error('🚨 CRITICAL WARNING: MockAuthForm is FAKE authentication - DO NOT USE IN PRODUCTION');
+  console.error('🚨 This component will sign in ANY email without real authentication');
+  console.error('🚨 Use flows-auth SignInForm for real authentication');
 
   const dispatch = createEventDispatcher<{
     success: { user: User; method: AuthMethod };
     error: { error: any };
   }>();
 
-  export let config: any;
+  export let config: MockAuthConfig;
+
+  // Runtime validation to prevent production usage
+  onMount(() => {
+    try {
+      validateAuthConfig(config, import.meta.env.PROD ? 'production' : 'development');
+
+      if (!isMockAuthConfig(config)) {
+        throw new Error('MockAuthForm requires MockAuthConfig - use createMockAuthConfig() helper');
+      }
+    } catch (error) {
+      console.error('🚨 MockAuthForm validation failed:', error);
+      throw error;
+    }
+  });
 
   let email = '';
   let loading = false;
@@ -113,8 +146,18 @@
 </script>
 
 <div class="auth-form">
+  <!-- 🚨 MOCK AUTHENTICATION WARNING 🚨 -->
+  <div class="mock-warning">
+    <div class="warning-icon">⚠️</div>
+    <div class="warning-text">
+      <strong>MOCK AUTHENTICATION</strong><br>
+      This is FAKE authentication for demo purposes only!<br>
+      <small>Any email will be accepted without real verification</small>
+    </div>
+  </div>
+
   <div class="form-header">
-    <h3>Sign In</h3>
+    <h3>Sign In (MOCK)</h3>
     <p>Welcome to {config?.branding?.companyName || 'Demo App'}</p>
   </div>
 
@@ -187,6 +230,51 @@
   .auth-form {
     max-width: 400px;
     margin: 0 auto;
+  }
+
+  /* 🚨 MOCK WARNING STYLES 🚨 */
+  .mock-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+    animation: pulse-warning 2s infinite;
+  }
+
+  .warning-icon {
+    font-size: var(--font-size-2xl);
+    color: #856404;
+  }
+
+  .warning-text {
+    flex: 1;
+    color: #856404;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .warning-text strong {
+    color: #721c24;
+    font-size: var(--font-size-lg);
+  }
+
+  .warning-text small {
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+  }
+
+  @keyframes pulse-warning {
+    0%, 100% {
+      border-color: #ffc107;
+      background: #fff3cd;
+    }
+    50% {
+      border-color: #fd7e14;
+      background: #ffeaa7;
+    }
   }
 
   .form-header {

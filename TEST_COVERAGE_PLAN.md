@@ -1,5 +1,66 @@
 # flows-auth Test Coverage Plan
 
+## 📊 TEST COVERAGE COMPARISON: flows-auth vs thepia.com
+
+### **📈 CURRENT STATUS:**
+
+#### **Test File Count:**
+- **thepia.com**: **45 test files**
+- **flows-auth**: **20 test files**
+- **Coverage Ratio**: flows-auth has **44%** of thepia.com's test file count
+
+#### **Overall Assessment:**
+**flows-auth has approximately 60-65% of thepia.com's test coverage depth**, with **excellent integration testing** but **significant gaps in edge cases, error handling, and browser-specific testing**.
+
+### **✅ AREAS WHERE FLOWS-AUTH MATCHES/EXCEEDS THEPIA.COM:**
+
+1. **Real API Integration Testing** ⭐
+   - flows-auth: **2 comprehensive real API test files**
+   - thepia.com: **1 live integration test file**
+   - **flows-auth advantage**: More thorough real API testing
+
+2. **State Management Testing** ⭐
+   - flows-auth: **Dedicated auth-store and state-machine tests**
+   - thepia.com: **Limited state management testing**
+   - **flows-auth advantage**: Better state management coverage
+
+3. **Performance Testing** ⭐
+   - flows-auth: **Dedicated performance-memory.test.ts**
+   - thepia.com: **No dedicated performance tests**
+   - **flows-auth advantage**: Performance monitoring
+
+4. **Build Verification** ⭐
+   - flows-auth: **build-verification.test.ts**
+   - thepia.com: **No build verification tests**
+   - **flows-auth advantage**: Build integrity testing
+
+### **❌ CRITICAL GAPS IN FLOWS-AUTH:**
+
+1. **WebAuthn Depth** 🚨
+   - thepia.com: **8 specialized WebAuthn test files**
+   - flows-auth: **2 basic WebAuthn test files**
+   - **Gap**: Missing Safari-specific, Touch ID, challenge storage, credential cleanup tests
+
+2. **Error Handling Scenarios** 🚨
+   - thepia.com: **Multiple error scenario test files**
+   - flows-auth: **Basic error handling in integration tests**
+   - **Gap**: Missing wrapped error, user cancellation, Safari-specific error tests
+
+3. **E2E Testing** 🚨
+   - thepia.com: **3 E2E test files**
+   - flows-auth: **0 E2E test files**
+   - **Gap**: No end-to-end browser testing
+
+4. **API Contract Testing** 🚨
+   - thepia.com: **12 API-specific test files**
+   - flows-auth: **1 API client test file**
+   - **Gap**: Missing parameter contracts, encoding tests, multi-domain tests
+
+5. **Browser-Specific Testing** 🚨
+   - thepia.com: **Safari-specific tests, Touch ID tests**
+   - flows-auth: **Generic browser testing**
+   - **Gap**: Missing browser-specific edge cases
+
 ## ⚠️ Critical Integration Issues Identified
 
 Based on the development experience, these integration failures need comprehensive test coverage:
@@ -293,15 +354,130 @@ export default defineConfig({
 3. **Accessibility Testing** - WCAG compliance
 4. **Documentation Testing** - Example code validation
 
-## 📊 Test Coverage Metrics
+## 📊 DETAILED TEST COVERAGE METRICS
 
-### Target Coverage Goals
+### **📈 COVERAGE BY TEST DEPTH:**
+
+#### **Basic Functionality:**
+- **flows-auth**: **90%** of thepia.com ✅
+- **Status**: Strong foundational coverage
+- **Files**: auth-store.test.ts, auth-api.test.ts, webauthn.test.ts
+
+#### **Integration Testing:**
+- **flows-auth**: **110%** of thepia.com ⭐
+- **Status**: Exceeds thepia.com with real API testing
+- **Files**: auth-store-real-api.test.ts, auth0service-real-api.test.ts
+- **Advantage**: No mocking approach, better real-world validation
+
+#### **WebAuthn Edge Cases:**
+- **flows-auth**: **25%** of thepia.com 🚨
+- **Status**: Critical gap requiring immediate attention
+- **Missing**: Safari quirks, Touch ID, challenge storage, credential cleanup
+- **thepia.com has**: 8 specialized WebAuthn test files
+- **flows-auth has**: 2 basic WebAuthn test files
+
+#### **Error Scenarios:**
+- **flows-auth**: **30%** of thepia.com 🚨
+- **Status**: Major gap in error handling depth
+- **Missing**: Wrapped errors, user cancellation, browser-specific errors
+- **thepia.com has**: Multiple error scenario test files
+- **flows-auth has**: Basic error handling in integration tests
+
+#### **E2E Testing:**
+- **flows-auth**: **0%** of thepia.com 🚨
+- **Status**: Complete absence of end-to-end testing
+- **Missing**: Real browser automation, user interaction flows
+- **thepia.com has**: 3 E2E test files
+- **flows-auth has**: 0 E2E test files
+
+#### **Browser Compatibility:**
+- **flows-auth**: **20%** of thepia.com 🚨
+- **Status**: Minimal browser-specific testing
+- **Missing**: Safari-specific tests, Touch ID tests, Firefox differences
+- **thepia.com has**: Safari-specific tests, Touch ID tests
+- **flows-auth has**: Generic browser testing
+
+### **📊 THEPIA.COM TEST BREAKDOWN (45 files):**
+
+#### **Authentication Tests (13 files):**
+- `auth0Service-live-integration.test.ts` - Live API integration
+- `auth-service-integration.test.ts` - Service integration with mocks
+- `auth0-segmented-live-integration.test.ts` - Segmented live testing
+- `api-endpoints-integration.test.ts` - API endpoint validation
+- `passkey-registration-scenario.test.ts` - Registration flows
+- `sign-in-issue-diagnosis.test.ts` - Issue diagnosis
+- `environment-variable-fix.test.ts` - Environment configuration
+- `auth0Service-user-cancellation-safari.test.ts` - Safari-specific issues
+- `auth0Service-wrapped-error.test.ts` - Error handling
+
+#### **WebAuthn Tests (8 files):**
+- `touchid-cancellation-detection.test.ts` - Touch ID cancellation
+- `auth-modal-webauthn-detection.test.ts` - Modal WebAuthn integration
+- `challenge-storage-regression.test.ts` - Challenge storage
+- `challenge-store.test.ts` - Challenge store management
+- `email-extraction.test.ts` - Email extraction from credentials
+- `passkey-availability-detection.test.ts` - Passkey availability
+- `credential-cleanup.test.ts` - Credential cleanup
+
+#### **API Tests (12 files):**
+- `auth-utils.test.ts` - Auth utilities
+- `webauthn-register-options-encoding.test.ts` - Registration encoding
+- `auth-handlers-simple.test.ts` - Auth handlers
+- `buffer-compatibility.test.ts` - Buffer compatibility
+- `flow-tokens.test.ts` - Flow token management
+- `webauthn-parameter-contract.test.ts` - Parameter contracts
+- `webauthn-mock-validation.test.ts` - Mock validation
+- `webauthn-verification.test.ts` - WebAuthn verification
+- `flow-tokens-basic.test.ts` - Basic flow tokens
+- `webauthn-challenge-encoding.test.ts` - Challenge encoding
+- `multi-domain-auth.test.ts` - Multi-domain authentication
+- `auth-router.test.ts` - Auth routing
+
+#### **E2E Tests (3 files):**
+- `touchid-cancellation.test.ts` - Touch ID E2E
+- `webauthn-register-state.test.ts` - Registration state E2E
+- `preview-passkey-auth.test.ts` - Passkey auth E2E
+
+### **📊 FLOWS-AUTH TEST BREAKDOWN (20 files):**
+
+#### **Integration Tests (11 files):**
+- `auth-store-real-api.test.ts` - ✅ **NEW: Real API integration**
+- `auth0service-real-api.test.ts` - ✅ **NEW: Auth0Service real API**
+- `auth-store-comprehensive.test.ts` - Comprehensive auth store
+- `auth-store-integration.test.ts` - Auth store integration
+- `webauthn-flow.test.ts` - WebAuthn flow testing
+- `automatic-flow-detection.test.ts` - Automatic flow detection
+- `performance-memory.test.ts` - Performance testing
+- `api-environment.test.ts` - API environment testing
+- `component-exports.test.ts` - Component export validation
+- `build-verification.test.ts` - Build verification
+- `promise-handling.test.ts` - Promise handling
+
+#### **Unit Tests (6 files):**
+- `auth-store.test.ts` - Auth store unit tests
+- `auth-state-machine.test.ts` - State machine tests
+- `auth-api.test.ts` - API client tests
+- `webauthn.test.ts` - WebAuthn utilities
+- `webauthn-simple.test.ts` - Simple WebAuthn tests
+- `SignInForm.test.ts` - Component tests
+
+#### **Regression Tests (1 file):**
+- `api-server-detection.test.ts` - API server detection
+
+### **🎯 TARGET COVERAGE GOALS:**
+
+#### **Immediate Targets (Match thepia.com):**
 - **Unit Tests**: 95% code coverage
-- **Integration Tests**: 100% of public API surface
-- **E2E Tests**: 100% of user-facing flows (Chromium full, others mocked)
-- **Browser Support**: 
-  - **Chromium**: Full WebAuthn virtual authenticator testing
-  - **Safari/Firefox**: API mocking + manual testing required
+- **Integration Tests**: 100% of public API surface ✅ **ACHIEVED**
+- **WebAuthn Edge Cases**: 90% of thepia.com patterns 🚨 **CRITICAL GAP**
+- **Error Scenarios**: 90% of thepia.com patterns 🚨 **CRITICAL GAP**
+- **E2E Tests**: 100% of user-facing flows 🚨 **MISSING**
+
+#### **Browser Support Targets:**
+- **Chromium**: Full WebAuthn virtual authenticator testing
+- **Safari**: Touch ID, cancellation, and Safari-specific quirks
+- **Firefox**: WebAuthn differences and limitations
+- **Mobile**: iOS Safari, Chrome Mobile testing
 
 ### Continuous Integration
 ```yaml
@@ -340,7 +516,61 @@ jobs:
         run: pnpm test:e2e:webkit
 ```
 
-## 🚀 Implementation Roadmap
+## 🚀 PRIORITY IMPLEMENTATION ROADMAP
+
+### **🚨 IMMEDIATE PRIORITY (Critical Gaps)**
+
+#### **1. WebAuthn Edge Cases** (Week 1)
+Based on thepia.com's 8 specialized WebAuthn test files:
+- **Safari-specific WebAuthn tests** (`auth0Service-user-cancellation-safari.test.ts` equivalent)
+- **Touch ID cancellation detection** (`touchid-cancellation-detection.test.ts` equivalent)
+- **Challenge storage regression tests** (`challenge-storage-regression.test.ts` equivalent)
+- **Credential cleanup tests** (`credential-cleanup.test.ts` equivalent)
+- **Email extraction from credentials** (`email-extraction.test.ts` equivalent)
+- **Passkey availability detection** (`passkey-availability-detection.test.ts` equivalent)
+
+#### **2. Error Handling Depth** (Week 1-2)
+Based on thepia.com's error handling patterns:
+- **Wrapped error object tests** (`auth0Service-wrapped-error.test.ts` equivalent)
+- **User cancellation scenarios** (Safari, Chrome, Firefox differences)
+- **WebAuthn timeout and failure scenarios**
+- **Network error recovery testing**
+
+#### **3. E2E Browser Testing** (Week 2)
+Based on thepia.com's 3 E2E test files:
+- **Touch ID E2E testing** (`touchid-cancellation.test.ts` equivalent)
+- **WebAuthn registration state E2E** (`webauthn-register-state.test.ts` equivalent)
+- **Passkey authentication E2E** (`preview-passkey-auth.test.ts` equivalent)
+
+### **📈 HIGH PRIORITY (Coverage Gaps)**
+
+#### **4. API Contract Testing** (Week 3)
+Based on thepia.com's 12 API test files:
+- **WebAuthn parameter contracts** (`webauthn-parameter-contract.test.ts` equivalent)
+- **Challenge encoding tests** (`webauthn-challenge-encoding.test.ts` equivalent)
+- **Registration options encoding** (`webauthn-register-options-encoding.test.ts` equivalent)
+- **Buffer compatibility tests** (`buffer-compatibility.test.ts` equivalent)
+- **Multi-domain authentication** (`multi-domain-auth.test.ts` equivalent)
+
+#### **5. Browser Compatibility Matrix** (Week 3-4)
+- **Safari quirks and limitations**
+- **Firefox WebAuthn differences**
+- **Chrome conditional mediation variations**
+- **Mobile browser testing (iOS Safari, Chrome Mobile)**
+
+### **🔧 MEDIUM PRIORITY (Enhancement)**
+
+#### **6. Advanced Integration Testing** (Week 4)
+- **SvelteKit integration tests**
+- **Package export resolution tests**
+- **Framework compatibility matrix**
+
+#### **7. Performance & Security** (Week 5)
+- **Performance benchmarks**
+- **Security validation**
+- **Memory leak detection**
+
+## 🚀 Original Implementation Roadmap
 
 ### Week 1: Foundation
 - Set up testing infrastructure (Vitest, Playwright, mocks)

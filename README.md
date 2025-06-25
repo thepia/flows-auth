@@ -241,7 +241,7 @@ POST /auth/signin
 POST /auth/signin/passkey
 POST /auth/signin/password
 POST /auth/signin/magic-link
-POST /auth/passkey/challenge
+POST /auth/webauthn/challenge
 POST /auth/refresh
 POST /auth/signout
 GET  /auth/profile

@@ -38,7 +38,7 @@ beforeAll(async () => {
 
 Tests must validate against actual Auth0 API endpoints:
 - `/auth/check-user` - User existence checking
-- `/auth/passkey/challenge` - WebAuthn challenge generation
+- `/auth/webauthn/challenge` - WebAuthn challenge generation
 - `/auth/signin/passkey` - Passkey authentication
 - `/auth/signin/magic-link` - Magic link generation
 

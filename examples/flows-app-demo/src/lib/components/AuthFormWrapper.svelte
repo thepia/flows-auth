@@ -1,45 +1,68 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { browser } from '$app/environment';
-  import SimpleAuthForm from './SimpleAuthForm.svelte';
-  
+  // Try importing the raw Svelte component from relative path
+  import SignInForm from '../../../../../src/components/SignInForm.svelte';
+
   export let config: any;
-  
+
   const dispatch = createEventDispatcher<{
     success: { user: any; method: string };
     error: { error: any };
   }>();
-  
-  let authLibraryLoaded = false;
-  let SignInForm: any = null;
-  
+
+  let mounted = false;
+
   onMount(async () => {
     if (!browser) return;
-    
-    // For now, just use SimpleAuthForm until we resolve the import issue
-    console.log('📝 Using SimpleAuthForm for demo - flows-auth import needs resolution');
-    // TODO: Fix dynamic import of flows-auth to avoid vite static analysis
+
+    try {
+      mounted = true;
+
+      console.log('✅ Real flows-auth SignInForm loaded with config:', {
+        apiBaseUrl: config.apiBaseUrl,
+        domain: config.domain,
+        enablePasskeys: config.enablePasskeys
+      });
+    } catch (error) {
+      console.error('❌ Failed to initialize flows-auth:', error);
+    }
   });
-  
+
   function handleSuccess(event: CustomEvent<{ user: any; method: string }>) {
     dispatch('success', event.detail);
   }
-  
+
   function handleError(event: CustomEvent<{ error: any }>) {
     dispatch('error', event.detail);
   }
 </script>
 
-{#if browser}
-  <!-- Use SimpleAuthForm for now until dynamic import issue is resolved -->
-  <SimpleAuthForm 
+{#if browser && mounted && config}
+  <!-- Debug: Show what we're trying to render -->
+  <div class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px;">
+    <p><strong>🔍 Debug: About to render SignInForm</strong></p>
+    <p>Config keys: {Object.keys(config).join(', ')}</p>
+    <p>API Base URL: {config.apiBaseUrl}</p>
+    <p>Domain: {config.domain}</p>
+    <p>Enable Passkeys: {config.enablePasskeys}</p>
+  </div>
+
+  <!-- Use real flows-auth SignInForm with direct import -->
+  <SignInForm
     {config}
     on:success={handleSuccess}
     on:error={handleError}
   />
-  
+
   <div class="auth-status">
-    <small style="color: orange;">⚠️ Using SimpleAuthForm demo - flows-auth integration pending</small>
+    <small style="color: green;">✅ Using real flows-auth SignInForm (direct import)</small>
+  </div>
+{:else if browser}
+  <!-- Loading state -->
+  <div class="loading-auth">
+    <div class="spinner"></div>
+    <p>Initializing authentication system...</p>
   </div>
 {:else}
   <!-- SSR fallback -->

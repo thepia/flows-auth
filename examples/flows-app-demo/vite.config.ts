@@ -10,7 +10,7 @@ export default defineConfig({
 		include: ['@thepia/flows-auth']
 	},
 	server: {
-		host: true,
+		host: 'dev.thepia.net',
 		port: 5175,
 		https: {
 			key: './certs/dev.thepia.net-key.pem',

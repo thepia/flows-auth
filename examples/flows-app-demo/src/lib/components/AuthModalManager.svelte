@@ -25,14 +25,16 @@
   onMount(() => {
     if (!browser) return;
 
-    // Initialize with current scenario
-    currentScenario = devScenarioManager.getCurrentScenario();
-    createConfigForScenario(currentScenario);
+    // Initialize with current scenario (async to resolve auto-detect)
+    (async () => {
+      currentScenario = await devScenarioManager.getCurrentScenario();
+      createConfigForScenario(currentScenario);
+    })();
 
     // Subscribe to scenario changes
-    unsubscribe = devScenarioManager.subscribe((scenario) => {
-      currentScenario = scenario;
-      createConfigForScenario(scenario);
+    unsubscribe = devScenarioManager.subscribe(async (_scenario) => {
+      currentScenario = await devScenarioManager.getCurrentScenario();
+      createConfigForScenario(currentScenario);
     });
 
     // Listen for modal open events
@@ -73,7 +75,7 @@
     authConfig = {
       apiBaseUrl: scenario.config.apiBaseUrl,
       clientId: scenario.config.clientId,
-      domain: 'flows-demo.thepia.net',
+      domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
       enablePasskeys: scenario.config.enablePasskeys,
       enableMagicLinks: scenario.config.enableMagicLinks,
       enablePasswordLogin: scenario.config.enablePasswordLogin,

@@ -5,7 +5,7 @@
 
 export interface AuthStateEvent {
   type: 'auth-state-change';
-  event: 'login-attempt' | 'login-success' | 'login-failure' | 'webauthn-start' | 'webauthn-success' | 'webauthn-failure' | 'webauthn-register-start' | 'webauthn-register-success' | 'webauthn-register-failure' | 'magic-link-request' | 'magic-link-sent' | 'magic-link-failure' | 'magic-link-verify-start' | 'magic-link-verify-success' | 'magic-link-verify-failure' | 'sign-in-started' | 'sign-in-success' | 'sign-in-error' | 'token-refreshed' | 'sign-out';
+  event: 'login-attempt' | 'login-success' | 'login-failure' | 'webauthn-start' | 'webauthn-success' | 'webauthn-failure' | 'webauthn-register-start' | 'webauthn-register-success' | 'webauthn-register-failure' | 'magic-link-request' | 'magic-link-sent' | 'magic-link-failure' | 'magic-link-verify-start' | 'magic-link-verify-success' | 'magic-link-verify-failure' | 'sign-in-started' | 'sign-in-success' | 'sign-in-error' | 'token-refreshed' | 'sign-out' | 'registration-start' | 'registration-success' | 'registration-failure';
   email?: string;
   userId?: string;
   authMethod?: 'passkey' | 'password' | 'email' | 'magic-link';
@@ -237,13 +237,15 @@ export function getErrorReportQueueSize() {
 
 // Auto-initialize with basic config if running in browser
 if (typeof window !== 'undefined') {
-  // Check for SvelteKit dev mode or other development indicators
-  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  
+  // Check for development environment
+  const isDev = window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname.endsWith('.thepia.net');
+
   initializeErrorReporter({
     enabled: true,
     debug: isDev,
-    // Default to local API server for development
-    endpoint: isDev ? 'http://localhost:3000/api/error-reports' : undefined
+    // Use production API server as sensible default - localhost:3000 will never work
+    endpoint: isDev ? 'https://api.thepia.com/dev/error-reports' : undefined
   });
 }

@@ -30,12 +30,19 @@
   let email = initialEmail;
   let loading = false;
   let error: string | null = null;
-  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' = 'combined-auth';
+  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' | 'magic_link' | 'registration-terms' | 'registration-passkey' | 'registration-success' = 'combined-auth';
   let supportsWebAuthn = false;
   let conditionalAuthActive = false;
-  let emailChangeTimeout: number | null = null;
+  let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
   let userExists = false;
   let hasPasskeys = false;
+
+  // Registration state
+  let firstName = '';
+  let lastName = '';
+  let acceptedTerms = false;
+  let acceptedPrivacy = false;
+  let marketingConsent = false;
 
   // WebAuthn state
   let platformAuthenticatorAvailable = false;
@@ -69,11 +76,11 @@
     }
   });
 
-  // Email change handler - mirrors React implementation
+  // Email change handler - mirrors thepia.com AuthModal implementation
   async function handleEmailChange(event: Event) {
     const target = event.target as HTMLInputElement;
     email = target.value;
-    
+
     if (!email.trim() || !supportsWebAuthn || loading) return;
 
     // Clear previous timeout
@@ -81,32 +88,48 @@
       clearTimeout(emailChangeTimeout);
     }
 
-    // Debounce email changes (1 second delay like React)
+    // Debounce email changes (1 second delay like thepia.com)
+    // Only attempt conditional auth for valid email format
     emailChangeTimeout = setTimeout(async () => {
-      try {
-        await startConditionalAuthentication();
-      } catch (err) {
-        console.warn('Conditional authentication failed:', err);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (email && emailRegex.test(email) && !conditionalAuthActive) {
+        try {
+          await startConditionalAuthentication();
+        } catch (err) {
+          // Conditional auth should fail silently
+          console.log('⚠️ Conditional authentication failed (expected if no passkeys):', err);
+        }
       }
     }, 1000);
   }
 
-  // Start conditional authentication - mirrors React conditional auth
+  // Start conditional authentication - mirrors thepia.com AuthModal implementation
   async function startConditionalAuthentication() {
     if (conditionalAuthActive || !email.trim()) return;
 
+    // Only attempt conditional auth for valid email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+
     try {
       conditionalAuthActive = true;
-      
+      console.log('🔍 Starting conditional authentication for:', email);
+
       // Use the auth store's conditional authentication
       const success = await authStore.startConditionalAuthentication(email);
-      
+
       if (success) {
-        // Authentication succeeded - component will receive success event
-        console.log('✅ Conditional authentication successful');
+        // Authentication succeeded - dispatch success event to parent
+        console.log('✅ Conditional authentication successful - user signed in');
+        // The auth store will handle state updates, we just need to let parent know
+        dispatch('success', {
+          user: $authStore.user,
+          method: 'passkey'
+        });
       }
     } catch (error) {
-      console.warn('Conditional authentication failed:', error);
+      // Conditional auth should fail silently - this is expected if no passkeys exist
+      console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
     } finally {
       conditionalAuthActive = false;
     }
@@ -145,8 +168,8 @@
             loading = false;
           }
         }
-      } else if (config.enableMagicLinks) {
-        // Send magic link
+      } else if (userExists && config.enableMagicLinks) {
+        // User exists but no passkey - send magic link
         try {
           await handleMagicLinkAuth();
         } catch (magicLinkError) {
@@ -154,6 +177,10 @@
           error = 'Failed to send magic link. Please try again.';
           loading = false;
         }
+      } else if (!userExists) {
+        // User doesn't exist - switch to registration flow
+        step = 'registration-terms';
+        loading = false;
       } else {
         // No authentication methods available
         error = 'No authentication methods available for this email.';
@@ -192,8 +219,9 @@
   async function handleMagicLinkAuth() {
     try {
       const result = await authStore.signInWithMagicLink(email);
-      
-      if (result.step === 'magic_link_sent') {
+
+      // Check for magic link sent response - the API returns 'magic-link' step
+      if (result.step === 'magic-link' || result.magicLinkSent) {
         step = 'magic_link';
         loading = false;
       }
@@ -210,11 +238,86 @@
     }
   }
 
+  // Handle Terms of Service acceptance
+  function handleTermsAcceptance() {
+    if (!acceptedTerms || !acceptedPrivacy) {
+      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
+      return;
+    }
+
+    error = null;
+    step = 'registration-passkey';
+    dispatch('stepChange', { step });
+  }
+
+  // Handle registration with passkey
+  async function handleRegistration() {
+    if (!acceptedTerms || !acceptedPrivacy) {
+      error = 'Terms of Service must be accepted';
+      return;
+    }
+
+    loading = true;
+    error = null;
+
+    try {
+      const registrationData = {
+        email,
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        acceptedTerms,
+        acceptedPrivacy,
+        marketingConsent
+      };
+
+      // Register user with passkey
+      const result = await authStore.registerUser(registrationData);
+
+      if (result.step === 'success' && result.user) {
+        // Registration successful - user enters app immediately
+        step = 'registration-success';
+        loading = false;
+
+        // Dispatch success event
+        dispatch('success', {
+          user: result.user,
+          method: 'passkey' as AuthMethod
+        });
+      }
+    } catch (err: any) {
+      loading = false;
+      error = err.message || 'Registration failed';
+      dispatch('error', { error: { code: 'registration_failed', message: error } });
+    }
+  }
+
+  // Go back to previous step
+  function handleBack() {
+    error = null;
+    switch (step) {
+      case 'registration-terms':
+        step = 'combined-auth';
+        break;
+      case 'registration-passkey':
+        step = 'registration-terms';
+        break;
+      default:
+        step = 'combined-auth';
+    }
+    dispatch('stepChange', { step });
+  }
+
   // Reset form to initial state
   function resetForm() {
     step = 'combined-auth';
     error = null;
     loading = false;
+    // Reset registration state
+    firstName = '';
+    lastName = '';
+    acceptedTerms = false;
+    acceptedPrivacy = false;
+    marketingConsent = false;
   }
 </script>
 
@@ -308,6 +411,167 @@
           Use a different email
         </button>
       </div>
+
+    {:else if step === 'registration-terms'}
+      <!-- Registration Terms of Service Step -->
+      <div class="registration-terms-step">
+        <div class="step-header">
+          <button type="button" class="back-button" on:click={handleBack}>
+            ← Back
+          </button>
+          <h2 class="step-title">Terms & Privacy</h2>
+          <p class="step-description">
+            Please review and accept our terms to create your account
+          </p>
+        </div>
+
+        <form on:submit|preventDefault={handleTermsAcceptance}>
+          <div class="terms-section">
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  bind:checked={acceptedTerms}
+                  required
+                />
+                <span class="checkmark"></span>
+                I agree to the
+                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+              </label>
+            </div>
+
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  bind:checked={acceptedPrivacy}
+                  required
+                />
+                <span class="checkmark"></span>
+                I agree to the
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+              </label>
+            </div>
+
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  bind:checked={marketingConsent}
+                />
+                <span class="checkmark"></span>
+                I would like to receive product updates and marketing communications (optional)
+              </label>
+            </div>
+          </div>
+
+          {#if error}
+            <div class="error-message">{error}</div>
+          {/if}
+
+          <button
+            type="submit"
+            class="continue-button"
+            disabled={!acceptedTerms || !acceptedPrivacy}
+          >
+            Accept & Continue
+          </button>
+        </form>
+      </div>
+
+    {:else if step === 'registration-passkey'}
+      <!-- Registration Passkey Setup Step -->
+      <div class="registration-passkey-step">
+        <div class="step-header">
+          <button type="button" class="back-button" on:click={handleBack}>
+            ← Back
+          </button>
+          <h2 class="step-title">Create Account with Passkey</h2>
+          <p class="step-description">
+            Create a new account for <strong>{email}</strong> using secure passkey authentication
+          </p>
+        </div>
+
+        <form on:submit|preventDefault={handleRegistration}>
+          <div class="optional-fields">
+            <div class="input-row">
+              <div class="input-group">
+                <label for="firstName" class="input-label">First Name (optional)</label>
+                <input
+                  bind:value={firstName}
+                  id="firstName"
+                  type="text"
+                  class="name-input"
+                  placeholder="John"
+                  autocomplete="given-name"
+                  disabled={loading}
+                />
+              </div>
+              <div class="input-group">
+                <label for="lastName" class="input-label">Last Name (optional)</label>
+                <input
+                  bind:value={lastName}
+                  id="lastName"
+                  type="text"
+                  class="name-input"
+                  placeholder="Doe"
+                  autocomplete="family-name"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          {#if error}
+            <div class="error-message">{error}</div>
+          {/if}
+
+          <button
+            type="submit"
+            class="register-button"
+            class:loading
+            disabled={loading}
+          >
+            {#if loading}
+              <span class="loading-spinner"></span>
+              Creating Account...
+            {:else if supportsWebAuthn}
+              🔑 Register with Passkey
+            {:else}
+              Create Account
+            {/if}
+          </button>
+
+          {#if supportsWebAuthn}
+            <div class="webauthn-info">
+              <small>🔐 Your device will prompt for Touch ID, Face ID, or Windows Hello</small>
+            </div>
+          {/if}
+        </form>
+      </div>
+
+    {:else if step === 'registration-success'}
+      <!-- Registration Success Step -->
+      <div class="registration-success-step">
+        <div class="step-header">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <h2 class="step-title">Account Created Successfully!</h2>
+          <p class="step-description">
+            Welcome to {config.branding?.companyName || 'our platform'}!
+            You can now explore the application.
+          </p>
+        </div>
+
+        <div class="success-info">
+          <p>📧 We've sent a welcome email to <strong>{email}</strong></p>
+          <p>🔓 Verify your email to unlock all features</p>
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -352,7 +616,10 @@
   }
 
   .combined-auth-step,
-  .magic-link-step {
+  .magic-link-step,
+  .registration-terms-step,
+  .registration-passkey-step,
+  .registration-success-step {
     padding: 32px 24px;
   }
 
@@ -478,6 +745,159 @@
 
   .powered-by strong {
     color: var(--brand-primary, #0066cc);
+  }
+
+  /* Registration-specific styles */
+  .back-button {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: none;
+    border: none;
+    color: var(--brand-primary, #0066cc);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    font-size: 14px;
+  }
+
+  .back-button:hover {
+    background: var(--primary-light, #e6f2ff);
+  }
+
+  .terms-section {
+    margin-bottom: 24px;
+    text-align: left;
+  }
+
+  .checkbox-group {
+    margin-bottom: 16px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #374151;
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand-primary, #0066cc);
+  }
+
+  .checkbox-label a {
+    color: var(--brand-primary, #0066cc);
+    text-decoration: none;
+  }
+
+  .checkbox-label a:hover {
+    text-decoration: underline;
+  }
+
+  .optional-fields {
+    margin-bottom: 24px;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .name-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: inherit;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+  }
+
+  .name-input:focus {
+    outline: none;
+    border-color: var(--brand-primary, #0066cc);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  }
+
+  .name-input:disabled {
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .register-button {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--brand-primary, #0066cc);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+  }
+
+  .register-button:hover:not(:disabled) {
+    background: var(--brand-primary-hover, #0052a3);
+    transform: translateY(-1px);
+  }
+
+  .register-button:disabled {
+    background: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .success-info {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 24px;
+    text-align: left;
+  }
+
+  .success-info p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #0c4a6e;
+  }
+
+  .webauthn-info {
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .webauthn-info small {
+    color: #10b981;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Mobile responsive for registration */
+  @media (max-width: 480px) {
+    .input-row {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
   }
 
   .webauthn-indicator {

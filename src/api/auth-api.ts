@@ -112,7 +112,7 @@ export class AuthApiClient {
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/signin/passkey', {
+    return this.request<SignInResponse>('/auth/webauthn/verify', {
       method: 'POST',
       body: JSON.stringify(request)
     });
@@ -142,7 +142,7 @@ export class AuthApiClient {
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    return this.request<PasskeyChallenge>('/auth/passkey/challenge', {
+    return this.request<PasskeyChallenge>('/auth/webauthn/challenge', {
       method: 'POST',
       body: JSON.stringify({ email })
     });
@@ -260,5 +260,44 @@ export class AuthApiClient {
     await this.request<void>(`/auth/passkeys/${credentialId}`, {
       method: 'DELETE'
     }, true);
+  }
+
+  /**
+   * Register new user
+   */
+  async registerUser(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+  }): Promise<SignInResponse> {
+    return this.request<SignInResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  }
+
+  /**
+   * Get WebAuthn registration options for new passkey
+   */
+  async getWebAuthnRegistrationOptions(userId: string): Promise<any> {
+    return this.request<any>('/auth/webauthn/register-options', {
+      method: 'POST',
+      body: JSON.stringify({ userId })
+    });
+  }
+
+  /**
+   * Verify WebAuthn registration
+   */
+  async verifyWebAuthnRegistration(registrationData: {
+    userId: string;
+    credential: any;
+  }): Promise<{ success: boolean; error?: string }> {
+    return this.request<{ success: boolean; error?: string }>('/auth/webauthn/register-verify', {
+      method: 'POST',
+      body: JSON.stringify(registrationData)
+    });
   }
 }

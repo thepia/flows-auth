@@ -103,8 +103,8 @@ describe('WebAuthn Integration Flow', () => {
     }, { timeout: 5000 });
 
     // Verify API calls were made
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/check-email', expect.any(Object));
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/passkey/challenge', expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/check-user', expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/webauthn/challenge', expect.any(Object));
     expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/signin/passkey', expect.any(Object));
   });
 

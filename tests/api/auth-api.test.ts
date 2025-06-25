@@ -389,7 +389,7 @@ describe('AuthApiClient', () => {
       const result = await apiClient.getPasskeyChallenge('test@example.com');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/auth/passkey/challenge',
+        'https://api.test.com/auth/webauthn/challenge',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ email: 'test@example.com' })

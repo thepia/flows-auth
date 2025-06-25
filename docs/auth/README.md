@@ -174,7 +174,7 @@ The library integrates with these API endpoints:
 - **`POST /auth/signin`** - Initiate authentication
 - **`POST /auth/signin/passkey`** - Complete passkey authentication
 - **`POST /auth/signin/magic-link`** - Request magic link
-- **`POST /auth/passkey/challenge`** - Get WebAuthn challenge
+- **`POST /auth/webauthn/challenge`** - Get WebAuthn challenge
 - **`POST /auth/refresh`** - Refresh access token
 - **`POST /auth/logout`** - Sign out user
 

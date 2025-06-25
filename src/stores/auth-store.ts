@@ -13,12 +13,9 @@ import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportAp
 import { AuthStateMachine } from './auth-state-machine';
 import type {
   AuthConfig,
-  AuthState,
   AuthStore,
-  User,
   AuthError,
   SignInResponse,
-  PasskeyCredential,
   AuthMethod,
   AuthEventType,
   AuthEventData,
@@ -221,7 +218,7 @@ function createAuthStore(config: AuthConfig) {
    */
   async function signInWithPasskey(email: string, conditional = false): Promise<SignInResponse> {
     const startTime = Date.now();
-    
+
     if (!isWebAuthnSupported()) {
       throw new Error('Passkeys are not supported on this device');
     }
@@ -240,11 +237,11 @@ function createAuthStore(config: AuthConfig) {
     try {
       // Get challenge from server
       const challenge = await api.getPasskeyChallenge(email);
-      
+
       // Authenticate with passkey
       const credential = await authenticateWithPasskey(challenge, conditional);
       const serializedCredential = serializeCredential(credential);
-      
+
       // Complete authentication
       const response = await api.signInWithPasskey({
         email,
@@ -265,7 +262,7 @@ function createAuthStore(config: AuthConfig) {
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'passkey' });
         emit('passkey_used', { user: response.user });
-        
+
         reportAuthState({
           event: 'webauthn-success',
           email,
@@ -282,8 +279,7 @@ function createAuthStore(config: AuthConfig) {
         code: error.code || 'passkey_failed',
         message: error.message || 'Passkey authentication failed'
       };
-      
-      reportWebAuthnError('authentication', error, { conditional, email });
+
       reportAuthState({
         event: 'webauthn-failure',
         email,
@@ -292,7 +288,7 @@ function createAuthStore(config: AuthConfig) {
         duration: Date.now() - startTime,
         context: { conditional }
       });
-      
+
       if (!conditional) {
         updateState({ state: 'error', error: authError });
         emit('sign_in_error', { error: authError, method: 'passkey' });
@@ -479,29 +475,115 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
-   * Start conditional authentication - mirrors React conditional auth
+   * Check if user exists and has WebAuthn credentials
+   */
+  async function checkUser(email: string) {
+    try {
+      const result = await api.checkEmail(email);
+      return {
+        exists: result.exists,
+        hasWebAuthn: result.hasPasskey,
+        userId: undefined // API client doesn't return userId yet
+      };
+    } catch (error) {
+      console.error('Error checking user:', error);
+      return { exists: false, hasWebAuthn: false };
+    }
+  }
+
+  /**
+   * Register new user
+   */
+  async function registerUser(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+  }): Promise<SignInResponse> {
+    const startTime = Date.now();
+
+    updateState({ state: 'loading', error: null });
+    emit('registration_started', { email: userData.email });
+
+    try {
+      reportAuthState({
+        event: 'registration-start',
+        email: userData.email,
+        context: { operation: 'registerUser' }
+      });
+
+      const response = await api.registerUser(userData);
+
+      if (response.step === 'success' && response.user && response.accessToken) {
+        saveTokens(response);
+        updateState({
+          state: 'authenticated',
+          user: response.user,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          error: null
+        });
+        scheduleTokenRefresh();
+        emit('registration_success', { user: response.user });
+
+        reportAuthState({
+          event: 'registration-success',
+          email: userData.email,
+          userId: response.user.id,
+          duration: Date.now() - startTime,
+          context: { operation: 'registerUser' }
+        });
+      }
+
+      return response;
+    } catch (error: any) {
+      const authError: AuthError = {
+        code: error.code || 'registration_failed',
+        message: error.message || 'User registration failed'
+      };
+
+      reportAuthState({
+        event: 'registration-failure',
+        email: userData.email,
+        error: authError.message,
+        duration: Date.now() - startTime,
+        context: { operation: 'registerUser' }
+      });
+
+      updateState({ state: 'error', error: authError });
+      emit('registration_error', { error: authError });
+      throw authError;
+    }
+  }
+
+  /**
+   * Start conditional authentication - mirrors thepia.com auth0Service implementation
    * This enables non-intrusive passkey discovery that won't show popups if no passkeys exist
+   * Uses proper conditional mediation with useBrowserAutofill for email field integration
    */
   async function startConditionalAuthentication(email: string): Promise<boolean> {
     const startTime = Date.now();
-    
+
     if (!email.trim() || !isWebAuthnSupported()) return false;
 
     try {
+      console.log('🔍 Starting conditional WebAuthn authentication for:', email);
+
       // Check if conditional mediation is supported
       if (!await isConditionalMediationSupported()) {
         console.log('⚠️ Conditional mediation not supported');
         return false;
       }
 
-      // Check if user has passkeys first
-      const emailCheck = await api.checkEmail(email);
-      if (!emailCheck.exists || !emailCheck.hasPasskey) {
-        return false;
-      }
+      console.log('✅ Conditional mediation supported, getting challenge...');
 
-      console.log('🔄 Starting conditional WebAuthn authentication...');
-      
+      // Get challenge from server - this will fail silently if user doesn't exist or has no passkeys
+      const challenge = await api.getPasskeyChallenge(email);
+
+      console.log('🔄 Starting conditional authentication with useBrowserAutofill...');
+
       reportAuthState({
         event: 'webauthn-start',
         email,
@@ -509,26 +591,55 @@ function createAuthStore(config: AuthConfig) {
         context: { conditional: true, operation: 'startConditionalAuthentication' }
       });
 
-      // Attempt conditional authentication
-      const result = await signInWithPasskey(email, true);
-      
-      if (result.step === 'success') {
-        console.log('✅ Conditional authentication successful');
+      // Use conditional authentication with proper browser autofill integration
+      // This is the key difference - we need to use the authenticateWithPasskey function
+      // with conditional=true which sets mediation: 'conditional'
+      const credential = await authenticateWithPasskey(challenge, true);
+      const serializedCredential = serializeCredential(credential);
+
+      console.log('✅ Conditional authentication successful, verifying...');
+
+      // Complete authentication with server
+      const response = await api.signInWithPasskey({
+        email,
+        challengeId: challenge.challenge,
+        credential: serializedCredential
+      });
+
+      if (response.step === 'success' && response.user && response.accessToken) {
+        console.log('✅ Conditional WebAuthn authentication successful');
+
+        // Update auth state
+        saveTokens(response);
+        updateState({
+          state: 'authenticated',
+          user: response.user,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          error: null
+        });
+        scheduleTokenRefresh();
+        emit('sign_in_success', { user: response.user, method: 'passkey' });
+        emit('passkey_used', { user: response.user });
+
         reportAuthState({
           event: 'login-success',
           email,
-          userId: result.user?.id,
+          userId: response.user.id,
           authMethod: 'passkey',
           duration: Date.now() - startTime,
           context: { conditional: true, operation: 'startConditionalAuthentication' }
         });
+
         return true;
       }
 
       return false;
-    } catch (error) {
-      // Conditional auth should fail silently
-      console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
+    } catch (error: any) {
+      // Conditional auth should fail silently for most errors
+      console.log('⚠️ Conditional authentication failed (this is expected if no passkeys exist):', error.message);
+
       reportAuthState({
         event: 'login-failure',
         email,
@@ -537,6 +648,7 @@ function createAuthStore(config: AuthConfig) {
         duration: Date.now() - startTime,
         context: { conditional: true, operation: 'startConditionalAuthentication' }
       });
+
       return false;
     }
   }
@@ -619,6 +731,8 @@ function createAuthStore(config: AuthConfig) {
     reset,
     initialize,
     startConditionalAuthentication,
+    checkUser,
+    registerUser,
     on,
     api,
     

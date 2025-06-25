@@ -7,7 +7,11 @@ import dts from 'vite-plugin-dts';
 export default defineConfig({
   plugins: [
     svelte({
-      preprocess: sveltePreprocess()
+      preprocess: sveltePreprocess(),
+      compilerOptions: {
+        dev: false
+      },
+      emitCss: true
     }),
     dts({
       include: ['src/**/*.ts'],
@@ -22,16 +26,18 @@ export default defineConfig({
       formats: ['es', 'cjs']
     },
     rollupOptions: {
-      external: ['svelte', 'svelte/store'],
+      external: ['svelte', 'svelte/store', 'svelte/internal'],
       output: {
         globals: {
           svelte: 'Svelte',
-          'svelte/store': 'SvelteStore'
+          'svelte/store': 'SvelteStore',
+          'svelte/internal': 'SvelteInternal'
         }
       }
     },
     sourcemap: true,
-    target: 'es2020'
+    target: 'es2020',
+    minify: false
   },
   test: {
     globals: true,

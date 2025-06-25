@@ -65,75 +65,109 @@ export const DEV_BRANDINGS: DevBranding[] = [
   }
 ];
 
+/**
+ * Auto-detect API server with fallback to production
+ * Implements the same pattern as thepia.com
+ */
+async function detectApiServer(): Promise<string> {
+  // 1. Check for explicit environment variable (highest priority)
+  if (typeof window !== 'undefined' && window.location.search.includes('api=local')) {
+    return 'https://dev.thepia.com:8443';
+  }
+
+  if (typeof window !== 'undefined' && window.location.search.includes('api=production')) {
+    return 'https://api.thepia.com';
+  }
+
+  // 2. Auto-detection: Check if local API server is available
+  try {
+    const response = await fetch('https://dev.thepia.com:8443/health', {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000) // 3 second timeout
+    });
+
+    if (response.ok) {
+      console.log('✅ Local API server detected and responding');
+      return 'https://dev.thepia.com:8443';
+    }
+  } catch (error) {
+    console.log('⚠️ Local API server not detected, falling back to production');
+  }
+
+  // 3. Production fallback (default)
+  console.log('🌐 Using production API server');
+  return 'https://api.thepia.com';
+}
+
 export const DEV_SCENARIOS: DevScenario[] = [
   {
     id: 'default-full',
-    name: 'Default - Passwordless Auth',
-    description: 'Passwordless authentication with passkeys and magic links',
+    name: 'Auto-Detect API - Passwordless Auth',
+    description: 'Auto-detects local API server, falls back to production',
     branding: DEV_BRANDINGS[0],
     config: {
       enablePasskeys: true,
-      enableMagicLinks: true, 
+      enableMagicLinks: true,
       enablePasswordLogin: false,
-      apiBaseUrl: 'https://dev.thepia.com:8443',
+      apiBaseUrl: 'auto-detect', // Will be replaced by detectApiServer()
       clientId: 'flows-app-demo',
       errorReporting: {
         enabled: true,
-        endpoint: 'https://dev.thepia.com:8443/api/error-reports',
+        endpoint: 'auto-detect', // Will be replaced by detectApiServer()
         debug: true
       }
     }
   },
   {
     id: 'passkey-only',
-    name: 'Passkey Only',
-    description: 'WebAuthn/passkey authentication only',
+    name: 'Auto-Detect API - Passkey Only',
+    description: 'WebAuthn/passkey authentication only with auto-detected API',
     branding: DEV_BRANDINGS[1],
     config: {
       enablePasskeys: true,
       enableMagicLinks: false,
       enablePasswordLogin: false,
-      apiBaseUrl: 'https://dev.thepia.com:8443',
+      apiBaseUrl: 'auto-detect',
       clientId: 'flows-app-demo',
       errorReporting: {
         enabled: true,
-        endpoint: 'https://dev.thepia.com:8443/api/error-reports',
+        endpoint: 'auto-detect',
         debug: true
       }
     }
   },
   {
     id: 'magic-only',
-    name: 'Magic Link Only',
-    description: 'Email-based passwordless authentication',
+    name: 'Auto-Detect API - Magic Link Only',
+    description: 'Email-based passwordless authentication with auto-detected API',
     branding: DEV_BRANDINGS[2],
     config: {
       enablePasskeys: false,
       enableMagicLinks: true,
       enablePasswordLogin: false,
-      apiBaseUrl: 'https://dev.thepia.com:8443',
+      apiBaseUrl: 'auto-detect',
       clientId: 'flows-app-demo',
       errorReporting: {
         enabled: true,
-        endpoint: 'https://dev.thepia.com:8443/api/error-reports',
+        endpoint: 'auto-detect',
         debug: true
       }
     }
   },
   {
     id: 'enterprise',
-    name: 'Enterprise Setup',
-    description: 'Professional passwordless authentication',
+    name: 'Auto-Detect API - Enterprise Setup',
+    description: 'Professional passwordless authentication with auto-detected API',
     branding: DEV_BRANDINGS[3],
     config: {
       enablePasskeys: true,
       enableMagicLinks: true,
       enablePasswordLogin: false,
-      apiBaseUrl: 'https://dev.thepia.com:8443',
+      apiBaseUrl: 'auto-detect',
       clientId: 'flows-app-demo-enterprise',
       errorReporting: {
         enabled: true,
-        endpoint: 'https://dev.thepia.com:8443/api/error-reports',
+        endpoint: 'auto-detect',
         debug: true
       }
     }
@@ -141,10 +175,38 @@ export const DEV_SCENARIOS: DevScenario[] = [
 ];
 
 class DevScenarioManager {
-  private currentScenario: DevScenario = DEV_SCENARIOS[0];
+  private currentScenario: DevScenario = DEV_SCENARIOS[0]; // Default to first scenario (auto-detect)
   private listeners: Array<(scenario: DevScenario) => void> = [];
+  private resolvedApiUrl: string | null = null;
 
-  getCurrentScenario(): DevScenario {
+  async getCurrentScenario(): Promise<DevScenario> {
+    // If scenario uses auto-detect, resolve the API URL
+    if (this.currentScenario.config.apiBaseUrl === 'auto-detect') {
+      if (!this.resolvedApiUrl) {
+        this.resolvedApiUrl = await detectApiServer();
+      }
+
+      // Return scenario with resolved API URLs
+      return {
+        ...this.currentScenario,
+        config: {
+          ...this.currentScenario.config,
+          apiBaseUrl: this.resolvedApiUrl,
+          errorReporting: {
+            ...this.currentScenario.config.errorReporting,
+            endpoint: this.currentScenario.config.errorReporting?.endpoint === 'auto-detect'
+              ? `${this.resolvedApiUrl}/api/error-reports`
+              : this.currentScenario.config.errorReporting?.endpoint
+          }
+        }
+      };
+    }
+
+    return this.currentScenario;
+  }
+
+  // Synchronous version for compatibility
+  getCurrentScenarioSync(): DevScenario {
     return this.currentScenario;
   }
 
@@ -152,6 +214,7 @@ class DevScenarioManager {
     const scenario = DEV_SCENARIOS.find(s => s.id === scenarioId);
     if (scenario) {
       this.currentScenario = scenario;
+      this.resolvedApiUrl = null; // Clear cached API URL when switching scenarios
       this.applyBranding(scenario.branding);
       this.notifyListeners();
     }

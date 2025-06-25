@@ -6,24 +6,34 @@
 import { vi } from 'vitest';
 import type { AuthConfig } from '../src/types';
 
-// Determine API URL based on environment
+// Determine API URL based on environment with automatic fallback
 const getApiUrl = () => {
   // Check for explicit TEST_API_URL
   if (process.env.TEST_API_URL) {
     return process.env.TEST_API_URL;
   }
-  
+
   // Check for TEST_API_ENV flag
-  const apiEnv = process.env.TEST_API_ENV || 'local';
-  
+  const apiEnv = process.env.TEST_API_ENV || 'auto';
+
   switch (apiEnv) {
     case 'local':
-      return 'https://localhost:8443';
+      return 'https://dev.thepia.com:8443';
     case 'public':
       return 'https://api.thepia.com';
+    case 'auto':
     default:
-      // Default to local for safety
-      return 'https://localhost:8443';
+      // Auto-detect: try local first, fallback to public
+      // In CI or when local server isn't running, use public API
+      const isCI = process.env.CI === 'true';
+      const hasLocalServer = process.env.CI_API_SERVER_RUNNING === 'true';
+
+      if (isCI && !hasLocalServer) {
+        return 'https://api.thepia.com';
+      }
+
+      // Default to local for development
+      return 'https://dev.thepia.com:8443';
   }
 };
 
@@ -165,7 +175,7 @@ export class WebAuthnMocker {
 export class APIMocker {
   static mockEmailCheck(email: string, response: { exists: boolean; hasPasskey: boolean; hasPassword?: boolean }) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
-      if (url.toString().includes('/auth/check-email')) {
+      if (url.toString().includes('/auth/check-user')) {
         const body = JSON.parse(options?.body as string || '{}');
         if (body.email === email) {
           return Promise.resolve({
@@ -185,7 +195,7 @@ export class APIMocker {
 
   static mockPasskeyChallenge(email: string, challenge = 'test-challenge') {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
-      if (url.toString().includes('/auth/passkey/challenge')) {
+      if (url.toString().includes('/auth/webauthn/challenge')) {
         const body = JSON.parse(options?.body as string || '{}');
         if (body.email === email) {
           return Promise.resolve({

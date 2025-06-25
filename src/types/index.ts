@@ -18,13 +18,31 @@ export interface User {
 // Authentication states (legacy - kept for backward compatibility)
 export type AuthState = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
+// Enhanced authentication states with email verification
+export type EnhancedAuthState =
+  | 'unauthenticated'
+  | 'authenticated-unconfirmed'  // Has passkey but email not verified
+  | 'authenticated-confirmed'    // Full access after email verification
+  | 'loading'
+  | 'error';
+
 export type AuthMethod = 'passkey' | 'password' | 'magic-link' | 'social';
 
 // Sign-in flow states (legacy - kept for backward compatibility)
 export type SignInStep = 'email' | 'passkey' | 'password' | 'magic-link' | 'loading' | 'success' | 'error';
 
+// Registration flow states
+export type RegistrationStep =
+  | 'email-entry'
+  | 'terms-of-service'
+  | 'webauthn-register'
+  | 'registration-success'
+  | 'email-verification-required'
+  | 'email-verification-complete'
+  | 'error';
+
 // State Machine Types - Based on documented authentication state machine
-export type AuthMachineState = 
+export type AuthMachineState =
   | 'checkingSession'
   | 'sessionValid'
   | 'sessionInvalid'
@@ -37,6 +55,9 @@ export type AuthMachineState =
   | 'directWebAuthnAuth'
   | 'passkeyRegistration'
   | 'newUserRegistration'
+  | 'webauthnRegister'           // Registration with passkey
+  | 'authenticated-unconfirmed'  // Logged in but email not verified
+  | 'authenticated-confirmed'    // Full access after email verification
   | 'biometricPrompt'
   | 'auth0WebAuthnVerify'
   | 'passkeyError'
@@ -94,6 +115,15 @@ export interface AuthConfig {
   socialProviders?: SocialProvider[];
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;
+  auth0?: Auth0Config;
+}
+
+// Auth0 configuration
+export interface Auth0Config {
+  domain: string;
+  clientId: string;
+  audience?: string;
+  redirectUri?: string;
 }
 
 // Error reporting configuration
@@ -169,6 +199,38 @@ export interface LogoutRequest {
   refreshToken?: string;
 }
 
+// Registration types
+export interface RegistrationRequest {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
+  marketingConsent?: boolean;
+}
+
+export interface RegistrationResponse {
+  user?: User;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  step: RegistrationStep;
+  emailVerificationRequired?: boolean;
+  welcomeEmailSent?: boolean;
+}
+
+// Email verification types
+export interface EmailVerificationRequest {
+  email: string;
+  token?: string;
+}
+
+export interface EmailVerificationResponse {
+  success: boolean;
+  message?: string;
+  user?: User;
+}
+
 // WebAuthn types
 export interface PasskeyChallenge {
   challenge: string;
@@ -209,16 +271,25 @@ export interface AuthEventData {
   error?: AuthError;
   method?: AuthMethod;
   step?: SignInStep;
+  email?: string;
 }
 
-export type AuthEventType = 
+export type AuthEventType =
   | 'sign_in_started'
   | 'sign_in_success'
   | 'sign_in_error'
   | 'sign_out'
   | 'token_refreshed'
   | 'passkey_created'
-  | 'passkey_used';
+  | 'passkey_used'
+  | 'registration_started'
+  | 'registration_success'
+  | 'registration_error'
+  | 'email_verification_sent'
+  | 'email_verification_success'
+  | 'email_verification_error'
+  | 'terms_accepted'
+  | 'welcome_email_sent';
 
 // Component props
 export interface SignInFormProps {
@@ -267,6 +338,46 @@ export interface MagicLinkStepProps {
   loading?: boolean;
   error?: string;
   branding?: AuthBranding;
+}
+
+// Registration component props
+export interface RegistrationFormProps {
+  config: AuthConfig;
+  onSuccess?: (data: AuthEventData) => void;
+  onError?: (error: AuthError) => void;
+  onStateChange?: (state: RegistrationStep) => void;
+  className?: string;
+  showLogo?: boolean;
+  compact?: boolean;
+  initialEmail?: string;
+}
+
+export interface TermsOfServiceProps {
+  onAccept: (accepted: { terms: boolean; privacy: boolean; marketing?: boolean }) => void;
+  onBack?: () => void;
+  loading?: boolean;
+  error?: string;
+  branding?: AuthBranding;
+  termsUrl?: string;
+  privacyUrl?: string;
+  showMarketingConsent?: boolean;
+}
+
+export interface EmailVerificationBannerProps {
+  email: string;
+  onVerify?: () => void;
+  onDismiss?: () => void;
+  onResend?: () => void;
+  className?: string;
+}
+
+export interface EmailVerificationPromptProps {
+  email: string;
+  featureName?: string;
+  onVerify?: () => void;
+  onResend?: () => void;
+  onDismiss?: () => void;
+  className?: string;
 }
 
 // Store state

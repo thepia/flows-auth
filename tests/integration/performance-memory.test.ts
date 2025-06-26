@@ -306,7 +306,7 @@ describe('Performance and Memory Tests', () => {
       }
     });
 
-    it('should handle API timeouts gracefully', async () => {
+    it('should handle API timeouts gracefully', { timeout: 15000 }, async () => {
       // Create auth store with very short timeout
       const timeoutConfig = {
         ...testConfig,

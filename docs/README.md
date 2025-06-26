@@ -40,8 +40,10 @@ The Thepia authentication system implements a **passwordless-only, 100% cookie-f
 
 ### **🧪 Testing & Development**
 
+- **[Testing Strategy](./testing/README.md)** - 🚨 **CRITICAL** - Testing policies and no-mocking requirements
+- **[API Contract Testing Policy](./testing/API_CONTRACT_TESTING_POLICY.md)** - 📋 **FORMAL POLICY** - Integration testing requirements
+- **[Implementation Checklist](./testing/IMPLEMENTATION_CHECKLIST.md)** - ✅ **TODO LIST** - Action items for API contract alignment
 - **[API Server Architecture](./development/api-server-architecture.md)** - Understanding the API server structure
-- **[Testing Guide](./testing/README.md)** - Testing strategies and examples
 - **[Development Setup](./development/README.md)** - Local development environment
 - **[Troubleshooting](./troubleshooting/README.md)** - Common issues and solutions
 

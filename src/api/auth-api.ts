@@ -53,7 +53,7 @@ export class AuthApiClient {
       headers
     });
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       const error = await this.handleErrorResponse(response);
       
       // Report API error

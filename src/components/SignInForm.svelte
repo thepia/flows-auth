@@ -30,19 +30,16 @@
   let email = initialEmail;
   let loading = false;
   let error: string | null = null;
-  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' | 'magic_link' | 'registration-terms' | 'registration-passkey' | 'registration-success' = 'combined-auth';
+  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' | 'magic_link' | 'registration-terms' | 'registration-success' = 'combined-auth';
   let supportsWebAuthn = false;
   let conditionalAuthActive = false;
   let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
   let userExists = false;
   let hasPasskeys = false;
 
-  // Registration state
-  let firstName = '';
-  let lastName = '';
+  // Registration state - GDPR compliant (no name fields)
   let acceptedTerms = false;
   let acceptedPrivacy = false;
-  let marketingConsent = false;
 
   // WebAuthn state
   let platformAuthenticatorAvailable = false;
@@ -144,11 +141,11 @@
 
     try {
       // Check what auth methods are available for this email
-      const emailCheck = await authStore.api.checkEmail(email);
-      userExists = emailCheck.exists;
-      hasPasskeys = emailCheck.hasPasskey;
+      const userCheck = await authStore.checkUser(email);
+      userExists = userCheck.exists;
+      hasPasskeys = userCheck.hasWebAuthn;
       
-      if (emailCheck.hasPasskey && supportsWebAuthn) {
+      if (userCheck.hasWebAuthn && supportsWebAuthn) {
         // Try passkey authentication first
         try {
           await handlePasskeyAuth(false); // Not silent mode
@@ -160,11 +157,11 @@
               await handleMagicLinkAuth();
             } catch (magicLinkError) {
               console.warn('Magic link failed:', magicLinkError);
-              error = 'Authentication failed. Please try again.';
+              error = getUserFriendlyErrorMessage(magicLinkError);
               loading = false;
             }
           } else {
-            error = 'Authentication failed. Please try again.';
+            error = getUserFriendlyErrorMessage(passkeyError);
             loading = false;
           }
         }
@@ -188,7 +185,20 @@
       }
     } catch (err: any) {
       loading = false;
-      error = err.message || 'Failed to check email';
+
+      // Check if this is a "user not found" or "no passkey" error
+      const message = err.message || '';
+      if (message.includes('/auth/signin/magic-link') ||
+          message.includes('not found') ||
+          message.includes('404')) {
+        // User doesn't exist or has no passkey - transition to registration
+        console.log('🔄 User not found or no passkey available - transitioning to registration');
+        step = 'registration-terms';
+        error = null; // Clear error since we're handling it
+      } else {
+        // Other errors - show user-friendly message
+        error = getUserFriendlyErrorMessage(err);
+      }
     }
   }
 
@@ -198,7 +208,7 @@
   async function handlePasskeyAuth(silent = false) {
     try {
       const result = await authStore.signInWithPasskey(email);
-      
+
       if (result.step === 'success' && result.user) {
         loading = false;
         dispatch('success', {
@@ -209,10 +219,46 @@
     } catch (err: any) {
       if (!silent) {
         loading = false;
-        error = err.message || 'Passkey authentication failed';
+        // Provide user-friendly error messages instead of technical details
+        error = getUserFriendlyErrorMessage(err);
       }
       throw err; // Re-throw for caller to handle
     }
+  }
+
+  // Convert technical errors to user-friendly messages
+  function getUserFriendlyErrorMessage(err: any): string {
+    const message = err.message || '';
+    const status = err.status || 0;
+
+    // Handle specific API endpoint errors
+    if (message.includes('/auth/signin/magic-link') || message.includes('not found')) {
+      return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
+    }
+
+    if (message.includes('/auth/webauthn/challenge') || status === 404) {
+      return 'Authentication service temporarily unavailable. Please try again in a moment.';
+    }
+
+    // Handle WebAuthn-specific errors
+    if (message.includes('NotAllowedError') || message.includes('cancelled')) {
+      return 'Authentication was cancelled. Please try again.';
+    }
+
+    if (message.includes('NotSupportedError')) {
+      return 'Passkey authentication is not supported on this device.';
+    }
+
+    if (message.includes('SecurityError')) {
+      return 'Security error occurred. Please ensure you\'re on a secure connection.';
+    }
+
+    if (message.includes('InvalidStateError')) {
+      return 'No passkey available on this device. Please register a new passkey.';
+    }
+
+    // Generic fallback
+    return 'Authentication failed. Please try again or use a different sign-in method.';
   }
 
   // Handle magic link authentication
@@ -246,8 +292,8 @@
     }
 
     error = null;
-    step = 'registration-passkey';
-    dispatch('stepChange', { step });
+    // Proceed directly to registration since we have ToS acceptance
+    handleRegistration();
   }
 
   // Handle registration with passkey
@@ -263,11 +309,8 @@
     try {
       const registrationData = {
         email,
-        firstName: firstName.trim() || undefined,
-        lastName: lastName.trim() || undefined,
         acceptedTerms,
-        acceptedPrivacy,
-        marketingConsent
+        acceptedPrivacy
       };
 
       // Register user with passkey
@@ -298,9 +341,6 @@
       case 'registration-terms':
         step = 'combined-auth';
         break;
-      case 'registration-passkey':
-        step = 'registration-terms';
-        break;
       default:
         step = 'combined-auth';
     }
@@ -313,11 +353,8 @@
     error = null;
     loading = false;
     // Reset registration state
-    firstName = '';
-    lastName = '';
     acceptedTerms = false;
     acceptedPrivacy = false;
-    marketingConsent = false;
   }
 </script>
 
@@ -453,16 +490,7 @@
               </label>
             </div>
 
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  bind:checked={marketingConsent}
-                />
-                <span class="checkmark"></span>
-                I would like to receive product updates and marketing communications (optional)
-              </label>
-            </div>
+
           </div>
 
           {#if error}
@@ -472,65 +500,8 @@
           <button
             type="submit"
             class="continue-button"
-            disabled={!acceptedTerms || !acceptedPrivacy}
-          >
-            Accept & Continue
-          </button>
-        </form>
-      </div>
-
-    {:else if step === 'registration-passkey'}
-      <!-- Registration Passkey Setup Step -->
-      <div class="registration-passkey-step">
-        <div class="step-header">
-          <button type="button" class="back-button" on:click={handleBack}>
-            ← Back
-          </button>
-          <h2 class="step-title">Create Account with Passkey</h2>
-          <p class="step-description">
-            Create a new account for <strong>{email}</strong> using secure passkey authentication
-          </p>
-        </div>
-
-        <form on:submit|preventDefault={handleRegistration}>
-          <div class="optional-fields">
-            <div class="input-row">
-              <div class="input-group">
-                <label for="firstName" class="input-label">First Name (optional)</label>
-                <input
-                  bind:value={firstName}
-                  id="firstName"
-                  type="text"
-                  class="name-input"
-                  placeholder="John"
-                  autocomplete="given-name"
-                  disabled={loading}
-                />
-              </div>
-              <div class="input-group">
-                <label for="lastName" class="input-label">Last Name (optional)</label>
-                <input
-                  bind:value={lastName}
-                  id="lastName"
-                  type="text"
-                  class="name-input"
-                  placeholder="Doe"
-                  autocomplete="family-name"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-          </div>
-
-          {#if error}
-            <div class="error-message">{error}</div>
-          {/if}
-
-          <button
-            type="submit"
-            class="register-button"
             class:loading
-            disabled={loading}
+            disabled={!acceptedTerms || !acceptedPrivacy || loading}
           >
             {#if loading}
               <span class="loading-spinner"></span>
@@ -549,6 +520,8 @@
           {/if}
         </form>
       </div>
+
+
 
     {:else if step === 'registration-success'}
       <!-- Registration Success Step -->

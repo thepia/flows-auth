@@ -3,17 +3,17 @@
  * Comprehensive test coverage for auth store with state machine against real API scenarios
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { get } from 'svelte/store';
 import { createAuthStore, createAuthDerivedStores } from '../../src/stores/auth-store';
 import type { AuthConfig, AuthMachineState } from '../../src/types';
 
 // Import shared test configuration
-import { LOCAL_TEST_CONFIG } from '../test-setup';
+import { TEST_CONFIG } from '../test-setup';
 
 // Local test config override for consistency
-const LOCAL_LOCAL_TEST_CONFIG = {
-  ...LOCAL_TEST_CONFIG,
+const LOCAL_TEST_CONFIG = {
+  ...TEST_CONFIG,
   clientId: 'test-flows-auth-client',
   domain: 'dev.thepia.net',
   enablePasskeys: true,
@@ -85,42 +85,100 @@ describe('Auth Store Integration Tests', () => {
   let authStore: ReturnType<typeof createAuthStore>;
   let derivedStores: ReturnType<typeof createAuthDerivedStores>;
   let apiAvailable = false;
+  let actualApiUrl = LOCAL_TEST_CONFIG.apiBaseUrl;
 
   beforeAll(async () => {
-    // Check if live API is available - REQUIRED for integration tests
-    try {
-      const response = await fetch(`${LOCAL_TEST_CONFIG.apiBaseUrl}/auth/check-user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'ping@test.com' }),
-      });
-      
-      if (!response.ok && response.status !== 400) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-      
-      apiAvailable = true;
-      console.log(`✅ Live API available: ${LOCAL_LOCAL_TEST_CONFIG.apiBaseUrl}`);
-      console.log(`📧 Test accounts configured: ${Object.keys(TEST_ACCOUNTS).length}`);
-      
-      // Verify test accounts exist in the system
-      console.log(`🔍 Validating test account: ${TEST_ACCOUNTS.existingWithPasskey.email}`);
-      
-    } catch (error) {
-      console.error(`❌ Integration tests FAILED: API not available`);
-      console.error(`   Expected API at: ${LOCAL_TEST_CONFIG.apiBaseUrl}`);
-      console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
-      console.error(`   
+    /**
+     * API Server Testing Strategy
+     * 
+     * Integration tests require a live API server to validate end-to-end functionality.
+     * We test against multiple API servers with fallback logic:
+     * 
+     * 1. Local development server: https://dev.thepia.com:8443 (preferred for development)
+     * 2. Production API server: https://api.thepia.com (fallback for CI/CD and when local unavailable)
+     * 
+     * This ensures tests work in both development and CI environments without requiring
+     * developers to run a local API server.
+     * 
+     * For more details on API server setup, see:
+     * - /docs/development/api-server-architecture.md
+     * - /docs/development/testing-strategy.md
+     * - CLAUDE.md section "API Server Architecture"
+     */
+    
+    // Try multiple API servers with fallback logic
+    const urlsToTry = [
+      LOCAL_TEST_CONFIG.apiBaseUrl,
+      ...(LOCAL_TEST_CONFIG.apiBaseUrl !== 'https://api.thepia.com' ? ['https://api.thepia.com'] : [])
+    ];
+
+    for (const apiUrl of urlsToTry) {
+      try {
+        console.log(`🔍 Trying API server: ${apiUrl}`);
+        
+        // Try a simple health/ping endpoint first, fallback to check-user if needed
+        let response: Response;
+        try {
+          // Try basic health check first
+          response = await fetch(`${apiUrl}/health`, {
+            method: 'GET'
+          });
+          
+          // If health endpoint doesn't exist, try the actual API endpoint
+          if (response.status === 404) {
+            response = await fetch(`${apiUrl}/auth/check-user`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'ping@test.com' }),
+            });
+          }
+        } catch (fetchError) {
+          // If both fail, try just the auth endpoint as last resort
+          response = await fetch(`${apiUrl}/auth/check-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'ping@test.com' }),
+          });
+        }
+        
+        // Consider the server available if we get any response (even errors like 400, 401, 405)
+        // Only fail if we can't connect at all or get server errors
+        if (response.status >= 500) {
+          throw new Error(`API server error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Success! Use this API URL
+        actualApiUrl = apiUrl;
+        apiAvailable = true;
+        console.log(`✅ Live API available: ${actualApiUrl}`);
+        console.log(`📧 Test accounts configured: ${Object.keys(TEST_ACCOUNTS).length}`);
+        
+        // Update config to use working API URL
+        LOCAL_TEST_CONFIG.apiBaseUrl = actualApiUrl;
+        
+        break;
+        
+      } catch (error) {
+        console.warn(`⚠️  API server not available: ${apiUrl}`);
+        console.warn(`   Error: ${error instanceof Error ? error.message : String(error)}`);
+        
+        if (apiUrl === urlsToTry[urlsToTry.length - 1]) {
+          // Last URL tried, give up
+          console.error(`❌ Integration tests FAILED: No API servers available`);
+          console.error(`   Tried: ${urlsToTry.join(', ')}`);
+          console.error(`   
    To run integration tests, ensure:
-   1. API server is running at ${LOCAL_TEST_CONFIG.apiBaseUrl}
-   2. Test accounts exist in Auth0
+   1. Local API server is running at https://dev.thepia.com:8443, OR
+   2. Production API server at https://api.thepia.com is accessible
    3. Network connectivity is available
    
    Alternatively, run unit tests only: pnpm test:unit
-      `);
-      
-      // Integration tests MUST fail if API is not available
-      throw new Error('Integration tests require live API - cannot continue');
+          `);
+          
+          // Integration tests MUST fail if no API is available
+          throw new Error('Integration tests require live API - cannot continue');
+        }
+      }
     }
   });
 

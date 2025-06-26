@@ -6,14 +6,42 @@
 import { vi } from 'vitest';
 import type { AuthConfig } from '../src/types';
 
-// Determine API URL based on environment with automatic fallback
+/**
+ * API Server Selection Strategy for Testing
+ * =========================================
+ * 
+ * This function determines which API server to use for integration tests.
+ * The strategy prioritizes developer experience while ensuring CI reliability.
+ * 
+ * API Server Options:
+ * ------------------
+ * 1. LOCAL DEV SERVER: https://dev.thepia.com:8443
+ *    - Preferred for development (fastest feedback)
+ *    - Requires thepia.com repo running locally
+ *    - Full feature parity with production
+ * 
+ * 2. PRODUCTION API: https://api.thepia.com
+ *    - Fallback when local unavailable
+ *    - Used automatically in CI environments
+ *    - Enables testing without local infrastructure
+ * 
+ * Environment Variables:
+ * ---------------------
+ * - TEST_API_URL: Explicit override (highest priority)
+ * - TEST_API_ENV: 'local' | 'public' | 'auto' (manual selection)
+ * - CI: Auto-detected CI environment (triggers production fallback)
+ * - CI_API_SERVER_RUNNING: Manual CI flag if local server available
+ * 
+ * See: /CLAUDE.md "API Server Architecture" section
+ * See: /docs/development/testing-strategy.md
+ */
 const getApiUrl = () => {
-  // Check for explicit TEST_API_URL
+  // Check for explicit TEST_API_URL override
   if (process.env.TEST_API_URL) {
     return process.env.TEST_API_URL;
   }
 
-  // Check for TEST_API_ENV flag
+  // Check for manual TEST_API_ENV selection
   const apiEnv = process.env.TEST_API_ENV || 'auto';
 
   switch (apiEnv) {
@@ -23,8 +51,7 @@ const getApiUrl = () => {
       return 'https://api.thepia.com';
     case 'auto':
     default:
-      // Auto-detect: try local first, fallback to public
-      // In CI or when local server isn't running, use public API
+      // Auto-detect: prefer local, fallback to production in CI
       const isCI = process.env.CI === 'true';
       const hasLocalServer = process.env.CI_API_SERVER_RUNNING === 'true';
 
@@ -32,7 +59,7 @@ const getApiUrl = () => {
         return 'https://api.thepia.com';
       }
 
-      // Default to local for development
+      // Default to local for development environment
       return 'https://dev.thepia.com:8443';
   }
 };
@@ -47,8 +74,8 @@ export const TEST_CONFIG: AuthConfig = {
   enablePasswordLogin: false, // As per requirements
   enableSocialLogin: false,
   errorReporting: {
-    enabled: true,
-    debug: true,
+    enabled: false, // Disable error reporting in tests to avoid fetch issues
+    debug: false,
     endpoint: process.env.ERROR_REPORTING_ENDPOINT
   },
   branding: {

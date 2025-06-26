@@ -104,11 +104,16 @@ class ErrorReporter {
       headers['Authorization'] = `Bearer ${this.config.apiKey}`;
     }
 
-    const response = await fetch(this.config.endpoint!, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
+    let response: Response;
+    try {
+      response = await fetch(this.config.endpoint!, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

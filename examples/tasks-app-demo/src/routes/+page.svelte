@@ -31,17 +31,40 @@
 			console.error('Failed to test error reporting:', error);
 		}
 	}
-	
+
+	// Determine API base URL at runtime
+	const getApiBaseUrl = () => {
+		// Production API URL (hardcoded as requested)
+		const prodApiBaseUrl = 'https://api.thepia.com';
+
+		if (typeof window === 'undefined') return prodApiBaseUrl;
+
+		const hostname = window.location.hostname;
+		const isDev = hostname === 'localhost' ||
+					 hostname === '127.0.0.1' ||
+					 hostname.endsWith('.thepia.net');
+
+		// Development: Check for local API server, fallback to production
+		if (isDev) {
+			// TODO: Add health check for local API server (dev.thepia.com:8443)
+			// For now, always use production API for reliability
+			return prodApiBaseUrl;
+		}
+
+		// Production: Always use production API
+		return prodApiBaseUrl;
+	};
+
 	// Real authentication using flows-auth
 	async function initializeAuth() {
 		if (!browser) return;
-		
+
 		try {
 			isLoading = true;
 			const { createAuthStore } = await import('@thepia/flows-auth');
-			
+
 			authStore = createAuthStore({
-				apiBaseUrl: 'https://api.thepia.com',
+				apiBaseUrl: getApiBaseUrl(),
 				clientId: 'flows-auth-demo',
 				domain: 'thepia.net',
 				enablePasskeys: true,
@@ -183,7 +206,7 @@
 				<div class="auth-form-container">
 					<SignInForm
 						config={{
-							apiBaseUrl: 'https://dev.thepia.com:8443',
+							apiBaseUrl: getApiBaseUrl(), // Use same runtime detection
 							clientId: 'flows-auth-demo',
 							domain: 'thepia.net',
 							enablePasskeys: true,

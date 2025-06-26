@@ -26,9 +26,24 @@ describe('AuthApiClient', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    // Create a base mock implementation
+    const baseMockImplementation = (url: string) => {
+      // Mock error reporting endpoint to prevent actual calls
+      if (url.includes('/dev/error-reports')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ success: true })
+        });
+      }
+      // Default to rejecting unknown URLs
+      return Promise.reject(new Error(`Unmocked URL: ${url}`));
+    };
+    
+    mockFetch = vi.fn(baseMockImplementation);
+    global.fetch = mockFetch;
+    
     apiClient = new AuthApiClient(mockConfig);
-    mockFetch = fetch as ReturnType<typeof vi.fn>;
-    mockFetch.mockClear();
     localStorage.clear();
   });
 
@@ -276,7 +291,7 @@ describe('AuthApiClient', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/auth/signin/passkey',
+        'https://api.test.com/auth/webauthn/verify',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({

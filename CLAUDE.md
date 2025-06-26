@@ -175,16 +175,43 @@ cd examples/tasks-app-demo && pnpm dev             # Task management demo
 
 ## Testing Strategy
 
+### ⚠️ CRITICAL TESTING PRINCIPLES
+
+#### Integration Tests - NO MOCKING POLICY
+- **NEVER mock networking in integration tests** - This defeats the purpose of integration testing
+- **NEVER mock fetch, HTTP requests, or API calls** - Integration tests must validate real network behavior
+- **NEVER mock external services** - Integration tests verify actual service integration
+- **ALL mocking in integration tests requires highest level of scrutiny and explicit sign-off**
+
+**📋 FORMAL POLICY**: See [API Contract Testing Policy](docs/testing/API_CONTRACT_TESTING_POLICY.md)
+
+#### API Contract Requirements
+- **thepia.com/docs/auth/** is the single source of truth for API behavior
+- **flows-auth integration tests** must reference specific API contract scenarios
+- **All API endpoints** must have documented contracts before integration testing
+- **Test scenarios** must be organized by expected API behavior
+
+#### Unit Tests vs Integration Tests
+- **Unit tests**: Mock everything external (fetch, APIs, services) - test logic in isolation  
+- **Integration tests**: Mock nothing - test real integrations against live services
+- **If you need to mock something in an integration test, it's probably not an integration test**
+
 ### Test Categories
-- **Unit tests**: Core functions, utilities, API clients
-- **Integration tests**: Framework compatibility, state machine flows
-- **WebAuthn tests**: Limited to Chromium virtual authenticator
-- **Environment tests**: Local vs production API server detection
+- **Unit tests**: Core functions, utilities, API clients - **HEAVY MOCKING**
+- **Integration tests**: End-to-end flows against real API servers - **NO MOCKING**
+- **WebAuthn tests**: Limited to Chromium virtual authenticator - **BROWSER API MOCKING ONLY**
+- **Environment tests**: Local vs production API server detection - **NO MOCKING**
 
 ### Running Specific Tests
 ```bash
-pnpm test:state-machine        # Auth state machine tests
-pnpm test:auth-store          # Auth store integration tests
+# Unit tests (with mocking)
+pnpm test:unit                 # Unit tests with isolated mocking
+pnpm test:state-machine        # Auth state machine unit tests
+pnpm test:api                  # API client unit tests
+
+# Integration tests (no mocking)
+pnpm test:integration          # Full integration tests against live APIs
+pnpm test:auth-store          # Auth store integration tests  
 pnpm test:integration:env     # API environment detection tests
 ```
 

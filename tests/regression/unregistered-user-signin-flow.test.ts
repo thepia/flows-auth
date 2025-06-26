@@ -6,13 +6,13 @@
  */
 
 import { beforeAll, describe, expect, test } from 'vitest';
-import { AuthAPI } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/api/auth-api.js';
 
 const LOCAL_API_URL = 'https://dev.thepia.com:8443';
 const PRODUCTION_API_URL = 'https://api.thepia.com';
 
 describe('Unregistered User Sign-In Flow', () => {
-  let apiClient: AuthAPI;
+  let apiClient: AuthApiClient;
   let apiServerRunning = false;
   let useLocalApi = false;
 
@@ -28,7 +28,15 @@ describe('Unregistered User Sign-In Flow', () => {
       if (response.ok) {
         apiServerRunning = true;
         useLocalApi = true;
-        apiClient = new AuthAPI(LOCAL_API_URL);
+        apiClient = new AuthApiClient({
+          apiBaseUrl: LOCAL_API_URL,
+          clientId: 'test-client',
+          domain: 'thepia.net',
+          enablePasskeys: true,
+          enableMagicLinks: true,
+          enableSocialLogin: false,
+          enablePasswordLogin: false
+        });
         console.log('✅ Using local API server for testing');
       }
     } catch (error) {
@@ -45,7 +53,15 @@ describe('Unregistered User Sign-In Flow', () => {
         if (response.ok) {
           apiServerRunning = true;
           useLocalApi = false;
-          apiClient = new AuthAPI(PRODUCTION_API_URL);
+          apiClient = new AuthApiClient({
+            apiBaseUrl: PRODUCTION_API_URL,
+            clientId: 'test-client',
+            domain: 'thepia.net',
+            enablePasskeys: true,
+            enableMagicLinks: true,
+            enableSocialLogin: false,
+            enablePasswordLogin: false
+          });
           console.log('✅ Using production API server for testing');
         }
       } catch (error) {

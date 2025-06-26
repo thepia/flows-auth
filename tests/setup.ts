@@ -1,9 +1,20 @@
 /**
  * Test setup configuration
  */
-import { afterEach, vi } from 'vitest';
+import { afterEach, vi, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/svelte';
 import '@testing-library/jest-dom';
+
+// Mock the error reporter module before it's imported anywhere else
+vi.mock('../src/utils/errorReporter', () => ({
+  initializeErrorReporter: vi.fn(),
+  updateErrorReporterConfig: vi.fn(),
+  reportAuthState: vi.fn(),
+  reportWebAuthnError: vi.fn(),
+  reportApiError: vi.fn(),
+  flushErrorReports: vi.fn(),
+  getErrorReportQueueSize: vi.fn(() => 0)
+}));
 
 // Mock browser APIs for testing
 const localStorageMock = {
@@ -74,6 +85,27 @@ Object.defineProperty(navigator, 'credentials', {
 Object.defineProperty(navigator, 'userAgent', {
   value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
   writable: true
+});
+
+// Setup before all tests  
+beforeAll(() => {
+  /**
+   * ⚠️ CRITICAL: NO MOCKING POLICY FOR INTEGRATION TESTS
+   * ====================================================
+   * 
+   * INTEGRATION TESTS: Use real fetch, real networking, real API calls
+   * UNIT TESTS: Mock fetch in individual test files as needed
+   * 
+   * This global setup DOES NOT mock fetch or networking.
+   * Integration tests MUST use real network access to validate against live API servers.
+   * Any mocking in integration tests requires explicit sign-off and highest scrutiny.
+   * 
+   * We only mock the error reporter module to prevent test interference.
+   */
+  
+  // Do NOT mock fetch at all - let all tests use real networking
+  // Integration tests need real API calls, unit tests should mock individually
+  console.log('🚨 Test setup: NO fetch mocking - using real networking for all tests');
 });
 
 // Cleanup after each test

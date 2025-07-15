@@ -271,6 +271,7 @@ export class AuthApiClient {
     lastName?: string;
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
+    invitationToken?: string; // NEW: Optional invitation token for email verification
   }): Promise<SignInResponse> {
     return this.request<SignInResponse>('/auth/register', {
       method: 'POST',
@@ -281,10 +282,10 @@ export class AuthApiClient {
   /**
    * Get WebAuthn registration options for new passkey
    */
-  async getWebAuthnRegistrationOptions(userId: string): Promise<any> {
+  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<any> {
     return this.request<any>('/auth/webauthn/register-options', {
       method: 'POST',
-      body: JSON.stringify({ userId })
+      body: JSON.stringify(data)
     });
   }
 
@@ -293,7 +294,7 @@ export class AuthApiClient {
    */
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
-    credential: any;
+    registrationResponse: any;
   }): Promise<{ success: boolean; error?: string }> {
     return this.request<{ success: boolean; error?: string }>('/auth/webauthn/register-verify', {
       method: 'POST',

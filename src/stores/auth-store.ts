@@ -500,6 +500,7 @@ function createAuthStore(config: AuthConfig) {
     lastName?: string;
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
+    invitationToken?: string; // NEW: Optional invitation token for email verification
   }): Promise<SignInResponse> {
     const startTime = Date.now();
 
@@ -510,7 +511,10 @@ function createAuthStore(config: AuthConfig) {
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { operation: 'registerUser' }
+        context: { 
+          operation: 'registerUser',
+          hasInvitationToken: !!userData.invitationToken
+        }
       });
 
       const response = await api.registerUser(userData);
@@ -550,6 +554,116 @@ function createAuthStore(config: AuthConfig) {
         error: authError.message,
         duration: Date.now() - startTime,
         context: { operation: 'registerUser' }
+      });
+
+      updateState({ state: 'error', error: authError });
+      emit('registration_error', { error: authError });
+      throw authError;
+    }
+  }
+
+  /**
+   * Create account with passkey - Enhanced registration flow
+   * For now, this is an enhanced version of registerUser with better error handling
+   * TODO: Implement full WebAuthn integration when API endpoints are confirmed
+   */
+  async function createAccount(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }): Promise<SignInResponse> {
+    const startTime = Date.now();
+
+    updateState({ state: 'loading', error: null });
+    emit('registration_started', { email: userData.email });
+
+    try {
+      // Check WebAuthn support first
+      if (!isWebAuthnSupported()) {
+        throw new Error('Passkey authentication is not supported on this device. Please use a device with biometric authentication.');
+      }
+
+      const platformAvailable = await browser ? (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
+      if (!platformAvailable) {
+        throw new Error('No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.');
+      }
+
+      reportAuthState({
+        event: 'registration-start',
+        email: userData.email,
+        context: { 
+          operation: 'createAccount',
+          hasInvitationToken: !!userData.invitationToken,
+          webauthnSupported: true,
+          platformAvailable
+        }
+      });
+
+      // For now, just use the enhanced registerUser flow
+      // TODO: Replace with full WebAuthn flow when API endpoints are verified
+      console.log('🔄 Creating account with enhanced registration...');
+      const response = await api.registerUser(userData);
+
+      if (response.step === 'success' && response.user && response.accessToken) {
+        saveTokens(response);
+        updateState({
+          state: 'authenticated',
+          user: response.user,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          error: null
+        });
+        scheduleTokenRefresh();
+        emit('registration_success', { user: response.user });
+
+        reportAuthState({
+          event: 'registration-success',
+          email: userData.email,
+          userId: response.user.id,
+          duration: Date.now() - startTime,
+          context: { 
+            operation: 'createAccount',
+            passkeyCreated: false, // TODO: Set to true when WebAuthn is implemented
+            deviceLinked: false    // TODO: Set to true when WebAuthn is implemented
+          }
+        });
+
+        console.log('✅ Account creation completed (WebAuthn integration pending)');
+        return response;
+      }
+
+      return response;
+    } catch (error: any) {
+      const authError: AuthError = {
+        code: error.code || 'account_creation_failed',
+        message: error.message || 'Account creation failed'
+      };
+
+      // Enhanced error handling for WebAuthn-specific errors
+      if (error.name === 'NotAllowedError') {
+        authError.message = 'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
+      } else if (error.name === 'NotSupportedError') {
+        authError.message = 'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
+      } else if (error.name === 'SecurityError') {
+        authError.message = 'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
+      } else if (error.name === 'InvalidStateError') {
+        authError.message = 'A passkey for this account may already exist. Please try signing in instead.';
+      }
+
+      reportAuthState({
+        event: 'registration-failure',
+        email: userData.email,
+        error: authError.message,
+        duration: Date.now() - startTime,
+        context: { 
+          operation: 'createAccount',
+          errorName: error.name,
+          errorCode: error.code
+        }
       });
 
       updateState({ state: 'error', error: authError });
@@ -733,6 +847,7 @@ function createAuthStore(config: AuthConfig) {
     startConditionalAuthentication,
     checkUser,
     registerUser,
+    createAccount,
     on,
     api,
     

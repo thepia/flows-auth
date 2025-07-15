@@ -207,6 +207,7 @@ export interface RegistrationRequest {
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
   marketingConsent?: boolean;
+  invitationToken?: string; // Optional invitation token for email verification proof
 }
 
 export interface RegistrationResponse {
@@ -217,6 +218,7 @@ export interface RegistrationResponse {
   step: RegistrationStep;
   emailVerificationRequired?: boolean;
   welcomeEmailSent?: boolean;
+  emailVerifiedViaInvitation?: boolean; // True if email was verified via invitation token
 }
 
 // Email verification types

@@ -14,7 +14,11 @@
       "Bash(curl:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebFetch(domain:docs.github.com)",
+      "Bash(gh repo create:*)",
+      "Bash(pnpm:*)",
+      "Bash(npm create:*)"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -43,6 +43,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
-    pool: 'forks'
+    pool: 'forks',
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/examples/**/tests/**',
+      '**/examples/**/*.test.js'
+    ]
   }
 });

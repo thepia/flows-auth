@@ -146,12 +146,15 @@ stateDiagram-v2
 - **Entry Conditions**: New user confirmed, WebAuthn supported
 - **Actions**: 
   - Show Terms of Service
-  - Create Auth0 user account
+  - Create Auth0 user account with invitation token (if provided)
   - Register WebAuthn credential
-  - Send welcome email with verification link
+  - Handle email verification based on registration method
 - **Transitions**:
-  - `authenticated-unconfirmed` on successful registration
+  - `authenticated-confirmed` on successful registration **with valid invitation token** (email pre-verified)
+  - `authenticated-unconfirmed` on successful registration **without invitation token** (email verification required)
   - `error` on registration failure
+
+**🔑 Key Logic**: Invitation tokens serve as email verification proof since they were originally sent to the user's email address by the API server.
 
 ### Authentication States
 
@@ -197,7 +200,30 @@ stateDiagram-v2
 
 ## Email Verification Flow
 
-### Verification Process
+### Primary Verification Methods
+
+#### 1. Invitation Token Verification (Preferred)
+When users register via invitation tokens:
+
+1. **Token Contains Email Verification**: Invitation token was originally sent to user's email by API server
+2. **Email Possession Proven**: By using the token, user demonstrates control of the email address
+3. **Immediate Verification**: User transitions directly to `authenticated-confirmed` upon successful registration
+4. **Token Validation**: API server validates token during registration, confirming email ownership
+
+```typescript
+// Registration with invitation token
+const registrationResult = await authStore.registerUser({
+  email: "user@example.com",
+  invitationToken: "jwt_token_sent_to_email", // Proves email possession
+  acceptedTerms: true,
+  acceptedPrivacy: true,
+  profile: userProfile
+});
+// Result: User goes directly to authenticated-confirmed state
+```
+
+#### 2. Standard Email Verification (Fallback)
+For users registering without invitation tokens:
 
 1. **Registration Complete**: User in `authenticated-unconfirmed` state
 2. **Welcome Email Sent**: Contains verification link with token
@@ -222,19 +248,40 @@ stateDiagram-v2
 ### API Integration
 
 #### Required Endpoints
+- `POST /auth/register` - User registration (with optional invitation token)
 - `POST /auth/send-verification-email`
-- `POST /auth/verify-email`
+- `POST /auth/verify-email` 
 - `POST /auth/resend-verification`
 - `GET /auth/verification-status`
+
+#### Registration API Request
+```typescript
+interface RegistrationRequest {
+  email: string;
+  invitationToken?: string; // If provided, serves as email verification proof
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
+  profile?: UserProfile;
+}
+```
 
 #### Token Claims
 ```typescript
 interface AuthTokenClaims {
   sub: string;
   email: string;
-  email_verified: boolean; // Critical for state determination
+  email_verified: boolean; // True if registered with invitation token
+  invitation_token_used?: string; // Reference to invitation token (if applicable)
   exp: number;
   iat: number;
+}
+
+interface InvitationToken {
+  email: string; // Email address this token was sent to
+  issued_to_email: boolean; // Always true - confirms email delivery
+  exp: number;
+  iat: number;
+  invitation_id?: string;
 }
 ```
 

@@ -59,7 +59,7 @@ describe('Build Verification', () => {
     expect(indexDts).toContain('export { default as SignInForm }');
     expect(indexDts).toMatch(/export\s*{\s*[^}]*createAuthStore[^}]*}/);
     expect(indexDts).toContain('export { AuthApiClient }');
-    expect(indexDts).toContain('isWebAuthnSupported');
+    expect(indexDts).toContain('export * from \'./utils/webauthn\'');
   });
 
   it('should not have SSR configuration in build', () => {

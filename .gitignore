@@ -7,7 +7,7 @@ dist
 .env.production
 
 # Package manager configs with tokens
-.npmrc
+# .npmrc
 .yarnrc.yml
 
 # Coverage reports

@@ -4,6 +4,8 @@
  */
 
 import { reportApiError } from '../utils/errorReporter';
+import { globalRateLimiter } from '../utils/rate-limiter';
+import { globalUserCache } from '../utils/user-cache';
 import type {
   AuthConfig,
   SignInRequest,
@@ -27,7 +29,7 @@ export class AuthApiClient {
   }
 
   /**
-   * Make authenticated API request
+   * Make authenticated API request with rate limiting
    */
   private async request<T>(
     endpoint: string,
@@ -72,17 +74,54 @@ export class AuthApiClient {
   }
 
   /**
+   * Make rate-limited API request
+   */
+  private async rateLimitedRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    includeAuth = false
+  ): Promise<T> {
+    return globalRateLimiter.executeWithRetry(
+      () => this.request<T>(endpoint, options, includeAuth),
+      endpoint,
+      {
+        maxRetries: process.env.CI === 'true' ? 1 : 2,
+        baseDelay: process.env.CI === 'true' ? 1000 : 500,
+        maxDelay: 8000
+      }
+    );
+  }
+
+  /**
    * Handle error responses
    */
   private async handleErrorResponse(response: Response): Promise<AuthError> {
     try {
       const errorData = await response.json();
+      
+      // Enhanced error handling for rate limits
+      if (response.status === 429 || errorData.error === 'too_many_requests') {
+        return {
+          code: 'rate_limit_exceeded',
+          message: 'Too many requests. Please try again in a moment.',
+          details: errorData.details
+        };
+      }
+      
       return {
         code: errorData.code || 'unknown_error',
         message: errorData.message || 'An unknown error occurred',
         details: errorData.details
       };
     } catch {
+      // Enhanced error handling for rate limits
+      if (response.status === 429) {
+        return {
+          code: 'rate_limit_exceeded',
+          message: 'Too many requests. Please try again in a moment.'
+        };
+      }
+      
       return {
         code: 'network_error',
         message: `HTTP ${response.status}: ${response.statusText}`
@@ -188,7 +227,7 @@ export class AuthApiClient {
   }
 
   /**
-   * Check if email exists
+   * Check if email exists with rate limiting and caching
    */
   async checkEmail(email: string): Promise<{
     exists: boolean;
@@ -196,7 +235,14 @@ export class AuthApiClient {
     hasPassword: boolean;
     socialProviders: string[];
   }> {
-    const response = await this.request<{
+    // Check cache first
+    const cachedResult = globalUserCache.get(email);
+    if (cachedResult) {
+      return cachedResult;
+    }
+    
+    // Use rate-limited request
+    const response = await this.rateLimitedRequest<{
       exists: boolean;
       hasWebAuthn: boolean;
       userId?: string;
@@ -206,12 +252,17 @@ export class AuthApiClient {
     });
     
     // Map API response to expected format
-    return {
+    const result = {
       exists: response.exists,
       hasPasskey: response.hasWebAuthn || false,
       hasPassword: false, // API doesn't return this, passwordless only
       socialProviders: [] // API doesn't return this currently
     };
+    
+    // Cache the result
+    globalUserCache.set(email, result);
+    
+    return result;
   }
 
   /**

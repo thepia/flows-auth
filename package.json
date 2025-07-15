@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -98,6 +98,7 @@
     "vitest": "^1.0.0"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.1.2",
     "base64url": "^3.0.1"
   },
   "publishConfig": {

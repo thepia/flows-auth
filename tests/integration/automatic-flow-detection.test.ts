@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
-import { SignInForm } from '../../src/components';
+import SignInForm from '../../src/components/SignInForm.svelte';
 import { TEST_CONFIG, TEST_ACCOUNTS, WebAuthnMocker, APIMocker, TestUtils } from '../test-setup';
 import type { AuthConfig } from '../../src/types';
 

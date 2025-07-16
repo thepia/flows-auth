@@ -85,8 +85,8 @@ export class AuthApiClient {
       () => this.request<T>(endpoint, options, includeAuth),
       endpoint,
       {
-        maxRetries: process.env.CI === 'true' ? 1 : 2,
-        baseDelay: process.env.CI === 'true' ? 1000 : 500,
+        maxRetries: (typeof process !== 'undefined' && process.env?.CI === 'true') ? 1 : 2,
+        baseDelay: (typeof process !== 'undefined' && process.env?.CI === 'true') ? 1000 : 500,
         maxDelay: 8000
       }
     );

@@ -113,6 +113,73 @@ export async function createPasskey(
 }
 
 /**
+ * Create WebAuthn credential from registration options
+ * This function handles the WebAuthn registration options format from the API server
+ */
+export async function createCredential(registrationOptions: any): Promise<any> {
+  if (!isWebAuthnSupported()) {
+    throw new Error('WebAuthn is not supported on this device');
+  }
+
+  try {
+    console.log('🔧 Processing WebAuthn registration options:', registrationOptions);
+    
+    // Convert server format to browser format
+    const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
+      challenge: base64ToArrayBuffer(registrationOptions.challenge),
+      rp: registrationOptions.rp,
+      user: {
+        id: typeof registrationOptions.user.id === 'string' 
+          ? base64ToArrayBuffer(registrationOptions.user.id)
+          : registrationOptions.user.id,
+        name: registrationOptions.user.name,
+        displayName: registrationOptions.user.displayName
+      },
+      pubKeyCredParams: registrationOptions.pubKeyCredParams,
+      authenticatorSelection: registrationOptions.authenticatorSelection,
+      timeout: registrationOptions.timeout,
+      attestation: registrationOptions.attestation || 'direct',
+      excludeCredentials: registrationOptions.excludeCredentials?.map((cred: any) => ({
+        ...cred,
+        id: typeof cred.id === 'string' ? base64ToArrayBuffer(cred.id) : cred.id
+      }))
+    };
+
+    console.log('🔧 Converted options for browser API:', publicKeyCredentialCreationOptions);
+
+    const credential = await navigator.credentials.create({
+      publicKey: publicKeyCredentialCreationOptions
+    }) as PublicKeyCredential;
+
+    if (!credential) {
+      throw new Error('No credential returned');
+    }
+
+    const response = credential.response as AuthenticatorAttestationResponse;
+
+    // Convert credential to format expected by server
+    const credentialForServer = {
+      id: credential.id,
+      rawId: arrayBufferToBase64Url(credential.rawId),
+      response: {
+        clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
+        attestationObject: arrayBufferToBase64Url(response.attestationObject),
+        // Include transports if available
+        transports: (response as any).getTransports?.() || []
+      },
+      type: credential.type,
+      clientExtensionResults: credential.getClientExtensionResults()
+    };
+
+    console.log('✅ WebAuthn credential created and converted for server');
+    return credentialForServer;
+  } catch (error: any) {
+    console.error('❌ WebAuthn credential creation failed:', error);
+    throw mapWebAuthnError(error);
+  }
+}
+
+/**
  * Check if conditional mediation is supported
  */
 export async function isConditionalMediationSupported(): Promise<boolean> {

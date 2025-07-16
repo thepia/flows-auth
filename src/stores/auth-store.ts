@@ -602,41 +602,77 @@ function createAuthStore(config: AuthConfig) {
         }
       });
 
-      // For now, just use the enhanced registerUser flow
-      // TODO: Replace with full WebAuthn flow when API endpoints are verified
-      console.log('🔄 Creating account with enhanced registration...');
-      const response = await api.registerUser(userData);
+      // Step 1: Register user account in Auth0
+      console.log('🔄 Step 1: Creating user account...');
+      const registrationResponse = await api.registerUser(userData);
 
-      if (response.step === 'success' && response.user && response.accessToken) {
-        saveTokens(response);
+      if (registrationResponse.step !== 'success' || !registrationResponse.user) {
+        throw new Error('Failed to create user account');
+      }
+
+      const user = registrationResponse.user;
+      console.log('✅ User account created:', user.id);
+
+      // Step 2: Get WebAuthn registration options
+      console.log('🔄 Step 2: Getting WebAuthn registration options...');
+      const registrationOptions = await api.getWebAuthnRegistrationOptions({
+        email: userData.email,
+        userId: user.id
+      });
+
+      console.log('✅ WebAuthn registration options received');
+
+      // Step 3: Create WebAuthn credential using browser API
+      console.log('🔄 Step 3: Creating WebAuthn credential...');
+      const webauthnUtils = await import('../utils/webauthn');
+      const credential = await webauthnUtils.createCredential(registrationOptions);
+
+      console.log('✅ WebAuthn credential created');
+
+      // Step 4: Verify WebAuthn registration with server
+      console.log('🔄 Step 4: Verifying WebAuthn registration...');
+      const verificationResult = await api.verifyWebAuthnRegistration({
+        userId: user.id,
+        registrationResponse: credential
+      });
+
+      if (!verificationResult.success) {
+        throw new Error(verificationResult.error || 'Failed to verify WebAuthn registration');
+      }
+
+      console.log('✅ WebAuthn registration verified');
+
+      // Step 5: Complete authentication with tokens
+      if (registrationResponse.accessToken) {
+        saveTokens(registrationResponse);
         updateState({
           state: 'authenticated',
-          user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          user: user,
+          accessToken: registrationResponse.accessToken,
+          refreshToken: registrationResponse.refreshToken,
+          expiresAt: registrationResponse.expiresIn ? Date.now() + (registrationResponse.expiresIn * 1000) : null,
           error: null
         });
         scheduleTokenRefresh();
-        emit('registration_success', { user: response.user });
+        emit('registration_success', { user: user });
 
         reportAuthState({
           event: 'registration-success',
           email: userData.email,
-          userId: response.user.id,
+          userId: user.id,
           duration: Date.now() - startTime,
           context: { 
             operation: 'createAccount',
-            passkeyCreated: false, // TODO: Set to true when WebAuthn is implemented
-            deviceLinked: false    // TODO: Set to true when WebAuthn is implemented
+            passkeyCreated: true,
+            deviceLinked: true
           }
         });
 
-        console.log('✅ Account creation completed (WebAuthn integration pending)');
-        return response;
+        console.log('✅ Account creation completed with WebAuthn device registration');
+        return registrationResponse;
       }
 
-      return response;
+      return registrationResponse;
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'account_creation_failed',

@@ -127,7 +127,7 @@ export class RateLimiter {
     // Check if we should throttle
     if (this.shouldThrottle(endpoint)) {
       // In CI, skip if rate limited
-      if (process.env.CI === 'true' && this.state.rateLimitHit) {
+      if ((typeof process !== 'undefined' && process.env?.CI === 'true') && this.state.rateLimitHit) {
         throw new Error('Rate limit exceeded in CI environment');
       }
       
@@ -165,7 +165,7 @@ export class RateLimiter {
           this.recordRateLimit(endpoint);
           
           // Fast-fail on rate limit in CI
-          if (process.env.CI === 'true') {
+          if (typeof process !== 'undefined' && process.env?.CI === 'true') {
             console.log(`⚠️ Rate limit hit in CI, fast-failing for ${endpoint}`);
             throw error;
           }

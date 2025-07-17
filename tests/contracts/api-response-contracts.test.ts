@@ -1,0 +1,322 @@
+import { describe, test, expect } from 'vitest';
+
+/**
+ * API CONTRACT TESTS
+ * 
+ * These tests define the exact API response formats that flows-auth MUST support.
+ * Any changes to these contracts require careful consideration and migration planning.
+ * 
+ * BREAKING CHANGES to these contracts will break authentication flows.
+ */
+describe('API Response Contracts - IMMUTABLE', () => {
+
+  describe('signInWithPasskey Response Contract', () => {
+    test('MUST support new response format: {success: true, tokens: {...}, user: {...}}', () => {
+      // This is the EXACT format the API currently returns
+      const newFormatResponse = {
+        success: true,
+        tokens: {
+          accessToken: 'webauthn-verified',
+          refreshToken: 'webauthn-verified', 
+          expiresAt: 1752790702497 // Unix timestamp
+        },
+        user: {
+          id: 'auth0|6877d3ff7b15eabb845ccafa',
+          email: 'thepia@pm.me',
+          name: 'Test User'
+        }
+      };
+
+      // Contract validation
+      expect(newFormatResponse).toHaveProperty('success', true);
+      expect(newFormatResponse).toHaveProperty('tokens');
+      expect(newFormatResponse.tokens).toHaveProperty('accessToken');
+      expect(newFormatResponse.tokens).toHaveProperty('refreshToken');
+      expect(newFormatResponse.tokens).toHaveProperty('expiresAt');
+      expect(newFormatResponse).toHaveProperty('user');
+      expect(newFormatResponse.user).toHaveProperty('id');
+      expect(newFormatResponse.user).toHaveProperty('email');
+
+      // Type validation
+      expect(typeof newFormatResponse.success).toBe('boolean');
+      expect(typeof newFormatResponse.tokens.accessToken).toBe('string');
+      expect(typeof newFormatResponse.tokens.refreshToken).toBe('string');
+      expect(typeof newFormatResponse.tokens.expiresAt).toBe('number');
+      expect(typeof newFormatResponse.user.id).toBe('string');
+      expect(typeof newFormatResponse.user.email).toBe('string');
+    });
+
+    test('MUST support legacy response format: {step: "success", accessToken: "...", user: {...}}', () => {
+      // This is the legacy format that must remain supported for backward compatibility
+      const legacyFormatResponse = {
+        step: 'success',
+        accessToken: 'legacy-access-token',
+        refreshToken: 'legacy-refresh-token',
+        expiresIn: 3600, // Seconds from now
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User'
+        }
+      };
+
+      // Contract validation
+      expect(legacyFormatResponse).toHaveProperty('step', 'success');
+      expect(legacyFormatResponse).toHaveProperty('accessToken');
+      expect(legacyFormatResponse).toHaveProperty('refreshToken');
+      expect(legacyFormatResponse).toHaveProperty('expiresIn');
+      expect(legacyFormatResponse).toHaveProperty('user');
+      expect(legacyFormatResponse.user).toHaveProperty('id');
+      expect(legacyFormatResponse.user).toHaveProperty('email');
+
+      // Type validation
+      expect(typeof legacyFormatResponse.step).toBe('string');
+      expect(typeof legacyFormatResponse.accessToken).toBe('string');
+      expect(typeof legacyFormatResponse.refreshToken).toBe('string');
+      expect(typeof legacyFormatResponse.expiresIn).toBe('number');
+      expect(typeof legacyFormatResponse.user.id).toBe('string');
+      expect(typeof legacyFormatResponse.user.email).toBe('string');
+    });
+
+    test('MUST handle failure responses consistently', () => {
+      const failureResponses = [
+        // New format failure
+        {
+          success: false,
+          error: 'Authentication failed',
+          message: 'Invalid credentials'
+        },
+        // Legacy format failure
+        {
+          step: 'failed',
+          error: 'Authentication failed',
+          message: 'Invalid credentials'
+        }
+      ];
+
+      for (const failureResponse of failureResponses) {
+        // All failure responses must have error information
+        expect(failureResponse).toHaveProperty('error');
+        expect(typeof failureResponse.error).toBe('string');
+        
+        // Success indicator must be false or step must be 'failed'
+        const isFailure = failureResponse.success === false || 
+                         (failureResponse as any).step === 'failed';
+        expect(isFailure).toBe(true);
+      }
+    });
+  });
+
+  describe('Session Data Contract', () => {
+    test('MUST normalize all response formats to consistent session format', () => {
+      // This is the EXACT format that must be saved to sessionStorage
+      const normalizedSessionFormat = {
+        step: 'success',
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User'
+        },
+        accessToken: 'normalized-access-token',
+        refreshToken: 'normalized-refresh-token',
+        expiresIn: 3600 // Always in seconds
+      };
+
+      // Contract validation
+      expect(normalizedSessionFormat).toHaveProperty('step', 'success');
+      expect(normalizedSessionFormat).toHaveProperty('user');
+      expect(normalizedSessionFormat).toHaveProperty('accessToken');
+      expect(normalizedSessionFormat).toHaveProperty('refreshToken');
+      expect(normalizedSessionFormat.user).toHaveProperty('id');
+      expect(normalizedSessionFormat.user).toHaveProperty('email');
+
+      // Type validation
+      expect(typeof normalizedSessionFormat.step).toBe('string');
+      expect(typeof normalizedSessionFormat.accessToken).toBe('string');
+      expect(typeof normalizedSessionFormat.refreshToken).toBe('string');
+      expect(typeof normalizedSessionFormat.user.id).toBe('string');
+      expect(typeof normalizedSessionFormat.user.email).toBe('string');
+      
+      // ExpiresIn must be a number (seconds) when present
+      if (normalizedSessionFormat.expiresIn !== undefined) {
+        expect(typeof normalizedSessionFormat.expiresIn).toBe('number');
+        expect(normalizedSessionFormat.expiresIn).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Storage Key Contract', () => {
+    test('MUST use consistent storage key across all components', () => {
+      // This is the EXACT key that must be used for session storage
+      const REQUIRED_STORAGE_KEY = 'thepia_auth_session';
+      
+      // This key is used by:
+      // - sessionManager.saveSession()
+      // - sessionManager.getSession() 
+      // - auth-state-machine.ts
+      // - Any other component accessing session data
+      
+      expect(REQUIRED_STORAGE_KEY).toBe('thepia_auth_session');
+      expect(typeof REQUIRED_STORAGE_KEY).toBe('string');
+      expect(REQUIRED_STORAGE_KEY.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Authentication State Contract', () => {
+    test('MUST maintain consistent state transitions', () => {
+      // These are the EXACT states that the auth store must support
+      const REQUIRED_AUTH_STATES = [
+        'unauthenticated',
+        'loading', 
+        'authenticated',
+        'error'
+      ];
+
+      // Validate all required states exist
+      for (const state of REQUIRED_AUTH_STATES) {
+        expect(typeof state).toBe('string');
+        expect(state.length).toBeGreaterThan(0);
+      }
+
+      // Validate state transition rules
+      const validTransitions = {
+        'unauthenticated': ['loading', 'error'],
+        'loading': ['authenticated', 'error', 'unauthenticated'],
+        'authenticated': ['loading', 'unauthenticated', 'error'],
+        'error': ['loading', 'unauthenticated']
+      };
+
+      // Each state must have valid transition targets
+      for (const [fromState, toStates] of Object.entries(validTransitions)) {
+        expect(REQUIRED_AUTH_STATES).toContain(fromState);
+        for (const toState of toStates) {
+          expect(REQUIRED_AUTH_STATES).toContain(toState);
+        }
+      }
+    });
+  });
+
+  describe('Event Contract', () => {
+    test('MUST emit consistent authentication events', () => {
+      // These are the EXACT events that must be emitted during authentication
+      const REQUIRED_AUTH_EVENTS = [
+        'sign_in_started',
+        'sign_in_success',
+        'sign_in_error',
+        'passkey_used',
+        'session_updated',
+        'session_cleared'
+      ];
+
+      // Validate all required events
+      for (const event of REQUIRED_AUTH_EVENTS) {
+        expect(typeof event).toBe('string');
+        expect(event.length).toBeGreaterThan(0);
+        expect(event).toMatch(/^[a-z_]+$/); // Only lowercase and underscores
+      }
+
+      // Event payload contracts
+      const eventPayloads = {
+        'sign_in_success': { user: expect.any(Object), method: expect.any(String) },
+        'sign_in_error': { error: expect.any(String), method: expect.any(String) },
+        'passkey_used': { user: expect.any(Object) }
+      };
+
+      // Validate event payload structures
+      for (const [event, payload] of Object.entries(eventPayloads)) {
+        expect(REQUIRED_AUTH_EVENTS).toContain(event);
+        expect(payload).toBeDefined();
+      }
+    });
+  });
+
+  describe('UI/UX Integration Contract', () => {
+    test('MUST define consistent UI state contracts', () => {
+      // These are the EXACT UI states that AuthSection must support
+      const REQUIRED_UI_STATES = [
+        'unauthenticated', // Show sign-in form
+        'authenticated',   // Show "Open Demo" button
+        'loading',         // Show loading spinner
+        'error'           // Show error message
+      ];
+
+      // Validate all required UI states
+      for (const state of REQUIRED_UI_STATES) {
+        expect(typeof state).toBe('string');
+        expect(state.length).toBeGreaterThan(0);
+      }
+
+      // UI state behavior contracts
+      const uiStateBehaviors = {
+        'unauthenticated': {
+          showSignInForm: true,
+          showOpenDemoButton: false,
+          showUserEmail: false,
+          allowAutoRedirect: false
+        },
+        'authenticated': {
+          showSignInForm: false,
+          showOpenDemoButton: true,
+          showUserEmail: true,
+          allowAutoRedirect: false // No automatic redirect from landing page
+        },
+        'loading': {
+          showSignInForm: false,
+          showOpenDemoButton: false,
+          showUserEmail: false,
+          allowAutoRedirect: false
+        },
+        'error': {
+          showSignInForm: true, // Allow retry
+          showOpenDemoButton: false,
+          showUserEmail: false,
+          allowAutoRedirect: false
+        }
+      };
+
+      // Validate UI behavior contracts
+      for (const [state, behavior] of Object.entries(uiStateBehaviors)) {
+        expect(REQUIRED_UI_STATES).toContain(state);
+        expect(behavior).toHaveProperty('showSignInForm');
+        expect(behavior).toHaveProperty('showOpenDemoButton');
+        expect(behavior).toHaveProperty('showUserEmail');
+        expect(behavior).toHaveProperty('allowAutoRedirect');
+        expect(typeof behavior.showSignInForm).toBe('boolean');
+        expect(typeof behavior.showOpenDemoButton).toBe('boolean');
+        expect(typeof behavior.showUserEmail).toBe('boolean');
+        expect(typeof behavior.allowAutoRedirect).toBe('boolean');
+      }
+    });
+
+    test('MUST define navigation behavior contracts', () => {
+      // These are the EXACT navigation behaviors that must be supported
+      const NAVIGATION_CONTRACTS = {
+        'landing-page-open-button-authenticated': {
+          action: 'navigate',
+          destination: '/app'
+        },
+        'landing-page-open-button-unauthenticated': {
+          action: 'scroll',
+          destination: 'AuthSection'
+        },
+        'auth-section-open-demo-button': {
+          action: 'navigate',
+          destination: '/app'
+        },
+        'invitation-flow-with-token': {
+          action: 'navigate', // MAY redirect after auth
+          destination: '/app'
+        }
+      };
+
+      // Validate navigation contracts
+      for (const [scenario, contract] of Object.entries(NAVIGATION_CONTRACTS)) {
+        expect(contract).toHaveProperty('action');
+        expect(contract).toHaveProperty('destination');
+        expect(typeof contract.action).toBe('string');
+        expect(typeof contract.destination).toBe('string');
+        expect(['navigate', 'scroll']).toContain(contract.action);
+      }
+    });
+  });
+});

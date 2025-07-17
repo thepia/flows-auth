@@ -356,14 +356,50 @@ function createAuthStore(config: AuthConfig) {
         authResponse: serializedCredential
       });
 
-      if (response.step === 'success' && response.user && response.accessToken) {
-        saveAuthSession(response, 'passkey');
+      console.log('🔍 DEBUG: API call completed, response received:', typeof response);
+      console.log('🔍 DEBUG: Response keys:', Object.keys(response || {}));
+      console.log('🔍 DEBUG: Got response from API, about to process...');
+
+      try {
+        // Handle both old format (step: 'success') and new format (success: true)
+        const isSuccess = (response.step === 'success') || (response as any).success;
+        const accessToken = response.accessToken || (response as any).tokens?.accessToken;
+        const refreshToken = response.refreshToken || (response as any).tokens?.refreshToken;
+        const expiresAt = (response as any).tokens?.expiresAt;
+
+        console.log('🔍 DEBUG: Processing signInWithPasskey response:', {
+          responseKeys: Object.keys(response),
+          hasStep: 'step' in response,
+          stepValue: response.step,
+          hasSuccess: 'success' in response,
+          successValue: (response as any).success,
+          isSuccess,
+          hasUser: !!response.user,
+          hasAccessToken: !!accessToken,
+          hasTokensObject: !!(response as any).tokens,
+          tokensKeys: (response as any).tokens ? Object.keys((response as any).tokens) : null,
+          fullResponse: response
+        });
+
+        if (isSuccess && response.user && accessToken) {
+        console.log('💾 Processing successful passkey authentication');
+
+        // Create normalized response in SignInResponse format
+        const normalizedResponse: SignInResponse = {
+          step: 'success',
+          user: response.user,
+          accessToken,
+          refreshToken,
+          expiresIn: expiresAt ? Math.floor((expiresAt - Date.now()) / 1000) : undefined
+        };
+
+        saveAuthSession(normalizedResponse, 'passkey');
         updateState({
           state: 'authenticated',
           user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          accessToken,
+          refreshToken,
+          expiresAt: expiresAt || (normalizedResponse.expiresIn ? Date.now() + (normalizedResponse.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)),
           error: null
         });
         scheduleTokenRefresh();
@@ -378,6 +414,17 @@ function createAuthStore(config: AuthConfig) {
           duration: Date.now() - startTime,
           context: { conditional }
         });
+        } else {
+          console.error('❌ Passkey authentication failed - missing required fields:', {
+            isSuccess,
+            hasUser: !!response.user,
+            hasAccessToken: !!accessToken,
+            response
+          });
+        }
+      } catch (processingError) {
+        console.error('❌ ERROR in response processing:', processingError);
+        console.log('🔍 Raw response that caused error:', response);
       }
 
       return response;

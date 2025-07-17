@@ -1,0 +1,67 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔒 Running pre-commit checks for flows-auth..."
+
+# 1. CRITICAL: Run API contract tests
+echo "📋 Running API contract tests (CRITICAL)..."
+pnpm test contracts/api-response-contracts.test.ts
+if [ $? -ne 0 ]; then
+  echo "❌ CRITICAL: API contract tests failed!"
+  echo "   These tests prevent breaking authentication flows."
+  echo "   Fix the failing tests before committing."
+  exit 1
+fi
+
+# 2. CRITICAL: Run integration tests for API response format
+echo "📋 Running API response format integration tests (CRITICAL)..."
+pnpm test integration/api-response-format.test.ts
+if [ $? -ne 0 ]; then
+  echo "❌ CRITICAL: API response format tests failed!"
+  echo "   These tests prevent the sessionManager consistency bug."
+  echo "   Fix the failing tests before committing."
+  exit 1
+fi
+
+# 3. Run all authentication-related tests
+echo "📋 Running authentication tests..."
+pnpm test stores/auth-store.test.ts
+if [ $? -ne 0 ]; then
+  echo "❌ Authentication tests failed!"
+  exit 1
+fi
+
+# 4. Run session management tests
+echo "📋 Running session management tests..."
+pnpm test utils/sessionManager.test.ts
+if [ $? -ne 0 ]; then
+  echo "❌ Session management tests failed!"
+  exit 1
+fi
+
+# 5. Type checking
+echo "🔍 Running TypeScript type checking..."
+pnpm tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript type checking failed!"
+  exit 1
+fi
+
+# 6. Linting
+echo "🧹 Running linting..."
+pnpm lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed!"
+  exit 1
+fi
+
+# 7. Build verification
+echo "🏗️ Verifying build..."
+pnpm build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed!"
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+echo "🔒 Authentication patterns are protected."

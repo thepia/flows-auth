@@ -30,14 +30,19 @@ export * from './utils/local-storage';
 export * from './utils/service-worker';
 export * from './utils/errorReporter';
 export type { FlowsSessionData } from './utils/sessionManager';
-export { 
+export type { StorageConfig } from './types';
+export {
   getSession,
-  saveSession, 
+  saveSession,
   clearSession,
   isSessionValid,
   isAuthenticated as isAuthenticatedFromSession,
   getCurrentUser as getCurrentUserFromSession,
-  getAccessToken as getAccessTokenFromSession
+  getAccessToken as getAccessTokenFromSession,
+  configureSessionStorage,
+  getOptimalSessionConfig,
+  getStorageConfig,
+  supportsPersistentSessions
 } from './utils/sessionManager';
 
 // Types

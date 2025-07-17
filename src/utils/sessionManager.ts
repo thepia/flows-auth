@@ -1,15 +1,18 @@
 /**
  * Session Manager for flows-auth
- * 
- * This mirrors thepia.com/src/utils/sessionManager.ts exactly to ensure consistent
- * authentication state management across all Thepia applications.
- * 
+ *
+ * This mirrors thepia.com/src/utils/sessionManager.ts but adds configurable storage support.
+ *
  * Key principles:
- * - SessionStorage for session data (not localStorage)
- * - Custom events for state synchronization  
+ * - Configurable storage (sessionStorage by default, localStorage for employees)
+ * - Custom events for state synchronization
  * - No local state variables for authentication status
  * - Automatic expiration handling
+ * - Role-based storage strategy
  */
+
+import { getStorageManager, initializeStorageManager, getOptimalStorageConfig } from './storageManager';
+import type { StorageConfig } from '../types';
 
 export interface FlowsSessionData {
   user: {
@@ -42,13 +45,21 @@ interface LastUserData {
 
 export function getSession(): FlowsSessionData | null {
   try {
-    const sessionData = sessionStorage.getItem(SESSION_KEY);
+    const storage = getStorageManager();
+    const sessionData = storage.getItem(SESSION_KEY);
     if (!sessionData) return null;
 
     const session = JSON.parse(sessionData) as FlowsSessionData;
 
     // Check if session is expired
     if (session.tokens.expiresAt < Date.now()) {
+      clearSession();
+      return null;
+    }
+
+    // Check session timeout based on storage configuration
+    const sessionTimeout = storage.getSessionTimeout();
+    if (Date.now() - session.lastActivity > sessionTimeout) {
       clearSession();
       return null;
     }
@@ -63,7 +74,8 @@ export function getSession(): FlowsSessionData | null {
 
 export function saveSession(sessionData: FlowsSessionData): void {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+    const storage = getStorageManager();
+    storage.setItem(SESSION_KEY, JSON.stringify(sessionData));
 
     // Also save last user data for future automatic authentication
     saveLastUser(sessionData);
@@ -74,6 +86,8 @@ export function saveSession(sessionData: FlowsSessionData): void {
         detail: { session: sessionData },
       })
     );
+
+    console.log('💾 Session saved to', storage.getConfig().type, 'for user:', sessionData.user.email);
   } catch (error) {
     console.error('Failed to save session:', error);
   }
@@ -81,7 +95,8 @@ export function saveSession(sessionData: FlowsSessionData): void {
 
 export function clearSession(): void {
   try {
-    sessionStorage.removeItem(SESSION_KEY);
+    const storage = getStorageManager();
+    storage.removeItem(SESSION_KEY);
 
     // Emit session update event
     window.dispatchEvent(
@@ -89,6 +104,8 @@ export function clearSession(): void {
         detail: { session: null },
       })
     );
+
+    console.log('🗑️ Session cleared from', storage.getConfig().type);
   } catch (error) {
     console.error('Failed to clear session:', error);
   }
@@ -110,9 +127,10 @@ export function isSessionValid(session: FlowsSessionData | null): boolean {
     return false;
   }
 
-  // Check last activity (optional: implement session timeout)
-  const maxInactivity = 24 * 60 * 60 * 1000; // 24 hours
-  if (Date.now() - session.lastActivity > maxInactivity) {
+  // Check last activity using configurable timeout
+  const storage = getStorageManager();
+  const sessionTimeout = storage.getSessionTimeout();
+  if (Date.now() - session.lastActivity > sessionTimeout) {
     return false;
   }
 
@@ -175,6 +193,7 @@ export function clearLastUser(): void {
 // Email prefill functions for session-based convenience
 export function saveEmailPrefill(email: string): void {
   try {
+    // Email prefill always uses sessionStorage for privacy
     sessionStorage.setItem(EMAIL_PREFILL_KEY, email);
   } catch (error) {
     console.error('Failed to save email prefill:', error);
@@ -221,4 +240,33 @@ export function getCurrentUser(): FlowsSessionData['user'] | null {
 export function getAccessToken(): string | null {
   const session = getSession();
   return isSessionValid(session) ? session?.tokens.accessToken || null : null;
+}
+
+/**
+ * Configure session storage strategy
+ */
+export function configureSessionStorage(config: StorageConfig): void {
+  initializeStorageManager(config);
+  console.log('🔧 Session storage configured:', config);
+}
+
+/**
+ * Get optimal storage configuration based on user role
+ */
+export function getOptimalSessionConfig(userRole?: string, domain?: string): StorageConfig {
+  return getOptimalStorageConfig(userRole, domain);
+}
+
+/**
+ * Get current storage configuration
+ */
+export function getStorageConfig(): StorageConfig {
+  return getStorageManager().getConfig();
+}
+
+/**
+ * Check if current storage supports persistent sessions
+ */
+export function supportsPersistentSessions(): boolean {
+  return getStorageManager().supportsPersistentSessions();
 }

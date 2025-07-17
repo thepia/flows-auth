@@ -1,0 +1,193 @@
+# Session Management Requirements
+
+## Overview
+
+This document defines the requirements for session management in flows-auth to ensure consistent authentication state across all components and applications.
+
+## Problem Statement
+
+**Current Issue**: flows-auth has inconsistent session storage between components:
+- `sessionManager.ts` uses `sessionStorage` with key `'thepia_auth_session'`
+- `auth-state-machine.ts` uses `localStorage` with keys `'auth_access_token'`, `'auth_user'`
+
+**Impact**: Users sign in successfully but appear unauthenticated on page reload because the state machine cannot find sessions saved by sessionManager.
+
+## Requirements
+
+### R1: Session Storage Consistency (CRITICAL)
+
+**R1.1 Single Source of Truth**
+- **MUST**: All authentication components use sessionManager as the single source of truth
+- **MUST**: No direct `localStorage` or `sessionStorage` access outside sessionManager
+- **MUST**: All session reads/writes go through sessionManager functions
+
+**R1.2 Unified Storage Key**
+- **MUST**: Use single session key `'thepia_auth_session'` for all session data
+- **MUST NOT**: Use legacy keys like `'auth_access_token'`, `'auth_user'`, `'auth_refresh_token'`
+
+**R1.3 State Machine Integration**
+- **MUST**: auth-state-machine.ts uses `getSession()` and `isSessionValid()` from sessionManager
+- **MUST**: State machine initialization checks sessionManager, not localStorage directly
+
+### R2: Storage Configuration (SHOULD)
+
+**R2.1 Configurable Storage Type**
+- **SHOULD**: Support both `sessionStorage` (default) and `localStorage` based on configuration
+- **SHOULD**: Default to `sessionStorage` for security
+- **SHOULD**: Allow `localStorage` for employee/long-running sessions
+
+**R2.2 Role-Based Storage Strategy**
+- **SHOULD**: Guest users → `sessionStorage` (8-hour timeout)
+- **SHOULD**: Employee users → `localStorage` (7-day timeout)
+- **SHOULD**: Admin users → `localStorage` (7-day timeout)
+
+**R2.3 Runtime Configuration**
+- **SHOULD**: Allow storage configuration at auth store creation
+- **SHOULD**: Allow runtime storage reconfiguration
+- **SHOULD**: Provide helper functions for optimal configuration
+
+### R3: Session Validation (MUST)
+
+**R3.1 Token Expiration**
+- **MUST**: Check `tokens.expiresAt` against current time
+- **MUST**: Clear expired sessions automatically
+- **MUST**: Return `null` for expired sessions
+
+**R3.2 Activity Timeout**
+- **MUST**: Check `lastActivity` against configurable timeout
+- **MUST**: Clear inactive sessions automatically
+- **MUST**: Update `lastActivity` on session access
+
+**R3.3 Session Structure Validation**
+- **MUST**: Validate session data structure on retrieval
+- **MUST**: Handle corrupted session data gracefully
+- **MUST**: Clear invalid session data
+
+### R4: Legacy Migration (MUST)
+
+**R4.1 Legacy Data Cleanup**
+- **MUST**: Remove legacy localStorage keys on startup
+- **MUST**: Clean up keys: `'auth_access_token'`, `'auth_user'`, `'auth_refresh_token'`, `'auth_expires_at'`
+- **SHOULD**: Migrate valid legacy data to new format before cleanup
+
+**R4.2 Backward Compatibility**
+- **MUST**: Existing applications continue to work without code changes
+- **MUST**: Graceful handling of missing configuration
+- **MUST**: Default behavior matches current sessionStorage approach
+
+### R5: Event System (MUST)
+
+**R5.1 Session Events**
+- **MUST**: Emit `sessionUpdate` event on session save/clear
+- **MUST**: Include session data in event detail
+- **MUST**: Support cross-tab synchronization
+
+**R5.2 Event Consistency**
+- **MUST**: All session changes trigger events
+- **MUST**: Events work across different storage types
+- **MUST**: Event format remains consistent
+
+### R6: Error Handling (MUST)
+
+**R6.1 Storage Errors**
+- **MUST**: Handle storage quota exceeded gracefully
+- **MUST**: Handle storage access denied gracefully
+- **MUST**: Log storage errors for debugging
+
+**R6.2 Fallback Behavior**
+- **MUST**: Fallback to in-memory storage if browser storage unavailable
+- **MUST**: Graceful degradation in SSR environments
+- **MUST**: Clear error states on recovery
+
+### R7: Security Requirements (CRITICAL)
+
+**R7.1 Default Security**
+- **MUST**: Default to `sessionStorage` (cleared on tab close)
+- **MUST**: Require explicit configuration for `localStorage`
+- **MUST**: Validate user role before enabling persistent storage
+
+**R7.2 Session Timeouts**
+- **MUST**: Enforce maximum session timeouts
+- **MUST**: Guest sessions ≤ 8 hours
+- **MUST**: Employee sessions ≤ 7 days
+
+**R7.3 Data Protection**
+- **MUST**: Store minimal session data
+- **MUST**: No sensitive data in localStorage
+- **MUST**: Clear sessions on sign out
+
+## Implementation Priorities
+
+### Phase 1: Critical Fixes (MUST)
+1. Update auth-state-machine.ts to use sessionManager
+2. Implement legacy data cleanup
+3. Ensure session validation consistency
+4. Add comprehensive test coverage
+
+### Phase 2: Configuration (SHOULD)
+1. Implement configurable storage manager
+2. Add role-based storage configuration
+3. Add runtime configuration functions
+4. Update documentation and examples
+
+### Phase 3: Enhancements (COULD)
+1. Cross-tab session synchronization
+2. Session analytics and monitoring
+3. Advanced security features
+4. Performance optimizations
+
+## Acceptance Criteria
+
+### Critical Success Criteria
+- [ ] Users remain authenticated after page reload
+- [ ] No localStorage/sessionStorage conflicts
+- [ ] All tests pass with 100% coverage
+- [ ] Backward compatibility maintained
+
+### Configuration Success Criteria
+- [ ] Employee users can have persistent sessions
+- [ ] Guest users have secure session-only storage
+- [ ] Runtime configuration works correctly
+- [ ] Documentation is complete and accurate
+
+## Testing Requirements
+
+### Unit Tests (MUST)
+- [ ] sessionManager functions
+- [ ] Storage configuration
+- [ ] Session validation logic
+- [ ] Legacy migration
+
+### Integration Tests (MUST)
+- [ ] sessionManager + state machine consistency
+- [ ] Storage type switching
+- [ ] Event system functionality
+- [ ] Error handling scenarios
+
+### End-to-End Tests (SHOULD)
+- [ ] Full authentication flow
+- [ ] Page reload persistence
+- [ ] Cross-tab synchronization
+- [ ] Role-based configuration
+
+## Documentation Requirements
+
+### Technical Documentation (MUST)
+- [ ] API reference for all functions
+- [ ] Configuration options guide
+- [ ] Migration guide from legacy
+- [ ] Troubleshooting guide
+
+### Usage Documentation (MUST)
+- [ ] Quick start guide
+- [ ] Configuration examples
+- [ ] Best practices
+- [ ] Security considerations
+
+## Compliance
+
+This specification ensures compliance with:
+- **Security**: Default secure storage, configurable timeouts
+- **Privacy**: Minimal data storage, clear session cleanup
+- **Usability**: Consistent authentication state, role-based UX
+- **Maintainability**: Single source of truth, comprehensive testing

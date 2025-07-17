@@ -102,6 +102,14 @@ export interface SessionData {
   user: User;
 }
 
+// Storage configuration
+export interface StorageConfig {
+  type: 'sessionStorage' | 'localStorage';
+  sessionTimeout?: number; // in milliseconds, only applies to sessionStorage
+  persistentSessions?: boolean; // if true, use localStorage for long-running sessions
+  userRole?: 'employee' | 'guest' | 'admin'; // determines storage strategy
+}
+
 // Authentication configuration
 export interface AuthConfig {
   apiBaseUrl: string;
@@ -116,6 +124,7 @@ export interface AuthConfig {
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;
   auth0?: Auth0Config;
+  storage?: StorageConfig; // Optional storage configuration
 }
 
 // Auth0 configuration

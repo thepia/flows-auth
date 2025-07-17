@@ -48,17 +48,26 @@ describe('AuthStateMachine', () => {
       expect(typeof context.startTime).toBe('number');
     });
 
-    it('should initialize with valid session when tokens exist', () => {
-      const mockUser = {
-        id: '123',
-        email: 'test@example.com',
-        name: 'Test User',
-        emailVerified: true,
-        createdAt: '2023-01-01T00:00:00Z'
+    it('should initialize with valid session when sessionStorage has valid session', () => {
+      const mockSessionData = {
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          initials: 'TU',
+          avatar: undefined,
+          preferences: {}
+        },
+        tokens: {
+          accessToken: 'valid-token',
+          refreshToken: 'refresh-token',
+          expiresAt: Date.now() + 3600000 // 1 hour from now
+        },
+        authMethod: 'passkey' as const,
+        lastActivity: Date.now()
       };
 
-      localStorage.setItem('auth_access_token', 'valid-token');
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      sessionStorage.setItem('thepia_auth_session', JSON.stringify(mockSessionData));
 
       const newStateMachine = new AuthStateMachine(mockApi, mockConfig);
       newStateMachine.start();
@@ -66,7 +75,8 @@ describe('AuthStateMachine', () => {
       expect(newStateMachine.currentState).toBe('sessionValid');
     });
 
-    it('should initialize with invalid session when no tokens exist', () => {
+    it('should initialize with invalid session when no session exists', () => {
+      sessionStorage.clear();
       localStorage.clear();
 
       const newStateMachine = new AuthStateMachine(mockApi, mockConfig);

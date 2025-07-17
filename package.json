@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",

@@ -10,13 +10,15 @@ const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
 import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
-import { 
-  saveSession, 
-  clearSession, 
-  getSession, 
-  isSessionValid, 
+import {
+  saveSession,
+  clearSession,
+  getSession,
+  isSessionValid,
   generateInitials,
-  type FlowsSessionData 
+  configureSessionStorage,
+  getOptimalSessionConfig,
+  type FlowsSessionData
 } from '../utils/sessionManager';
 import { AuthStateMachine } from './auth-state-machine';
 import type {
@@ -44,6 +46,12 @@ function createAuthStore(config: AuthConfig) {
   // Initialize error reporting if configured
   if (browser && config.errorReporting) {
     initializeErrorReporter(config.errorReporting);
+  }
+
+  // Configure session storage based on config or optimal defaults
+  if (browser) {
+    const storageConfig = config.storage || getOptimalSessionConfig();
+    configureSessionStorage(storageConfig);
   }
 
   // Initialize API client and state machine
@@ -182,13 +190,48 @@ function createAuthStore(config: AuthConfig) {
 
       if (hasLegacyData && !hasSessionData) {
         console.log('📦 Migrating legacy localStorage auth data to sessionStorage');
-        // Could implement migration logic here if needed
+
+        // Migrate legacy data to sessionStorage format
+        try {
+          const legacyToken = localStorage.getItem(LEGACY_STORAGE_KEYS.ACCESS_TOKEN);
+          const legacyUser = localStorage.getItem(LEGACY_STORAGE_KEYS.USER);
+          const legacyRefreshToken = localStorage.getItem(LEGACY_STORAGE_KEYS.REFRESH_TOKEN);
+          const legacyExpiresAt = localStorage.getItem(LEGACY_STORAGE_KEYS.EXPIRES_AT);
+
+          if (legacyToken && legacyUser) {
+            const user = JSON.parse(legacyUser);
+            const sessionData: FlowsSessionData = {
+              user: {
+                id: user.id,
+                email: user.email,
+                name: user.name || user.email,
+                initials: generateInitials(user.name || user.email),
+                avatar: user.picture || user.avatar,
+                preferences: user.metadata || user.preferences
+              },
+              tokens: {
+                accessToken: legacyToken,
+                refreshToken: legacyRefreshToken || '',
+                expiresAt: legacyExpiresAt ? parseInt(legacyExpiresAt) : Date.now() + (24 * 60 * 60 * 1000)
+              },
+              authMethod: 'passkey', // Default assumption
+              lastActivity: Date.now()
+            };
+
+            saveSession(sessionData);
+            console.log('✅ Successfully migrated legacy auth data to sessionStorage');
+          }
+        } catch (migrationError) {
+          console.warn('Failed to migrate legacy data:', migrationError);
+        }
       }
 
-      // Clean up legacy localStorage entries
+      // Always clean up legacy localStorage entries
       Object.values(LEGACY_STORAGE_KEYS).forEach(key => {
         localStorage.removeItem(key);
       });
+
+      console.log('🧹 Cleaned up legacy localStorage auth data');
     } catch (error) {
       console.warn('Failed to clean up legacy localStorage:', error);
     }

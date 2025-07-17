@@ -16,6 +16,7 @@ import type {
 import { AuthApiClient } from '../api/auth-api';
 import { isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { reportAuthState, reportWebAuthnError } from '../utils/errorReporter';
+import { getSession, isSessionValid } from '../utils/sessionManager';
 
 /**
  * Guards - Conditional logic for state transitions
@@ -434,19 +435,22 @@ export class AuthStateMachine {
 
   // Initialize the state machine
   start(): void {
-    // Check for existing session
+    // Check for existing session using sessionManager (proper approach)
     if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_access_token');
-      const storedUser = localStorage.getItem('auth_user');
-      
-      if (storedToken && storedUser) {
-        const user = JSON.parse(storedUser);
+      const existingSession = getSession();
+
+      if (existingSession && isSessionValid(existingSession)) {
+        // Convert FlowsSessionData to SessionData format for state machine
         const sessionData: SessionData = {
-          accessToken: storedToken,
-          refreshToken: localStorage.getItem('auth_refresh_token') || undefined,
-          user
+          accessToken: existingSession.tokens.accessToken,
+          refreshToken: existingSession.tokens.refreshToken,
+          user: {
+            ...existingSession.user,
+            emailVerified: true, // Assume verified if they have a session
+            createdAt: new Date().toISOString() // Fallback value
+          }
         };
-        
+
         this.send({ type: 'VALID_SESSION', session: sessionData });
       } else {
         this.send({ type: 'INVALID_SESSION' });

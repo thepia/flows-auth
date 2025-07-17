@@ -10,6 +10,14 @@ const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
 import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
+import { 
+  saveSession, 
+  clearSession, 
+  getSession, 
+  isSessionValid, 
+  generateInitials,
+  type FlowsSessionData 
+} from '../utils/sessionManager';
 import { AuthStateMachine } from './auth-state-machine';
 import type {
   AuthConfig,
@@ -23,8 +31,8 @@ import type {
   AuthMachineContext
 } from '../types';
 
-// Storage keys
-const STORAGE_KEYS = {
+// Legacy localStorage migration (remove old localStorage entries if they exist)
+const LEGACY_STORAGE_KEYS = {
   ACCESS_TOKEN: 'auth_access_token',
   REFRESH_TOKEN: 'auth_refresh_token',
   EXPIRES_AT: 'auth_expires_at',
@@ -42,18 +50,32 @@ function createAuthStore(config: AuthConfig) {
   const api = new AuthApiClient(config);
   const stateMachine = new AuthStateMachine(api, config);
 
-  // Initialize with stored values (legacy support)
-  const storedUser = browser ? localStorage.getItem(STORAGE_KEYS.USER) : null;
-  const storedAccessToken = browser ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) : null;
-  const storedRefreshToken = browser ? localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) : null;
-  const storedExpiresAt = browser ? localStorage.getItem(STORAGE_KEYS.EXPIRES_AT) : null;
+  // Clean up any legacy localStorage data and migrate to sessionStorage if needed
+  if (browser) {
+    cleanupLegacyLocalStorage();
+  }
+
+  // Initialize with session data (proper sessionStorage approach)
+  const existingSession = browser ? getSession() : null;
+  const isValidSession = existingSession && isSessionValid(existingSession);
+
+  // Convert session user to AuthStore User format
+  const convertSessionUserToAuthUser = (sessionUser: FlowsSessionData['user']) => ({
+    id: sessionUser.id,
+    email: sessionUser.email,
+    name: sessionUser.name,
+    picture: sessionUser.avatar,
+    emailVerified: true, // Assume verified if they have a session
+    createdAt: new Date().toISOString(), // Fallback value
+    metadata: sessionUser.preferences
+  });
 
   const initialState: AuthStore = {
-    state: storedAccessToken && storedUser ? 'authenticated' : 'unauthenticated',
-    user: storedUser ? JSON.parse(storedUser) : null,
-    accessToken: storedAccessToken,
-    refreshToken: storedRefreshToken,
-    expiresAt: storedExpiresAt ? parseInt(storedExpiresAt) : null,
+    state: isValidSession ? 'authenticated' : 'unauthenticated',
+    user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
+    accessToken: isValidSession ? existingSession.tokens.accessToken : null,
+    refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
+    expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
     error: null
   };
 
@@ -113,48 +135,71 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
-   * Save tokens to localStorage
+   * Save authentication session to sessionStorage
    */
-  function saveTokens(response: SignInResponse) {
+  function saveAuthSession(response: SignInResponse, authMethod: 'passkey' | 'password' = 'passkey') {
+    if (!browser || !response.user || !response.accessToken) return;
+
+    const sessionData: FlowsSessionData = {
+      user: {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name || response.user.email,
+        initials: generateInitials(response.user.name || response.user.email),
+        avatar: (response.user as any).avatar || (response.user as any).picture,
+        preferences: (response.user as any).preferences || (response.user as any).metadata
+      },
+      tokens: {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken || '',
+        expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)
+      },
+      authMethod,
+      lastActivity: Date.now()
+    };
+
+    saveSession(sessionData);
+  }
+
+  /**
+   * Clear authentication session
+   */
+  function clearAuthSession() {
+    if (!browser) return;
+    clearSession();
+  }
+
+  /**
+   * Clean up legacy localStorage entries (migration helper)
+   */
+  function cleanupLegacyLocalStorage() {
     if (!browser) return;
 
-    if (response.accessToken) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
-    }
-    
-    if (response.refreshToken) {
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
-    }
-    
-    if (response.expiresIn) {
-      const expiresAt = Date.now() + (response.expiresIn * 1000);
-      localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
-    }
-    
-    if (response.user) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+    try {
+      // Check if we have legacy localStorage data but no sessionStorage data
+      const hasLegacyData = localStorage.getItem(LEGACY_STORAGE_KEYS.ACCESS_TOKEN);
+      const hasSessionData = getSession();
+
+      if (hasLegacyData && !hasSessionData) {
+        console.log('📦 Migrating legacy localStorage auth data to sessionStorage');
+        // Could implement migration logic here if needed
+      }
+
+      // Clean up legacy localStorage entries
+      Object.values(LEGACY_STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.warn('Failed to clean up legacy localStorage:', error);
     }
   }
 
   /**
-   * Clear stored tokens
-   */
-  function clearTokens() {
-    if (!browser) return;
-
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-  }
-
-  /**
-   * Check if token is expired
+   * Check if current session is expired
    */
   function isTokenExpired(): boolean {
-    const currentState = get(store);
-    if (!currentState.expiresAt) return true;
-    return Date.now() >= currentState.expiresAt;
+    const session = getSession();
+    return !isSessionValid(session);
   }
 
   /**
@@ -187,7 +232,7 @@ function createAuthStore(config: AuthConfig) {
       const response = await api.signIn({ email, method });
       
       if (response.step === 'success' && response.user && response.accessToken) {
-        saveTokens(response);
+        saveAuthSession(response, method === 'passkey' ? 'passkey' : 'password');
         updateState({
           state: 'authenticated',
           user: response.user,
@@ -218,6 +263,8 @@ function createAuthStore(config: AuthConfig) {
    */
   async function signInWithPasskey(email: string, conditional = false): Promise<SignInResponse> {
     const startTime = Date.now();
+    
+    console.log('🔍 auth-store signInWithPasskey called with:', { email, conditional });
 
     if (!isWebAuthnSupported()) {
       throw new Error('Passkeys are not supported on this device');
@@ -235,22 +282,39 @@ function createAuthStore(config: AuthConfig) {
     }
 
     try {
+      // First, get userId from email (mirrors thepia.com pattern)
+      console.log('🔍 Getting userId from email...');
+      const userCheck = await api.checkEmail(email);
+      console.log('🔍 userCheck result:', userCheck);
+      
+      if (!userCheck.exists || !userCheck.userId) {
+        throw new Error('User not found or missing userId');
+      }
+
       // Get challenge from server
+      console.log('🔍 Getting passkey challenge...');
       const challenge = await api.getPasskeyChallenge(email);
+      console.log('🔍 Challenge received:', challenge);
 
       // Authenticate with passkey
+      console.log('🔍 Authenticating with passkey...');
       const credential = await authenticateWithPasskey(challenge, conditional);
       const serializedCredential = serializeCredential(credential);
+      console.log('🔍 Credential serialized');
 
-      // Complete authentication
+      // Complete authentication with userId (not email)
+      console.log('🔍 Calling api.signInWithPasskey with:', {
+        userId: userCheck.userId,
+        authResponse: 'serialized credential object'
+      });
+      
       const response = await api.signInWithPasskey({
-        email,
-        challengeId: challenge.challenge,
-        credential: serializedCredential
+        userId: userCheck.userId,
+        authResponse: serializedCredential
       });
 
       if (response.step === 'success' && response.user && response.accessToken) {
-        saveTokens(response);
+        saveAuthSession(response, 'passkey');
         updateState({
           state: 'authenticated',
           user: response.user,
@@ -308,7 +372,7 @@ function createAuthStore(config: AuthConfig) {
       const response = await api.signInWithPassword({ email, password });
 
       if (response.step === 'success' && response.user && response.accessToken) {
-        saveTokens(response);
+        saveAuthSession(response, 'password');
         updateState({
           state: 'authenticated',
           user: response.user,
@@ -398,7 +462,7 @@ function createAuthStore(config: AuthConfig) {
     } catch (error) {
       console.warn('Server sign out failed:', error);
     } finally {
-      clearTokens();
+      clearAuthSession();
       updateState({
         state: 'unauthenticated',
         user: null,
@@ -424,7 +488,16 @@ function createAuthStore(config: AuthConfig) {
       const response = await api.refreshToken({ refreshToken: currentState.refreshToken });
       
       if (response.accessToken) {
-        saveTokens(response);
+        // Update session with new tokens
+        const session = getSession();
+        if (session) {
+          session.tokens.accessToken = response.accessToken;
+          session.tokens.refreshToken = response.refreshToken || session.tokens.refreshToken;
+          session.tokens.expiresAt = response.expiresIn ? Date.now() + (response.expiresIn * 1000) : session.tokens.expiresAt;
+          session.lastActivity = Date.now();
+          saveSession(session);
+        }
+        
         updateState({
           accessToken: response.accessToken,
           refreshToken: response.refreshToken || currentState.refreshToken,
@@ -442,28 +515,26 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
-   * Check if user is authenticated
+   * Check if user is authenticated (using sessionStorage)
    */
   function isAuthenticated(): boolean {
-    const currentState = get(store);
-    return currentState.state === 'authenticated' && 
-           !!currentState.accessToken && 
-           !isTokenExpired();
+    const session = getSession();
+    return isSessionValid(session);
   }
 
   /**
-   * Get current access token
+   * Get current access token (from sessionStorage)
    */
   function getAccessToken(): string | null {
-    const currentState = get(store);
-    return isAuthenticated() ? currentState.accessToken : null;
+    const session = getSession();
+    return isSessionValid(session) ? session?.tokens.accessToken || null : null;
   }
 
   /**
    * Reset store to initial state
    */
   function reset(): void {
-    clearTokens();
+    clearAuthSession();
     updateState({
       state: 'unauthenticated',
       user: null,
@@ -483,7 +554,8 @@ function createAuthStore(config: AuthConfig) {
       return {
         exists: result.exists,
         hasWebAuthn: result.hasPasskey,
-        userId: undefined // API client doesn't return userId yet
+        userId: result.userId,
+        invitationTokenHash: result.invitationTokenHash
       };
     } catch (error) {
       console.error('Error checking user:', error);
@@ -520,7 +592,7 @@ function createAuthStore(config: AuthConfig) {
       const response = await api.registerUser(userData);
 
       if (response.step === 'success' && response.user && response.accessToken) {
-        saveTokens(response);
+        saveAuthSession(response, 'passkey');
         updateState({
           state: 'authenticated',
           user: response.user,
@@ -644,7 +716,7 @@ function createAuthStore(config: AuthConfig) {
 
       // Step 5: Complete authentication with tokens
       if (registrationResponse.accessToken) {
-        saveTokens(registrationResponse);
+        saveAuthSession(registrationResponse, 'passkey');
         updateState({
           state: 'authenticated',
           user: user,
@@ -749,18 +821,23 @@ function createAuthStore(config: AuthConfig) {
 
       console.log('✅ Conditional authentication successful, verifying...');
 
-      // Complete authentication with server
+      // Get userId from email first (mirrors thepia.com pattern)
+      const userCheck = await api.checkEmail(email);
+      if (!userCheck.exists || !userCheck.userId) {
+        throw new Error('User not found or missing userId');
+      }
+
+      // Complete authentication with server using userId
       const response = await api.signInWithPasskey({
-        email,
-        challengeId: challenge.challenge,
-        credential: serializedCredential
+        userId: userCheck.userId,
+        authResponse: serializedCredential
       });
 
       if (response.step === 'success' && response.user && response.accessToken) {
         console.log('✅ Conditional WebAuthn authentication successful');
 
         // Update auth state
-        saveTokens(response);
+        saveAuthSession(response, 'passkey');
         updateState({
           state: 'authenticated',
           user: response.user,

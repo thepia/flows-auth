@@ -366,20 +366,80 @@ See the [Migration Guide](./docs/migration.md) for detailed instructions.
 
 ## Development
 
+### Basic Development
+
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Run tests
-npm test
+pnpm test
 
 # Build library
-npm run build
+pnpm build
 
 # Run examples
-npm run example:basic
-npm run example:whitelabel
+pnpm example:flows-app-demo
+pnpm example:tasks-app-demo
 ```
+
+### Local Development with Live Updates
+
+When developing flows-auth alongside a consuming project (like flows.thepia.net), you can use pnpm link for live updates that automatically reflect changes without manual reinstallation:
+
+```bash
+# Step 1: In flows-auth directory - create global link
+cd /path/to/flows-auth
+pnpm link --global
+
+# Step 2: In your consuming project - use the global link
+cd /path/to/your-project
+pnpm link --global @thepia/flows-auth
+
+# Now changes in flows-auth will automatically be available in your project
+# You still need to build flows-auth after making changes:
+cd /path/to/flows-auth
+pnpm build
+# Changes are now live in your consuming project!
+```
+
+**Troubleshooting pnpm link issues:**
+
+If you encounter "Symlink path is the same as the target path" error:
+
+```bash
+# Clear existing global links
+pnpm unlink --global @thepia/flows-auth
+
+# Remove from consuming project
+cd /path/to/your-project
+pnpm unlink --global @thepia/flows-auth
+
+# Clean install in consuming project
+rm -rf node_modules/@thepia/flows-auth
+pnpm install
+
+# Try linking again
+cd /path/to/flows-auth
+pnpm link --global
+cd /path/to/your-project
+pnpm link --global @thepia/flows-auth
+```
+
+If linking continues to fail, use the manual install method below.
+
+### Alternative: Manual Install Method
+
+If you prefer not to use global links, you can manually update after each build:
+
+```bash
+# After building flows-auth
+cd /path/to/your-project
+rm -rf node_modules/@thepia/flows-auth
+pnpm install
+```
+
+**Note:** The `file:../flows-auth` dependency method requires manual reinstallation after each build, as pnpm copies files at install time rather than creating live links.
 
 ## Contributing
 

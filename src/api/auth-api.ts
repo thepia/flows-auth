@@ -108,9 +108,19 @@ export class AuthApiClient {
         };
       }
       
+      // Handle new error format { step: "error", error: { code, message } }
+      if (errorData.step === 'error' && errorData.error) {
+        return {
+          code: errorData.error.code || 'unknown_error',
+          message: errorData.error.message || 'An unknown error occurred',
+          details: errorData.error.details
+        };
+      }
+      
+      // Handle legacy error format for backward compatibility
       return {
         code: errorData.code || 'unknown_error',
-        message: errorData.message || 'An unknown error occurred',
+        message: errorData.message || errorData.error || 'An unknown error occurred',
         details: errorData.details
       };
     } catch {
@@ -151,6 +161,16 @@ export class AuthApiClient {
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
+    console.log('🔍 signInWithPasskey called with:', {
+      requestKeys: Object.keys(request),
+      hasUserId: 'userId' in request,
+      hasAuthResponse: 'authResponse' in request,
+      hasEmail: 'email' in request,
+      hasChallengeId: 'challengeId' in request,
+      hasCredential: 'credential' in request,
+      fullRequest: JSON.stringify(request, null, 2)
+    });
+    
     return this.request<SignInResponse>('/auth/webauthn/verify', {
       method: 'POST',
       body: JSON.stringify(request)
@@ -234,6 +254,8 @@ export class AuthApiClient {
     hasPasskey: boolean;
     hasPassword: boolean;
     socialProviders: string[];
+    userId?: string;
+    invitationTokenHash?: string;
   }> {
     // Check cache first
     const cachedResult = globalUserCache.get(email);
@@ -246,6 +268,7 @@ export class AuthApiClient {
       exists: boolean;
       hasWebAuthn: boolean;
       userId?: string;
+      invitationTokenHash?: string;
     }>('/auth/check-user', {
       method: 'POST',
       body: JSON.stringify({ email })
@@ -256,7 +279,9 @@ export class AuthApiClient {
       exists: response.exists,
       hasPasskey: response.hasWebAuthn || false,
       hasPassword: false, // API doesn't return this, passwordless only
-      socialProviders: [] // API doesn't return this currently
+      socialProviders: [], // API doesn't return this currently
+      userId: response.userId,
+      invitationTokenHash: response.invitationTokenHash
     };
     
     // Cache the result

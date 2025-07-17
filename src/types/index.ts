@@ -174,9 +174,8 @@ export interface SignInResponse {
 }
 
 export interface PasskeyRequest {
-  email: string;
-  challengeId: string;
-  credential: any; // WebAuthn credential
+  userId: string;
+  authResponse: any; // WebAuthn credential
 }
 
 export interface PasswordRequest {

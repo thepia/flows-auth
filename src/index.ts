@@ -12,7 +12,10 @@ export { default as EmailVerificationBanner } from './components/EmailVerificati
 export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
 
 // Stores
-export { createAuthDerivedStores, createAuthStore } from './stores/auth-store';
+export { 
+  createAuthDerivedStores, 
+  createAuthStore
+} from './stores/auth-store';
 
 // State Machine
 export { AuthStateMachine, AuthGuards, AuthActions } from './stores/auth-state-machine';
@@ -26,6 +29,16 @@ export * from './utils/webauthn';
 export * from './utils/local-storage';
 export * from './utils/service-worker';
 export * from './utils/errorReporter';
+export type { FlowsSessionData } from './utils/sessionManager';
+export { 
+  getSession,
+  saveSession, 
+  clearSession,
+  isSessionValid,
+  isAuthenticated as isAuthenticatedFromSession,
+  getCurrentUser as getCurrentUserFromSession,
+  getAccessToken as getAccessTokenFromSession
+} from './utils/sessionManager';
 
 // Types
 export type * from './types';

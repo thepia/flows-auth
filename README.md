@@ -121,6 +121,45 @@ The main authentication component that handles the complete sign-in flow.
 - `error` - Authentication error occurred
 - `stateChange` - Authentication step changed
 
+### RegistrationForm
+
+The complete user registration component with WebAuthn passkey support, invitation tokens, and immediate app access.
+
+```svelte
+<RegistrationForm 
+  {config}
+  showLogo={true}
+  compact={false}
+  initialEmail=""
+  invitationTokenData={null}
+  additionalFields={['company', 'phone', 'jobTitle']}
+  readOnlyFields={[]}
+  on:appAccess={handleAppAccess}
+  on:success={handleSuccess}
+  on:error={handleError}
+  on:switchToSignIn={handleSwitchToSignIn}
+/>
+```
+
+**Props:**
+
+- `config` - Authentication configuration object
+- `showLogo` - Whether to display the company logo
+- `compact` - Use compact layout for modals/small spaces
+- `initialEmail` - Pre-fill email field
+- `invitationTokenData` - Invitation token data for prefilling fields
+- `additionalFields` - Array of additional business fields to show
+- `readOnlyFields` - Array of field names that should be read-only
+- `className` - Additional CSS classes
+
+**Events:**
+
+- `appAccess` - User should enter app immediately after registration
+- `success` - User successfully registered
+- `error` - Registration error occurred
+- `switchToSignIn` - User wants to switch to sign-in mode
+- `stepChange` - Registration step changed
+
 ### Individual Step Components
 
 You can also use individual step components for custom flows:

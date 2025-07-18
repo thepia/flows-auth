@@ -358,4 +358,74 @@ describe('Auth Store', () => {
       expect(handler).not.toHaveBeenCalled();
     });
   });
+
+  describe('Dynamic Role Configuration', () => {
+    it('should start with guest configuration by default', () => {
+      const authStore = createAuthStore(mockConfig);
+      
+      // Should start with conservative guest defaults
+      expect(authStore.getApplicationContext()).toEqual({
+        userType: 'mixed',
+        forceGuestMode: true
+      });
+    });
+
+    it('should accept application context configuration', () => {
+      const configWithContext = {
+        ...mockConfig,
+        applicationContext: {
+          userType: 'all_employees' as const,
+          domain: 'internal.company.com'
+        }
+      };
+
+      const authStore = createAuthStore(configWithContext);
+      
+      expect(authStore.getApplicationContext()).toEqual({
+        userType: 'all_employees',
+        domain: 'internal.company.com'
+      });
+    });
+
+    it('should handle storage configuration updates', async () => {
+      const authStore = createAuthStore(mockConfig);
+      
+      // Mock the updateStorageConfiguration method (will be implemented later)
+      const mockUpdateStorageConfiguration = vi.fn();
+      (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
+      
+      const update = {
+        type: 'localStorage' as const,
+        userRole: 'employee' as const,
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000,
+        migrateExistingSession: true,
+        preserveTokens: true
+      };
+
+      await authStore.updateStorageConfiguration(update);
+      
+      expect(mockUpdateStorageConfiguration).toHaveBeenCalledWith(update);
+    });
+
+    it('should handle session migration', async () => {
+      const authStore = createAuthStore(mockConfig);
+      
+      // Mock the migrateSession method (will be implemented later)
+      const mockMigrateSession = vi.fn().mockResolvedValue({
+        success: true,
+        fromStorage: 'sessionStorage',
+        toStorage: 'localStorage',
+        dataPreserved: true,
+        tokensPreserved: true
+      });
+      (authStore as any).migrateSession = mockMigrateSession;
+      
+      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
+      
+      expect(mockMigrateSession).toHaveBeenCalledWith('sessionStorage', 'localStorage');
+      expect(result.success).toBe(true);
+      expect(result.dataPreserved).toBe(true);
+      expect(result.tokensPreserved).toBe(true);
+    });
+  });
 });

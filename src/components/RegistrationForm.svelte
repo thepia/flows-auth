@@ -12,7 +12,9 @@
     AuthError, 
     RegistrationStep,
     RegistrationRequest,
-    AuthEventData 
+    AuthEventData,
+    InvitationTokenData,
+    AdditionalField
   } from '../types';
 
   // Props
@@ -21,6 +23,10 @@
   export let compact = false;
   export let className = '';
   export let initialEmail = '';
+  export let invitationTokenData: InvitationTokenData | null = null;
+  export let additionalFields: AdditionalField[] = [];
+  export let readOnlyFields: string[] = [];
+  export let onSwitchToSignIn: (() => void) | undefined = undefined;
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -28,6 +34,8 @@
     error: { error: AuthError };
     stepChange: { step: RegistrationStep };
     appAccess: { user: User }; // User enters app with unconfirmed state
+    switchToSignIn: {};
+    terms_accepted: { terms: boolean; privacy: boolean; marketing: boolean };
   }>();
 
   // Auth store
@@ -37,9 +45,12 @@
   let email = initialEmail;
   let firstName = '';
   let lastName = '';
+  let company = '';
+  let phone = '';
+  let jobTitle = '';
   let loading = false;
   let error: string | null = null;
-  let step: RegistrationStep = 'email-entry';
+  let step: RegistrationStep = 'webauthn-register'; // Single form - go directly to registration
   let supportsWebAuthn = false;
   let userExists = false;
 
@@ -56,12 +67,54 @@
     supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
     platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
     
+    // Prefill fields from invitation token data
+    if (invitationTokenData) {
+      email = invitationTokenData.email;
+      firstName = invitationTokenData.firstName || '';
+      lastName = invitationTokenData.lastName || '';
+      company = invitationTokenData.company || '';
+      phone = invitationTokenData.phone || '';
+      jobTitle = invitationTokenData.jobTitle || '';
+      
+      console.log('🎫 Prefilled form from invitation token:', {
+        email: invitationTokenData.email,
+        fieldsPopulated: {
+          firstName: !!invitationTokenData.firstName,
+          lastName: !!invitationTokenData.lastName,
+          company: !!invitationTokenData.company,
+          phone: !!invitationTokenData.phone,
+          jobTitle: !!invitationTokenData.jobTitle
+        }
+      });
+    }
+    
     console.log('🔐 RegistrationForm WebAuthn Status:', {
       supportsWebAuthn,
       platformAuthenticatorAvailable,
       enablePasskeys: config.enablePasskeys
     });
   });
+  
+  // Utility functions
+  function isFieldReadOnly(fieldName: string): boolean {
+    return readOnlyFields.includes(fieldName) || 
+           (invitationTokenData?.readOnlyFields?.includes(fieldName) ?? false);
+  }
+  
+  function isFieldVisible(fieldName: AdditionalField): boolean {
+    return additionalFields.includes(fieldName);
+  }
+  
+  function isInvitationExpired(): boolean {
+    return invitationTokenData?.expires ? invitationTokenData.expires < new Date() : false;
+  }
+  
+  function handleSwitchToSignIn() {
+    if (onSwitchToSignIn) {
+      onSwitchToSignIn();
+    }
+    dispatch('switchToSignIn');
+  }
 
   // Handle email entry and user check
   async function handleEmailEntry() {
@@ -123,9 +176,13 @@
         email,
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
+        company: company.trim() || undefined,
+        phone: phone.trim() || undefined,
+        jobTitle: jobTitle.trim() || undefined,
         acceptedTerms,
         acceptedPrivacy,
-        marketingConsent
+        marketingConsent,
+        invitationToken: invitationTokenData ? 'token-placeholder' : undefined // TODO: Pass actual token
       };
 
       // Register user with passkey
@@ -191,9 +248,22 @@
     email = initialEmail;
     firstName = '';
     lastName = '';
+    company = '';
+    phone = '';
+    jobTitle = '';
     acceptedTerms = false;
     acceptedPrivacy = false;
     marketingConsent = false;
+    
+    // Re-prefill from invitation token if available
+    if (invitationTokenData) {
+      email = invitationTokenData.email;
+      firstName = invitationTokenData.firstName || '';
+      lastName = invitationTokenData.lastName || '';
+      company = invitationTokenData.company || '';
+      phone = invitationTokenData.phone || '';
+      jobTitle = invitationTokenData.jobTitle || '';
+    }
   }
 </script>
 
@@ -205,7 +275,7 @@
   {/if}
 
   <div class="auth-container">
-    {#if step === 'email-entry'}
+    {#if false}
       <!-- Email Entry Step -->
       <div class="email-entry-step">
         <div class="step-header">
@@ -224,10 +294,12 @@
               type="email"
               class="email-input"
               class:error={!!error}
+              class:readonly={isFieldReadOnly('email')}
               placeholder="your.email@company.com"
               autocomplete="email"
               required
               disabled={loading}
+              readonly={isFieldReadOnly('email')}
             />
             {#if error}
               <div class="error-message">{error}</div>
@@ -248,9 +320,16 @@
             {/if}
           </button>
         </form>
+
+        <!-- Sign-in Switch Link -->
+        {#if onSwitchToSignIn}
+          <div class="form-footer">
+            <p>Already have an account? <button type="button" on:click={handleSwitchToSignIn} class="link-button">Sign in instead</button></p>
+          </div>
+        {/if}
       </div>
 
-    {:else if step === 'terms-of-service'}
+    {:else if false}
       <!-- Terms of Service Step -->
       <div class="terms-step">
         <div class="step-header">
@@ -317,47 +396,150 @@
         </form>
       </div>
 
-    {:else if step === 'webauthn-register'}
-      <!-- WebAuthn Registration Step -->
+    {:else}
+      <!-- Single Form Registration - Mirror original flows.thepia.net form -->
       <div class="webauthn-register-step">
         <div class="step-header">
-          <button type="button" class="back-button" on:click={handleBack}>
-            ← Back
-          </button>
-          <h2 class="step-title">Create Account with Passkey</h2>
+          <h2 class="step-title">Create Account</h2>
           <p class="step-description">
-            Create a new account for <strong>{email}</strong> using secure passkey authentication
+            {#if invitationTokenData?.message}
+              {invitationTokenData.message}
+            {:else if invitationTokenData}
+              We have some information from your invitation. Please review and complete your profile.
+            {:else}
+              Enter your details to create a new account with {config.branding?.companyName || 'us'}
+            {/if}
           </p>
         </div>
 
+        <!-- Invitation Token Warning -->
+        {#if invitationTokenData && isInvitationExpired()}
+          <div class="warning-banner">
+            <svg class="warning-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3l-7.732-13.5c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <span>This invitation has expired. You can still register, but some features may be limited.</span>
+          </div>
+        {/if}
+
         <form on:submit|preventDefault={handleSubmit}>
-          <div class="optional-fields">
-            <div class="input-row">
-              <div class="input-group">
-                <label for="firstName" class="input-label">First Name (optional)</label>
-                <input
-                  bind:value={firstName}
-                  id="firstName"
-                  type="text"
-                  class="name-input"
-                  placeholder="John"
-                  autocomplete="given-name"
-                  disabled={loading}
-                />
-              </div>
-              <div class="input-group">
-                <label for="lastName" class="input-label">Last Name (optional)</label>
-                <input
-                  bind:value={lastName}
-                  id="lastName"
-                  type="text"
-                  class="name-input"
-                  placeholder="Doe"
-                  autocomplete="family-name"
-                  disabled={loading}
-                />
-              </div>
+          <div class="form-grid">
+            <!-- Email Field (full width) -->
+            <div class="form-field">
+              <label for="email">Email Address <span class="required">*</span></label>
+              <input
+                id="email"
+                type="email"
+                bind:value={email}
+                required
+                readonly={isFieldReadOnly('email') || !!invitationTokenData?.email}
+                class:readonly={isFieldReadOnly('email') || !!invitationTokenData?.email}
+                placeholder="your.email@company.com"
+                autocomplete="email"
+                disabled={loading}
+              />
             </div>
+            
+            <!-- First Name -->
+            <div class="form-field">
+              <label for="firstName">First Name <span class="required">*</span></label>
+              <input
+                id="firstName"
+                type="text"
+                bind:value={firstName}
+                required
+                readonly={isFieldReadOnly('firstName')}
+                class:readonly={isFieldReadOnly('firstName')}
+                placeholder="John"
+                autocomplete="given-name"
+                disabled={loading}
+              />
+            </div>
+            
+            <!-- Last Name -->
+            <div class="form-field">
+              <label for="lastName">Last Name <span class="required">*</span></label>
+              <input
+                id="lastName"
+                type="text"
+                bind:value={lastName}
+                required
+                readonly={isFieldReadOnly('lastName')}
+                class:readonly={isFieldReadOnly('lastName')}
+                placeholder="Doe"
+                autocomplete="family-name"
+                disabled={loading}
+              />
+            </div>
+            
+            <!-- Company (full width) -->
+            <div class="form-field">
+              <label for="company">Company</label>
+              <input
+                id="company"
+                type="text"
+                bind:value={company}
+                readonly={isFieldReadOnly('company')}
+                class:readonly={isFieldReadOnly('company')}
+                placeholder="Acme Corp"
+                autocomplete="organization"
+                disabled={loading}
+              />
+            </div>
+            
+            <!-- Phone Number -->
+            <div class="form-field">
+              <label for="phone">Phone Number</label>
+              <input
+                id="phone"
+                type="tel"
+                bind:value={phone}
+                readonly={isFieldReadOnly('phone')}
+                class:readonly={isFieldReadOnly('phone')}
+                placeholder="+1 (555) 123-4567"
+                autocomplete="tel"
+                disabled={loading}
+              />
+            </div>
+            
+            <!-- Job Title -->
+            <div class="form-field">
+              <label for="jobTitle">Job Title</label>
+              <input
+                id="jobTitle"
+                type="text"
+                bind:value={jobTitle}
+                readonly={isFieldReadOnly('jobTitle')}
+                class:readonly={isFieldReadOnly('jobTitle')}
+                placeholder="Software Engineer"
+                autocomplete="organization-title"
+                disabled={loading}
+              />
+            </div>
+          </div>
+          
+          <!-- Terms Container -->
+          <div class="terms-container">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                bind:checked={acceptedTerms}
+                required
+                disabled={loading}
+              />
+              <span>I agree to the <a href="/terms" target="_blank">Terms of Service</a> <span class="required">*</span></span>
+            </label>
+            
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                bind:checked={acceptedPrivacy}
+                required
+                disabled={loading}
+              />
+              <span>I agree to the <a href="/privacy" target="_blank">Privacy Policy</a> <span class="required">*</span></span>
+            </label>
           </div>
 
           {#if error}
@@ -366,17 +548,15 @@
 
           <button
             type="submit"
-            class="register-button"
+            class="submit-button"
             class:loading
-            disabled={loading}
+            disabled={loading || !acceptedTerms || !acceptedPrivacy}
           >
             {#if loading}
               <span class="loading-spinner"></span>
               Creating Account...
-            {:else if supportsWebAuthn}
-              🔑 Register with Passkey
             {:else}
-              Create Account
+              🔑 Create Account with Passkey
             {/if}
           </button>
 
@@ -386,9 +566,16 @@
             </div>
           {/if}
         </form>
+        
+        <!-- Form Footer -->
+        <div class="form-footer">
+          <p>Already have an account? <button on:click={handleSwitchToSignIn} class="link-button">Sign in instead</button></p>
+        </div>
       </div>
 
-    {:else if step === 'registration-success'}
+    {/if}
+    
+    {#if step === 'registration-success'}
       <!-- Registration Success - User enters app immediately -->
       <div class="success-step">
         <div class="step-header">
@@ -423,24 +610,24 @@
 </div>
 
 <style>
-  /* Base styles - inherit from SignInForm */
+  /* Registration form styling - exact styling from flows.thepia.net backup */
   .registration-form {
-    max-width: 400px;
+    max-width: 500px;
     width: 100%;
     margin: 0 auto;
     font-family: var(--font-family-brand, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   }
 
-  .registration-form.compact {
+  :global(.registration-form.compact) {
     max-width: 320px;
   }
 
-  .auth-logo {
+  :global(.auth-logo) {
     text-align: center;
     margin-bottom: 24px;
   }
 
-  .auth-logo img {
+  :global(.auth-logo img) {
     height: 40px;
     max-width: 200px;
     object-fit: contain;
@@ -454,11 +641,8 @@
     overflow: hidden;
   }
 
-  .email-entry-step,
-  .terms-step,
-  .webauthn-register-step,
-  .success-step {
-    padding: 32px 24px;
+  .webauthn-register-step {
+    padding: 32px 32px;
   }
 
   .step-header {
@@ -467,7 +651,7 @@
     position: relative;
   }
 
-  .back-button {
+  :global(.back-button) {
     position: absolute;
     left: 0;
     top: 0;
@@ -481,33 +665,263 @@
     font-size: 14px;
   }
 
-  .back-button:hover {
+  :global(.back-button:hover) {
     background: var(--primary-light, #e6f2ff);
   }
 
-  .step-title {
+  :global(.step-title) {
     font-size: 24px;
-    font-weight: 700;
-    color: #111827;
+    font-weight: 600;
+    color: #1a202c;
     margin: 0 0 8px 0;
+    text-align: center;
   }
 
-  .step-description {
-    font-size: 16px;
-    color: #4b5563;
-    margin: 0;
-    line-height: 1.625;
+  :global(.step-description) {
+    color: #64748b;
+    text-align: center;
+    margin: 0 0 24px 0;
+    font-size: 14px;
   }
 
-  /* Input styles */
-  .input-group {
+  :global(.warning-banner) {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  :global(.warning-icon) {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
     margin-bottom: 24px;
   }
 
-  .input-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+  .form-field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  /* Make company field span full width too */
+  .form-field:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+
+  .form-field label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+
+  .form-field input {
+    padding: 12px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .form-field input:focus {
+    outline: none;
+    border-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    box-shadow: 0 0 0 3px rgba(152, 138, 202, 0.1);
+  }
+
+  .form-field input.readonly {
+    background: #f9fafb;
+    cursor: not-allowed;
+  }
+
+  :global(.required) {
+    color: #ef4444;
+  }
+
+  :global(.terms-container) {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  :global(.checkbox-label) {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+  }
+
+  :global(.checkbox-label input[type="checkbox"]) {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+  }
+
+  :global(.checkbox-label a) {
+    color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    text-decoration: none;
+  }
+
+  :global(.checkbox-label a:hover) {
+    text-decoration: underline;
+  }
+
+  :global(.submit-button) {
+    width: 100%;
+    background: var(--thepia-primary, var(--brand-primary, #0066cc));
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  :global(.submit-button:hover:not(:disabled)) {
+    background: var(--thepia-primary-600, var(--brand-primary-dark, #0056b3));
+    transform: translateY(-1px);
+  }
+
+  :global(.submit-button:disabled) {
+    background: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  :global(.submit-button .loading-spinner) {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  :global(.form-footer) {
+    text-align: center;
+    font-size: 14px;
+    color: #64748b;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  :global(.form-footer p) {
+    margin: 0;
+  }
+
+  :global(.link-button) {
+    background: none;
+    border: none;
+    color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+    padding: 0;
+  }
+
+  :global(.link-button:hover) {
+    color: var(--thepia-primary-600, var(--brand-primary-dark, #0056b3));
+  }
+
+  /* Mobile responsive for registration form */
+  @media (max-width: 768px) {
+    :global(.form-grid) {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    :global(.form-field:first-child),
+    :global(.form-field:nth-child(4)) {
+      grid-column: 1;
+    }
+  }
+
+  @media (max-width: 480px) {
+    :global(.webauthn-register-step) {
+      padding: 24px 16px;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    :global(.auth-container) {
+      background: #2d3748;
+      box-shadow: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.4),
+        0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    :global(.step-title) {
+      color: #f7fafc;
+    }
+
+    :global(.step-description) {
+      color: #a0aec0;
+    }
+
+    :global(.warning-banner) {
+      background: #78350f;
+      color: #fed7aa;
+    }
+
+    :global(.form-field label) {
+      color: #e2e8f0;
+    }
+
+    :global(.form-field input) {
+      background: #374151;
+      border-color: #4a5568;
+      color: #f7fafc;
+    }
+
+    :global(.form-field input:focus) {
+      border-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    }
+
+    :global(.form-field input.readonly) {
+      background: #1f2937;
+    }
+
+    :global(.checkbox-label) {
+      color: #e2e8f0;
+    }
+
+    :global(.form-footer) {
+      color: #a0aec0;
+    }
   }
 
   .input-label {
@@ -690,6 +1104,96 @@
 
   .powered-by strong {
     color: var(--brand-primary, #0066cc);
+  }
+
+  /* New styles for enhanced features */
+  .readonly {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+  }
+
+  .business-fields {
+    margin-top: 16px;
+  }
+
+  .business-fields .input-group {
+    margin-bottom: 16px;
+  }
+
+  .warning-banner {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .warning-icon {
+    width: 20px;
+    height: 20px;
+    color: #f59e0b;
+    flex-shrink: 0;
+  }
+
+  .warning-banner span {
+    font-size: 14px;
+    color: #92400e;
+  }
+
+  .invitation-message {
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .message-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .invitation-message p {
+    margin: 0;
+    font-size: 14px;
+    color: #0c4a6e;
+    line-height: 1.5;
+  }
+
+  .form-footer {
+    text-align: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .form-footer p {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+  }
+
+  .link-button {
+    background: none;
+    border: none;
+    color: var(--brand-primary, #0066cc);
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+    margin: 0;
+  }
+
+  .link-button:hover {
+    color: var(--brand-primary-hover, #0052a3);
   }
 
   /* Mobile responsive */

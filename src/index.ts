@@ -17,6 +17,13 @@ export {
   createAuthStore
 } from './stores/auth-store';
 
+// Enhanced auth store interface types
+export type { 
+  EnhancedUserCheck, 
+  InvitationAuthOptions,
+  AuthFlowResult
+} from './types/enhanced-auth';
+
 // State Machine
 export { AuthStateMachine, AuthGuards, AuthActions } from './stores/auth-state-machine';
 
@@ -44,6 +51,36 @@ export {
   getStorageConfig,
   supportsPersistentSessions
 } from './utils/sessionManager';
+
+// API Detection
+export { detectApiServer, DEFAULT_API_CONFIG } from './utils/api-detection';
+export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
+
+// Invitation Token Utilities
+export {
+  decodeInvitationToken,
+  validateInvitationToken,
+  hashInvitationToken,
+  extractRegistrationData
+} from './utils/invitation-tokens';
+export type { InvitationTokenData, TokenValidationResult } from './utils/invitation-tokens';
+
+// Session Migration Utilities
+export {
+  SessionMigrator,
+  sessionMigrator,
+  getRoleBasedStorageConfig,
+  shouldMigrateSession,
+  migrateSessionSafely,
+  migrateForRole
+} from './utils/session-migrator';
+
+// Invitation Processing Utilities
+export {
+  processInvitationToken,
+  extractRegistrationDataFromToken
+} from './utils/invitation-processing';
+export type { InvitationProcessingResult } from './utils/invitation-processing';
 
 // Types
 export type * from './types';

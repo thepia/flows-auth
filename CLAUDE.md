@@ -178,6 +178,12 @@ cd examples/tasks-app-demo && pnpm dev             # Task management demo
 - **Smart detection**: Automatically checks local availability, falls back to production
 - **Demo servers**: Can run on `dev.thepia.net:5176` with proper SSL certs
 
+### Performance Optimization (Zero-Delay Production)
+- **Production domains** (flows.thepia.net, *.thepia.net, *.thepia.com): Use production API immediately (0ms)
+- **Development domains** (dev.thepia.net, dev.thepia.com): Check local server first, fallback to production (0-3000ms)
+- **Localhost**: Always use production API immediately (0ms)
+- **Key optimization**: Non-dev domains skip the 3-second local server health check
+
 ### Error Reporting Strategy
 - **Development only**: Frontend error reporting not implemented for production
 - **Smart server detection**: Prefers local demo server → local API server → disabled

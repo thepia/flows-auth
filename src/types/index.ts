@@ -108,7 +108,43 @@ export interface StorageConfig {
   sessionTimeout?: number; // in milliseconds, only applies to sessionStorage
   persistentSessions?: boolean; // if true, use localStorage for long-running sessions
   userRole?: 'employee' | 'guest' | 'admin'; // determines storage strategy
+  migrateExistingSession?: boolean; // if true, migrate current session to new storage type
 }
+
+// New interfaces for dynamic role configuration
+export interface ApplicationContext {
+  // Domain-based hints
+  domain?: string; // e.g., 'internal.company.com' suggests all users are employees
+  
+  // URL-based hints  
+  urlPath?: string; // e.g., '/admin/login' suggests admin users
+  
+  // Application-level hints
+  userType?: 'all_employees' | 'all_guests' | 'mixed'; // Corporate intranet vs public site
+  
+  // Security override
+  forceGuestMode?: boolean; // Always start with guest settings for security
+}
+
+export interface StorageConfigurationUpdate {
+  type: 'sessionStorage' | 'localStorage';
+  userRole: 'employee' | 'guest' | 'admin';
+  sessionTimeout: number;
+  migrateExistingSession: boolean;
+  preserveTokens: boolean;
+}
+
+export interface SessionMigrationResult {
+  success: boolean;
+  fromStorage: 'sessionStorage' | 'localStorage';
+  toStorage: 'sessionStorage' | 'localStorage';
+  dataPreserved: boolean;
+  tokensPreserved: boolean;
+  error?: string;
+  duration?: number;
+}
+
+export type StorageType = 'sessionStorage' | 'localStorage';
 
 // Authentication configuration
 export interface AuthConfig {
@@ -125,6 +161,7 @@ export interface AuthConfig {
   errorReporting?: ErrorReportingConfig;
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
+  applicationContext?: ApplicationContext; // Optional application context for role hints
 }
 
 // Auth0 configuration
@@ -212,6 +249,9 @@ export interface RegistrationRequest {
   email: string;
   firstName?: string;
   lastName?: string;
+  company?: string;
+  phone?: string;
+  jobTitle?: string;
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
   marketingConsent?: boolean;
@@ -227,6 +267,35 @@ export interface RegistrationResponse {
   emailVerificationRequired?: boolean;
   welcomeEmailSent?: boolean;
   emailVerifiedViaInvitation?: boolean; // True if email was verified via invitation token
+}
+
+// Invitation token data for prefilling registration forms
+export interface InvitationTokenData {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  phone?: string;
+  jobTitle?: string;
+  expires?: Date;
+  message?: string;
+  readOnlyFields?: string[];
+}
+
+// Configuration for additional business fields in registration forms
+export type AdditionalField = 'company' | 'phone' | 'jobTitle';
+
+// RegistrationForm component props
+export interface RegistrationFormProps {
+  config: AuthConfig;
+  showLogo?: boolean;
+  compact?: boolean;
+  className?: string;
+  initialEmail?: string;
+  invitationTokenData?: InvitationTokenData | null;
+  additionalFields?: AdditionalField[];
+  readOnlyFields?: string[];
+  onSwitchToSignIn?: () => void;
 }
 
 // Email verification types

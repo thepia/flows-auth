@@ -39,21 +39,21 @@ describe('ConfigurableStorageManager', () => {
   });
 
   describe('Default Configuration', () => {
-    it('should default to sessionStorage', () => {
+    it('should default to localStorage for better UX', () => {
       const manager = new ConfigurableStorageManager();
       const config = manager.getConfig();
       
-      expect(config.type).toBe('sessionStorage');
+      expect(config.type).toBe('localStorage');
       expect(config.userRole).toBe('guest');
-      expect(config.persistentSessions).toBe(false);
+      expect(config.persistentSessions).toBe(true);
     });
 
-    it('should use sessionStorage adapter by default', () => {
+    it('should use localStorage adapter by default', () => {
       const manager = new ConfigurableStorageManager();
       
       manager.setItem('test', 'value');
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test', 'value');
-      expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test', 'value');
+      expect(mockSessionStorage.setItem).not.toHaveBeenCalled();
     });
   });
 
@@ -113,12 +113,12 @@ describe('ConfigurableStorageManager', () => {
 
   describe('Storage Operations', () => {
     it('should handle getItem operations', () => {
-      mockSessionStorage.getItem.mockReturnValue('stored-value');
+      mockLocalStorage.getItem.mockReturnValue('stored-value');
       
       const manager = new ConfigurableStorageManager();
       const result = manager.getItem('test-key');
       
-      expect(mockSessionStorage.getItem).toHaveBeenCalledWith('test-key');
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('test-key');
       expect(result).toBe('stored-value');
     });
 
@@ -126,14 +126,14 @@ describe('ConfigurableStorageManager', () => {
       const manager = new ConfigurableStorageManager();
       manager.removeItem('test-key');
       
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('test-key');
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('test-key');
     });
 
     it('should handle clear operations', () => {
       const manager = new ConfigurableStorageManager();
       manager.clear();
       
-      expect(mockSessionStorage.clear).toHaveBeenCalled();
+      expect(mockLocalStorage.clear).toHaveBeenCalled();
     });
   });
 
@@ -145,26 +145,69 @@ describe('ConfigurableStorageManager', () => {
       
       const config = manager.getConfig();
       expect(config.sessionTimeout).toBe(12 * 60 * 60 * 1000);
-      expect(config.type).toBe('sessionStorage');
+      expect(config.type).toBe('localStorage');
     });
 
     it('should create new adapter when storage type changes', () => {
       const manager = new ConfigurableStorageManager();
       
-      // Start with sessionStorage
+      // Start with localStorage (new default)
       manager.setItem('test1', 'value1');
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test1', 'value1');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test1', 'value1');
       
-      // Switch to localStorage
-      manager.updateConfig({ type: 'localStorage' });
+      // Switch to sessionStorage
+      manager.updateConfig({ type: 'sessionStorage' });
       manager.setItem('test2', 'value2');
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test2', 'value2');
+      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test2', 'value2');
+    });
+
+    it('should handle dynamic role changes from guest to employee', () => {
+      const manager = new ConfigurableStorageManager();
+      
+      // Start as guest with localStorage (new default)
+      expect(manager.getConfig().type).toBe('localStorage');
+      expect(manager.getConfig().userRole).toBe('guest');
+      
+      // Upgrade to employee configuration with explicit timeout
+      manager.updateConfig({ 
+        userRole: 'employee',
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days for employees
+      });
+      
+      const config = manager.getConfig();
+      expect(config.userRole).toBe('employee');
+      expect(config.type).toBe('localStorage');
+      expect(config.persistentSessions).toBe(true);
+      expect(config.sessionTimeout).toBe(7 * 24 * 60 * 60 * 1000);
+    });
+
+    it('should handle dynamic role changes from employee to guest', () => {
+      const manager = new ConfigurableStorageManager({ userRole: 'employee' });
+      
+      // Start as employee with localStorage
+      expect(manager.getConfig().type).toBe('localStorage');
+      expect(manager.getConfig().userRole).toBe('employee');
+      
+      // Downgrade to guest configuration (but keep localStorage for UX)
+      manager.updateConfig({ 
+        userRole: 'guest',
+        sessionTimeout: 8 * 60 * 60 * 1000 // 8 hours for guests
+      });
+      
+      const config = manager.getConfig();
+      expect(config.userRole).toBe('guest');
+      expect(config.type).toBe('localStorage'); // Still localStorage for UX
+      expect(config.persistentSessions).toBe(true);
+      expect(config.sessionTimeout).toBe(8 * 60 * 60 * 1000);
     });
   });
 
   describe('Utility Methods', () => {
     it('should correctly identify persistent session support', () => {
-      const sessionManager = new ConfigurableStorageManager({ type: 'sessionStorage' });
+      const sessionManager = new ConfigurableStorageManager({ 
+        type: 'sessionStorage',
+        persistentSessions: false 
+      });
       const localManager = new ConfigurableStorageManager({ type: 'localStorage' });
       
       expect(sessionManager.supportsPersistentSessions()).toBe(false);
@@ -206,11 +249,11 @@ describe('getOptimalStorageConfig', () => {
     expect(config.userRole).toBe('employee');
   });
 
-  it('should return sessionStorage config for guests', () => {
+  it('should return localStorage config for guests (improved UX)', () => {
     const config = getOptimalStorageConfig('guest');
 
-    expect(config.type).toBe('sessionStorage');
-    expect(config.persistentSessions).toBe(false);
+    expect(config.type).toBe('localStorage');
+    expect(config.persistentSessions).toBe(true);
     expect(config.userRole).toBe('guest');
     expect(config.sessionTimeout).toBe(8 * 60 * 60 * 1000);
   });
@@ -218,14 +261,14 @@ describe('getOptimalStorageConfig', () => {
   it('should default to guest config for unknown roles', () => {
     const config = getOptimalStorageConfig('unknown-role');
 
-    expect(config.type).toBe('sessionStorage');
+    expect(config.type).toBe('localStorage');
     expect(config.userRole).toBe('guest');
   });
 
   it('should default to guest config when no role provided', () => {
     const config = getOptimalStorageConfig();
 
-    expect(config.type).toBe('sessionStorage');
+    expect(config.type).toBe('localStorage');
     expect(config.userRole).toBe('guest');
   });
 
@@ -233,11 +276,11 @@ describe('getOptimalStorageConfig', () => {
     it('should enforce secure defaults', () => {
       const defaultConfig = getOptimalStorageConfig();
 
-      // Security requirement: Default to sessionStorage
-      expect(defaultConfig.type).toBe('sessionStorage');
-      expect(defaultConfig.persistentSessions).toBe(false);
+      // UX improvement: Default to localStorage for better user experience
+      expect(defaultConfig.type).toBe('localStorage');
+      expect(defaultConfig.persistentSessions).toBe(true);
 
-      // Security requirement: Reasonable timeout
+      // Security requirement: Reasonable timeout (8 hours)
       expect(defaultConfig.sessionTimeout).toBeLessThanOrEqual(8 * 60 * 60 * 1000);
     });
 
@@ -248,8 +291,8 @@ describe('getOptimalStorageConfig', () => {
       // Security requirement: Guests get shorter sessions
       expect(guestConfig.sessionTimeout).toBeLessThan(employeeConfig.sessionTimeout!);
 
-      // Security requirement: Only employees get persistent storage
-      expect(guestConfig.persistentSessions).toBe(false);
+      // UX improvement: Both get persistent storage, but employees get longer sessions
+      expect(guestConfig.persistentSessions).toBe(true);
       expect(employeeConfig.persistentSessions).toBe(true);
     });
   });

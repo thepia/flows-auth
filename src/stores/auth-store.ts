@@ -30,7 +30,11 @@ import type {
   AuthEventType,
   AuthEventData,
   AuthMachineState,
-  AuthMachineContext
+  AuthMachineContext,
+  ApplicationContext,
+  StorageConfigurationUpdate,
+  SessionMigrationResult,
+  StorageType
 } from '../types';
 
 // Legacy localStorage migration (remove old localStorage entries if they exist)
@@ -871,6 +875,159 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
+   * Enhanced user check that includes invitation token validation
+   * This method extends the basic checkUser to support invitation workflows
+   * @param email - User email to check
+   * @param invitationOptions - Optional invitation token for validation
+   * @returns Enhanced user check result with registration mode
+   */
+  async function checkUserWithInvitation(
+    email: string,
+    invitationOptions?: { token: string; tokenData?: any; skipTokenValidation?: boolean }
+  ) {
+    try {
+      const result = await api.checkEmail(email);
+      
+      // Base user check result
+      const userCheck = {
+        exists: result.exists,
+        hasPasskey: result.hasPasskey,
+        hasWebAuthn: result.hasPasskey, // Alias for compatibility
+        invitationTokenHash: result.invitationTokenHash,
+        userId: result.userId,
+        requiresPasskeySetup: false,
+        registrationMode: 'sign_in' as 'new_user' | 'complete_passkey' | 'sign_in'
+      };
+
+      // If no invitation token, return basic result
+      if (!invitationOptions?.token) {
+        return userCheck;
+      }
+
+      // If user exists but no passkey, and invitation token is provided
+      if (result.exists && !result.hasPasskey && invitationOptions.token) {
+        // Verify token hash if available (security check)
+        if (result.invitationTokenHash && !invitationOptions.skipTokenValidation) {
+          const { hashInvitationToken } = await import('../utils/invitation-tokens');
+          const currentTokenHash = await hashInvitationToken(invitationOptions.token);
+          
+          if (currentTokenHash !== result.invitationTokenHash) {
+            console.warn('🔒 Token hash mismatch - token may not be valid for this user');
+            return {
+              ...userCheck,
+              registrationMode: 'sign_in' // Force sign-in mode on token mismatch
+            };
+          }
+        }
+        
+        return {
+          ...userCheck,
+          requiresPasskeySetup: true,
+          registrationMode: 'complete_passkey'
+        };
+      }
+
+      // If user doesn't exist and has valid invitation token
+      if (!result.exists && invitationOptions.token) {
+        return {
+          ...userCheck,
+          registrationMode: 'new_user'
+        };
+      }
+
+      return userCheck;
+    } catch (error) {
+      console.error('Error in checkUserWithInvitation:', error);
+      return {
+        exists: false,
+        hasPasskey: false,
+        hasWebAuthn: false,
+        registrationMode: 'new_user' as const
+      };
+    }
+  }
+
+  /**
+   * Determines the appropriate authentication flow based on user status and invitation
+   * @param email - User email
+   * @param invitationToken - Optional invitation token
+   * @returns Recommended auth flow and pre-filled data
+   */
+  async function determineAuthFlow(email: string, invitationToken?: string) {
+    try {
+      // Import utilities for token handling
+      const { decodeInvitationToken, validateInvitationToken, extractRegistrationData } = await import('../utils/invitation-tokens');
+
+      let tokenData = null;
+      let prefillData = null;
+
+      // Decode and validate invitation token if provided
+      if (invitationToken) {
+        try {
+          tokenData = decodeInvitationToken(invitationToken);
+          const validation = validateInvitationToken(invitationToken, tokenData);
+          
+          if (!validation.isValid) {
+            console.warn('Invalid invitation token:', validation.reason);
+            return {
+              mode: 'sign_in' as const,
+              message: 'Invalid or expired invitation token. Please sign in normally.'
+            };
+          }
+
+          // Extract registration data from token
+          prefillData = extractRegistrationData(tokenData);
+        } catch (error) {
+          console.warn('Failed to process invitation token:', error);
+          return {
+            mode: 'sign_in' as const,
+            message: 'Invalid invitation token format. Please sign in normally.'
+          };
+        }
+      }
+
+      // Check user status with invitation context
+      const userCheck = await checkUserWithInvitation(email, invitationToken ? {
+        token: invitationToken,
+        tokenData,
+        skipTokenValidation: false
+      } : undefined);
+
+      // Return appropriate flow based on user status
+      switch (userCheck.registrationMode) {
+        case 'new_user':
+          return {
+            mode: 'register' as const,
+            prefillData,
+            message: 'Welcome! Please complete your registration.'
+          };
+        
+        case 'complete_passkey':
+          return {
+            mode: 'complete_passkey' as const,
+            prefillData,
+            message: 'Your account exists but needs a passkey for secure access. Please create your passkey.'
+          };
+        
+        case 'sign_in':
+        default:
+          return {
+            mode: 'sign_in' as const,
+            message: userCheck.hasPasskey 
+              ? 'Welcome back! Please sign in with your passkey.'
+              : 'Please sign in to your account.'
+          };
+      }
+    } catch (error) {
+      console.error('Error determining auth flow:', error);
+      return {
+        mode: 'sign_in' as const,
+        message: 'Unable to determine authentication flow. Please sign in normally.'
+      };
+    }
+  }
+
+  /**
    * Start conditional authentication - mirrors thepia.com auth0Service implementation
    * This enables non-intrusive passkey discovery that won't show popups if no passkeys exist
    * Uses proper conditional mediation with useBrowserAutofill for email field integration
@@ -1029,6 +1186,194 @@ function createAuthStore(config: AuthConfig) {
     stateMachine.start();
   }
 
+  /**
+   * Get current application context
+   */
+  function getApplicationContext(): ApplicationContext | null {
+    return config.applicationContext || {
+      userType: 'mixed',
+      forceGuestMode: true
+    };
+  }
+
+  /**
+   * Update storage configuration dynamically
+   */
+  async function updateStorageConfiguration(update: StorageConfigurationUpdate): Promise<void> {
+    if (!browser) return;
+
+    // Security check: require authentication for role upgrades
+    if (!isAuthenticated()) {
+      throw new Error('Cannot update storage configuration: User not authenticated');
+    }
+
+    const currentState = get(store);
+    const currentUserRole = currentState.user?.metadata?.role;
+
+    // Security check: prevent role escalation beyond authenticated role
+    if (currentUserRole && update.userRole !== currentUserRole) {
+      if (update.userRole === 'admin' && currentUserRole !== 'admin') {
+        throw new Error('Cannot upgrade to admin role without admin authentication');
+      }
+      if (update.userRole === 'employee' && currentUserRole === 'guest') {
+        throw new Error('Cannot upgrade to employee role without employee authentication');
+      }
+    }
+
+    // Log role change for audit
+    console.log('AUDIT: Role configuration update', {
+      timestamp: new Date().toISOString(),
+      fromRole: currentUserRole || 'guest',
+      toRole: update.userRole,
+      fromStorage: 'sessionStorage', // Current default
+      toStorage: update.type,
+      userId: currentState.user?.id
+    });
+
+    try {
+      // Update the session storage configuration
+      const newStorageConfig = {
+        type: update.type,
+        userRole: update.userRole,
+        sessionTimeout: update.sessionTimeout,
+        persistentSessions: update.type === 'localStorage',
+        migrateExistingSession: update.migrateExistingSession
+      };
+
+      // Import storage manager for dynamic configuration
+      const { configureSessionStorage } = await import('../utils/sessionManager');
+      configureSessionStorage(newStorageConfig);
+
+      // Perform session migration if requested
+      if (update.migrateExistingSession) {
+        const fromStorage = 'sessionStorage' as StorageType;
+        const toStorage = update.type as StorageType;
+        
+        if (fromStorage !== toStorage) {
+          await migrateSession(fromStorage, toStorage);
+        }
+      }
+
+      console.log('✅ Storage configuration updated successfully');
+    } catch (error) {
+      console.error('❌ Storage configuration update failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Migrate session data between storage types
+   */
+  async function migrateSession(fromType: StorageType, toType: StorageType): Promise<SessionMigrationResult> {
+    if (!browser) {
+      return {
+        success: false,
+        fromStorage: fromType,
+        toStorage: toType,
+        dataPreserved: false,
+        tokensPreserved: false,
+        error: 'Not in browser environment'
+      };
+    }
+
+    const startTime = Date.now();
+    
+    try {
+      // Get current session data
+      const currentSession = getSession();
+      if (!currentSession) {
+        return {
+          success: false,
+          fromStorage: fromType,
+          toStorage: toType,
+          dataPreserved: false,
+          tokensPreserved: false,
+          error: 'No active session to migrate'
+        };
+      }
+
+      // Validate tokens before migration
+      if (!isSessionValid(currentSession)) {
+        return {
+          success: false,
+          fromStorage: fromType,
+          toStorage: toType,
+          dataPreserved: false,
+          tokensPreserved: false,
+          error: 'Expired tokens cannot be migrated'
+        };
+      }
+
+      // Security check: prevent admin downgrades
+      const userRole = currentSession.user.preferences?.role;
+      if (userRole === 'admin' && fromType === 'localStorage' && toType === 'sessionStorage') {
+        return {
+          success: false,
+          fromStorage: fromType,
+          toStorage: toType,
+          dataPreserved: true,
+          tokensPreserved: true,
+          error: 'Admin sessions cannot be downgraded to sessionStorage'
+        };
+      }
+
+      // Perform migration by updating storage configuration
+      const newStorageConfig = {
+        type: toType,
+        userRole: userRole || 'guest',
+        sessionTimeout: toType === 'localStorage' ? 7 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000,
+        persistentSessions: toType === 'localStorage',
+        migrateExistingSession: false // Prevent recursion
+      };
+
+      // Import storage manager for migration
+      const { configureSessionStorage } = await import('../utils/sessionManager');
+      configureSessionStorage(newStorageConfig);
+
+      // Save session in new storage type
+      saveSession(currentSession);
+
+      const duration = Date.now() - startTime;
+      
+      // Performance check
+      if (duration > 500) {
+        console.warn(`⚠️ Session migration took ${duration}ms (requirement: <500ms)`);
+      }
+
+      console.log('✅ Session migration completed successfully', {
+        fromStorage: fromType,
+        toStorage: toType,
+        duration: `${duration}ms`
+      });
+
+      return {
+        success: true,
+        fromStorage: fromType,
+        toStorage: toType,
+        dataPreserved: true,
+        tokensPreserved: true
+      };
+    } catch (error) {
+      console.error('❌ Session migration failed:', error);
+      
+      // Clear sensitive data on failure
+      try {
+        clearSession();
+      } catch (clearError) {
+        console.error('Failed to clear session after migration failure:', clearError);
+      }
+
+      return {
+        success: false,
+        fromStorage: fromType,
+        toStorage: toType,
+        dataPreserved: false,
+        tokensPreserved: false,
+        error: error instanceof Error ? error.message : 'Migration failed, sensitive data cleared'
+      };
+    }
+  }
+
   // Auto-initialize when store is created
   if (browser) {
     initialize();
@@ -1051,8 +1396,15 @@ function createAuthStore(config: AuthConfig) {
     checkUser,
     registerUser,
     createAccount,
+    checkUserWithInvitation,
+    determineAuthFlow,
     on,
     api,
+    
+    // Dynamic role configuration methods
+    getApplicationContext,
+    updateStorageConfiguration,
+    migrateSession,
     
     // State machine interface
     stateMachine: {

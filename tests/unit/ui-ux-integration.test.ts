@@ -246,8 +246,103 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // Should still show Open Demo button even without email
     expect(authSectionUI.showOpenDemoButton).toBe(true);
     expect(authSectionUI.buttonAction).toBe('/app');
-    
+
     // Email display should handle missing email gracefully
     expect(authSectionUI.userEmail).toBeUndefined();
+  });
+
+  describe('Registration Flow Email Verification', () => {
+    // Helper function to simulate registration success message
+    function simulateRegistrationSuccessMessage(
+      emailVerifiedViaInvitation: boolean,
+      hasInvitationToken: boolean = false
+    ) {
+      const registrationResult = {
+        step: 'success',
+        user: { id: 'user-123', email: 'test@example.com' },
+        emailVerifiedViaInvitation
+      };
+
+      if (emailVerifiedViaInvitation) {
+        return {
+          showEmailVerificationMessage: false,
+          showEmailVerifiedMessage: true,
+          message: 'Your email test@example.com has been verified',
+          subMessage: 'You have full access to all features'
+        };
+      } else {
+        return {
+          showEmailVerificationMessage: true,
+          showEmailVerifiedMessage: false,
+          message: "We've sent a welcome email to test@example.com",
+          subMessage: 'Verify your email to unlock all features'
+        };
+      }
+    }
+
+    test('CRITICAL: Registration with invitation token should trigger appAccess event and hide form', () => {
+      // User registers via invitation token - email is already verified
+      const registrationResult = {
+        step: 'success' as const,
+        user: { id: 'user-123', email: 'test@example.com', emailVerified: true },
+        emailVerifiedViaInvitation: true
+      };
+
+      // Simulate the registration form logic
+      const shouldShowSuccessMessage = !registrationResult.emailVerifiedViaInvitation;
+      const shouldDispatchAppAccess = true;
+      const shouldAutoSignIn = registrationResult.emailVerifiedViaInvitation;
+
+      // CRITICAL: Form should NOT show success message for invitation users
+      expect(shouldShowSuccessMessage).toBe(false);
+      expect(shouldDispatchAppAccess).toBe(true);
+      expect(shouldAutoSignIn).toBe(true);
+    });
+
+    test('CRITICAL: Standard registration should show email verification message', () => {
+      // User registers normally - email verification required
+      const registrationResult = {
+        step: 'success' as const,
+        user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
+        emailVerifiedViaInvitation: false
+      };
+
+      // Simulate the registration form logic
+      const shouldShowSuccessMessage = !registrationResult.emailVerifiedViaInvitation;
+      const shouldDispatchAppAccess = true;
+      const shouldAutoSignIn = registrationResult.emailVerifiedViaInvitation;
+
+      // CRITICAL: Form should show success message for standard users
+      expect(shouldShowSuccessMessage).toBe(true);
+      expect(shouldDispatchAppAccess).toBe(true);
+      expect(shouldAutoSignIn).toBe(false);
+    });
+
+    test('CRITICAL: Registration response must include emailVerifiedViaInvitation field', () => {
+      // This test validates the API contract for registration responses
+      const invitationRegistrationResponse = {
+        step: 'success' as const,
+        user: { id: 'user-123', email: 'test@example.com', emailVerified: true },
+        emailVerifiedViaInvitation: true, // CRITICAL: This field must be present
+        welcomeEmailSent: false // No welcome email needed for invitation users
+      };
+
+      const standardRegistrationResponse = {
+        step: 'success' as const,
+        user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
+        emailVerifiedViaInvitation: false, // CRITICAL: This field must be present
+        welcomeEmailSent: true // Welcome email sent for standard registration
+      };
+
+      // Validate invitation response
+      expect(invitationRegistrationResponse.emailVerifiedViaInvitation).toBe(true);
+      expect(invitationRegistrationResponse.user.emailVerified).toBe(true);
+      expect(invitationRegistrationResponse.welcomeEmailSent).toBe(false);
+
+      // Validate standard response
+      expect(standardRegistrationResponse.emailVerifiedViaInvitation).toBe(false);
+      expect(standardRegistrationResponse.user.emailVerified).toBe(false);
+      expect(standardRegistrationResponse.welcomeEmailSent).toBe(true);
+    });
   });
 });

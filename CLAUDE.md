@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📚 Documentation Authority - Quick Reference
+
+**When information conflicts, these documents are authoritative:**
+
+- **`docs/specifications/`** → Component behavior, API contracts, technical specs
+- **`docs/CRITICAL_ISSUES_AND_FIXES.md`** → Known issues, root causes, fix status  
+- **`docs/SESSION_MANAGEMENT_REQUIREMENTS.md`** → Session storage, timeouts
+- **`docs/testing/API_CONTRACT_TESTING_POLICY.md`** → API testing requirements
+- **`CLAUDE.md` (this file)** → AI development patterns, common mistakes
+
+**⚠️ NEVER contradict authoritative documents. Flag conflicts as critical issues.**
+
+See [README.md § Documentation Authority Matrix](./README.md#documentation-authority-matrix) for complete authority assignments.
+
 ## Flows Repositories
 
 This section must be replicated across the directories of the Thepia Flows product to ensure consistency. Capture lessons learned.
@@ -74,7 +88,7 @@ efficient.
 - **Restart demo servers** after library rebuilds to pick up changes
 - **Demo apps use local file dependency**: Changes require full restart cycle
 
-SimpleAuthForm is for testing, use SignInForm for actual functionality.
+RegistrationForm and SignInForm are the primary authentication components.
 
 
 ## Development Commands

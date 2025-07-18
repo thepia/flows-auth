@@ -182,7 +182,8 @@ describe('Auth Store Integration Tests', () => {
           marketingConsent: false
         };
 
-        const result = await authStore.registerUser(registrationData);
+        // FIXED: Use createAccount for full WebAuthn registration flow
+        const result = await authStore.createAccount(registrationData);
         
         if (result.step === 'success') {
           expect(result.user).toBeDefined();
@@ -210,7 +211,8 @@ describe('Auth Store Integration Tests', () => {
           acceptedPrivacy: false // Required
         };
 
-        await authStore.registerUser(invalidRegistrationData);
+        // FIXED: Use createAccount for full WebAuthn registration flow
+        await authStore.createAccount(invalidRegistrationData);
         expect(false).toBe(true); // Should not reach here
       } catch (error: any) {
         expect(error.message).toMatch(/terms|privacy|email/i);
@@ -380,6 +382,121 @@ describe('Auth Store Integration Tests', () => {
       if (corruptedStore?.destroy) {
         corruptedStore.destroy();
       }
+    });
+  });
+
+  describe('CRITICAL: createAccount WebAuthn Flow', () => {
+    it('should complete full WebAuthn registration flow', async () => {
+      // Mock successful API responses for the complete flow
+      mockFetch
+        // Step 1: Register user account
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            step: 'success',
+            user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token'
+          })
+        })
+        // Step 2: Get WebAuthn registration options
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            challenge: 'mock-challenge',
+            rp: { name: 'Test App', id: 'test.com' },
+            user: { id: 'user-123', name: 'test@example.com', displayName: 'Test User' },
+            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+            timeout: 60000,
+            attestation: 'direct'
+          })
+        })
+        // Step 3: Verify WebAuthn registration
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            credentialId: 'mock-credential-id'
+          })
+        });
+
+      const registrationData = {
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        acceptedTerms: true,
+        acceptedPrivacy: true
+      };
+
+      // CRITICAL: Test the complete createAccount flow
+      const result = await authStore.createAccount(registrationData);
+
+      // Verify the complete flow was executed
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      // Verify Step 1: User registration
+      expect(mockFetch).toHaveBeenNthCalledWith(1,
+        expect.stringContaining('/auth/register'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('test@example.com')
+        })
+      );
+
+      // Verify Step 2: WebAuthn registration options
+      expect(mockFetch).toHaveBeenNthCalledWith(2,
+        expect.stringContaining('/auth/webauthn/register/options'),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
+
+      // Verify Step 3: WebAuthn registration verification
+      expect(mockFetch).toHaveBeenNthCalledWith(3,
+        expect.stringContaining('/auth/webauthn/register/verify'),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
+
+      // Verify successful result
+      expect(result.step).toBe('success');
+      expect(result.user).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+    });
+
+    it('should handle WebAuthn not supported error', async () => {
+      // Mock WebAuthn as not supported
+      vi.mocked(isWebAuthnSupported).mockReturnValue(false);
+
+      const registrationData = {
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        acceptedTerms: true,
+        acceptedPrivacy: true
+      };
+
+      // CRITICAL: Should fail with appropriate error
+      await expect(authStore.createAccount(registrationData))
+        .rejects.toThrow(/passkey authentication is not supported/i);
+    });
+
+    it('should handle platform authenticator not available error', async () => {
+      // Mock platform authenticator as not available
+      vi.mocked(isPlatformAuthenticatorAvailable).mockResolvedValue(false);
+
+      const registrationData = {
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        acceptedTerms: true,
+        acceptedPrivacy: true
+      };
+
+      // CRITICAL: Should fail with appropriate error
+      await expect(authStore.createAccount(registrationData))
+        .rejects.toThrow(/no biometric authentication available/i);
     });
   });
 });

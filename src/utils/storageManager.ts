@@ -103,9 +103,9 @@ export class ConfigurableStorageManager {
 
   private getDefaultConfig(config?: StorageConfig): StorageConfig {
     const defaults: StorageConfig = {
-      type: 'localStorage',
-      sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
-      persistentSessions: true,
+      type: 'sessionStorage',
+      sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
+      persistentSessions: false,
       userRole: 'guest'
     };
 
@@ -244,11 +244,11 @@ export function getOptimalStorageConfig(userRole?: string, domain?: string): Sto
     };
   }
 
-  // Default to localStorage for better UX (users can open new tabs)
-  // Note: This provides better user experience while maintaining security through timeouts
+  // Default to sessionStorage for security (guest users)
+  // Note: This provides better security through automatic session cleanup on browser close
   return {
-    type: 'localStorage',
-    persistentSessions: true,
+    type: 'sessionStorage',
+    persistentSessions: false,
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
     userRole: 'guest'
   };

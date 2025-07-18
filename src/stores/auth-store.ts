@@ -26,6 +26,7 @@ import type {
   AuthStore,
   AuthError,
   SignInResponse,
+  RegistrationResponse,
   AuthMethod,
   AuthEventType,
   AuthEventData,
@@ -667,7 +668,7 @@ function createAuthStore(config: AuthConfig) {
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
     invitationToken?: string; // NEW: Optional invitation token for email verification
-  }): Promise<SignInResponse> {
+  }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
     updateState({ state: 'loading', error: null });
@@ -740,7 +741,7 @@ function createAuthStore(config: AuthConfig) {
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
     invitationToken?: string;
-  }): Promise<SignInResponse> {
+  }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
     updateState({ state: 'loading', error: null });
@@ -808,9 +809,21 @@ function createAuthStore(config: AuthConfig) {
 
       console.log('✅ WebAuthn registration verified');
 
-      // Step 5: Complete authentication with tokens
+      // Step 5: Complete authentication and save session
+      // Create complete auth response with user from step 1 and tokens (if available)
+      const completeAuthResponse = {
+        step: 'success' as const,
+        user: user,
+        accessToken: registrationResponse.accessToken,
+        refreshToken: registrationResponse.refreshToken,
+        expiresIn: registrationResponse.expiresIn,
+        emailVerifiedViaInvitation: registrationResponse.emailVerifiedViaInvitation
+      };
+
+      // Save session only if we have authentication tokens
       if (registrationResponse.accessToken) {
-        saveAuthSession(registrationResponse, 'passkey');
+        console.log('💾 Saving authentication session after complete WebAuthn flow');
+        saveAuthSession(completeAuthResponse, 'passkey');
         updateState({
           state: 'authenticated',
           user: user,
@@ -830,15 +843,41 @@ function createAuthStore(config: AuthConfig) {
           context: { 
             operation: 'createAccount',
             passkeyCreated: true,
-            deviceLinked: true
+            deviceLinked: true,
+            sessionSaved: true
           }
         });
 
-        console.log('✅ Account creation completed with WebAuthn device registration');
-        return registrationResponse;
+        console.log('✅ Account creation completed with WebAuthn device registration and session saved');
+      } else {
+        console.warn('⚠️ Account creation completed but no accessToken available - session not saved');
+        // Still update state but without authentication
+        updateState({
+          state: 'unauthenticated',
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          expiresAt: null,
+          error: null
+        });
+        emit('registration_success', { user: user });
+
+        reportAuthState({
+          event: 'registration-success',
+          email: userData.email,
+          userId: user.id,
+          duration: Date.now() - startTime,
+          context: { 
+            operation: 'createAccount',
+            passkeyCreated: true,
+            deviceLinked: true,
+            sessionSaved: false,
+            reason: 'No accessToken in registration response'
+          }
+        });
       }
 
-      return registrationResponse;
+      return completeAuthResponse;
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'account_creation_failed',

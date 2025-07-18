@@ -52,7 +52,7 @@ The RegistrationForm component provides a complete user registration experience 
 ### FR6: WebAuthn Registration
 - **FR6.1**: MUST check WebAuthn support before displaying registration button
 - **FR6.2**: MUST check platform authenticator availability
-- **FR6.3**: MUST call `authStore.registerUser()` with complete registration data
+- **FR6.3**: MUST call `authStore.createAccount()` with complete registration data
 - **FR6.4**: MUST handle WebAuthn creation errors gracefully
 - **FR6.5**: MUST display appropriate loading states during registration
 - **FR6.6**: MUST provide helpful error messages for common WebAuthn failures

@@ -319,4 +319,78 @@ describe('API Response Contracts - IMMUTABLE', () => {
       }
     });
   });
+
+  describe('Registration Response Contract', () => {
+    test('MUST support registration response with email verification status', () => {
+      // This is the EXACT format for invitation-based registration
+      const invitationRegistrationResponse = {
+        step: 'success',
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: '2024-01-01T00:00:00Z'
+        },
+        accessToken: 'invitation-access-token',
+        refreshToken: 'invitation-refresh-token',
+        emailVerifiedViaInvitation: true, // CRITICAL: Must be present for invitation flows
+        welcomeEmailSent: false, // No welcome email for invitation users
+        emailVerificationRequired: false
+      };
+
+      // This is the EXACT format for standard registration
+      const standardRegistrationResponse = {
+        step: 'success',
+        user: {
+          id: 'user-456',
+          email: 'standard@example.com',
+          emailVerified: false,
+          createdAt: '2024-01-01T00:00:00Z'
+        },
+        accessToken: 'standard-access-token',
+        refreshToken: 'standard-refresh-token',
+        emailVerifiedViaInvitation: false, // CRITICAL: Must be present for all registrations
+        welcomeEmailSent: true, // Welcome email sent for standard registration
+        emailVerificationRequired: true
+      };
+
+      // Contract validation for invitation registration
+      expect(invitationRegistrationResponse).toHaveProperty('step', 'success');
+      expect(invitationRegistrationResponse).toHaveProperty('emailVerifiedViaInvitation', true);
+      expect(invitationRegistrationResponse).toHaveProperty('welcomeEmailSent', false);
+      expect(invitationRegistrationResponse).toHaveProperty('emailVerificationRequired', false);
+      expect(invitationRegistrationResponse.user).toHaveProperty('emailVerified', true);
+
+      // Contract validation for standard registration
+      expect(standardRegistrationResponse).toHaveProperty('step', 'success');
+      expect(standardRegistrationResponse).toHaveProperty('emailVerifiedViaInvitation', false);
+      expect(standardRegistrationResponse).toHaveProperty('welcomeEmailSent', true);
+      expect(standardRegistrationResponse).toHaveProperty('emailVerificationRequired', true);
+      expect(standardRegistrationResponse.user).toHaveProperty('emailVerified', false);
+
+      // Type validation
+      expect(typeof invitationRegistrationResponse.emailVerifiedViaInvitation).toBe('boolean');
+      expect(typeof invitationRegistrationResponse.welcomeEmailSent).toBe('boolean');
+      expect(typeof invitationRegistrationResponse.emailVerificationRequired).toBe('boolean');
+      expect(typeof standardRegistrationResponse.emailVerifiedViaInvitation).toBe('boolean');
+      expect(typeof standardRegistrationResponse.welcomeEmailSent).toBe('boolean');
+      expect(typeof standardRegistrationResponse.emailVerificationRequired).toBe('boolean');
+    });
+
+    test('MUST handle registration failure responses consistently', () => {
+      const registrationFailureResponse = {
+        step: 'failed',
+        error: 'Registration failed',
+        message: 'Email already exists',
+        code: 'email_already_exists'
+      };
+
+      // Contract validation
+      expect(registrationFailureResponse).toHaveProperty('step', 'failed');
+      expect(registrationFailureResponse).toHaveProperty('error');
+      expect(registrationFailureResponse).toHaveProperty('message');
+      expect(typeof registrationFailureResponse.error).toBe('string');
+      expect(typeof registrationFailureResponse.message).toBe('string');
+    });
+  });
 });

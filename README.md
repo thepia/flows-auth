@@ -288,6 +288,71 @@ GET  /auth/profile
 
 See the [API Documentation](./docs/api.md) for detailed request/response formats.
 
+## Documentation Authority Matrix
+
+The following documents are the **single source of truth** for their respective topics. When information conflicts between documents, these authorities take precedence:
+
+### 🏛️ **Core Architecture & Requirements**
+| Document | Authority Over | Status |
+|----------|---------------|---------|
+| [`docs/specifications/RegistrationForm-spec.md`](./docs/specifications/RegistrationForm-spec.md) | RegistrationForm component behavior, events, props | ✅ Authoritative |
+| [`docs/specifications/signInWithPasskey-spec.md`](./docs/specifications/signInWithPasskey-spec.md) | WebAuthn/passkey authentication flow | ✅ Authoritative |
+| [`docs/SESSION_MANAGEMENT_REQUIREMENTS.md`](./docs/SESSION_MANAGEMENT_REQUIREMENTS.md) | Session storage, timeouts, state management | ✅ Authoritative |
+| [`docs/testing/API_CONTRACT_TESTING_POLICY.md`](./docs/testing/API_CONTRACT_TESTING_POLICY.md) | API integration testing requirements | ✅ Authoritative |
+
+### 🔧 **Configuration & Setup**
+| Document | Authority Over | Status |
+|----------|---------------|---------|
+| [`docs/STORAGE_CONFIGURATION.md`](./docs/STORAGE_CONFIGURATION.md) | Storage adapters, role-based configuration | ✅ Authoritative |
+| [`docs/INVITATION_TOKEN_IMPLEMENTATION.md`](./docs/INVITATION_TOKEN_IMPLEMENTATION.md) | Invitation token format, validation, flows | ✅ Authoritative |
+| [`docs/privacy/zero-cookie-architecture.md`](./docs/privacy/zero-cookie-architecture.md) | Privacy architecture, cookie-free design | ✅ Authoritative |
+
+### 🧪 **Testing & Quality**
+| Document | Authority Over | Status |
+|----------|---------------|---------|
+| [`docs/testing/README.md`](./docs/testing/README.md) | Testing strategy, coverage requirements | ✅ Authoritative |
+| [`docs/testing/thepia-com-api-contracts/`](./docs/testing/thepia-com-api-contracts/) | API contract specifications | ✅ Authoritative |
+| [`docs/CRITICAL_ISSUES_AND_FIXES.md`](./docs/CRITICAL_ISSUES_AND_FIXES.md) | Known issues, root causes, fix status | ✅ Authoritative |
+
+### 🚨 **Critical Issues & Fixes**
+| Document | Authority Over | Status |
+|----------|---------------|---------|
+| [`docs/CRITICAL_ISSUES_AND_FIXES.md`](./docs/CRITICAL_ISSUES_AND_FIXES.md) | createAccount session saving, doc consolidation plan | ✅ Authoritative |
+| [`docs/BREAKING_CHANGES_CHECKLIST.md`](./docs/BREAKING_CHANGES_CHECKLIST.md) | Breaking change protocols, API compatibility | ✅ Authoritative |
+
+### 🔄 **Development & Implementation**
+| Document | Authority Over | Status |
+|----------|---------------|---------|
+| [`CLAUDE.md`](./CLAUDE.md) | AI development patterns, common mistakes | ✅ Authoritative |
+| [`docs/development/api-server-architecture.md`](./docs/development/api-server-architecture.md) | Server-side implementation requirements | ✅ Authoritative |
+| [`docs/components/RegistrationForm.md`](./docs/components/RegistrationForm.md) | Component usage examples, integration patterns | ✅ Authoritative |
+
+### ⚠️ **Deprecated/Transitional Documents**
+| Document | Status | Migration Path |
+|----------|--------|----------------|
+| `docs/testing/IMPLEMENTATION_CHECKLIST.md` | ✅ **Archived** | `docs/archive/IMPLEMENTATION_CHECKLIST.md` |
+| `docs/testing/FINDINGS_AND_RECOMMENDATIONS.md` | ✅ **Archived** | `docs/archive/FINDINGS_AND_RECOMMENDATIONS.md` |
+| `docs/auth/comprehensive-implementation-plan.md` | ✅ **Archived** | `docs/archive/comprehensive-implementation-plan.md` |
+
+### 📋 **Usage Guidelines**
+
+**For Developers:**
+- Always check the **Authority Matrix** before reading documentation
+- When information conflicts, defer to the authoritative document
+- Update this matrix when creating new authoritative documents
+
+**For AI Assistants:**
+- Prioritize authoritative documents over non-authoritative ones
+- Flag conflicts between authoritative documents as critical issues
+- Never contradict information from authoritative documents
+
+**For Documentation Maintainers:**
+- Keep this matrix updated when moving/creating/deleting documents
+- Mark documents as authoritative only when they're complete and reviewed
+- Use the `Status` column to track documentation lifecycle
+
+---
+
 ## Demo Application
 
 A comprehensive demo application is included in `src/demo-app/` that showcases all features of the flows-auth library. The demo includes:

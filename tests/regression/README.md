@@ -140,5 +140,5 @@ These tests are successful if they:
 ## 📚 Related Documentation
 
 - [`docs/DEVELOPMENT_ENVIRONMENT_FIXES.md`](../../docs/DEVELOPMENT_ENVIRONMENT_FIXES.md) - Complete troubleshooting guide
-- [`docs/auth/comprehensive-implementation-plan.md`](../../docs/auth/comprehensive-implementation-plan.md) - Architecture requirements
+- [`docs/archive/comprehensive-implementation-plan.md`](../../docs/archive/comprehensive-implementation-plan.md) - Architecture requirements (archived)
 - [Error Handling Methodology](../../docs/DEVELOPMENT_ENVIRONMENT_FIXES.md#-error-handling-methodology) - 5-step analysis framework

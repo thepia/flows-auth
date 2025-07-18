@@ -33,7 +33,7 @@
     success: { user: User; step: RegistrationStep };
     error: { error: AuthError };
     stepChange: { step: RegistrationStep };
-    appAccess: { user: User }; // User enters app with unconfirmed state
+    appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
     switchToSignIn: {};
     terms_accepted: { terms: boolean; privacy: boolean; marketing: boolean };
   }>();
@@ -53,6 +53,7 @@
   let step: RegistrationStep = 'webauthn-register'; // Single form - go directly to registration
   let supportsWebAuthn = false;
   let userExists = false;
+  let registrationResult: any = null; // Store registration response for success message logic
 
   // Terms of Service state
   let acceptedTerms = false;
@@ -185,22 +186,44 @@
         invitationToken: invitationTokenData ? 'token-placeholder' : undefined // TODO: Pass actual token
       };
 
-      // Register user with passkey
-      const result = await authStore.registerUser(registrationData);
+      // Create account with passkey (full WebAuthn registration flow)
+      const result = await authStore.createAccount(registrationData);
 
       if (result.step === 'success' && result.user) {
-        // Registration successful - user enters app immediately
-        step = 'registration-success';
+        // Store registration result for success message logic
+        registrationResult = result;
         loading = false;
-        
-        // Dispatch app access event - user can explore app with limited functionality
-        dispatch('appAccess', { user: result.user });
-        
-        // Also dispatch success for backward compatibility
-        dispatch('success', { 
-          user: result.user, 
-          step: 'registration-success' 
-        });
+
+        if (result.emailVerifiedViaInvitation) {
+          // Invitation registration: Auto-sign-in user (hide form)
+          console.log('🎉 Invitation registration complete - auto-signing in user');
+
+          // Dispatch app access event - user enters app immediately with full access
+          dispatch('appAccess', {
+            user: result.user,
+            emailVerifiedViaInvitation: true,
+            autoSignIn: true
+          });
+
+          // Do NOT show success message UI - form should be hidden
+          // Do NOT dispatch 'success' event - user is auto-signed-in
+
+        } else {
+          // Standard registration: Show success message with email verification prompt
+          console.log('📧 Standard registration complete - showing email verification message');
+
+          // Show registration success UI with email verification message
+          step = 'registration-success';
+
+          // Dispatch app access event - user can explore app with limited functionality
+          dispatch('appAccess', { user: result.user });
+
+          // Also dispatch success for backward compatibility
+          dispatch('success', {
+            user: result.user,
+            step: 'registration-success'
+          });
+        }
       }
     } catch (err: any) {
       loading = false;
@@ -593,8 +616,15 @@
         </div>
 
         <div class="success-info">
-          <p>📧 We've sent a welcome email to <strong>{email}</strong></p>
-          <p>🔓 Verify your email to unlock all features</p>
+          {#if registrationResult?.emailVerifiedViaInvitation}
+            <!-- Email already verified via invitation token -->
+            <p>✅ Your email <strong>{email}</strong> has been verified</p>
+            <p>🎉 You have full access to all features</p>
+          {:else}
+            <!-- Standard registration - email verification needed -->
+            <p>📧 We've sent a welcome email to <strong>{email}</strong></p>
+            <p>🔓 Verify your email to unlock all features</p>
+          {/if}
         </div>
       </div>
     {/if}

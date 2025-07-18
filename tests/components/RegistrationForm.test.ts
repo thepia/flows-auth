@@ -13,7 +13,8 @@ import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
 // Mock the auth store
 const mockAuthStore = {
-  registerUser: vi.fn(),
+  createAccount: vi.fn(), // FIXED: Use createAccount instead of registerUser
+  registerUser: vi.fn(), // Keep for backward compatibility tests
   api: {
     checkEmail: vi.fn()
   }
@@ -63,6 +64,13 @@ describe('RegistrationForm Component', () => {
 
     // Default mock implementations
     mockAuthStore.api.checkEmail.mockResolvedValue({ exists: false });
+    // FIXED: Mock createAccount instead of registerUser
+    mockAuthStore.createAccount.mockResolvedValue({
+      step: 'success',
+      user: { id: '123', email: 'test@example.com' },
+      emailVerifiedViaInvitation: false // Add this field for invitation flow tests
+    });
+    // Keep registerUser mock for backward compatibility
     mockAuthStore.registerUser.mockResolvedValue({
       step: 'success',
       user: { id: '123', email: 'test@example.com' }
@@ -254,7 +262,8 @@ describe('RegistrationForm Component', () => {
       await fireEvent.click(screen.getByText(/Register with Passkey/));
 
       await waitFor(() => {
-        expect(mockAuthStore.registerUser).toHaveBeenCalledWith({
+        // FIXED: Expect createAccount to be called instead of registerUser
+        expect(mockAuthStore.createAccount).toHaveBeenCalledWith({
           email: 'test@example.com',
           firstName: undefined,
           lastName: undefined,
@@ -544,7 +553,8 @@ describe('RegistrationForm Component', () => {
   describe('Error Handling', () => {
     it('should handle registration failure gracefully', async () => {
       const errorHandler = vi.fn();
-      mockAuthStore.registerUser.mockRejectedValue(new Error('Registration failed'));
+      // FIXED: Mock createAccount rejection instead of registerUser
+      mockAuthStore.createAccount.mockRejectedValue(new Error('Registration failed'));
       
       render(RegistrationForm, {
         props: { config: defaultConfig }
@@ -736,7 +746,8 @@ describe('RegistrationForm Component', () => {
       await fireEvent.click(screen.getByText(/Register with Passkey/));
 
       await waitFor(() => {
-        expect(mockAuthStore.registerUser).toHaveBeenCalledWith({
+        // FIXED: Expect createAccount to be called instead of registerUser
+        expect(mockAuthStore.createAccount).toHaveBeenCalledWith({
           email: 'test@example.com',
           firstName: 'John',
           lastName: 'Doe',
@@ -762,6 +773,112 @@ describe('RegistrationForm Component', () => {
 
       await waitFor(() => {
         expect(mockAuthStore.api.checkEmail).toHaveBeenCalledWith('test@example.com');
+      });
+    });
+  });
+
+  describe('CRITICAL: Email Verification Flow', () => {
+    it('should show verified message for invitation users', async () => {
+      // Mock invitation registration response
+      mockAuthStore.createAccount.mockResolvedValue({
+        step: 'success',
+        user: { id: '123', email: 'test@example.com', emailVerified: true },
+        emailVerifiedViaInvitation: true // CRITICAL: Email already verified via invitation
+      });
+
+      const invitationData: InvitationTokenData = {
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe'
+      };
+
+      const { component } = render(RegistrationForm, {
+        props: {
+          config: defaultConfig,
+          invitationTokenData: invitationData
+        }
+      });
+
+      // Fill required fields and submit
+      await fireEvent.click(screen.getByLabelText(/terms of service/i));
+      await fireEvent.click(screen.getByLabelText(/privacy policy/i));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+
+      // CRITICAL: Should show verified message, not verification required
+      await waitFor(() => {
+        expect(screen.queryByText(/verify your email/i)).not.toBeInTheDocument();
+        expect(screen.getByText(/has been verified/i)).toBeInTheDocument();
+        expect(screen.getByText(/full access to all features/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show verification message for standard users', async () => {
+      // Mock standard registration response
+      mockAuthStore.createAccount.mockResolvedValue({
+        step: 'success',
+        user: { id: '123', email: 'test@example.com', emailVerified: false },
+        emailVerifiedViaInvitation: false // CRITICAL: Email verification required
+      });
+
+      render(RegistrationForm, {
+        props: { config: defaultConfig }
+      });
+
+      // Fill form and submit
+      await fireEvent.input(screen.getByLabelText(/email/i), {
+        target: { value: 'test@example.com' }
+      });
+      await fireEvent.click(screen.getByLabelText(/terms of service/i));
+      await fireEvent.click(screen.getByLabelText(/privacy policy/i));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+
+      // CRITICAL: Should show verification required message
+      await waitFor(() => {
+        expect(screen.getByText(/sent a welcome email/i)).toBeInTheDocument();
+        expect(screen.getByText(/verify your email to unlock/i)).toBeInTheDocument();
+        expect(screen.queryByText(/has been verified/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it('should emit appAccess event for invitation users (auto-sign-in)', async () => {
+      const appAccessHandler = vi.fn();
+
+      // Mock invitation registration response
+      mockAuthStore.createAccount.mockResolvedValue({
+        step: 'success',
+        user: { id: '123', email: 'test@example.com', emailVerified: true },
+        emailVerifiedViaInvitation: true // CRITICAL: Should trigger auto-sign-in
+      });
+
+      const invitationData: InvitationTokenData = {
+        email: 'test@example.com'
+      };
+
+      const { component } = render(RegistrationForm, {
+        props: {
+          config: defaultConfig,
+          invitationTokenData: invitationData
+        }
+      });
+
+      component.$on('appAccess', appAccessHandler);
+
+      // Fill required fields and submit
+      await fireEvent.click(screen.getByLabelText(/terms of service/i));
+      await fireEvent.click(screen.getByLabelText(/privacy policy/i));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+
+      // CRITICAL: Should emit appAccess event with auto-sign-in flag
+      await waitFor(() => {
+        expect(appAccessHandler).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: expect.objectContaining({
+              user: expect.any(Object),
+              emailVerifiedViaInvitation: true,
+              autoSignIn: true
+            })
+          })
+        );
       });
     });
   });

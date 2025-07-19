@@ -1,5 +1,5 @@
 /**
- * Integration Tests for RegistrationForm with Auto-Sign-In
+ * Integration Tests for AccountCreationForm with Auto-Sign-In
  * 
  * These tests verify the complete registration flow including:
  * - WebAuthn registration with real API calls
@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
+import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -37,7 +37,7 @@ Object.defineProperty(navigator, 'credentials', {
 // Mock fetch for API calls
 global.fetch = vi.fn();
 
-describe('RegistrationForm Integration Tests', () => {
+describe('AccountCreationForm Integration Tests', () => {
   let mockFetch: any;
   let authConfig: AuthConfig;
   let invitationTokenData: InvitationTokenData;
@@ -126,7 +126,7 @@ describe('RegistrationForm Integration Tests', () => {
       const appAccessHandler = vi.fn();
       const successHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -185,7 +185,7 @@ describe('RegistrationForm Integration Tests', () => {
     it('should handle registration with business fields', async () => {
       const appAccessHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { 
           config: authConfig, 
           additionalFields: ['company', 'phone', 'jobTitle']
@@ -236,7 +236,7 @@ describe('RegistrationForm Integration Tests', () => {
     it('should handle invitation token registration', async () => {
       const appAccessHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { 
           config: authConfig, 
           invitationTokenData,
@@ -292,7 +292,7 @@ describe('RegistrationForm Integration Tests', () => {
 
   describe('Authentication State Management', () => {
     it('should update auth store state after successful registration', async () => {
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -345,7 +345,7 @@ describe('RegistrationForm Integration Tests', () => {
     });
 
     it('should handle session storage configuration updates', async () => {
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -400,7 +400,7 @@ describe('RegistrationForm Integration Tests', () => {
 
       const errorHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -456,7 +456,7 @@ describe('RegistrationForm Integration Tests', () => {
 
       const errorHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -492,7 +492,7 @@ describe('RegistrationForm Integration Tests', () => {
 
       const errorHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -517,7 +517,7 @@ describe('RegistrationForm Integration Tests', () => {
         writable: true
       });
 
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -545,7 +545,7 @@ describe('RegistrationForm Integration Tests', () => {
 
   describe('Performance and Responsiveness', () => {
     it('should handle multiple rapid form submissions', async () => {
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 
@@ -589,7 +589,7 @@ describe('RegistrationForm Integration Tests', () => {
         });
       });
 
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
 

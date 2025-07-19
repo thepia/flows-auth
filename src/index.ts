@@ -7,7 +7,7 @@
 
 // Main components
 export { default as SignInForm } from './components/SignInForm.svelte';
-export { default as RegistrationForm } from './components/RegistrationForm.svelte';
+export { default as AccountCreationForm } from './components/AccountCreationForm.svelte';
 export { default as EmailVerificationBanner } from './components/EmailVerificationBanner.svelte';
 export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
 

@@ -1,13 +1,13 @@
 /**
- * RegistrationForm Component Tests - Single Form Design
+ * AccountCreationForm Component Tests - Single Form Design
  * 
- * Tests for the simplified single-form RegistrationForm component
+ * Tests for the simplified single-form AccountCreationForm component
  * after removal of multi-step functionality.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
+import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
 // Mock the auth store with subscription support
@@ -44,7 +44,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
 
-describe('RegistrationForm - Single Form Design', () => {
+describe('AccountCreationForm - Single Form Design', () => {
   let defaultConfig: AuthConfig;
 
   beforeEach(() => {
@@ -76,7 +76,7 @@ describe('RegistrationForm - Single Form Design', () => {
 
   describe('Basic Rendering', () => {
     it('should render single registration form', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -90,7 +90,7 @@ describe('RegistrationForm - Single Form Design', () => {
     });
 
     it('should show company logo when configured', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -102,7 +102,7 @@ describe('RegistrationForm - Single Form Design', () => {
 
   describe('Form Validation', () => {
     it('should require all mandatory fields', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -114,7 +114,7 @@ describe('RegistrationForm - Single Form Design', () => {
     });
 
     it('should validate email format', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -124,7 +124,7 @@ describe('RegistrationForm - Single Form Design', () => {
     });
 
     it('should require terms and privacy acceptance', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -138,7 +138,7 @@ describe('RegistrationForm - Single Form Design', () => {
 
   describe('Registration Flow', () => {
     it('should successfully register with valid data', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -175,7 +175,7 @@ describe('RegistrationForm - Single Form Design', () => {
     it('should handle existing user error', async () => {
       mockAuthStore.api.checkEmail.mockResolvedValue({ exists: true });
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -208,7 +208,7 @@ describe('RegistrationForm - Single Form Design', () => {
         company: 'ACME Corp'
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig,
           invitationTokenData: invitationData,
@@ -235,7 +235,7 @@ describe('RegistrationForm - Single Form Design', () => {
         lastName: 'Smith'
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig,
           invitationTokenData: invitationData,
@@ -262,7 +262,7 @@ describe('RegistrationForm - Single Form Design', () => {
     it('should emit success event on successful registration', async () => {
       const successHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
       
@@ -296,7 +296,7 @@ describe('RegistrationForm - Single Form Design', () => {
     it('should emit appAccess event only after auth store confirms authentication', async () => {
       const appAccessHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
       
@@ -345,7 +345,7 @@ describe('RegistrationForm - Single Form Design', () => {
     });
 
     it('should subscribe to auth store state changes', async () => {
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -359,7 +359,7 @@ describe('RegistrationForm - Single Form Design', () => {
     it('should not emit appAccess if auth store state is not authenticated', async () => {
       const appAccessHandler = vi.fn();
       
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
       
@@ -392,7 +392,7 @@ describe('RegistrationForm - Single Form Design', () => {
 
   describe('Additional Fields', () => {
     it('should show additional business fields when requested', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle']
@@ -405,7 +405,7 @@ describe('RegistrationForm - Single Form Design', () => {
     });
 
     it('should include additional fields in registration data', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle']

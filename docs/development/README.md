@@ -57,7 +57,7 @@ pnpm test:coverage      # Test coverage report
 ### **3. Integration Setup**
 ```typescript
 // Basic integration
-import { createAuthStore, RegistrationForm, SignInForm } from '@thepia/flows-auth';
+import { createAuthStore, AccountCreationForm, SignInForm } from '@thepia/flows-auth';
 
 const authStore = createAuthStore({
   apiBaseUrl: 'https://api.example.com',

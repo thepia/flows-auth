@@ -371,8 +371,32 @@ export class AuthApiClient {
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
     registrationResponse: any;
-  }): Promise<{ success: boolean; error?: string }> {
-    return this.request<{ success: boolean; error?: string }>('/auth/webauthn/register-verify', {
+  }): Promise<{
+    success: boolean;
+    error?: string;
+    tokens?: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+    };
+    user?: {
+      id: string;
+      email: string;
+    };
+  }> {
+    return this.request<{
+      success: boolean;
+      error?: string;
+      tokens?: {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      };
+      user?: {
+        id: string;
+        email: string;
+      };
+    }>('/auth/webauthn/register-verify', {
       method: 'POST',
       body: JSON.stringify(registrationData)
     });

@@ -56,10 +56,10 @@ describe('WebAuthn Registration Flow', () => {
 
 ### 2. Component Integration Tests
 
-#### RegistrationForm Component Tests
+#### AccountCreationForm Component Tests
 ```typescript
 // Test component with real auth store (minimal mocking)
-describe('RegistrationForm Integration', () => {
+describe('AccountCreationForm Integration', () => {
   it('should call createAccount with correct parameters')
   it('should handle successful registration flow')
   it('should display correct messages for invitation users')
@@ -110,7 +110,7 @@ describe('Error Handling', () => {
 ### Phase 1: Fix Critical Test Regressions (URGENT)
 
 #### 1.1 Update Component Tests
-- [ ] Fix RegistrationForm tests to mock `createAccount`
+- [ ] Fix AccountCreationForm tests to mock `createAccount`
 - [ ] Add comprehensive component integration tests
 - [ ] Remove excessive mocking of business logic
 
@@ -270,7 +270,7 @@ We've created complete test stubs for all missing functionality:
 - [ ] **Implement error-handling-scenarios.test.ts** - Test comprehensive error handling
 
 ### Phase 3: Documentation Synchronization (MEDIUM PRIORITY)
-- [ ] **Update RegistrationForm specification** to reflect `createAccount` usage
+- [ ] **Update AccountCreationForm specification** to reflect `createAccount` usage
 - [ ] **Update API documentation** to match current implementation
 - [ ] **Update integration guides** with correct method calls
 - [ ] **Update flows.thepia.net/MIGRATION_PROGRESS.md** with current status

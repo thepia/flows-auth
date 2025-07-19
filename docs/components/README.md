@@ -8,7 +8,7 @@ This directory contains documentation for all user-facing components in the flow
 
 | Component | Purpose | Documentation | Specification |
 |-----------|---------|---------------|---------------|
-| **RegistrationForm** | Complete user registration with WebAuthn | [`RegistrationForm.md`](./RegistrationForm.md) | [`RegistrationForm-spec.md`](../specifications/RegistrationForm-spec.md) |
+| **AccountCreationForm** | Complete user registration with WebAuthn | [`AccountCreationForm.md`](./AccountCreationForm.md) | [`AccountCreationForm-spec.md`](../specifications/AccountCreationForm-spec.md) |
 | **SignInForm** | Multi-method authentication (passkey/password/magic-link) | *Coming Soon* | [`signInWithPasskey-spec.md`](../specifications/signInWithPasskey-spec.md) |
 
 ### 🔧 **Utility Components**
@@ -24,7 +24,7 @@ This directory contains documentation for all user-facing components in the flow
 ### **Basic Authentication Flow**
 ```svelte
 <script>
-  import { RegistrationForm, SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { AccountCreationForm, SignInForm, createAuthStore } from '@thepia/flows-auth';
   
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.example.com',
@@ -36,7 +36,7 @@ This directory contains documentation for all user-facing components in the flow
 </script>
 
 {#if showRegistration}
-  <RegistrationForm 
+  <AccountCreationForm 
     config={authStore.config}
     on:success={(e) => console.log('Registration success:', e.detail)}
     on:appAccess={(e) => console.log('User enters app:', e.detail)}
@@ -54,7 +54,7 @@ This directory contains documentation for all user-facing components in the flow
 ### **Invitation Token Registration**
 ```svelte
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   
   // Extract invitation token from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -74,7 +74,7 @@ This directory contains documentation for all user-facing components in the flow
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   config={authConfig}
   {invitationTokenData}
   readOnlyFields={invitationTokenData ? ['email'] : []}
@@ -175,13 +175,13 @@ All components support complete visual customization through CSS custom properti
 ```svelte
 <!-- ✅ CORRECT: Registration needs event coordination -->
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
 
   function handleAppAccess(event) {
     const { user, emailVerifiedViaInvitation } = event.detail;
 
     // Close registration dialog
-    showRegistrationForm = false;
+    showAccountCreationForm = false;
 
     // Clean up invitation URLs
     if (invitationToken) cleanInvitationUrl();
@@ -195,10 +195,10 @@ All components support complete visual customization through CSS custom properti
   }
 </script>
 
-<RegistrationForm
+<AccountCreationForm
   {config}
   on:appAccess={handleAppAccess}
-  on:switchToSignIn={() => showRegistrationForm = false}
+  on:switchToSignIn={() => showAccountCreationForm = false}
 />
 ```
 
@@ -245,7 +245,7 @@ interface AuthComponentEvents {
 }
 
 // Component-specific events
-interface RegistrationFormEvents extends AuthComponentEvents {
+interface AccountCreationFormEvents extends AuthComponentEvents {
   appAccess: { user: User; emailVerifiedViaInvitation?: boolean };
   stepChange: { step: RegistrationStep };
   switchToSignIn: {};
@@ -269,7 +269,7 @@ Components integrate seamlessly with the auth store:
 </script>
 
 <!-- Components automatically sync with store state -->
-<RegistrationForm config={authStore.config} />
+<AccountCreationForm config={authStore.config} />
 ```
 
 ## 🧪 **Testing Components**
@@ -284,17 +284,17 @@ Components integrate seamlessly with the auth store:
 ```typescript
 import { render, fireEvent } from '@testing-library/svelte';
 import { createAuthStore } from '@thepia/flows-auth';
-import RegistrationForm from './RegistrationForm.svelte';
+import AccountCreationForm from './AccountCreationForm.svelte';
 
 // Test helper for component setup
-function setupRegistrationForm(props = {}) {
+function setupAccountCreationForm(props = {}) {
   const authStore = createAuthStore({
     apiBaseUrl: 'https://test-api.com',
     domain: 'test.com',
     enablePasskeys: true
   });
   
-  return render(RegistrationForm, {
+  return render(AccountCreationForm, {
     config: authStore.config,
     ...props
   });

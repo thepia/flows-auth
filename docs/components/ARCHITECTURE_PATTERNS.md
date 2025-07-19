@@ -65,13 +65,13 @@ Registration is **complex coordination**: form validation → API calls → UI u
 ```svelte
 <!-- ✅ CORRECT: Registration needs event coordination -->
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   
   function handleAppAccess(event) {
     const { user, emailVerifiedViaInvitation } = event.detail;
     
     // UI Coordination
-    showRegistrationForm = false;
+    showAccountCreationForm = false;
     
     // URL Cleanup
     if (invitationToken) cleanInvitationUrl();
@@ -85,10 +85,10 @@ Registration is **complex coordination**: form validation → API calls → UI u
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   on:appAccess={handleAppAccess}
-  on:switchToSignIn={() => showRegistrationForm = false}
+  on:switchToSignIn={() => showAccountCreationForm = false}
   on:error={handleRegistrationError}
 />
 ```
@@ -169,13 +169,13 @@ test('should authenticate user via authStore', async () => {
 test('should emit appAccess event after registration', async () => {
   const appAccessHandler = vi.fn();
   
-  render(RegistrationForm, { 
+  render(AccountCreationForm, { 
     props: { config },
     listeners: { appAccess: appAccessHandler }
   });
   
   // Complete registration
-  await submitRegistrationForm();
+  await submitAccountCreationForm();
   
   // Verify event emission
   expect(appAccessHandler).toHaveBeenCalledWith(
@@ -195,7 +195,7 @@ test('should emit appAccess event after registration', async () => {
 - [ ] No event listeners needed
 
 ### For Registration
-- [ ] Use `RegistrationForm` component
+- [ ] Use `AccountCreationForm` component
 - [ ] Handle `appAccess` event for UI coordination
 - [ ] Handle `switchToSignIn` for form navigation
 - [ ] Handle `error` events for user feedback
@@ -204,6 +204,6 @@ test('should emit appAccess event after registration', async () => {
 ## 🔗 Related Documentation
 
 - [Component Overview](./README.md) - Main component documentation
-- [RegistrationForm Specification](../specifications/RegistrationForm-spec.md) - Detailed registration behavior
+- [AccountCreationForm Specification](../specifications/AccountCreationForm-spec.md) - Detailed registration behavior
 - [Authentication Flow](../auth/flow.md) - Overall authentication architecture
 - [Testing Strategy](../testing/README.md) - Component testing approaches

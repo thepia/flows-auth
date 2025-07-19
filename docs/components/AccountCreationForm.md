@@ -1,6 +1,6 @@
-# RegistrationForm Component
+# AccountCreationForm Component
 
-The RegistrationForm component provides a complete user registration experience with WebAuthn passkey authentication, supporting invitation tokens, business fields, and immediate app access after registration.
+The AccountCreationForm component provides a complete user registration experience with WebAuthn passkey authentication, supporting invitation tokens, business fields, and immediate app access after registration.
 
 ## Features
 
@@ -17,7 +17,7 @@ The RegistrationForm component provides a complete user registration experience 
 
 ```svelte
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   
   const config = {
     apiBaseUrl: 'https://api.thepia.com',
@@ -41,7 +41,7 @@ The RegistrationForm component provides a complete user registration experience 
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   on:appAccess={handleAppAccess}
   on:switchToSignIn={handleSwitchToSignIn}
@@ -52,7 +52,7 @@ The RegistrationForm component provides a complete user registration experience 
 
 ```svelte
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   
   const config = {
     apiBaseUrl: 'https://api.thepia.com',
@@ -89,7 +89,7 @@ The RegistrationForm component provides a complete user registration experience 
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   {invitationTokenData}
   {additionalFields}
@@ -226,7 +226,7 @@ type RegistrationStep =
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   on:error={handleError}
 />
@@ -257,7 +257,7 @@ type RegistrationStep =
 ### Custom Styling
 
 ```svelte
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   className="custom-registration-form"
 />
@@ -282,7 +282,7 @@ type RegistrationStep =
 Always handle the `appAccess` event to provide immediate app access:
 
 ```svelte
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   on:appAccess={handleAppAccess}
   on:error={handleError}
@@ -310,7 +310,7 @@ function validateInvitationToken(tokenData) {
 Specify which additional fields are required for your use case:
 
 ```svelte
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   additionalFields={['company', 'jobTitle']}
   readOnlyFields={invitationTokenData ? ['email'] : []}
@@ -348,7 +348,7 @@ Handle errors gracefully and provide helpful messages:
 ```svelte
 <!-- routes/register/+page.svelte -->
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   
@@ -378,7 +378,7 @@ Handle errors gracefully and provide helpful messages:
   }
 </script>
 
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   {invitationTokenData}
   additionalFields={['company', 'phone', 'jobTitle']}
@@ -400,7 +400,7 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  import { RegistrationForm } from '@thepia/flows-auth';
+  import { AccountCreationForm } from '@thepia/flows-auth';
   
   const config = {
     apiBaseUrl: 'https://api.thepia.com',
@@ -408,7 +408,7 @@ import Layout from '../layouts/Layout.astro';
     enablePasskeys: true
   };
   
-  const registrationForm = new RegistrationForm({
+  const registrationForm = new AccountCreationForm({
     target: document.getElementById('registration-container'),
     props: {
       config,
@@ -433,7 +433,7 @@ import Layout from '../layouts/Layout.astro';
 
 If you're migrating from a custom registration form:
 
-1. **Replace form HTML** with `<RegistrationForm>` component
+1. **Replace form HTML** with `<AccountCreationForm>` component
 2. **Map existing fields** to component props
 3. **Handle events** instead of form submissions
 4. **Update styling** to use CSS custom properties

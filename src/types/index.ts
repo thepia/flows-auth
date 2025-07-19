@@ -36,7 +36,6 @@ export type RegistrationStep =
   | 'email-entry'
   | 'terms-of-service'
   | 'webauthn-register'
-  | 'registration-success'
   | 'email-verification-required'
   | 'email-verification-complete'
   | 'error';

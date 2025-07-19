@@ -176,6 +176,6 @@ export function extractRegistrationData(tokenData: InvitationTokenData): {
     lastName: tokenData.lastName || tokenData.name?.split(' ').slice(1).join(' ') || '',
     company: tokenData.company || tokenData.companyName || '',
     phone: tokenData.phone || '',
-    jobTitle: tokenData.jobTitle || 'Hiring Manager'
+    jobTitle: tokenData.jobTitle || ''
   };
 }

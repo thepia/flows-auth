@@ -1,14 +1,14 @@
 /**
- * Comprehensive Test Suite for RegistrationForm Component
+ * Comprehensive Test Suite for AccountCreationForm Component
  * 
- * This test suite covers all aspects of the enhanced RegistrationForm component
+ * This test suite covers all aspects of the enhanced AccountCreationForm component
  * including business fields, invitation token integration, and dynamic field behavior.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
+import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
 // Mock the auth store
@@ -31,7 +31,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
 
-describe('RegistrationForm Component', () => {
+describe('AccountCreationForm Component', () => {
   let defaultConfig: AuthConfig;
   let mockInvitationTokenData: InvitationTokenData;
 
@@ -79,7 +79,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Basic Component Rendering', () => {
     it('should render with minimal props', () => {
-      const { container } = render(RegistrationForm, {
+      const { container } = render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -89,7 +89,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should render with company logo when provided', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig, showLogo: true }
       });
 
@@ -97,7 +97,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should render in compact mode', () => {
-      const { container } = render(RegistrationForm, {
+      const { container } = render(AccountCreationForm, {
         props: { config: defaultConfig, compact: true }
       });
 
@@ -105,7 +105,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should apply custom className', () => {
-      const { container } = render(RegistrationForm, {
+      const { container } = render(AccountCreationForm, {
         props: { config: defaultConfig, className: 'custom-form' }
       });
 
@@ -115,7 +115,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Basic Field Behavior', () => {
     it('should prefill email from initialEmail prop', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig, initialEmail: 'initial@test.com' }
       });
 
@@ -124,7 +124,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should validate email format', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -148,7 +148,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should call checkEmail and createAccount with valid form data', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -187,7 +187,7 @@ describe('RegistrationForm Component', () => {
     it('should handle existing user scenario', async () => {
       mockAuthStore.api.checkEmail.mockResolvedValue({ exists: true });
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -214,7 +214,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Business Fields Integration', () => {
     it('should render business fields when specified', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           additionalFields: ['company', 'phone', 'jobTitle'] 
@@ -233,7 +233,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should show all business fields in single form', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           additionalFields: ['company', 'phone']
@@ -253,7 +253,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should include business fields in registration data', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle']
@@ -300,7 +300,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Invitation Token Integration', () => {
     it('should prefill fields from invitation token data', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           invitationTokenData: mockInvitationTokenData,
@@ -313,7 +313,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should show invitation message when provided', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           invitationTokenData: mockInvitationTokenData
@@ -330,7 +330,7 @@ describe('RegistrationForm Component', () => {
         expires: new Date('2020-01-01')
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           invitationTokenData: expiredTokenData
@@ -342,7 +342,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should make email field read-only when from invitation token', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           invitationTokenData: mockInvitationTokenData,
@@ -361,7 +361,7 @@ describe('RegistrationForm Component', () => {
         readOnlyFields: ['firstName', 'lastName']
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           invitationTokenData: tokenDataWithReadOnly
@@ -387,7 +387,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Dynamic Read-Only Field Support', () => {
     it('should make specified fields read-only', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           readOnlyFields: ['email'],
@@ -406,7 +406,7 @@ describe('RegistrationForm Component', () => {
         readOnlyFields: ['firstName']
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           invitationTokenData: tokenDataWithReadOnly,
@@ -432,7 +432,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Single Form Behavior', () => {
     it('should show all form fields immediately', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -449,7 +449,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should require terms acceptance for form submission', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -468,7 +468,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should enable submission when all required fields and terms are completed', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -492,7 +492,7 @@ describe('RegistrationForm Component', () => {
     it('should call onSwitchToSignIn prop when sign-in link is clicked', async () => {
       const onSwitchToSignIn = vi.fn();
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig, onSwitchToSignIn }
       });
 
@@ -508,7 +508,7 @@ describe('RegistrationForm Component', () => {
       const errorHandler = vi.fn();
       mockAuthStore.createAccount.mockRejectedValue(new Error('Registration failed'));
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -545,7 +545,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should prevent submission without required terms acceptance', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -571,7 +571,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Form Reset and State Management', () => {
     it('should reset form state correctly', async () => {
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           initialEmail: 'initial@test.com',
@@ -593,7 +593,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should maintain invitation token data after reset', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { 
           config: defaultConfig, 
           invitationTokenData: mockInvitationTokenData
@@ -610,7 +610,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Accessibility and UX', () => {
     it('should have proper ARIA labels', () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -619,7 +619,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should support keyboard navigation', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -635,7 +635,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should show loading states appropriately', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -650,7 +650,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should disable form elements during loading', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -668,7 +668,7 @@ describe('RegistrationForm Component', () => {
 
   describe('Integration with Auth Store', () => {
     it('should pass correct registration data to auth store', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle'],
@@ -717,7 +717,7 @@ describe('RegistrationForm Component', () => {
     });
 
     it('should handle email check API calls', async () => {
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -746,7 +746,7 @@ describe('RegistrationForm Component', () => {
         lastName: 'Doe'
       };
 
-      const { component } = render(RegistrationForm, {
+      const { component } = render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           invitationTokenData: invitationData
@@ -774,7 +774,7 @@ describe('RegistrationForm Component', () => {
         emailVerifiedViaInvitation: false // CRITICAL: Email verification required
       });
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: { config: defaultConfig }
       });
 
@@ -806,7 +806,7 @@ describe('RegistrationForm Component', () => {
         email: 'test@example.com'
       };
 
-      render(RegistrationForm, {
+      render(AccountCreationForm, {
         props: {
           config: defaultConfig,
           invitationTokenData: invitationData

@@ -88,7 +88,7 @@ efficient.
 - **Restart demo servers** after library rebuilds to pick up changes
 - **Demo apps use local file dependency**: Changes require full restart cycle
 
-RegistrationForm and SignInForm are the primary authentication components.
+AccountCreationForm and SignInForm are the primary authentication components.
 
 
 ## Development Commands

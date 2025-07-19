@@ -1,7 +1,7 @@
-# RegistrationForm Component Specification
+# AccountCreationForm Component Specification
 
 ## Overview
-The RegistrationForm component provides a complete user registration experience with WebAuthn passkey authentication in a single-form design. It supports invitation tokens, dynamic field configuration, and immediate app access after registration.
+The AccountCreationForm component provides a complete user registration experience with WebAuthn passkey authentication in a single-form design. It supports invitation tokens, dynamic field configuration, and immediate app access after registration.
 
 ## Functional Requirements
 
@@ -140,7 +140,7 @@ The RegistrationForm component provides a complete user registration experience 
 
 ### Props Interface
 ```typescript
-interface RegistrationFormProps {
+interface AccountCreationFormProps {
   config: AuthConfig;
   showLogo?: boolean;
   compact?: boolean;
@@ -156,7 +156,7 @@ interface RegistrationFormProps {
 
 ### Event Interface
 ```typescript
-interface RegistrationFormEvents {
+interface AccountCreationFormEvents {
   success: { user: User };
   appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean };
   error: { error: AuthError };
@@ -210,7 +210,7 @@ interface ExtendedRegistrationRequest extends RegistrationRequest {
 ## Compatibility Requirements
 
 ### CR1: Backward Compatibility
-- **CR1.1**: MUST maintain existing RegistrationForm API for basic use cases
+- **CR1.1**: MUST maintain existing AccountCreationForm API for basic use cases
 - **CR1.2**: MUST provide default values for new optional props
 - **CR1.3**: MUST emit both new and existing events for compatibility
 - **CR1.4**: MUST support existing branding and styling configurations

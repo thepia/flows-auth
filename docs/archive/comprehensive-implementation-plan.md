@@ -27,7 +27,7 @@ The library cannot be considered complete until it provides the full authenticat
 │   ├── tasks-app-demo/          # ✅ CURRENT: Task management demo app
 │   └── flows-app-demo/          # ✅ CURRENT: General flows demo app
 ├── src/
-│   ├── components/              # Library components (SignInForm, RegistrationForm, etc.)
+│   ├── components/              # Library components (SignInForm, AccountCreationForm, etc.)
 │   ├── stores/                  # Auth stores
 │   └── index.ts                 # Main library exports
 └── docs/                        # Documentation
@@ -40,7 +40,7 @@ The library cannot be considered complete until it provides the full authenticat
 #### **tasks-app-demo** (Current Focus)
 - ✅ **Exists**: `/examples/tasks-app-demo/`
 - ❌ **Using library components**: Currently uses custom `AuthForm.svelte`
-- 🎯 **Next Step**: Update to use `SignInForm` and `RegistrationForm` from library
+- 🎯 **Next Step**: Update to use `SignInForm` and `AccountCreationForm` from library
 
 #### **flows-app-demo** (Future)
 - ✅ **Exists**: `/examples/flows-app-demo/`
@@ -97,7 +97,7 @@ if (userCheck.exists && userCheck.hasWebAuthn) {
 {#if mode === 'signin'}
   <SignInForm />
 {:else}
-  <RegistrationForm />
+  <AccountCreationForm />
 {/if}
 ```
 
@@ -268,7 +268,7 @@ class AuthApiClient {
 
 #### 2.1 User Registration Flow
 **Files**:
-- `src/components/RegistrationForm.svelte`
+- `src/components/AccountCreationForm.svelte`
 - `src/components/TermsOfService.svelte`
 - `src/components/PasskeySetup.svelte`
 - `src/components/EmailVerificationPrompt.svelte`
@@ -394,7 +394,7 @@ async function handleEmailEntry() {
 ```
 
 **Implementation Requirements**:
-1. **Single Form Interface**: No separate SignInForm/RegistrationForm components
+1. **Single Form Interface**: No separate SignInForm/AccountCreationForm components
 2. **Automatic User Detection**: Call `checkEmail()` API on email submission
 3. **Dynamic UI Adaptation**: Form UI changes based on user existence
 4. **Seamless Flow Transitions**: User doesn't know which flow they're in
@@ -880,7 +880,7 @@ describe('Component Integration E2E', () => {
     test('accessibility features function')
   })
 
-  describe('RegistrationForm Component', () => {
+  describe('AccountCreationForm Component', () => {
     test('form validation works correctly')
     test('terms acceptance required')
     test('passkey setup integration')
@@ -1047,7 +1047,7 @@ async function secureReRegistration(email: string, environment: 'development' | 
   {#if currentStep === 'combined-auth'}
     <EmailEntry bind:email on:continue={handleEmailContinue} />
   {:else if currentStep === 'webauthn-register'}
-    <RegistrationForm
+    <AccountCreationForm
       {email}
       {userExists}
       bind:tosChecked
@@ -1206,7 +1206,7 @@ export const registrationActions = {
 
 #### **Step 2: Registration with Terms of Service**
 ```svelte
-<!-- RegistrationForm.svelte -->
+<!-- AccountCreationForm.svelte -->
 <div class="registration-step">
   <h2>Create Account with Passkey</h2>
   <p>Create a new Thepia account for {email} using secure passkey authentication</p>

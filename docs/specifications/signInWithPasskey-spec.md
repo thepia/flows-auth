@@ -68,10 +68,10 @@
 - **FR9.8**: AuthSection MUST provide clear visual distinction between authenticated/unauthenticated states
 
 ### FR10: Registration Email Verification Requirements
-- **FR10.1**: RegistrationForm MUST check `emailVerifiedViaInvitation` field in registration response
-- **FR10.2**: RegistrationForm MUST NOT show "Verify your email" message when `emailVerifiedViaInvitation` is true
-- **FR10.3**: RegistrationForm MUST show "Your email has been verified" message when `emailVerifiedViaInvitation` is true
-- **FR10.4**: RegistrationForm MUST show "Verify your email to unlock all features" message when `emailVerifiedViaInvitation` is false
+- **FR10.1**: AccountCreationForm MUST check `emailVerifiedViaInvitation` field in registration response
+- **FR10.2**: AccountCreationForm MUST NOT show "Verify your email" message when `emailVerifiedViaInvitation` is true
+- **FR10.3**: AccountCreationForm MUST show "Your email has been verified" message when `emailVerifiedViaInvitation` is true
+- **FR10.4**: AccountCreationForm MUST show "Verify your email to unlock all features" message when `emailVerifiedViaInvitation` is false
 - **FR10.5**: Registration API response MUST include `emailVerifiedViaInvitation` boolean field
 - **FR10.6**: Registration API response MUST include `welcomeEmailSent` boolean field
 - **FR10.7**: Registration API response MUST include `emailVerificationRequired` boolean field

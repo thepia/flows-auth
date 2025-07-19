@@ -1,6 +1,6 @@
 <!--
-  Registration Form Component - Complete registration experience with email verification
-  Implements the optimal registration journey: Registration → App Access → Email Verification
+  Account Creation Form Component - Complete account creation experience for invited users
+  Implements the optimal account creation journey: Account Creation → Passkey Setup → App Access
 -->
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
@@ -57,7 +57,7 @@
   let error: string | null = null;
   let supportsWebAuthn = false;
   let userExists = false;
-  let showSuccess = false; // Show success message after registration
+  // Note: No success step - flow goes directly to authenticated app after passkey creation
 
   // Terms of Service state
   let acceptedTerms = false;
@@ -206,16 +206,11 @@
 
         console.log('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
 
-        if (result.emailVerifiedViaInvitation) {
-          console.log('📧 Invitation-based registration - auth store will handle auto-sign-in');
-        } else {
-          // Standard registration: Show success message while waiting for auth confirmation
-          console.log('📧 Standard registration - showing success message while waiting for auth store');
-          showSuccess = true;
-          
-          // Emit success event immediately (for UI feedback)
-          dispatch('success', { user: result.user });
-        }
+        // Account creation completed - auth store will handle session creation and app transition
+        console.log('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
+
+        // Emit success event immediately (for UI feedback)
+        dispatch('success', { user: result.user });
       }
     } catch (err: any) {
       loading = false;
@@ -229,21 +224,7 @@
     handleRegistration();
   }
 
-  // Reset form to initial state
-  function resetForm() {
-    showSuccess = false;
-    error = null;
-    loading = false;
-    email = invitationTokenData?.email || initialEmail;
-    firstName = invitationTokenData?.firstName || '';
-    lastName = invitationTokenData?.lastName || '';
-    company = invitationTokenData?.company || '';
-    phone = invitationTokenData?.phone || '';
-    jobTitle = invitationTokenData?.jobTitle || '';
-    acceptedTerms = false;
-    acceptedPrivacy = false;
-    marketingConsent = false;
-  }
+  // Note: resetForm removed - no longer needed since there's no success step
 </script>
 
 <div class="registration-form {className}" class:compact>
@@ -254,18 +235,7 @@
   {/if}
 
   <div class="auth-container">
-    {#if showSuccess}
-      <!-- Registration Success -->
-      <div class="success-step">
-        <div class="step-header">
-          <h2 class="step-title">Registration Successful!</h2>
-          <p class="step-description">
-            Your account has been created. Please check your email to verify your account.
-          </p>
-        </div>
-      </div>
-    {:else}
-      <!-- Registration Form - Single Form Design -->
+    <!-- Account Creation Form - Single Form Design -->
 
 
       <!-- Single Form Registration - Mirror original flows.thepia.net form -->
@@ -444,38 +414,6 @@
         </div>
       </div>
 
-    {/if}
-    
-    {#if false}
-      <!-- Registration Success - User enters app immediately -->
-      <div class="success-step">
-        <div class="step-header">
-          <div class="success-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12l2 2 4-4"/>
-              <circle cx="12" cy="12" r="10"/>
-            </svg>
-          </div>
-          <h2 class="step-title">Account Created Successfully!</h2>
-          <p class="step-description">
-            Welcome to {config.branding?.companyName || 'our platform'}! 
-            You can now explore the application.
-          </p>
-        </div>
-
-        <div class="success-info">
-          {#if false}
-            <!-- Email already verified via invitation token -->
-            <p>✅ Your email <strong>{email}</strong> has been verified</p>
-            <p>🎉 You have full access to all features</p>
-          {:else}
-            <!-- Standard registration - email verification needed -->
-            <p>📧 We've sent a welcome email to <strong>{email}</strong></p>
-            <p>🔓 Verify your email to unlock all features</p>
-          {/if}
-        </div>
-      </div>
-    {/if}
   </div>
 
   {#if config.branding?.showPoweredBy !== false}

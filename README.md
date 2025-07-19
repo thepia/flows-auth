@@ -121,12 +121,12 @@ The main authentication component that handles the complete sign-in flow.
 - `error` - Authentication error occurred
 - `stateChange` - Authentication step changed
 
-### RegistrationForm
+### AccountCreationForm
 
 The complete user registration component with WebAuthn passkey support, invitation tokens, and immediate app access.
 
 ```svelte
-<RegistrationForm 
+<AccountCreationForm 
   {config}
   showLogo={true}
   compact={false}
@@ -295,7 +295,7 @@ The following documents are the **single source of truth** for their respective 
 ### 🏛️ **Core Architecture & Requirements**
 | Document | Authority Over | Status |
 |----------|---------------|---------|
-| [`docs/specifications/RegistrationForm-spec.md`](./docs/specifications/RegistrationForm-spec.md) | RegistrationForm component behavior, events, props | ✅ Authoritative |
+| [`docs/specifications/AccountCreationForm-spec.md`](./docs/specifications/AccountCreationForm-spec.md) | AccountCreationForm component behavior, events, props | ✅ Authoritative |
 | [`docs/specifications/signInWithPasskey-spec.md`](./docs/specifications/signInWithPasskey-spec.md) | WebAuthn/passkey authentication flow | ✅ Authoritative |
 | [`docs/SESSION_MANAGEMENT_REQUIREMENTS.md`](./docs/SESSION_MANAGEMENT_REQUIREMENTS.md) | Session storage, timeouts, state management | ✅ Authoritative |
 | [`docs/testing/API_CONTRACT_TESTING_POLICY.md`](./docs/testing/API_CONTRACT_TESTING_POLICY.md) | API integration testing requirements | ✅ Authoritative |
@@ -325,7 +325,7 @@ The following documents are the **single source of truth** for their respective 
 |----------|---------------|---------|
 | [`CLAUDE.md`](./CLAUDE.md) | AI development patterns, common mistakes | ✅ Authoritative |
 | [`docs/development/api-server-architecture.md`](./docs/development/api-server-architecture.md) | Server-side implementation requirements | ✅ Authoritative |
-| [`docs/components/RegistrationForm.md`](./docs/components/RegistrationForm.md) | Component usage examples, integration patterns | ✅ Authoritative |
+| [`docs/components/AccountCreationForm.md`](./docs/components/AccountCreationForm.md) | Component usage examples, integration patterns | ✅ Authoritative |
 
 ### ⚠️ **Deprecated/Transitional Documents**
 | Document | Status | Migration Path |

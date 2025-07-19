@@ -240,6 +240,7 @@ describe('RegistrationForm Integration Tests', () => {
         props: { 
           config: authConfig, 
           invitationTokenData,
+          invitationToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token',
           additionalFields: ['company', 'phone', 'jobTitle'],
           readOnlyFields: ['email']
         }
@@ -283,7 +284,7 @@ describe('RegistrationForm Integration Tests', () => {
         expect.stringContaining('/auth/webauthn/register-verify'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('token-placeholder')
+          body: expect.stringContaining('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token')
         })
       );
     });

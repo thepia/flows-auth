@@ -1,7 +1,7 @@
 # RegistrationForm Component Specification
 
 ## Overview
-The RegistrationForm component provides a complete user registration experience with WebAuthn passkey authentication, supporting invitation tokens, dynamic field configuration, and immediate app access after registration.
+The RegistrationForm component provides a complete user registration experience with WebAuthn passkey authentication in a single-form design. It supports invitation tokens, dynamic field configuration, and immediate app access after registration.
 
 ## Functional Requirements
 
@@ -12,17 +12,18 @@ The RegistrationForm component provides a complete user registration experience 
 - **FR1.4**: MUST accept `className: string` prop for custom styling
 - **FR1.5**: MUST accept `initialEmail: string` prop for email prefilling
 - **FR1.6**: MUST accept `invitationTokenData: InvitationTokenData | null` prop for invitation token support
+- **FR1.6a**: MUST accept `invitationToken: string | null` prop for original JWT token string
 - **FR1.7**: MUST accept `additionalFields: Array<'company' | 'phone' | 'jobTitle'>` prop for business fields
 - **FR1.8**: MUST accept `readOnlyFields: string[]` prop for dynamic field locking
 - **FR1.9**: MUST accept `onSwitchToSignIn: () => void` prop for mode switching
 
-### FR2: Registration Flow Steps
-- **FR2.1**: MUST implement `email-entry` step with email validation
-- **FR2.2**: MUST implement `terms-of-service` step with required checkbox validation
-- **FR2.3**: MUST implement `webauthn-register` step with passkey creation
-- **FR2.4**: MUST implement `registration-success` step with immediate app access
-- **FR2.5**: MUST support navigation between steps with back button functionality
-- **FR2.6**: MUST validate step transitions according to business rules
+### FR2: Single-Form Registration Design
+- **FR2.1**: MUST implement single-form layout with all fields visible at once
+- **FR2.2**: MUST include Terms of Service and Privacy Policy checkboxes within the form
+- **FR2.3**: MUST validate all required fields before allowing registration
+- **FR2.4**: MUST support WebAuthn passkey creation directly from form submission
+- **FR2.5**: MUST show immediate success state or app access after registration
+- **FR2.6**: MUST NOT implement multi-step navigation or step transitions
 
 ### FR3: Field Management
 - **FR3.1**: MUST support core fields: email, firstName, lastName
@@ -58,20 +59,17 @@ The RegistrationForm component provides a complete user registration experience 
 - **FR6.6**: MUST provide helpful error messages for common WebAuthn failures
 
 ### FR7: Event Emission
-- **FR7.1**: MUST emit `stepChange` event when step transitions occur
-- **FR7.2**: MUST emit `success` event on successful registration completion
-- **FR7.3**: MUST emit `appAccess` event for immediate app access after registration
-- **FR7.4**: MUST emit `error` event for registration failures
-- **FR7.5**: MUST emit `switchToSignIn` event when user requests sign-in mode
-- **FR7.6**: MUST emit `terms_accepted` event when terms are accepted
+- **FR7.1**: MUST emit `success` event on successful registration completion
+- **FR7.2**: MUST emit `appAccess` event for immediate app access after registration
+- **FR7.3**: MUST emit `error` event for registration failures
+- **FR7.4**: MUST emit `switchToSignIn` event when user requests sign-in mode
+- **FR7.5**: MUST NOT emit `stepChange` or `terms_accepted` events (removed with multi-step design)
 
 ### FR8: State Management
-- **FR8.1**: MUST maintain internal state for current step
-- **FR8.2**: MUST maintain form data state for all fields
-- **FR8.3**: MUST maintain loading state for async operations
-- **FR8.4**: MUST maintain error state for validation and API failures
-- **FR8.5**: MUST reset state appropriately when form is reset
-- **FR8.6**: MUST preserve state during step navigation
+- **FR8.1**: MUST maintain form data state for all fields
+- **FR8.2**: MUST maintain loading state for async operations
+- **FR8.3**: MUST maintain error state for validation and API failures
+- **FR8.4**: MUST reset state appropriately when form is reset
 
 ### FR9: Error Handling
 - **FR9.1**: MUST display field validation errors inline
@@ -143,6 +141,7 @@ interface RegistrationFormProps {
   className?: string;
   initialEmail?: string;
   invitationTokenData?: InvitationTokenData | null;
+  invitationToken?: string | null; // Original JWT token string
   additionalFields?: Array<'company' | 'phone' | 'jobTitle'>;
   readOnlyFields?: string[];
   onSwitchToSignIn?: () => void;
@@ -152,16 +151,10 @@ interface RegistrationFormProps {
 ### Event Interface
 ```typescript
 interface RegistrationFormEvents {
-  stepChange: { step: RegistrationStep };
-  success: { user: User; step: RegistrationStep };
-  appAccess: { user: User };
+  success: { user: User };
+  appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean };
   error: { error: AuthError };
   switchToSignIn: {};
-  terms_accepted: { 
-    terms: boolean; 
-    privacy: boolean; 
-    marketing: boolean; 
-  };
 }
 ```
 

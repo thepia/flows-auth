@@ -84,8 +84,8 @@ describe('RegistrationForm Component', () => {
       });
 
       expect(container.querySelector('.registration-form')).toBeInTheDocument();
-      expect(screen.getByLabelText('Email address')).toBeInTheDocument();
-      expect(screen.getByText('Continue')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Email Address/)).toBeInTheDocument();
+      expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
     });
 
     it('should render with company logo when provided', () => {
@@ -119,7 +119,7 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig, initialEmail: 'initial@test.com' }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.value).toBe('initial@test.com');
     });
 
@@ -128,8 +128,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'invalid-email' } });
       await fireEvent.click(continueButton);
@@ -143,8 +143,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(continueButton);
@@ -165,8 +165,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'existing@example.com' } });
       await fireEvent.click(continueButton);
@@ -187,8 +187,8 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate to webauthn-register step
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(continueButton);
@@ -206,9 +206,9 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate through steps to webauthn-register
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -217,10 +217,10 @@ describe('RegistrationForm Component', () => {
       // Accept terms
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
-        expect(screen.getByText('Create Account with Passkey')).toBeInTheDocument();
+        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
       });
 
       // Check business fields
@@ -238,9 +238,9 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate through complete flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -248,10 +248,10 @@ describe('RegistrationForm Component', () => {
 
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
-        expect(screen.getByText('Create Account with Passkey')).toBeInTheDocument();
+        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
       });
 
       // Fill business fields
@@ -289,7 +289,7 @@ describe('RegistrationForm Component', () => {
         }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.value).toBe('test@example.com');
     });
 
@@ -302,8 +302,8 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate to webauthn-register step to see invitation message
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(continueButton);
@@ -311,7 +311,7 @@ describe('RegistrationForm Component', () => {
       // Skip to webauthn step through terms
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Continue'));
+      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       expect(screen.getByText('Welcome to our team!')).toBeInTheDocument();
     });
@@ -330,13 +330,13 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate to webauthn-register step
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText(/Create Account with Passkey/));
       
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Continue'));
+      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       expect(screen.getByText(/invitation has expired/)).toBeInTheDocument();
     });
@@ -350,7 +350,7 @@ describe('RegistrationForm Component', () => {
         }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.readOnly).toBe(true);
       expect(emailInput).toHaveClass('readonly');
     });
@@ -369,13 +369,13 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate to webauthn-register step
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText(/Create Account with Passkey/));
       
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Continue'));
+      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       const firstNameInput = screen.getByLabelText('First Name (optional)') as HTMLInputElement;
       const lastNameInput = screen.getByLabelText('Last Name (optional)') as HTMLInputElement;
@@ -395,7 +395,7 @@ describe('RegistrationForm Component', () => {
         }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.readOnly).toBe(true);
       expect(emailInput).toHaveClass('readonly');
     });
@@ -414,16 +414,16 @@ describe('RegistrationForm Component', () => {
         }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.readOnly).toBe(true);
 
       // Navigate to webauthn-register step
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText(/Create Account with Passkey/));
       
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Continue'));
+      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       const firstNameInput = screen.getByLabelText('First Name (optional)') as HTMLInputElement;
       expect(firstNameInput.readOnly).toBe(true);
@@ -441,9 +441,9 @@ describe('RegistrationForm Component', () => {
       const component = screen.getByRole('form').closest('.registration-form');
       component?.addEventListener('stepChange', stepChangeHandler);
 
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(stepChangeHandler).toHaveBeenCalledWith(
@@ -483,9 +483,9 @@ describe('RegistrationForm Component', () => {
       component?.addEventListener('terms_accepted', termsAcceptedHandler);
 
       // Navigate to terms step
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -494,7 +494,7 @@ describe('RegistrationForm Component', () => {
       // Accept terms
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
         expect(termsAcceptedHandler).toHaveBeenCalledWith(
@@ -520,9 +520,9 @@ describe('RegistrationForm Component', () => {
       component?.addEventListener('appAccess', appAccessHandler);
 
       // Complete registration flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -530,10 +530,10 @@ describe('RegistrationForm Component', () => {
 
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
-        expect(screen.getByText('Create Account with Passkey')).toBeInTheDocument();
+        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
       });
 
       await fireEvent.click(screen.getByText(/Register with Passkey/));
@@ -564,9 +564,9 @@ describe('RegistrationForm Component', () => {
       component?.addEventListener('error', errorHandler);
 
       // Complete registration flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -574,10 +574,10 @@ describe('RegistrationForm Component', () => {
 
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
-        expect(screen.getByText('Create Account with Passkey')).toBeInTheDocument();
+        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
       });
 
       await fireEvent.click(screen.getByText(/Register with Passkey/));
@@ -602,16 +602,16 @@ describe('RegistrationForm Component', () => {
       });
 
       // Navigate to terms step
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
       });
 
       // Try to continue without accepting terms
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
         expect(screen.getByText(/must accept the Terms of Service/)).toBeInTheDocument();
@@ -630,7 +630,7 @@ describe('RegistrationForm Component', () => {
       });
 
       // Fill form and navigate
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'changed@test.com' } });
 
       // Reset form (component method - would need to be exposed)
@@ -650,7 +650,7 @@ describe('RegistrationForm Component', () => {
         }
       });
 
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.value).toBe('test@example.com');
       
       // Value should remain from invitation token even after changes
@@ -664,8 +664,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      expect(screen.getByLabelText('Email address')).toHaveAttribute('aria-label', 'Email address');
-      expect(screen.getByText('Continue')).toHaveAttribute('type', 'submit');
+      expect(screen.getByLabelText(/Email Address/)).toHaveAttribute('aria-label', 'Email Address');
+      expect(screen.getByText(/Create Account with Passkey/)).toHaveAttribute('type', 'submit');
     });
 
     it('should support keyboard navigation', async () => {
@@ -673,8 +673,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       // Tab navigation
       emailInput.focus();
@@ -689,8 +689,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(continueButton);
@@ -704,8 +704,8 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
-      const continueButton = screen.getByText('Continue');
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const continueButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(continueButton);
@@ -727,9 +727,9 @@ describe('RegistrationForm Component', () => {
       });
 
       // Complete registration flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
@@ -737,10 +737,10 @@ describe('RegistrationForm Component', () => {
 
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Continue'));
+      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
 
       await waitFor(() => {
-        expect(screen.getByText('Create Account with Passkey')).toBeInTheDocument();
+        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
       });
 
       await fireEvent.click(screen.getByText(/Register with Passkey/));
@@ -757,7 +757,7 @@ describe('RegistrationForm Component', () => {
           acceptedTerms: true,
           acceptedPrivacy: true,
           marketingConsent: false,
-          invitationToken: 'token-placeholder'
+          invitationToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token'
         });
       });
     });
@@ -767,9 +767,9 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText(/Email Address/);
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText('Continue'));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
       await waitFor(() => {
         expect(mockAuthStore.api.checkEmail).toHaveBeenCalledWith('test@example.com');

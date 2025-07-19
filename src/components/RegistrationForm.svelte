@@ -10,7 +10,6 @@
     AuthConfig, 
     User, 
     AuthError, 
-    RegistrationStep,
     RegistrationRequest,
     AuthEventData,
     InvitationTokenData,
@@ -24,36 +23,34 @@
   export let className = '';
   export let initialEmail = '';
   export let invitationTokenData: InvitationTokenData | null = null;
+  export let invitationToken: string | null = null; // Original JWT token string
   export let additionalFields: AdditionalField[] = [];
   export let readOnlyFields: string[] = [];
   export let onSwitchToSignIn: (() => void) | undefined = undefined;
 
   // Events
   const dispatch = createEventDispatcher<{
-    success: { user: User; step: RegistrationStep };
+    success: { user: User };
     error: { error: AuthError };
-    stepChange: { step: RegistrationStep };
     appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
     switchToSignIn: {};
-    terms_accepted: { terms: boolean; privacy: boolean; marketing: boolean };
   }>();
 
   // Auth store
   const authStore = createAuthStore(config);
 
   // Component state
-  let email = initialEmail;
-  let firstName = '';
-  let lastName = '';
-  let company = '';
-  let phone = '';
-  let jobTitle = '';
+  let email = invitationTokenData?.email || initialEmail;
+  let firstName = invitationTokenData?.firstName || '';
+  let lastName = invitationTokenData?.lastName || '';
+  let company = invitationTokenData?.company || '';
+  let phone = invitationTokenData?.phone || '';
+  let jobTitle = invitationTokenData?.jobTitle || '';
   let loading = false;
   let error: string | null = null;
-  let step: RegistrationStep = 'webauthn-register'; // Single form - go directly to registration
   let supportsWebAuthn = false;
   let userExists = false;
-  let registrationResult: any = null; // Store registration response for success message logic
+  let showSuccess = false; // Show success message after registration
 
   // Terms of Service state
   let acceptedTerms = false;
@@ -68,16 +65,14 @@
     supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
     platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
     
-    // Prefill fields from invitation token data
+    console.log('🔐 RegistrationForm WebAuthn Status:', {
+      supportsWebAuthn,
+      platformAuthenticatorAvailable,
+      enablePasskeys: config.enablePasskeys
+    });
+    
     if (invitationTokenData) {
-      email = invitationTokenData.email;
-      firstName = invitationTokenData.firstName || '';
-      lastName = invitationTokenData.lastName || '';
-      company = invitationTokenData.company || '';
-      phone = invitationTokenData.phone || '';
-      jobTitle = invitationTokenData.jobTitle || '';
-      
-      console.log('🎫 Prefilled form from invitation token:', {
+      console.log('🎫 Form prefilled from invitation token:', {
         email: invitationTokenData.email,
         fieldsPopulated: {
           firstName: !!invitationTokenData.firstName,
@@ -88,12 +83,6 @@
         }
       });
     }
-    
-    console.log('🔐 RegistrationForm WebAuthn Status:', {
-      supportsWebAuthn,
-      platformAuthenticatorAvailable,
-      enablePasskeys: config.enablePasskeys
-    });
   });
   
   // Utility functions
@@ -117,85 +106,59 @@
     dispatch('switchToSignIn');
   }
 
-  // Handle email entry and user check
-  async function handleEmailEntry() {
-    if (!email.trim()) return;
-    
+  // Handle registration form submission
+  async function handleRegistration() {
+    // Validate required fields
+    if (!email.trim()) {
+      error = 'Email is required';
+      return;
+    }
+    if (!firstName.trim()) {
+      error = 'First name is required';
+      return;
+    }
+    if (!lastName.trim()) {
+      error = 'Last name is required';
+      return;
+    }
+    if (!acceptedTerms || !acceptedPrivacy) {
+      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
+      return;
+    }
+
     loading = true;
     error = null;
 
     try {
       // Check if user already exists
       const emailCheck = await authStore.api.checkEmail(email);
-      userExists = emailCheck.exists;
-      
-      if (userExists) {
+      if (emailCheck.exists) {
         error = 'An account with this email already exists. Please sign in instead.';
         loading = false;
         return;
       }
 
-      // Proceed to Terms of Service
-      step = 'terms-of-service';
-      dispatch('stepChange', { step });
-      loading = false;
-    } catch (err: any) {
-      loading = false;
-      error = err.message || 'Failed to check email';
-    }
-  }
-
-  // Handle Terms of Service acceptance
-  function handleTermsAcceptance() {
-    if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
-      return;
-    }
-
-    error = null;
-    step = 'webauthn-register';
-    dispatch('stepChange', { step });
-    dispatch('terms_accepted', { 
-      terms: acceptedTerms, 
-      privacy: acceptedPrivacy, 
-      marketing: marketingConsent 
-    });
-  }
-
-  // Handle WebAuthn registration
-  async function handleRegistration() {
-    if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'Terms of Service must be accepted';
-      return;
-    }
-
-    loading = true;
-    error = null;
-
-    try {
       const registrationData: RegistrationRequest = {
         email,
-        firstName: firstName.trim() || undefined,
-        lastName: lastName.trim() || undefined,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         company: company.trim() || undefined,
         phone: phone.trim() || undefined,
         jobTitle: jobTitle.trim() || undefined,
         acceptedTerms,
         acceptedPrivacy,
         marketingConsent,
-        invitationToken: invitationTokenData ? 'token-placeholder' : undefined // TODO: Pass actual token
+        invitationToken: invitationToken || undefined // Pass actual JWT token string
       };
 
       // Create account with passkey (full WebAuthn registration flow)
       const result = await authStore.createAccount(registrationData);
 
       if (result.step === 'success' && result.user) {
-        // Store registration result for success message logic
-        registrationResult = result;
         loading = false;
 
         if (result.emailVerifiedViaInvitation) {
-          // Invitation registration: Auto-sign-in user (hide form)
+          // Invitation registration: Auto-sign-in user
           console.log('🎉 Invitation registration complete - auto-signing in user');
 
           // Dispatch app access event - user enters app immediately with full access
@@ -205,24 +168,17 @@
             autoSignIn: true
           });
 
-          // Do NOT show success message UI - form should be hidden
-          // Do NOT dispatch 'success' event - user is auto-signed-in
-
         } else {
-          // Standard registration: Show success message with email verification prompt
-          console.log('📧 Standard registration complete - showing email verification message');
+          // Standard registration: Show success message 
+          console.log('📧 Standard registration complete - showing success message');
 
-          // Show registration success UI with email verification message
-          step = 'registration-success';
+          showSuccess = true;
 
-          // Dispatch app access event - user can explore app with limited functionality
+          // Dispatch app access event - user can explore app
           dispatch('appAccess', { user: result.user });
 
-          // Also dispatch success for backward compatibility
-          dispatch('success', {
-            user: result.user,
-            step: 'registration-success'
-          });
+          // Also dispatch success event
+          dispatch('success', { user: result.user });
         }
       }
     } catch (err: any) {
@@ -232,61 +188,25 @@
     }
   }
 
-  // Handle form submission based on current step
+  // Handle form submission
   function handleSubmit() {
-    switch (step) {
-      case 'email-entry':
-        handleEmailEntry();
-        break;
-      case 'terms-of-service':
-        handleTermsAcceptance();
-        break;
-      case 'webauthn-register':
-        handleRegistration();
-        break;
-    }
-  }
-
-  // Go back to previous step
-  function handleBack() {
-    error = null;
-    switch (step) {
-      case 'terms-of-service':
-        step = 'email-entry';
-        break;
-      case 'webauthn-register':
-        step = 'terms-of-service';
-        break;
-      default:
-        step = 'email-entry';
-    }
-    dispatch('stepChange', { step });
+    handleRegistration();
   }
 
   // Reset form to initial state
   function resetForm() {
-    step = 'email-entry';
+    showSuccess = false;
     error = null;
     loading = false;
-    email = initialEmail;
-    firstName = '';
-    lastName = '';
-    company = '';
-    phone = '';
-    jobTitle = '';
+    email = invitationTokenData?.email || initialEmail;
+    firstName = invitationTokenData?.firstName || '';
+    lastName = invitationTokenData?.lastName || '';
+    company = invitationTokenData?.company || '';
+    phone = invitationTokenData?.phone || '';
+    jobTitle = invitationTokenData?.jobTitle || '';
     acceptedTerms = false;
     acceptedPrivacy = false;
     marketingConsent = false;
-    
-    // Re-prefill from invitation token if available
-    if (invitationTokenData) {
-      email = invitationTokenData.email;
-      firstName = invitationTokenData.firstName || '';
-      lastName = invitationTokenData.lastName || '';
-      company = invitationTokenData.company || '';
-      phone = invitationTokenData.phone || '';
-      jobTitle = invitationTokenData.jobTitle || '';
-    }
   }
 </script>
 
@@ -298,128 +218,20 @@
   {/if}
 
   <div class="auth-container">
-    {#if false}
-      <!-- Email Entry Step -->
-      <div class="email-entry-step">
+    {#if showSuccess}
+      <!-- Registration Success -->
+      <div class="success-step">
         <div class="step-header">
-          <h2 class="step-title">Create Account</h2>
+          <h2 class="step-title">Registration Successful!</h2>
           <p class="step-description">
-            Enter your email to create a new account with {config.branding?.companyName || 'us'}
+            Your account has been created. Please check your email to verify your account.
           </p>
         </div>
-
-        <form on:submit|preventDefault={handleSubmit}>
-          <div class="input-group">
-            <label for="email" class="input-label">Email address</label>
-            <input
-              bind:value={email}
-              id="email"
-              type="email"
-              class="email-input"
-              class:error={!!error}
-              class:readonly={isFieldReadOnly('email')}
-              placeholder="your.email@company.com"
-              autocomplete="email"
-              required
-              disabled={loading}
-              readonly={isFieldReadOnly('email')}
-            />
-            {#if error}
-              <div class="error-message">{error}</div>
-            {/if}
-          </div>
-
-          <button
-            type="submit"
-            class="continue-button"
-            class:loading
-            disabled={loading || !email.trim()}
-          >
-            {#if loading}
-              <span class="loading-spinner"></span>
-              Checking email...
-            {:else}
-              Continue
-            {/if}
-          </button>
-        </form>
-
-        <!-- Sign-in Switch Link -->
-        {#if onSwitchToSignIn}
-          <div class="form-footer">
-            <p>Already have an account? <button type="button" on:click={handleSwitchToSignIn} class="link-button">Sign in instead</button></p>
-          </div>
-        {/if}
       </div>
-
-    {:else if false}
-      <!-- Terms of Service Step -->
-      <div class="terms-step">
-        <div class="step-header">
-          <button type="button" class="back-button" on:click={handleBack}>
-            ← Back
-          </button>
-          <h2 class="step-title">Terms & Privacy</h2>
-          <p class="step-description">
-            Please review and accept our terms to continue
-          </p>
-        </div>
-
-        <form on:submit|preventDefault={handleSubmit}>
-          <div class="terms-section">
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  bind:checked={acceptedTerms}
-                  required
-                />
-                <span class="checkmark"></span>
-                I agree to the 
-                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-              </label>
-            </div>
-
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  bind:checked={acceptedPrivacy}
-                  required
-                />
-                <span class="checkmark"></span>
-                I agree to the 
-                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-              </label>
-            </div>
-
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  bind:checked={marketingConsent}
-                />
-                <span class="checkmark"></span>
-                I would like to receive product updates and marketing communications (optional)
-              </label>
-            </div>
-          </div>
-
-          {#if error}
-            <div class="error-message">{error}</div>
-          {/if}
-
-          <button
-            type="submit"
-            class="continue-button"
-            disabled={!acceptedTerms || !acceptedPrivacy}
-          >
-            Accept & Continue
-          </button>
-        </form>
-      </div>
-
     {:else}
+      <!-- Registration Form - Single Form Design -->
+
+
       <!-- Single Form Registration - Mirror original flows.thepia.net form -->
       <div class="webauthn-register-step">
         <div class="step-header">
@@ -598,7 +410,7 @@
 
     {/if}
     
-    {#if step === 'registration-success'}
+    {#if false}
       <!-- Registration Success - User enters app immediately -->
       <div class="success-step">
         <div class="step-header">
@@ -616,7 +428,7 @@
         </div>
 
         <div class="success-info">
-          {#if registrationResult?.emailVerifiedViaInvitation}
+          {#if false}
             <!-- Email already verified via invitation token -->
             <p>✅ Your email <strong>{email}</strong> has been verified</p>
             <p>🎉 You have full access to all features</p>

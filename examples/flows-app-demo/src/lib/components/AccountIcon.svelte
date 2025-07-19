@@ -9,6 +9,9 @@
   let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
   let logStateChange: ((component: string, state: any) => void) | null = null;
   
+  // Auth store for proper sign out
+  let authStore: any = null;
+  
   if (browser && dev) {
     import('$lib/dev/console-bridge').then(module => {
       logAuthEvent = module.logAuthEvent;
@@ -25,8 +28,35 @@
   let isLoading = true;
   let profileMenuRef: HTMLDivElement;
 
-  onMount(() => {
+  onMount(async () => {
     if (!browser) return;
+
+    // Initialize auth store
+    try {
+      const { createAuthStore } = await import('@thepia/flows-auth');
+      const currentScenario = await devScenarioManager.getCurrentScenario();
+      
+      authStore = createAuthStore({
+        apiBaseUrl: currentScenario.config.apiBaseUrl,
+        clientId: currentScenario.config.clientId,
+        domain: 'dev.thepia.net',
+        enablePasskeys: currentScenario.config.enablePasskeys,
+        enableMagicLinks: currentScenario.config.enableMagicLinks,
+        enablePasswordLogin: currentScenario.config.enablePasswordLogin,
+        enableSocialLogin: false,
+        branding: {
+          companyName: currentScenario.branding.companyName,
+          logoUrl: '/thepia-logo.svg',
+          showPoweredBy: currentScenario.branding.name !== 'Thepia Default',
+          primaryColor: currentScenario.branding.colors.primary,
+          secondaryColor: currentScenario.branding.colors.accent
+        }
+      });
+      
+      console.log('✅ Auth store initialized for AccountIcon');
+    } catch (error) {
+      console.error('❌ Failed to initialize auth store:', error);
+    }
 
     // Check for existing session in localStorage
     checkAuthState();
@@ -48,7 +78,7 @@
       logStateChange?.('AccountIcon', { currentUser, isLoading });
     };
 
-    const handleSignOut = () => {
+    const handleSignOutEvent = () => {
       currentUser = null;
       showProfileMenu = false;
       logAuthEvent?.('user-signed-out', {});
@@ -56,7 +86,7 @@
 
     // Listen for auth library events
     window.addEventListener('auth:success', handleAuthUpdate as EventListener);
-    window.addEventListener('auth:signout', handleSignOut as EventListener);
+    window.addEventListener('auth:signout', handleSignOutEvent as EventListener);
     window.addEventListener('auth:error', (() => { isLoading = false; }) as EventListener);
 
     // Listen for storage changes (cross-tab sync)
@@ -77,7 +107,7 @@
 
     return () => {
       window.removeEventListener('auth:success', handleAuthUpdate as EventListener);
-      window.removeEventListener('auth:signout', handleSignOut as EventListener);
+      window.removeEventListener('auth:signout', handleSignOutEvent as EventListener);
       window.removeEventListener('auth:error', (() => { isLoading = false; }) as EventListener);
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -115,20 +145,46 @@
     dispatch('openAuth', { switchUser: true });
   }
 
-  function handleSignOut() {
-    if (browser) {
-      const userEmail = currentUser?.email;
+  async function handleSignOut() {
+    if (!browser) return;
+    
+    const userEmail = currentUser?.email;
+    logAuthEvent?.('sign-out-initiated', { userEmail });
+    
+    try {
+      if (authStore) {
+        // Use proper auth store signOut method
+        console.log('🔒 Signing out via auth store...');
+        await authStore.signOut();
+        console.log('✅ Auth store sign out completed');
+      } else {
+        // Fallback to manual cleanup if auth store not available
+        console.warn('⚠️ Auth store not available, falling back to manual cleanup');
+        localStorage.removeItem('auth_access_token');
+        localStorage.removeItem('auth_user');
+      }
+      
+      // Update local state
+      currentUser = null;
+      showProfileMenu = false;
+      
+      // Dispatch sign out event for other components
+      window.dispatchEvent(new CustomEvent('auth:signout'));
+      
+      logAuthEvent?.('sign-out-completed', { userEmail });
+      
+      // Trigger page reload to reset state
+      window.location.reload();
+    } catch (error) {
+      console.error('❌ Sign out failed:', error);
+      logAuthEvent?.('sign-out-failed', { userEmail, error: error?.message });
+      
+      // Fallback: manual cleanup and reload
       localStorage.removeItem('auth_access_token');
       localStorage.removeItem('auth_user');
       currentUser = null;
       showProfileMenu = false;
-      
-      logAuthEvent?.('sign-out-initiated', { userEmail });
-      
-      // Dispatch sign out event
       window.dispatchEvent(new CustomEvent('auth:signout'));
-      
-      // Trigger page reload to reset state
       window.location.reload();
     }
   }

@@ -217,6 +217,7 @@ export interface SignInResponse {
   magicLinkSent?: boolean;
   challengeId?: string;
   step: SignInStep;
+  emailVerifiedViaInvitation?: boolean; // True if email was verified via invitation token
 }
 
 export interface PasskeyRequest {
@@ -293,6 +294,7 @@ export interface RegistrationFormProps {
   className?: string;
   initialEmail?: string;
   invitationTokenData?: InvitationTokenData | null;
+  invitationToken?: string | null; // Original JWT token string
   additionalFields?: AdditionalField[];
   readOnlyFields?: string[];
   onSwitchToSignIn?: () => void;

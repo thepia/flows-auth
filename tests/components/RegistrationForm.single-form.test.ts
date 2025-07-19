@@ -10,17 +10,32 @@ import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
 import RegistrationForm from '../../src/components/RegistrationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
-// Mock the auth store
+// Mock the auth store with subscription support
+const mockSubscriptionCallbacks: Array<(state: any) => void> = [];
 const mockAuthStore = {
   createAccount: vi.fn(),
   api: {
     checkEmail: vi.fn()
+  },
+  subscribe: vi.fn((callback) => {
+    mockSubscriptionCallbacks.push(callback);
+    return () => {
+      const index = mockSubscriptionCallbacks.indexOf(callback);
+      if (index > -1) mockSubscriptionCallbacks.splice(index, 1);
+    };
+  }),
+  // Helper to trigger state changes for testing
+  _triggerStateChange: (state: any) => {
+    mockSubscriptionCallbacks.forEach(cb => cb(state));
   }
 };
 
 // Mock the createAuthStore function
 vi.mock('../../src/stores/auth-store', () => ({
-  createAuthStore: vi.fn(() => mockAuthStore)
+  createAuthStore: vi.fn(() => {
+    console.log('🔧 createAuthStore mock called');
+    return mockAuthStore;
+  })
 }));
 
 // Mock WebAuthn utilities
@@ -278,7 +293,7 @@ describe('RegistrationForm - Single Form Design', () => {
       });
     });
 
-    it('should emit appAccess event for immediate app access', async () => {
+    it('should emit appAccess event only after auth store confirms authentication', async () => {
       const appAccessHandler = vi.fn();
       
       const { component } = render(RegistrationForm, {
@@ -301,6 +316,23 @@ describe('RegistrationForm - Single Form Design', () => {
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
       await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
+      // appAccess should not be emitted immediately
+      expect(appAccessHandler).not.toHaveBeenCalled();
+
+      // Simulate auth store state change to authenticated
+      const mockUser = {
+        id: 'test-user',
+        email: 'test@example.com',
+        name: 'Test User'
+      };
+      
+      mockAuthStore._triggerStateChange({
+        state: 'authenticated',
+        user: mockUser,
+        accessToken: 'test-token'
+      });
+
+      // Now appAccess should be emitted
       await waitFor(() => {
         expect(appAccessHandler).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -310,6 +342,51 @@ describe('RegistrationForm - Single Form Design', () => {
           })
         );
       });
+    });
+
+    it('should subscribe to auth store state changes', async () => {
+      const { component } = render(RegistrationForm, {
+        props: { config: defaultConfig }
+      });
+
+      // Wait a bit for onMount to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify auth store subscription was called
+      expect(mockAuthStore.subscribe).toHaveBeenCalled();
+    });
+
+    it('should not emit appAccess if auth store state is not authenticated', async () => {
+      const appAccessHandler = vi.fn();
+      
+      const { component } = render(RegistrationForm, {
+        props: { config: defaultConfig }
+      });
+      
+      component.$on('appAccess', appAccessHandler);
+
+      // Complete registration successfully
+      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
+        target: { value: 'test@example.com' } 
+      });
+      await fireEvent.input(screen.getByLabelText(/First Name/), { 
+        target: { value: 'John' } 
+      });
+      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
+        target: { value: 'Doe' } 
+      });
+      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
+      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
+      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+
+      // Simulate auth store state change to error
+      mockAuthStore._triggerStateChange({
+        state: 'error',
+        error: 'Registration failed'
+      });
+
+      // appAccess should not be emitted for error state
+      expect(appAccessHandler).not.toHaveBeenCalled();
     });
   });
 

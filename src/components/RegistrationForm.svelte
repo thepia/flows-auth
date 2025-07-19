@@ -3,7 +3,7 @@
   Implements the optimal registration journey: Registration → App Access → Email Verification
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { createAuthStore } from '../stores/auth-store';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
   import type { 
@@ -38,6 +38,13 @@
 
   // Auth store
   const authStore = createAuthStore(config);
+  
+  // Track registration completion for auth store subscription
+  let registrationCompleted = false;
+  let registrationResult: { user: User; emailVerifiedViaInvitation?: boolean } | null = null;
+  
+  // Auth store subscription unsubscribe function
+  let unsubscribeAuthStore: (() => void) | null = null;
 
   // Component state
   let email = invitationTokenData?.email || initialEmail;
@@ -82,6 +89,39 @@
           jobTitle: !!invitationTokenData.jobTitle
         }
       });
+    }
+
+    // Subscribe to auth store state changes
+    console.log('🔧 RegistrationForm subscribing to auth store in onMount');
+    unsubscribeAuthStore = authStore.subscribe(($auth) => {
+      console.log('🔍 RegistrationForm auth state change:', {
+        state: $auth.state,
+        hasUser: !!$auth.user,
+        registrationCompleted,
+        hasRegistrationResult: !!registrationResult
+      });
+
+      // Only emit appAccess after successful registration AND auth store confirms authentication
+      if (registrationCompleted && registrationResult && $auth.state === 'authenticated' && $auth.user) {
+        console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
+        
+        dispatch('appAccess', {
+          user: registrationResult.user,
+          emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,
+          autoSignIn: registrationResult.emailVerifiedViaInvitation || false
+        });
+
+        // Reset registration tracking
+        registrationCompleted = false;
+        registrationResult = null;
+      }
+    });
+  });
+
+  // Clean up subscription on component destroy
+  onDestroy(() => {
+    if (unsubscribeAuthStore) {
+      unsubscribeAuthStore();
     }
   });
   
@@ -157,27 +197,23 @@
       if (result.step === 'success' && result.user) {
         loading = false;
 
+        // Store registration result for auth store subscription to handle
+        registrationResult = {
+          user: result.user,
+          emailVerifiedViaInvitation: result.emailVerifiedViaInvitation
+        };
+        registrationCompleted = true;
+
+        console.log('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
+
         if (result.emailVerifiedViaInvitation) {
-          // Invitation registration: Auto-sign-in user
-          console.log('🎉 Invitation registration complete - auto-signing in user');
-
-          // Dispatch app access event - user enters app immediately with full access
-          dispatch('appAccess', {
-            user: result.user,
-            emailVerifiedViaInvitation: true,
-            autoSignIn: true
-          });
-
+          console.log('📧 Invitation-based registration - auth store will handle auto-sign-in');
         } else {
-          // Standard registration: Show success message 
-          console.log('📧 Standard registration complete - showing success message');
-
+          // Standard registration: Show success message while waiting for auth confirmation
+          console.log('📧 Standard registration - showing success message while waiting for auth store');
           showSuccess = true;
-
-          // Dispatch app access event - user can explore app
-          dispatch('appAccess', { user: result.user });
-
-          // Also dispatch success event
+          
+          // Emit success event immediately (for UI feedback)
           dispatch('success', { user: result.user });
         }
       }

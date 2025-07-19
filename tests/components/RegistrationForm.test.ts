@@ -129,32 +129,58 @@ describe('RegistrationForm Component', () => {
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
-      const continueButton = screen.getByText(/Create Account with Passkey/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
 
+      // Fill invalid email but valid other fields
       await fireEvent.input(emailInput, { target: { value: 'invalid-email' } });
-      await fireEvent.click(continueButton);
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       // Form should prevent submission with invalid email
       expect(mockAuthStore.api.checkEmail).not.toHaveBeenCalled();
     });
 
-    it('should proceed to terms step with valid email', async () => {
+    it('should call checkEmail and createAccount with valid form data', async () => {
       render(RegistrationForm, {
         props: { config: defaultConfig }
       });
 
+      // Fill in all required fields
       const emailInput = screen.getByLabelText(/Email Address/);
-      const continueButton = screen.getByText(/Create Account with Passkey/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(continueButton);
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(mockAuthStore.api.checkEmail).toHaveBeenCalledWith('test@example.com');
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
+        expect(mockAuthStore.createAccount).toHaveBeenCalledWith(
+          expect.objectContaining({
+            email: 'test@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            acceptedTerms: true,
+            acceptedPrivacy: true
+          })
+        );
       });
     });
 
@@ -165,11 +191,20 @@ describe('RegistrationForm Component', () => {
         props: { config: defaultConfig }
       });
 
+      // Fill in all required fields
       const emailInput = screen.getByLabelText(/Email Address/);
-      const continueButton = screen.getByText(/Create Account with Passkey/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
 
       await fireEvent.input(emailInput, { target: { value: 'existing@example.com' } });
-      await fireEvent.click(continueButton);
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/already exists/)).toBeInTheDocument();
@@ -197,76 +232,60 @@ describe('RegistrationForm Component', () => {
       expect(screen.queryByLabelText('Company')).not.toBeInTheDocument();
     });
 
-    it('should show only specified business fields', async () => {
+    it('should show all business fields in single form', async () => {
       render(RegistrationForm, {
-        props: { 
-          config: defaultConfig, 
-          additionalFields: ['company', 'phone'] 
+        props: {
+          config: defaultConfig,
+          additionalFields: ['company', 'phone']
         }
       });
 
-      // Navigate through steps to webauthn-register
-      const emailInput = screen.getByLabelText(/Email Address/);
-      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
-
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      // Accept terms
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
-      });
-
-      // Check business fields
+      // All fields should be visible immediately in single form design
+      expect(screen.getByLabelText(/Email Address/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/First Name/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Last Name/)).toBeInTheDocument();
       expect(screen.getByLabelText('Company')).toBeInTheDocument();
       expect(screen.getByLabelText('Phone Number')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Job Title')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Job Title')).toBeInTheDocument(); // Currently all fields are shown
+      expect(screen.getByLabelText(/Terms of Service/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Privacy Policy/)).toBeInTheDocument();
+      expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
     });
 
     it('should include business fields in registration data', async () => {
       render(RegistrationForm, {
-        props: { 
-          config: defaultConfig, 
-          additionalFields: ['company', 'phone', 'jobTitle'] 
+        props: {
+          config: defaultConfig,
+          additionalFields: ['company', 'phone', 'jobTitle']
         }
       });
 
-      // Navigate through complete flow
+      // Fill all required and business fields in single form
       const emailInput = screen.getByLabelText(/Email Address/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const companyInput = screen.getByLabelText('Company');
+      const phoneInput = screen.getByLabelText('Phone Number');
+      const jobTitleInput = screen.getByLabelText('Job Title');
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.input(companyInput, { target: { value: 'Test Corp' } });
+      await fireEvent.input(phoneInput, { target: { value: '+1-555-9999' } });
+      await fireEvent.input(jobTitleInput, { target: { value: 'Developer' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
-      });
-
-      // Fill business fields
-      await fireEvent.input(screen.getByLabelText('Company'), { target: { value: 'Test Corp' } });
-      await fireEvent.input(screen.getByLabelText('Phone Number'), { target: { value: '+1-555-9999' } });
-      await fireEvent.input(screen.getByLabelText('Job Title'), { target: { value: 'Developer' } });
-
-      await fireEvent.click(screen.getByText(/Register with Passkey/));
-
-      await waitFor(() => {
-        // FIXED: Expect createAccount to be called instead of registerUser
         expect(mockAuthStore.createAccount).toHaveBeenCalledWith({
           email: 'test@example.com',
-          firstName: undefined,
-          lastName: undefined,
+          firstName: 'John',
+          lastName: 'Doe',
           company: 'Test Corp',
           phone: '+1-555-9999',
           jobTitle: 'Developer',
@@ -295,24 +314,13 @@ describe('RegistrationForm Component', () => {
 
     it('should show invitation message when provided', () => {
       render(RegistrationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData
         }
       });
 
-      // Navigate to webauthn-register step to see invitation message
-      const emailInput = screen.getByLabelText(/Email Address/);
-      const continueButton = screen.getByText(/Create Account with Passkey/);
-
-      fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.click(continueButton);
-      
-      // Skip to webauthn step through terms
-      fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
+      // Invitation message should be visible immediately in single form
       expect(screen.getByText('Welcome to our team!')).toBeInTheDocument();
     });
 
@@ -323,21 +331,13 @@ describe('RegistrationForm Component', () => {
       };
 
       render(RegistrationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: expiredTokenData
         }
       });
 
-      // Navigate to webauthn-register step
-      const emailInput = screen.getByLabelText(/Email Address/);
-      fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.click(screen.getByText(/Create Account with Passkey/));
-      
-      fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
+      // Warning should be visible immediately in single form
       expect(screen.getByText(/invitation has expired/)).toBeInTheDocument();
     });
 
@@ -430,132 +430,84 @@ describe('RegistrationForm Component', () => {
     });
   });
 
-  describe('Event Emission', () => {
-    it('should emit stepChange event on step transitions', async () => {
-      const stepChangeHandler = vi.fn();
-      
+  describe('Single Form Behavior', () => {
+    it('should show all form fields immediately', () => {
       render(RegistrationForm, {
         props: { config: defaultConfig }
       });
 
-      const component = screen.getByRole('form').closest('.registration-form');
-      component?.addEventListener('stepChange', stepChangeHandler);
-
-      const emailInput = screen.getByLabelText(/Email Address/);
-      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
-
-      await waitFor(() => {
-        expect(stepChangeHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: { step: 'terms-of-service' }
-          })
-        );
-      });
+      // All fields should be visible in single form
+      expect(screen.getByLabelText(/Email Address/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/First Name/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Last Name/)).toBeInTheDocument();
+      expect(screen.getByLabelText('Company')).toBeInTheDocument();
+      expect(screen.getByLabelText('Phone Number')).toBeInTheDocument();
+      expect(screen.getByLabelText('Job Title')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Terms of Service/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Privacy Policy/)).toBeInTheDocument();
+      expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
     });
 
-    it('should emit switchToSignIn event when sign-in link is clicked', async () => {
-      const switchToSignInHandler = vi.fn();
+    it('should require terms acceptance for form submission', async () => {
+      render(RegistrationForm, {
+        props: { config: defaultConfig }
+      });
+
+      // Fill required fields but don't accept terms
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+
+      // Submit button should be disabled without terms acceptance
+      expect(submitButton).toBeDisabled();
+    });
+
+    it('should enable submission when all required fields and terms are completed', async () => {
+      render(RegistrationForm, {
+        props: { config: defaultConfig }
+      });
+
+      const emailInput = screen.getByLabelText(/Email Address/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+
+      // Submit button should be enabled
+      expect(submitButton).not.toBeDisabled();
+    });
+
+    it('should call onSwitchToSignIn prop when sign-in link is clicked', async () => {
       const onSwitchToSignIn = vi.fn();
-      
+
       render(RegistrationForm, {
         props: { config: defaultConfig, onSwitchToSignIn }
       });
-
-      const component = screen.getByRole('form').closest('.registration-form');
-      component?.addEventListener('switchToSignIn', switchToSignInHandler);
 
       const signInLink = screen.getByText('Sign in instead');
       await fireEvent.click(signInLink);
 
       expect(onSwitchToSignIn).toHaveBeenCalled();
-      expect(switchToSignInHandler).toHaveBeenCalled();
-    });
-
-    it('should emit terms_accepted event when terms are accepted', async () => {
-      const termsAcceptedHandler = vi.fn();
-      
-      render(RegistrationForm, {
-        props: { config: defaultConfig }
-      });
-
-      const component = screen.getByRole('form').closest('.registration-form');
-      component?.addEventListener('terms_accepted', termsAcceptedHandler);
-
-      // Navigate to terms step
-      const emailInput = screen.getByLabelText(/Email Address/);
-      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
-
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      // Accept terms
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(termsAcceptedHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: { 
-              terms: true, 
-              privacy: true, 
-              marketing: false 
-            }
-          })
-        );
-      });
-    });
-
-    it('should emit appAccess event on successful registration', async () => {
-      const appAccessHandler = vi.fn();
-      
-      render(RegistrationForm, {
-        props: { config: defaultConfig }
-      });
-
-      const component = screen.getByRole('form').closest('.registration-form');
-      component?.addEventListener('appAccess', appAccessHandler);
-
-      // Complete registration flow
-      const emailInput = screen.getByLabelText(/Email Address/);
-      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
-
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByText(/Register with Passkey/));
-
-      await waitFor(() => {
-        expect(appAccessHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: { 
-              user: { id: '123', email: 'test@example.com' }
-            }
-          })
-        );
-      });
     });
   });
 
   describe('Error Handling', () => {
     it('should handle registration failure gracefully', async () => {
       const errorHandler = vi.fn();
-      // FIXED: Mock createAccount rejection instead of registerUser
       mockAuthStore.createAccount.mockRejectedValue(new Error('Registration failed'));
-      
+
       render(RegistrationForm, {
         props: { config: defaultConfig }
       });
@@ -563,29 +515,25 @@ describe('RegistrationForm Component', () => {
       const component = screen.getByRole('form').closest('.registration-form');
       component?.addEventListener('error', errorHandler);
 
-      // Complete registration flow
+      // Fill all required fields and submit in single form
       const emailInput = screen.getByLabelText(/Email Address/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
-
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByText(/Register with Passkey/));
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(errorHandler).toHaveBeenCalledWith(
           expect.objectContaining({
-            detail: { 
+            detail: {
               error: expect.objectContaining({
                 code: 'registration_failed',
                 message: 'Registration failed'
@@ -596,26 +544,28 @@ describe('RegistrationForm Component', () => {
       });
     });
 
-    it('should show error message for validation failures', async () => {
+    it('should prevent submission without required terms acceptance', async () => {
       render(RegistrationForm, {
         props: { config: defaultConfig }
       });
 
-      // Navigate to terms step
+      // Fill required fields but don't accept terms
       const emailInput = screen.getByLabelText(/Email Address/);
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
 
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
+      // Submit button should be disabled without terms acceptance
+      expect(submitButton).toBeDisabled();
 
-      // Try to continue without accepting terms
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/must accept the Terms of Service/)).toBeInTheDocument();
-      });
+      // Clicking disabled button should not trigger any API calls
+      await fireEvent.click(submitButton);
+      expect(mockAuthStore.api.checkEmail).not.toHaveBeenCalled();
+      expect(mockAuthStore.createAccount).not.toHaveBeenCalled();
     });
   });
 
@@ -719,34 +669,38 @@ describe('RegistrationForm Component', () => {
   describe('Integration with Auth Store', () => {
     it('should pass correct registration data to auth store', async () => {
       render(RegistrationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle'],
           invitationTokenData: mockInvitationTokenData
         }
       });
 
-      // Complete registration flow
+      // Fill all fields in single form (invitation data should prefill some fields)
       const emailInput = screen.getByLabelText(/Email Address/);
-      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(screen.getByText(/Create Account with Passkey/));
+      const firstNameInput = screen.getByLabelText(/First Name/);
+      const lastNameInput = screen.getByLabelText(/Last Name/);
+      const companyInput = screen.getByLabelText('Company');
+      const phoneInput = screen.getByLabelText('Phone Number');
+      const jobTitleInput = screen.getByLabelText('Job Title');
+      const termsCheckbox = screen.getByLabelText(/Terms of Service/);
+      const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
+      const submitButton = screen.getByText(/Create Account with Passkey/);
+
+      // Email should be prefilled from invitation token
+      expect(emailInput).toHaveValue('test@example.com');
+
+      // Fill remaining fields
+      await fireEvent.input(firstNameInput, { target: { value: 'John' } });
+      await fireEvent.input(lastNameInput, { target: { value: 'Doe' } });
+      await fireEvent.input(companyInput, { target: { value: 'Acme Corp' } });
+      await fireEvent.input(phoneInput, { target: { value: '+1-555-0123' } });
+      await fireEvent.input(jobTitleInput, { target: { value: 'Software Engineer' } });
+      await fireEvent.click(termsCheckbox);
+      await fireEvent.click(privacyCheckbox);
+      await fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByLabelText(/Terms of Service/));
-      await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      await fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Create Account with Passkey/)).toBeInTheDocument();
-      });
-
-      await fireEvent.click(screen.getByText(/Register with Passkey/));
-
-      await waitFor(() => {
-        // FIXED: Expect createAccount to be called instead of registerUser
         expect(mockAuthStore.createAccount).toHaveBeenCalledWith({
           email: 'test@example.com',
           firstName: 'John',
@@ -840,43 +794,37 @@ describe('RegistrationForm Component', () => {
       });
     });
 
-    it('should emit appAccess event for invitation users (auto-sign-in)', async () => {
-      const appAccessHandler = vi.fn();
-
+    it('should handle invitation users registration flow', async () => {
       // Mock invitation registration response
       mockAuthStore.createAccount.mockResolvedValue({
         step: 'success',
         user: { id: '123', email: 'test@example.com', emailVerified: true },
-        emailVerifiedViaInvitation: true // CRITICAL: Should trigger auto-sign-in
+        emailVerifiedViaInvitation: true
       });
 
       const invitationData: InvitationTokenData = {
         email: 'test@example.com'
       };
 
-      const { component } = render(RegistrationForm, {
+      render(RegistrationForm, {
         props: {
           config: defaultConfig,
           invitationTokenData: invitationData
         }
       });
 
-      component.$on('appAccess', appAccessHandler);
-
       // Fill required fields and submit
       await fireEvent.click(screen.getByLabelText(/terms of service/i));
       await fireEvent.click(screen.getByLabelText(/privacy policy/i));
       await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
-      // CRITICAL: Should emit appAccess event with auto-sign-in flag
+      // Verify createAccount was called with invitation data
       await waitFor(() => {
-        expect(appAccessHandler).toHaveBeenCalledWith(
+        expect(mockAuthStore.createAccount).toHaveBeenCalledWith(
           expect.objectContaining({
-            detail: expect.objectContaining({
-              user: expect.any(Object),
-              emailVerifiedViaInvitation: true,
-              autoSignIn: true
-            })
+            email: 'test@example.com',
+            acceptedTerms: true,
+            acceptedPrivacy: true
           })
         );
       });

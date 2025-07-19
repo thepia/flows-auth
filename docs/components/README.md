@@ -132,6 +132,107 @@ All components support complete visual customization through CSS custom properti
 - **Mobile-First**: Responsive design with touch-friendly interfaces
 - **Zero Dependencies**: No external UI library dependencies
 
+### **🎯 Critical Architecture Pattern: Sign-In vs Registration**
+
+**IMPORTANT**: Sign-in and registration follow **different architectural patterns** by design:
+
+#### **Sign-In Pattern: Pure AuthStore Integration** ✅
+```svelte
+<!-- ✅ CORRECT: Use SignInForm component -->
+<script>
+  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+
+  const authStore = createAuthStore(config);
+
+  // Subscribe to authStore state changes - NO events needed
+  authStore.subscribe(($auth) => {
+    if ($auth.state === 'authenticated') {
+      // User signed in - authStore handles everything
+      navigateToApp($auth.user);
+    }
+  });
+</script>
+
+<SignInForm {config} />
+```
+
+```svelte
+<!-- ❌ WRONG: Custom sign-in form brings no value -->
+<script>
+  // Don't reinvent the wheel - use SignInForm component
+  async function handleSignIn() {
+    await authStore.signInWithPasskey(email); // Manual implementation
+  }
+</script>
+
+<form on:submit={handleSignIn}>
+  <input bind:value={email} />
+  <button>Sign In</button>
+</form>
+```
+
+#### **Registration Pattern: Rich Event System** ✅
+```svelte
+<!-- ✅ CORRECT: Registration needs event coordination -->
+<script>
+  import { RegistrationForm } from '@thepia/flows-auth';
+
+  function handleAppAccess(event) {
+    const { user, emailVerifiedViaInvitation } = event.detail;
+
+    // Close registration dialog
+    showRegistrationForm = false;
+
+    // Clean up invitation URLs
+    if (invitationToken) cleanInvitationUrl();
+
+    // Navigate based on verification status
+    if (emailVerifiedViaInvitation) {
+      enterAppImmediately(user);
+    } else {
+      showEmailVerificationPrompt(user);
+    }
+  }
+</script>
+
+<RegistrationForm
+  {config}
+  on:appAccess={handleAppAccess}
+  on:switchToSignIn={() => showRegistrationForm = false}
+/>
+```
+
+#### **Why This Dual Pattern Exists**
+
+| Aspect | Sign-In | Registration |
+|--------|---------|-------------|
+| **Complexity** | Simple: Email → AuthStore → Done | Complex: Form → Validation → API → UI Coordination |
+| **State Management** | Pure AuthStore subscription | AuthStore + Event coordination |
+| **UI Coordination** | None needed | Dialog closing, URL cleanup, navigation |
+| **Parent Integration** | Subscribe to authStore state | Handle multiple events |
+| **Custom Implementation** | ❌ Brings no value | ✅ May be needed for complex flows |
+
+#### **Migration Note**
+If you have custom sign-in forms (like in flows.thepia.net), **migrate to SignInForm component**:
+
+```diff
+- <!-- Custom sign-in form -->
+- <form on:submit={handleSignIn}>
+-   <input bind:value={email} />
+-   <button>Sign In</button>
+- </form>
+
++ <!-- Use flows-auth SignInForm -->
++ <SignInForm {config} />
+```
+
+**Benefits of using SignInForm**:
+- ✅ Conditional authentication (auto-signin for returning users)
+- ✅ Proper error handling and user feedback
+- ✅ WebAuthn best practices built-in
+- ✅ Accessibility and mobile optimization
+- ✅ Consistent UX across applications
+
 ### **Event System**
 All components follow a consistent event emission pattern:
 

@@ -50,20 +50,24 @@ The RegistrationForm component provides a complete user registration experience 
 - **FR5.5**: MUST validate checkbox states before allowing registration
 - **FR5.6**: MUST display appropriate error messages for validation failures
 
-### FR6: WebAuthn Registration
+### FR6: WebAuthn Registration and Session Management
 - **FR6.1**: MUST check WebAuthn support before displaying registration button
 - **FR6.2**: MUST check platform authenticator availability
 - **FR6.3**: MUST call `authStore.createAccount()` with complete registration data
-- **FR6.4**: MUST handle WebAuthn creation errors gracefully
-- **FR6.5**: MUST display appropriate loading states during registration
-- **FR6.6**: MUST provide helpful error messages for common WebAuthn failures
+- **FR6.4**: MUST rely on auth store for session persistence and state management
+- **FR6.5**: MUST handle WebAuthn creation errors gracefully
+- **FR6.6**: MUST display appropriate loading states during registration
+- **FR6.7**: MUST provide helpful error messages for common WebAuthn failures
+- **FR6.8**: MUST use auth store subscription for authentication state changes
 
-### FR7: Event Emission
+### FR7: Event Emission and Auth Store Integration
 - **FR7.1**: MUST emit `success` event on successful registration completion
-- **FR7.2**: MUST emit `appAccess` event for immediate app access after registration
+- **FR7.2**: MUST emit `appAccess` event only after auth store has persisted session
 - **FR7.3**: MUST emit `error` event for registration failures
 - **FR7.4**: MUST emit `switchToSignIn` event when user requests sign-in mode
 - **FR7.5**: MUST NOT emit `stepChange` or `terms_accepted` events (removed with multi-step design)
+- **FR7.6**: MUST wait for auth store authentication state change before emitting `appAccess`
+- **FR7.7**: MUST rely on auth store subscription for session persistence confirmation
 
 ### FR8: State Management
 - **FR8.1**: MUST maintain form data state for all fields
@@ -119,9 +123,11 @@ The RegistrationForm component provides a complete user registration experience 
 ### TT2: Integration Testing
 - **TT2.1**: MUST test complete registration flow with real API calls
 - **TT2.2**: MUST test WebAuthn registration with virtual authenticator
-- **TT2.3**: MUST test immediate app access after registration
-- **TT2.4**: MUST test storage configuration updates after registration
-- **TT2.5**: MUST test invitation token API integration
+- **TT2.3**: MUST test auth store session persistence after registration
+- **TT2.4**: MUST test appAccess event emission only after auth store state change
+- **TT2.5**: MUST test storage configuration updates via auth store
+- **TT2.6**: MUST test invitation token API integration
+- **TT2.7**: MUST test auth store subscription behavior during registration
 
 ### TT3: Regression Testing
 - **TT3.1**: MUST test auto-sign-in functionality after registration
@@ -180,11 +186,13 @@ interface ExtendedRegistrationRequest extends RegistrationRequest {
 
 ## Behavioral Specifications
 
-### BS1: Immediate App Access
-- **BS1.1**: MUST emit `appAccess` event immediately after successful registration
+### BS1: Immediate App Access via Auth Store
+- **BS1.1**: MUST emit `appAccess` event only after auth store confirms session persistence
 - **BS1.2**: MUST NOT show blocking success screens that prevent app access
 - **BS1.3**: MUST follow documented state machine behavior for `authenticated-unconfirmed` state
 - **BS1.4**: MUST provide immediate access to app functionality per documentation
+- **BS1.5**: MUST rely on auth store subscription to detect authentication state changes
+- **BS1.6**: MUST NOT manually manage authentication state outside of auth store
 
 ### BS2: Invitation Token Behavior
 - **BS2.1**: MUST validate token expiration and show appropriate warnings

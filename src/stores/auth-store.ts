@@ -810,26 +810,26 @@ function createAuthStore(config: AuthConfig) {
       console.log('✅ WebAuthn registration verified');
 
       // Step 5: Complete authentication and save session
-      // Create complete auth response with user from step 1 and tokens (if available)
+      // Create complete auth response with user from step 1 and tokens from WebAuthn verification
       const completeAuthResponse = {
         step: 'success' as const,
         user: user,
-        accessToken: registrationResponse.accessToken,
-        refreshToken: registrationResponse.refreshToken,
-        expiresIn: registrationResponse.expiresIn,
+        accessToken: verificationResult.tokens?.accessToken,
+        refreshToken: verificationResult.tokens?.refreshToken,
+        expiresAt: verificationResult.tokens?.expiresAt,
         emailVerifiedViaInvitation: registrationResponse.emailVerifiedViaInvitation
       };
 
-      // Save session only if we have authentication tokens
-      if (registrationResponse.accessToken) {
+      // Save session only if we have authentication tokens from WebAuthn verification
+      if (verificationResult.tokens?.accessToken) {
         console.log('💾 Saving authentication session after complete WebAuthn flow');
         saveAuthSession(completeAuthResponse, 'passkey');
         updateState({
           state: 'authenticated',
           user: user,
-          accessToken: registrationResponse.accessToken,
-          refreshToken: registrationResponse.refreshToken,
-          expiresAt: registrationResponse.expiresIn ? Date.now() + (registrationResponse.expiresIn * 1000) : null,
+          accessToken: verificationResult.tokens.accessToken,
+          refreshToken: verificationResult.tokens.refreshToken,
+          expiresAt: verificationResult.tokens.expiresAt,
           error: null
         });
         scheduleTokenRefresh();
@@ -850,7 +850,7 @@ function createAuthStore(config: AuthConfig) {
 
         console.log('✅ Account creation completed with WebAuthn device registration and session saved');
       } else {
-        console.warn('⚠️ Account creation completed but no accessToken available - session not saved');
+        console.warn('⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved');
         // Still update state but without authentication
         updateState({
           state: 'unauthenticated',
@@ -872,7 +872,7 @@ function createAuthStore(config: AuthConfig) {
             passkeyCreated: true,
             deviceLinked: true,
             sessionSaved: false,
-            reason: 'No accessToken in registration response'
+            reason: 'No accessToken in WebAuthn verification response'
           }
         });
       }

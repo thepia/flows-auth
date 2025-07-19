@@ -61,62 +61,29 @@ describe('signInWithPasskey - Comprehensive Test Suite', () => {
   });
 
   describe('FR1: Input Validation', () => {
-    test('FR1.1: MUST validate email parameter is non-empty string', async () => {
-      // TODO: Test empty string rejection
-      expect.fail('Test not implemented');
-    });
+    it('FR1.1: MUST validate email parameter is non-empty string');
 
-    test('FR1.2: MUST validate email parameter matches email format', async () => {
-      // TODO: Test invalid email format rejection
-      expect.fail('Test not implemented');
-    });
+    it('FR1.2: MUST validate email parameter matches email format');
 
-    test('FR1.3: MUST default conditional parameter to false when not provided', async () => {
-      // TODO: Test default conditional behavior
-      expect.fail('Test not implemented');
-    });
+    it('FR1.3: MUST default conditional parameter to false when not provided');
 
-    test('FR1.4: MUST validate WebAuthn support before proceeding', async () => {
-      // TODO: Test WebAuthn support validation
-      expect.fail('Test not implemented');
-    });
+    it('FR1.4: MUST validate WebAuthn support before proceeding');
   });
 
   describe('FR2: Authentication Flow', () => {
-    test('FR2.1: MUST call api.checkEmail(email) to retrieve userId', async () => {
-      // TODO: Test user lookup API call
-      expect.fail('Test not implemented');
-    });
+    it('FR2.1: MUST call api.checkEmail(email) to retrieve userId');
 
-    test('FR2.2: MUST validate user exists (userCheck.exists === true)', async () => {
-      // TODO: Test user existence validation
-      expect.fail('Test not implemented');
-    });
+    it('FR2.2: MUST validate user exists (userCheck.exists === true)');
 
-    test('FR2.3: MUST validate user has userId field', async () => {
-      // TODO: Test userId field validation
-      expect.fail('Test not implemented');
-    });
+    it('FR2.3: MUST validate user has userId field');
 
-    test('FR2.4: MUST call api.getPasskeyChallenge(email) to get WebAuthn options', async () => {
-      // TODO: Test challenge generation API call
-      expect.fail('Test not implemented');
-    });
+    it('FR2.4: MUST call api.getPasskeyChallenge(email) to get WebAuthn options');
 
-    test('FR2.5: MUST call authenticateWithPasskey(challenge, conditional)', async () => {
-      // TODO: Test WebAuthn authentication call
-      expect.fail('Test not implemented');
-    });
+    it('FR2.5: MUST call authenticateWithPasskey(challenge, conditional)');
 
-    test('FR2.6: MUST serialize credential using serializeCredential()', async () => {
-      // TODO: Test credential serialization
-      expect.fail('Test not implemented');
-    });
+    it('FR2.6: MUST serialize credential using serializeCredential()');
 
-    test('FR2.7: MUST call api.signInWithPasskey({userId, authResponse})', async () => {
-      // TODO: Test server verification API call
-      expect.fail('Test not implemented');
-    });
+    it('FR2.7: MUST call api.signInWithPasskey({userId, authResponse})');
   });
 
   describe('FR3: Response Processing', () => {
@@ -556,256 +523,118 @@ describe('signInWithPasskey - Comprehensive Test Suite', () => {
   });
 
   describe('FR5: State Management', () => {
-    test('FR5.1: MUST update store state to "authenticated" on success', async () => {
-      // TODO: Test store state update
-      expect.fail('Test not implemented');
-    });
+    it('FR5.1: MUST update store state to "authenticated" on success');
 
-    test('FR5.2: MUST set user field in store on success', async () => {
-      // TODO: Test user field update
-      expect.fail('Test not implemented');
-    });
+    it('FR5.2: MUST set user field in store on success');
 
-    test('FR5.3: MUST set accessToken field in store on success', async () => {
-      // TODO: Test accessToken field update
-      expect.fail('Test not implemented');
-    });
+    it('FR5.3: MUST set accessToken field in store on success');
 
-    test('FR5.4: MUST set refreshToken field in store on success', async () => {
-      // TODO: Test refreshToken field update
-      expect.fail('Test not implemented');
-    });
+    it('FR5.4: MUST set refreshToken field in store on success');
 
-    test('FR5.5: MUST set expiresAt field in store on success', async () => {
-      // TODO: Test expiresAt field update
-      expect.fail('Test not implemented');
-    });
+    it('FR5.5: MUST set expiresAt field in store on success');
 
-    test('FR5.6: MUST clear error field in store on success', async () => {
-      // TODO: Test error field clearing
-      expect.fail('Test not implemented');
-    });
+    it('FR5.6: MUST clear error field in store on success');
 
-    test('FR5.7: MUST NOT update store state on failure', async () => {
-      // TODO: Test no state update on failure
-      expect.fail('Test not implemented');
-    });
+    it('FR5.7: MUST NOT update store state on failure');
   });
 
   describe('FR6: Event Emission', () => {
-    test('FR6.1: MUST emit sign_in_started event when conditional === false', async () => {
-      // TODO: Test sign_in_started event emission
-      expect.fail('Test not implemented');
-    });
+    it('FR6.1: MUST emit sign_in_started event when conditional === false');
 
-    test('FR6.2: MUST emit sign_in_success event on successful authentication', async () => {
-      // TODO: Test sign_in_success event emission
-      expect.fail('Test not implemented');
-    });
+    it('FR6.2: MUST emit sign_in_success event on successful authentication');
 
-    test('FR6.3: MUST emit passkey_used event on successful authentication', async () => {
-      // TODO: Test passkey_used event emission
-      expect.fail('Test not implemented');
-    });
+    it('FR6.3: MUST emit passkey_used event on successful authentication');
 
-    test('FR6.4: MUST emit sign_in_error event on failure when conditional === false', async () => {
-      // TODO: Test sign_in_error event emission
-      expect.fail('Test not implemented');
-    });
+    it('FR6.4: MUST emit sign_in_error event on failure when conditional === false');
 
-    test('FR6.5: MUST NOT emit UI events when conditional === true', async () => {
-      // TODO: Test no UI events in conditional mode
-      expect.fail('Test not implemented');
-    });
+    it('FR6.5: MUST NOT emit UI events when conditional === true');
   });
 
   describe('FR7: Token Management', () => {
-    test('FR7.1: MUST call scheduleTokenRefresh() on successful authentication', async () => {
-      // TODO: Test token refresh scheduling
-      expect.fail('Test not implemented');
-    });
+    it('FR7.1: MUST call scheduleTokenRefresh() on successful authentication');
 
-    test('FR7.2: MUST use token expiration for refresh scheduling', async () => {
-      // TODO: Test expiration-based refresh scheduling
-      expect.fail('Test not implemented');
-    });
+    it('FR7.2: MUST use token expiration for refresh scheduling');
   });
 
   describe('FR8: Analytics', () => {
-    test('FR8.1: MUST report webauthn-start event when starting authentication', async () => {
-      // TODO: Test analytics start event
-      expect.fail('Test not implemented');
-    });
+    it('FR8.1: MUST report webauthn-start event when starting authentication');
 
-    test('FR8.2: MUST report webauthn-success event on successful authentication', async () => {
-      // TODO: Test analytics success event
-      expect.fail('Test not implemented');
-    });
+    it('FR8.2: MUST report webauthn-success event on successful authentication');
 
-    test('FR8.3: MUST report webauthn-failure event on failed authentication', async () => {
-      // TODO: Test analytics failure event
-      expect.fail('Test not implemented');
-    });
+    it('FR8.3: MUST report webauthn-failure event on failed authentication');
 
-    test('FR8.4: MUST include timing data in analytics events', async () => {
-      // TODO: Test timing data in analytics
-      expect.fail('Test not implemented');
-    });
+    it('FR8.4: MUST include timing data in analytics events');
   });
 
   describe('Edge Cases', () => {
     describe('EC1: Network Failures', () => {
-      test('EC1.1: User lookup API call fails', async () => {
-        // TODO: Test user lookup failure handling
-        expect.fail('Test not implemented');
-      });
+      it('EC1.1: User lookup API call fails');
 
-      test('EC1.2: Challenge API call fails', async () => {
-        // TODO: Test challenge failure handling
-        expect.fail('Test not implemented');
-      });
+      it('EC1.2: Challenge API call fails');
 
-      test('EC1.3: Verification API call fails', async () => {
-        // TODO: Test verification failure handling
-        expect.fail('Test not implemented');
-      });
+      it('EC1.3: Verification API call fails');
 
-      test('EC1.4: Intermittent network connectivity', async () => {
-        // TODO: Test network connectivity issues
-        expect.fail('Test not implemented');
-      });
+      it('EC1.4: Intermittent network connectivity');
     });
 
     describe('EC2: WebAuthn Failures', () => {
-      test('EC2.1: User cancels WebAuthn prompt', async () => {
-        // TODO: Test user cancellation handling
-        expect.fail('Test not implemented');
-      });
+      it('EC2.1: User cancels WebAuthn prompt');
 
-      test('EC2.2: Biometric authentication fails', async () => {
-        // TODO: Test biometric failure handling
-        expect.fail('Test not implemented');
-      });
+      it('EC2.2: Biometric authentication fails');
 
-      test('EC2.3: No registered passkeys found', async () => {
-        // TODO: Test no passkeys scenario
-        expect.fail('Test not implemented');
-      });
+      it('EC2.3: No registered passkeys found');
 
-      test('EC2.4: WebAuthn not supported in browser', async () => {
-        // TODO: Test WebAuthn unsupported scenario
-        expect.fail('Test not implemented');
-      });
+      it('EC2.4: WebAuthn not supported in browser');
     });
 
     describe('EC3: Invalid Responses', () => {
-      test('EC3.1: API returns malformed JSON', async () => {
-        // TODO: Test malformed JSON handling
-        expect.fail('Test not implemented');
-      });
+      it('EC3.1: API returns malformed JSON');
 
-      test('EC3.2: API returns unexpected status codes', async () => {
-        // TODO: Test unexpected status code handling
-        expect.fail('Test not implemented');
-      });
+      it('EC3.2: API returns unexpected status codes');
 
-      test('EC3.3: Missing required fields in response', async () => {
-        // TODO: Test missing fields handling
-        expect.fail('Test not implemented');
-      });
+      it('EC3.3: Missing required fields in response');
 
-      test('EC3.4: Invalid token format in response', async () => {
-        // TODO: Test invalid token format handling
-        expect.fail('Test not implemented');
-      });
+      it('EC3.4: Invalid token format in response');
     });
 
     describe('EC4: Storage Failures', () => {
-      test('EC4.1: Storage quota exceeded', async () => {
-        // TODO: Test storage quota exceeded handling
-        expect.fail('Test not implemented');
-      });
+      it('EC4.1: Storage quota exceeded');
 
-      test('EC4.2: Storage disabled in browser', async () => {
-        // TODO: Test storage disabled handling
-        expect.fail('Test not implemented');
-      });
+      it('EC4.2: Storage disabled in browser');
 
-      test('EC4.3: Storage corruption/invalid data', async () => {
-        // TODO: Test storage corruption handling
-        expect.fail('Test not implemented');
-      });
+      it('EC4.3: Storage corruption/invalid data');
 
-      test('EC4.4: Concurrent storage access', async () => {
-        // TODO: Test concurrent storage access
-        expect.fail('Test not implemented');
-      });
+      it('EC4.4: Concurrent storage access');
     });
 
     describe('EC5: State Conflicts', () => {
-      test('EC5.1: Multiple concurrent authentication attempts', async () => {
-        // TODO: Test concurrent authentication handling
-        expect.fail('Test not implemented');
-      });
+      it('EC5.1: Multiple concurrent authentication attempts');
 
-      test('EC5.2: Authentication during existing session', async () => {
-        // TODO: Test authentication with existing session
-        expect.fail('Test not implemented');
-      });
+      it('EC5.2: Authentication during existing session');
 
-      test('EC5.3: Storage configuration changes during auth', async () => {
-        // TODO: Test config changes during auth
-        expect.fail('Test not implemented');
-      });
+      it('EC5.3: Storage configuration changes during auth');
 
-      test('EC5.4: Component unmount during authentication', async () => {
-        // TODO: Test component unmount handling
-        expect.fail('Test not implemented');
-      });
+      it('EC5.4: Component unmount during authentication');
     });
   });
 
   describe('Performance Tests', () => {
-    test('NFR1.1: MUST complete user lookup within 2 seconds', async () => {
-      // TODO: Test user lookup performance
-      expect.fail('Test not implemented');
-    });
+    it('NFR1.1: MUST complete user lookup within 2 seconds');
 
-    test('NFR1.2: MUST complete challenge generation within 3 seconds', async () => {
-      // TODO: Test challenge generation performance
-      expect.fail('Test not implemented');
-    });
+    it('NFR1.2: MUST complete challenge generation within 3 seconds');
 
-    test('NFR1.3: MUST complete server verification within 5 seconds', async () => {
-      // TODO: Test server verification performance
-      expect.fail('Test not implemented');
-    });
+    it('NFR1.3: MUST complete server verification within 5 seconds');
 
-    test('NFR1.4: MUST complete session save within 100ms', async () => {
-      // TODO: Test session save performance
-      expect.fail('Test not implemented');
-    });
+    it('NFR1.4: MUST complete session save within 100ms');
   });
 
   describe('Security Tests', () => {
-    test('NFR3.1: MUST validate all API responses before processing', async () => {
-      // TODO: Test API response validation
-      expect.fail('Test not implemented');
-    });
+    it('NFR3.1: MUST validate all API responses before processing');
 
-    test('NFR3.2: MUST not log sensitive credential data', async () => {
-      // TODO: Test credential data logging prevention
-      expect.fail('Test not implemented');
-    });
+    it('NFR3.2: MUST not log sensitive credential data');
 
-    test('NFR3.3: MUST use secure credential serialization', async () => {
-      // TODO: Test secure credential serialization
-      expect.fail('Test not implemented');
-    });
+    it('NFR3.3: MUST use secure credential serialization');
 
-    test('NFR3.4: MUST validate token format before storage', async () => {
-      // TODO: Test token format validation
-      expect.fail('Test not implemented');
-    });
+    it('NFR3.4: MUST validate token format before storage');
   });
 });

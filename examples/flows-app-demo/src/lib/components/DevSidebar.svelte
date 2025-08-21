@@ -166,6 +166,9 @@
           <button class="action-btn" on:click={copyConfig}>
             📋 Copy Config
           </button>
+          <a href="/debug/webauthn" class="action-btn" style="text-decoration: none; display: block;">
+            🔐 WebAuthn Debugger
+          </a>
         </div>
       </section>
 

@@ -51,8 +51,8 @@ The method handles two response formats from the backend:
 {
   success: true,
   tokens: {
-    accessToken: string,
-    refreshToken: string,
+    accessToken: "webauthn-verified",  // Currently placeholder token
+    refreshToken: "webauthn-verified", // Currently placeholder token
     expiresAt: number  // Unix timestamp
   },
   user: {
@@ -105,7 +105,8 @@ The method handles two response formats from the backend:
 
 ### 5. Server Verification
 - Calls `api.signInWithPasskey({userId, authResponse})`
-- Server verifies credential and returns tokens
+- Makes request to `POST /auth/webauthn/verify` endpoint
+- Server verifies credential and returns tokens (currently placeholder tokens)
 - Handles response format normalization
 
 ### 6. Session Management

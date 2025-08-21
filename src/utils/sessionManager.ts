@@ -4,7 +4,7 @@
  * This mirrors thepia.com/src/utils/sessionManager.ts but adds configurable storage support.
  *
  * Key principles:
- * - Configurable storage (sessionStorage by default, localStorage for employees)
+ * - Configurable storage (localStorage by default, sessionStorage for enhanced security)
  * - Custom events for state synchronization
  * - No local state variables for authentication status
  * - Automatic expiration handling

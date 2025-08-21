@@ -153,10 +153,10 @@ The internal state machine has more granular states:
 
 ### Token Management
 
-- **Short-lived Access Tokens**: 1-hour expiration
-- **Refresh Tokens**: Longer-lived for session renewal
-- **Secure Storage**: Tokens stored in localStorage with expiration checks
-- **Automatic Refresh**: Background token renewal
+- **Current State**: API returns placeholder tokens (`"webauthn-verified"`) which are stored and used
+- **Future State**: Will automatically handle real JWT tokens when thepia.com API is updated
+- **Storage**: Tokens stored in configurable storage (localStorage/sessionStorage) with expiration checks
+- **Refresh Logic**: Implemented and ready for real refresh tokens
 
 ### Multi-Domain Security
 
@@ -169,14 +169,18 @@ The internal state machine has more granular states:
 
 ### Auth API Endpoints
 
-The library integrates with these API endpoints:
-
-- **`POST /auth/signin`** - Initiate authentication
-- **`POST /auth/signin/passkey`** - Complete passkey authentication
-- **`POST /auth/signin/magic-link`** - Request magic link
+#### ✅ Currently Implemented and Working
+- **`POST /auth/check-user`** - Check if user exists and has passkey
 - **`POST /auth/webauthn/challenge`** - Get WebAuthn challenge
-- **`POST /auth/refresh`** - Refresh access token
-- **`POST /auth/logout`** - Sign out user
+- **`POST /auth/webauthn/verify`** - Verify WebAuthn response (returns placeholder tokens)
+- **`POST /auth/register`** - Create new user account
+- **`POST /auth/webauthn/register-options`** - Get passkey registration options
+- **`POST /auth/webauthn/register-verify`** - Verify passkey registration (returns placeholder tokens)
+
+#### 📋 Implemented in flows-auth but API Not Ready
+- **`POST /auth/refresh`** - Refresh access token (ready for real tokens)
+- **`POST /auth/signin/magic-link`** - Request magic link (API endpoint not implemented)
+- **`POST /auth/verify-magic-link`** - Verify magic link token (API endpoint not implemented)
 
 ### Configuration
 
@@ -232,4 +236,10 @@ For unsupported browsers:
 - **[API Reference](./api-reference.md)** - Complete API documentation
 - **[Security Model](../flows/security.md)** - Security architecture
 
-For implementation details, see the [thepia.com authentication documentation](https://github.com/thepia/thepia.com/tree/main/docs/auth) which provides the complete backend architecture and Auth0 integration details.
+## Related Documentation
+
+- **[API Integration Status](./api-integration-status.md)** - Current implementation state and token handling
+- **[Authentication Flow](./flow.md)** - Detailed flow diagrams
+- **[State Management](./authentication-state-machine.md)** - State machine details
+
+For backend implementation details, see the [thepia.com authentication documentation](https://github.com/thepia/thepia.com/tree/main/docs/auth) which provides the complete API architecture and Auth0 integration details.

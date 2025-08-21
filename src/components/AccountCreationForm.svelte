@@ -210,6 +210,7 @@
         console.log('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
 
         // Emit success event immediately (for UI feedback)
+        console.log('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
         dispatch('success', { user: result.user });
       }
     } catch (err: any) {

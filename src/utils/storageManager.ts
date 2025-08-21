@@ -244,11 +244,11 @@ export function getOptimalStorageConfig(userRole?: string, domain?: string): Sto
     };
   }
 
-  // Default to sessionStorage for security (guest users)
-  // Note: This provides better security through automatic session cleanup on browser close
+  // Default to localStorage for persistent sessions (guest users)
+  // Note: This allows sessions to persist across browser tabs and page refreshes
   return {
-    type: 'sessionStorage',
-    persistentSessions: false,
+    type: 'localStorage',
+    persistentSessions: true,
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
     userRole: 'guest'
   };

@@ -271,22 +271,26 @@ const config = {
 };
 ```
 
-## API Integration
+## API Integration Status
 
-The library expects your API to implement these endpoints:
+flows-auth is **production-ready** and correctly interfaces with the thepia.com authentication API.
 
-```http
-POST /auth/signin
-POST /auth/signin/passkey
-POST /auth/signin/password
-POST /auth/signin/magic-link
-POST /auth/webauthn/challenge
-POST /auth/refresh
-POST /auth/signout
-GET  /auth/profile
-```
+### ✅ Currently Working Endpoints
+- `POST /auth/check-user` - User existence and passkey checking
+- `POST /auth/webauthn/challenge` - WebAuthn challenge generation  
+- `POST /auth/webauthn/verify` - Passkey authentication verification
+- `POST /auth/register` - New user account creation
+- `POST /auth/webauthn/register-options` - Passkey registration options
+- `POST /auth/webauthn/register-verify` - Passkey registration verification
 
-See the [API Documentation](./docs/api.md) for detailed request/response formats.
+### 🔄 Token Handling
+Currently receives placeholder tokens from thepia.com API (`"webauthn-verified"`). flows-auth stores and uses these tokens correctly. **Will automatically work with real JWT tokens** when thepia.com implements them per their documented plan.
+
+### 📋 Planned Features (API Not Ready)
+- Token refresh functionality (logic implemented, waiting for API)
+- Magic link authentication (fallback method)
+
+See [API Integration Status](./docs/auth/api-integration-status.md) for complete technical details.
 
 ## Documentation Authority Matrix
 

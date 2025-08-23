@@ -4,6 +4,10 @@
 
 This document defines the requirements for session management in flows-auth to ensure consistent authentication state across all components and applications.
 
+### **🚨 Related Issue: Token Generation**
+
+Session management works correctly, but the **tokens being stored are incorrect**. The API currently generates Machine-to-Machine tokens instead of proper user tokens. See [thepia.com/docs/auth/passwordless-migration-guide.md](../../thepia.com/docs/auth/passwordless-migration-guide.md) for resolution.
+
 ## Problem Statement
 
 **Current Issue**: flows-auth has inconsistent session storage between components:

@@ -4,7 +4,11 @@ This document provides a comprehensive overview of the Thepia authentication sys
 
 ## System Architecture
 
-The Thepia authentication system is built on a **passwordless-only** foundation using WebAuthn/passkeys with Auth0 as the identity provider. The system serves both `thepia.com` and `thepia.net` domains through a unified API backend.
+The Thepia authentication system is built on a **passwordless-only** foundation using WebAuthn/passkeys with a **provider-agnostic backend** that supports Auth0, Supabase, WorkOS, and other authentication providers. The system serves both `thepia.com` and `thepia.net` domains through a unified API backend.
+
+### **🚨 Critical Token Issue**
+
+The current implementation uses **Machine-to-Machine (M2M) tokens** instead of proper user tokens. See [API Integration Status](./api-integration-status.md#solution-auth-provider-architecture) for details and solution.
 
 ### Core Components
 

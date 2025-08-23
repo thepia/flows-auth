@@ -32,17 +32,17 @@ sequenceDiagram
 4. **Handles token expiration**: Checks expiration timestamps
 5. **Supports token refresh**: Has refresh logic ready for real refresh tokens
 
-### What thepia.com Currently Returns (UPDATED)
+### What thepia.com Currently Returns (CRITICAL ISSUE)
 
-**As of late 2024, thepia.com now returns real Auth0 tokens:**
+**🚨 CRITICAL**: thepia.com currently returns **Machine-to-Machine (M2M) tokens**, NOT proper user tokens:
 
 ```json
 {
   "success": true,
   "tokens": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",    // ← Real Auth0 JWT
-    "refreshToken": "v1.MXY3...",                 // ← Real refresh token (or fallback to access token)
-    "expiresAt": 1640995200000                    // ← Proper expiration timestamp
+    "accessToken": "dev-token-userid-timestamp",  // ❌ Placeholder token (fallback)
+    "refreshToken": "dev-refresh-userid-timestamp", // ❌ Placeholder token
+    "expiresAt": 1640995200000                    // ✅ Proper expiration timestamp
   },
   "user": {
     "id": "auth0|passkey-user@example.com-1640995200-abc123",
@@ -51,11 +51,12 @@ sequenceDiagram
 }
 ```
 
-**Implementation Details:**
-- Uses Auth0's OAuth2 client credentials flow
-- Generates proper JWT tokens with user claims
-- Falls back to dev tokens only if Auth0 generation fails
-- Includes proper expiration times (typically 15 minutes for access tokens)
+**Current Implementation Issues:**
+- ❌ Uses Auth0's `client_credentials` grant (M2M tokens, not user tokens)
+- ❌ M2M tokens don't contain user claims or proper subject
+- ❌ Falls back to placeholder tokens when M2M fails (which it should)
+- ❌ Cannot validate user permissions or roles from tokens
+- ✅ flows-auth handles whatever tokens are returned correctly
 
 ## Endpoint Mapping
 
@@ -91,11 +92,42 @@ sequenceDiagram
 | `requestPasswordReset()` | ❌ Not supported | Passwordless-only system |
 | `resetPassword()` | ❌ Not supported | Passwordless-only system |
 
-## Migration Path to Real JWT Tokens
+## Solution: Auth Provider Architecture
 
-### When thepia.com Implements Real JWT Tokens
+### New Backend-Agnostic Architecture
 
-flows-auth will **automatically work** with real JWT tokens because:
+See [thepia.com/docs/auth/auth-provider-architecture.md](../../thepia.com/docs/auth/auth-provider-architecture.md) for complete details.
+
+**Key Changes:**
+1. **Provider-based token generation** - Each client can use different token strategies
+2. **Passwordless strategy** - Proper Auth0 passwordless flow for user tokens
+3. **Backward compatibility** - Existing deployments continue working
+
+### Configuration-Based Token Strategy
+
+```typescript
+// Client configuration determines token generation method
+export const CLIENT_CONFIGS = {
+  'thepia-app': {
+    tokenStrategy: 'passwordless',  // ✅ Proper user tokens via passwordless
+    authProvider: 'auth0'
+  },
+  'flows-app-demo': {
+    tokenStrategy: 'legacy',       // ✅ Keep M2M for backward compatibility
+    authProvider: 'auth0'
+  }
+};
+```
+
+### New Endpoints for Cross-Device Auth
+
+- `POST /auth/start-passwordless` - Start email verification flow
+- `POST /auth/verify-passwordless` - Verify code from email  
+- `GET /auth/passwordless-status` - Poll for verification completion
+
+### flows-auth Compatibility
+
+flows-auth will **automatically work** with proper user tokens because:
 
 1. **Token Storage**: Already stores `accessToken` and `refreshToken` fields
 2. **Token Format**: Handles any string token format

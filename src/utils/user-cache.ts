@@ -23,6 +23,13 @@ export class UserCache {
     const normalizedEmail = email.toLowerCase().trim();
     const entry = this.cache.get(normalizedEmail);
     
+    // DEBUGGING: Force cache miss for henrik@thepia.com to debug the issue
+    if (normalizedEmail === 'henrik@thepia.com') {
+      console.log(`🐛 [DEBUG] Forcing cache miss for ${normalizedEmail} to debug API issue`);
+      this.cache.delete(normalizedEmail);
+      return null;
+    }
+    
     if (!entry) {
       return null;
     }

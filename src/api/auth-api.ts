@@ -144,7 +144,62 @@ export class AuthApiClient {
    */
   private getStoredToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_access_token');
+    return localStorage.getItem('auth_access_token') || localStorage.getItem('authToken');
+  }
+
+  /**
+   * Store authentication session
+   */
+  storeSession(user: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+  }, token?: string): void {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.setItem('userEmail', user.email);
+    localStorage.setItem('userId', user.id);
+    localStorage.setItem('emailConfirmed', user.emailVerified ? 'true' : 'false');
+    
+    if (token) {
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('auth_access_token', token); // Store in both places for compatibility
+    }
+  }
+
+  /**
+   * Clear authentication session
+   */
+  clearSession(): void {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('emailConfirmed');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_access_token');
+    localStorage.removeItem('personalEmail');
+  }
+
+  /**
+   * Get current session
+   */
+  getSession(): {
+    email?: string;
+    userId?: string;
+    emailConfirmed: boolean;
+    token?: string;
+  } {
+    if (typeof window === 'undefined') {
+      return { emailConfirmed: false };
+    }
+    
+    return {
+      email: localStorage.getItem('userEmail') || undefined,
+      userId: localStorage.getItem('userId') || undefined,
+      emailConfirmed: localStorage.getItem('emailConfirmed') === 'true',
+      token: this.getStoredToken() || undefined
+    };
   }
 
   /**
@@ -173,7 +228,10 @@ export class AuthApiClient {
     
     return this.request<SignInResponse>('/auth/webauthn/verify', {
       method: 'POST',
-      body: JSON.stringify(request)
+      body: JSON.stringify({
+        ...request,
+        clientId: this.config.clientId // Include clientId for token strategy
+      })
     });
   }
 
@@ -247,6 +305,13 @@ export class AuthApiClient {
   }
 
   /**
+   * Clear user cache (development helper)
+   */
+  clearUserCache(): void {
+    globalUserCache.clearAll();
+  }
+
+  /**
    * Check if email exists with rate limiting and caching
    */
   async checkEmail(email: string): Promise<{
@@ -263,7 +328,19 @@ export class AuthApiClient {
       return cachedResult;
     }
     
-    // Use rate-limited request
+    // Enhanced logging for debugging
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
+    const requestUrl = `${this.baseUrl}/auth/check-user`;
+    
+    console.log(`[AuthApiClient] Making check-user request:`, {
+      email,
+      requestUrl,
+      baseUrl: this.baseUrl,
+      origin,
+      timestamp: new Date().toISOString()
+    });
+
+    // Use rate-limited request with Origin header for RPID determination
     const response = await this.rateLimitedRequest<{
       exists: boolean;
       hasWebAuthn: boolean;
@@ -271,7 +348,17 @@ export class AuthApiClient {
       invitationTokenHash?: string;
     }>('/auth/check-user', {
       method: 'POST',
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email }),
+      headers: {
+        'Origin': origin
+      }
+    });
+    
+    console.log(`[AuthApiClient] Raw API response:`, {
+      email,
+      requestUrl,
+      response: response,
+      timestamp: new Date().toISOString()
     });
     
     // Map API response to expected format
@@ -351,7 +438,65 @@ export class AuthApiClient {
   }): Promise<SignInResponse> {
     return this.request<SignInResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
+      headers: {
+        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+      }
+    });
+  }
+
+  /**
+   * Register or sign in user with email (simplified flow)
+   * This creates a new user if they don't exist, or signs them in if they do
+   * Used for simple email confirmation flows without passkeys
+   */
+  async registerOrSignIn(email: string, clientId: string = 'thepia-app'): Promise<{
+    success: boolean;
+    user?: {
+      id: string;
+      email: string;
+      emailVerified: boolean;
+    };
+    token?: string;
+    message?: string;
+  }> {
+    return this.request<{
+      success: boolean;
+      user?: {
+        id: string;
+        email: string;
+        emailVerified: boolean;
+      };
+      token?: string;
+      message?: string;
+    }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        email: email.trim(),
+        clientId 
+      }),
+      headers: {
+        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+      }
+    });
+  }
+
+  /**
+   * Send magic link for email verification
+   */
+  async sendMagicLinkEmail(email: string): Promise<{
+    success: boolean;
+    message?: string;
+  }> {
+    return this.request<{
+      success: boolean;
+      message?: string;
+    }>('/auth/magic-link', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email.trim(),
+        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'}/auth/callback`
+      })
     });
   }
 
@@ -398,7 +543,62 @@ export class AuthApiClient {
       };
     }>('/auth/webauthn/register-verify', {
       method: 'POST',
-      body: JSON.stringify(registrationData)
+      body: JSON.stringify({
+        ...registrationData,
+        clientId: this.config.clientId // Include clientId for token strategy
+      })
+    });
+  }
+
+  /**
+   * Start passwordless email authentication
+   */
+  async startPasswordlessAuthentication(email: string): Promise<{
+    success: boolean;
+    timestamp: number;
+    message?: string;
+    user?: {
+      email: string;
+      id: string;
+    };
+  }> {
+    return this.request<{
+      success: boolean;
+      timestamp: number;
+      message?: string;
+      user?: {
+        email: string;
+        id: string;
+      };
+    }>('/auth/start-passwordless', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email,
+        clientId: this.config.clientId
+      })
+    });
+  }
+
+  /**
+   * Check passwordless authentication status by checking Auth0 user state
+   */
+  async checkPasswordlessStatus(email: string, timestamp: number): Promise<{
+    status: 'pending' | 'verified' | 'expired';
+    user?: {
+      id: string;
+      email: string;
+      email_verified: boolean;
+    };
+  }> {
+    return this.request<{
+      status: 'pending' | 'verified' | 'expired';
+      user?: {
+        id: string;
+        email: string;
+        email_verified: boolean;
+      };
+    }>(`/auth/passwordless-status?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
+      method: 'GET'
     });
   }
 }

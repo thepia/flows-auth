@@ -4,7 +4,16 @@
 
 ## 📚 Documentation Overview
 
-The Thepia authentication system implements a **passwordless-only, 100% cookie-free** approach using WebAuthn/passkeys with a unified backend serving both `thepia.com` and `thepia.net` domains. This library provides the complete authentication solution for Thepia Flows applications with zero privacy compliance concerns.
+The Thepia authentication system implements a **passwordless-only, 100% cookie-free** approach using WebAuthn/passkeys with a **backend-agnostic architecture** supporting Auth0, Supabase, WorkOS, and other providers. The unified API serves both `thepia.com` and `thepia.net` domains, providing complete authentication solutions for Thepia Flows applications with zero privacy compliance concerns.
+
+### **🚨 Critical Issue: Token Generation**
+
+**Current Problem**: The API server generates Machine-to-Machine tokens instead of proper user tokens.  
+**Impact**: Tokens don't contain user claims, preventing proper authorization.  
+**Solution**: New auth provider architecture with passwordless token strategy.  
+**Status**: Documented solution maintains backward compatibility.
+
+See [Authentication System Overview](./auth/README.md#critical-token-issue) for details.
 
 ### **🚀 Quick Start**
 
@@ -16,10 +25,10 @@ The Thepia authentication system implements a **passwordless-only, 100% cookie-f
 ### **🔧 Core Documentation**
 
 #### Authentication System
-- **[Authentication Architecture](./auth/architecture.md)** - System design and components
-- **[Authentication Flow](./auth/flow.md)** - Step-by-step authentication process
-- **[State Management](./auth/state-management.md)** - Auth store and state machine
-- **[API Reference](./auth/api-reference.md)** - Complete API documentation
+- **[Authentication Overview](./auth/README.md)** - System design and components
+- **[Authentication Flow](./auth/flow.md)** - Step-by-step authentication process  
+- **[Cross-Device Authentication](./auth/cross-device-authentication.md)** - **NEW** - Email verification across devices
+- **[API Integration Status](./auth/api-integration-status.md)** - **UPDATED** - Current token issues and solutions
 
 #### Flows Integration
 - **[Multi-Domain Strategy](./flows/multi-domain.md)** - thepia.com and thepia.net integration

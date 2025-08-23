@@ -66,6 +66,12 @@ graph TB
 - **Availability**: Only when manually started
 - **Use Case**: Local development, experimental features, debugging
 
+### **🚨 Token Generation Issue**
+
+**Current Issue**: Both servers use Machine-to-Machine (M2M) tokens instead of proper user authentication tokens.
+
+**Solution**: New auth provider architecture supports proper passwordless tokens per client configuration. See [thepia.com/docs/auth/auth-provider-architecture.md](../../thepia.com/docs/auth/auth-provider-architecture.md).
+
 ## 🔧 Development Workflow
 
 ### **Default Behavior: Smart Detection**

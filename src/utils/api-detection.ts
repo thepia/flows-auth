@@ -65,8 +65,13 @@ export async function detectApiServer(
     };
   }
 
+  // Check for ngrok domains - treat as development and try local server first
+  if (currentLocation?.hostname && (currentLocation.hostname.includes('ngrok') || currentLocation.hostname.includes('ngrok-free.app'))) {
+    console.log(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
+    // Continue to local server detection below
+  } 
   // Check for production domains - skip local server check for performance
-  if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
+  else if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
     console.log(`🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`);
     return {
       url: config.productionUrl,

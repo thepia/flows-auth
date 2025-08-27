@@ -50,19 +50,18 @@ describe('Cross-Device Passwordless Authentication', () => {
       const result = await apiClient.startPasswordlessAuthentication(testEmail);
       
       expect(result.success).toBe(true);
-      expect(result.sessionId).toBeDefined();
-      expect(typeof result.sessionId).toBe('string');
+      expect(result.timestamp).toBeDefined();
+      expect(typeof result.timestamp).toBe('number');
       expect(result.message).toContain('email');
       
-      sessionId = result.sessionId!;
+      sessionId = result.timestamp.toString();
       console.log('✅ Passwordless flow started, sessionId:', sessionId);
     });
 
     it('should show session as pending initially', async () => {
-      const status = await apiClient.checkPasswordlessStatus(sessionId);
+      const status = await apiClient.checkPasswordlessStatus(testEmail, parseInt(sessionId));
       
       expect(status.status).toBe('pending');
-      expect(status.tokens).toBeUndefined();
       expect(status.user).toBeUndefined();
       
       console.log('✅ Session status is pending as expected');
@@ -72,7 +71,7 @@ describe('Cross-Device Passwordless Authentication', () => {
       // Wait a bit and check again
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const status = await apiClient.checkPasswordlessStatus(sessionId);
+      const status = await apiClient.checkPasswordlessStatus(testEmail, parseInt(sessionId));
       expect(status.status).toBe('pending');
       
       console.log('✅ Session remains pending (email not yet confirmed)');
@@ -93,7 +92,7 @@ describe('Cross-Device Passwordless Authentication', () => {
 
   describe('Error Scenarios', () => {
     it('should handle invalid session ID in status check', async () => {
-      const status = await apiClient.checkPasswordlessStatus('invalid-session-123');
+      const status = await apiClient.checkPasswordlessStatus(testEmail, 999999999);
       
       // Should either return expired status or throw error
       expect(['expired', 'error']).toContain(status.status);
@@ -121,17 +120,17 @@ describe('Cross-Device Passwordless Authentication', () => {
       const session1 = await apiClient.startPasswordlessAuthentication(testEmail);
       const session2 = await apiClient.startPasswordlessAuthentication(testEmail);
       
-      expect(session1.sessionId).not.toBe(session2.sessionId);
+      expect(session1.timestamp).not.toBe(session2.timestamp);
       console.log('✅ Multiple concurrent sessions supported');
     });
 
     it('should handle session expiration', async () => {
       const result = await apiClient.startPasswordlessAuthentication(testEmail);
-      const sessionId = result.sessionId!;
+      const sessionId = result.timestamp;
       
       // TODO: Test would need to wait for session timeout or mock time
       // For now, we verify the session exists
-      const status = await apiClient.checkPasswordlessStatus(sessionId);
+      const status = await apiClient.checkPasswordlessStatus(testEmail, sessionId);
       expect(['pending', 'expired']).toContain(status.status);
     });
   });
@@ -181,7 +180,7 @@ describe('Complete Flow Simulation', () => {
       // Device A: Start
       deviceA_start: {
         email: 'user@test.com',
-        sessionId: 'session-123',
+        timestamp: 1638360000000,
         status: 'pending'
       },
       
@@ -190,8 +189,7 @@ describe('Complete Flow Simulation', () => {
         code: 'auth-code-456',
         state: btoa(JSON.stringify({
           clientId: 'thepia-app',
-          sessionId: 'session-123',
-          timestamp: Date.now()
+          timestamp: 1638360000000
         })),
         tokens: {
           accessToken: 'at-789',
@@ -216,8 +214,8 @@ describe('Complete Flow Simulation', () => {
     };
 
     // Verify the flow structure is correct
-    expect(mockFlow.deviceA_start.sessionId).toBe('session-123');
-    expect(JSON.parse(atob(mockFlow.deviceB_callback.state)).sessionId).toBe('session-123');
+    expect(mockFlow.deviceA_start.timestamp).toBe(1638360000000);
+    expect(JSON.parse(atob(mockFlow.deviceB_callback.state)).timestamp).toBe(1638360000000);
     expect(mockFlow.deviceA_result.tokens.accessToken).toBe('at-789');
     
     console.log('✅ Complete flow simulation structure verified');

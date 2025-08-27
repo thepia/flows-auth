@@ -228,7 +228,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       }
 
       try {
-        const result = await authApiClient.sendMagicLink(testEmail);
+        const result = await authApiClient.sendMagicLinkEmail(testEmail);
         
         expect(result).toHaveProperty('step');
         expect(result.step).toBe('magic_link_sent');
@@ -253,7 +253,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       const nonExistentEmail = `non-existent-${Date.now()}@example.com`;
       
       try {
-        const result = await authApiClient.sendMagicLink(nonExistentEmail);
+        const result = await authApiClient.sendMagicLinkEmail(nonExistentEmail);
         
         // Some APIs might still send magic link for non-existent users for security
         expect(result).toHaveProperty('step');
@@ -315,11 +315,18 @@ describe('Auth0Service Real API Integration Tests', () => {
         return;
       }
 
-      // Make multiple concurrent API calls
+      // Make multiple concurrent API calls with delays to avoid rate limiting
       const emails = ['test1@example.com', 'test2@example.com', 'test3@example.com'];
       
-      const promises = emails.map(email => 
-        authApiClient.checkEmail(email).catch(e => ({ error: e.message }))
+      const promises = emails.map((email, index) => 
+        new Promise(resolve => 
+          setTimeout(() => 
+            authApiClient.checkEmail(email)
+              .then(resolve)
+              .catch(e => resolve({ error: e.message })),
+            index * 1000 // 1 second delay between requests
+          )
+        )
       );
       
       const results = await Promise.all(promises);

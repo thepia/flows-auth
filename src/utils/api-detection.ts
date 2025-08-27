@@ -6,7 +6,7 @@
  * PERFORMANCE OPTIMIZATION:
  * - Production domains (non-dev.*): Skip local check, use production API immediately (0ms)
  * - Development domains (dev.*): Check local server first, fallback to production (0-3000ms)
- * - Localhost: Always use production API immediately (0ms)
+ * - Localhost: Check local server first, fallback to production (0-3000ms)
  */
 
 export interface ApiServerConfig {
@@ -42,7 +42,7 @@ export const DEFAULT_API_CONFIG: ApiServerConfig = {
  * PERFORMANCE OPTIMIZATION: Domain-based routing for zero-delay production
  * - flows.thepia.net, *.thepia.net, *.thepia.com: Use production API immediately (0ms)
  * - dev.thepia.net, dev.thepia.com: Check local server first, fallback to production (0-3000ms)
- * - localhost: Use production API immediately (0ms)
+ * - localhost: Check local server first, fallback to production (0-3000ms)
  * 
  * @param config - Configuration for API server detection
  * @param location - Optional location object for testing (defaults to window.location)
@@ -55,21 +55,16 @@ export async function detectApiServer(
   // Use provided location or window.location
   const currentLocation = location || (typeof window !== 'undefined' ? window.location : null);
   
-  // Check for localhost development - exact match from flows.thepia.net
-  if (currentLocation?.hostname === 'localhost') {
-    return {
-      url: config.productionUrl,
-      type: 'production',
-      isHealthy: true,
-      serverInfo: undefined
-    };
-  }
-
   // Check for ngrok domains - treat as development and try local server first
   if (currentLocation?.hostname && (currentLocation.hostname.includes('ngrok') || currentLocation.hostname.includes('ngrok-free.app'))) {
     console.log(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
     // Continue to local server detection below
-  } 
+  }
+  // Check for localhost - treat as development and try local server first
+  else if (currentLocation?.hostname === 'localhost') {
+    console.log(`🏠 localhost detected: ${currentLocation.hostname} - trying local API first`);
+    // Continue to local server detection below
+  }
   // Check for production domains - skip local server check for performance
   else if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
     console.log(`🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`);

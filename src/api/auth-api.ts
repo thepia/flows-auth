@@ -4,7 +4,7 @@
  */
 
 import { reportApiError } from '../utils/errorReporter';
-import { globalRateLimiter } from '../utils/rate-limiter';
+import { globalClientRateLimiter } from '../utils/client-rate-limiter';
 import { globalUserCache } from '../utils/user-cache';
 import type {
   AuthConfig,
@@ -26,10 +26,13 @@ export class AuthApiClient {
   constructor(config: AuthConfig) {
     this.config = config;
     this.baseUrl = config.apiBaseUrl.replace(/\/$/, '');
+    
+    // Rate limiting is now handled by the intelligent client rate limiter
+    // No configuration needed - uses 5 req/sec default with server backoff
   }
 
   /**
-   * Make authenticated API request with rate limiting
+   * Make authenticated API request with intelligent rate limiting
    */
   private async request<T>(
     endpoint: string,
@@ -50,10 +53,14 @@ export class AuthApiClient {
       }
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
+    // Use intelligent client rate limiter (5 req/sec with server backoff)
+    const response = await globalClientRateLimiter.executeRequest(
+      () => fetch(url, {
+        ...options,
+        headers
+      }),
+      endpoint
+    );
 
     if (!response || !response.ok) {
       const error = await this.handleErrorResponse(response);
@@ -74,22 +81,15 @@ export class AuthApiClient {
   }
 
   /**
-   * Make rate-limited API request
+   * Make rate-limited API request (now uses same intelligent rate limiting)
    */
   private async rateLimitedRequest<T>(
     endpoint: string,
     options: RequestInit = {},
     includeAuth = false
   ): Promise<T> {
-    return globalRateLimiter.executeWithRetry(
-      () => this.request<T>(endpoint, options, includeAuth),
-      endpoint,
-      {
-        maxRetries: (typeof process !== 'undefined' && process.env?.CI === 'true') ? 1 : 2,
-        baseDelay: (typeof process !== 'undefined' && process.env?.CI === 'true') ? 1000 : 500,
-        maxDelay: 8000
-      }
-    );
+    // All requests now use the same intelligent rate limiting
+    return this.request<T>(endpoint, options, includeAuth);
   }
 
   /**
@@ -249,7 +249,7 @@ export class AuthApiClient {
    * Request magic link
    */
   async signInWithMagicLink(request: MagicLinkRequest): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/signin/magic-link', {
+    return this.rateLimitedRequest<SignInResponse>('/auth/signin/magic-link', {
       method: 'POST',
       body: JSON.stringify(request)
     });
@@ -259,7 +259,7 @@ export class AuthApiClient {
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    return this.request<PasskeyChallenge>('/auth/webauthn/challenge', {
+    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/challenge', {
       method: 'POST',
       body: JSON.stringify({ email })
     });

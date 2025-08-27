@@ -297,7 +297,8 @@ describe('AuthApiClient', () => {
           body: JSON.stringify({
             email: 'test@example.com',
             challengeId: 'challenge-123',
-            credential: mockCredential
+            credential: mockCredential,
+            clientId: 'test-client' // Include clientId for token strategy
           })
         })
       );
@@ -509,7 +510,9 @@ describe('AuthApiClient', () => {
         exists: true,
         hasPasskey: true,
         hasPassword: false,
-        socialProviders: []
+        socialProviders: [],
+        userId: '123',
+        invitationTokenHash: undefined
       };
 
       mockFetch.mockResolvedValueOnce({

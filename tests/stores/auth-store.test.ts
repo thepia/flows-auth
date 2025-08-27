@@ -6,7 +6,8 @@ import { get } from 'svelte/store';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
-// Mock the API client
+// Only mock external dependencies that we can't test in isolation
+// Mock the API client - external network calls
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     signIn: vi.fn(),
@@ -14,9 +15,24 @@ vi.mock('../../src/api/auth-api', () => ({
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
-    signOut: vi.fn()
+    signOut: vi.fn(),
+    checkEmail: vi.fn()
   }))
 }));
+
+// Mock WebAuthn browser APIs - require real browser interaction
+vi.mock('../../src/utils/webauthn', () => ({
+  authenticateWithPasskey: vi.fn(),
+  serializeCredential: vi.fn(),
+  isWebAuthnSupported: vi.fn(() => false), // Default to false for unit tests
+  isConditionalMediationSupported: vi.fn(() => false)
+}));
+
+// Mock browser environment check
+Object.defineProperty(globalThis, 'window', { 
+  value: { location: { hostname: 'localhost' } },
+  writable: true 
+});
 
 const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
@@ -34,10 +50,18 @@ const mockConfig: AuthConfig = {
 
 describe('Auth Store', () => {
   let authStore: ReturnType<typeof createAuthStore>;
+  let mockApiClient: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
+    
     authStore = createAuthStore(mockConfig);
+    
+    // Get the mocked API client instance
+    const { AuthApiClient } = await import('../../src/api/auth-api');
+    mockApiClient = (AuthApiClient as any).mock.results[0].value;
   });
 
   describe('Initial State', () => {
@@ -51,25 +75,41 @@ describe('Auth Store', () => {
       expect(state.error).toBeNull();
     });
 
-    it('should restore state from localStorage if tokens exist', () => {
-      const mockUser = {
-        id: '123',
-        email: 'test@example.com',
-        name: 'Test User',
-        emailVerified: true,
-        createdAt: '2023-01-01T00:00:00Z'
+    it('should restore state from session if valid session exists', async () => {
+      // Set up a valid session in localStorage (using real session manager)
+      const { saveSession } = await import('../../src/utils/sessionManager');
+      
+      const sessionData = {
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          initials: 'TU',
+          avatar: null,
+          preferences: {}
+        },
+        tokens: {
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+          expiresAt: Date.now() + 3600000
+        },
+        lastActivity: Date.now(),
+        createdAt: Date.now()
       };
+      
+      // Save session using real session manager
+      saveSession(sessionData);
 
-      localStorage.setItem('auth_access_token', 'access-token');
-      localStorage.setItem('auth_refresh_token', 'refresh-token');
-      localStorage.setItem('auth_expires_at', (Date.now() + 3600000).toString());
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-
+      // Create new auth store that should restore from session
       const restoredStore = createAuthStore(mockConfig);
+      
+      // Give state machine time to initialize
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
       const state = get(restoredStore);
 
       expect(state.state).toBe('authenticated');
-      expect(state.user).toEqual(mockUser);
+      expect(state.user?.email).toBe('test@example.com');
       expect(state.accessToken).toBe('access-token');
       expect(state.refreshToken).toBe('refresh-token');
     });
@@ -91,9 +131,7 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      // Mock the API call
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockResponse);
+      mockApiClient.signInWithPassword.mockResolvedValue(mockResponse);
 
       await authStore.signInWithPassword('test@example.com', 'password');
 
@@ -108,8 +146,7 @@ describe('Auth Store', () => {
       const mockError = new Error('Invalid credentials');
       (mockError as any).code = 'invalid_credentials';
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockRejectedValue(mockError);
+      mockApiClient.signInWithPassword.mockRejectedValue(mockError);
 
       await expect(
         authStore.signInWithPassword('test@example.com', 'wrong-password')
@@ -129,8 +166,7 @@ describe('Auth Store', () => {
         message: 'Magic link sent to your email'
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithMagicLink.mockResolvedValue(mockResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
 
       const result = await authStore.signInWithMagicLink('test@example.com');
 
@@ -143,7 +179,7 @@ describe('Auth Store', () => {
   });
 
   describe('Token Management', () => {
-    it('should save tokens to localStorage on successful authentication', async () => {
+    it('should save session data on successful authentication', async () => {
       const mockResponse: SignInResponse = {
         step: 'success',
         user: {
@@ -158,31 +194,39 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockResponse);
+      mockApiClient.signInWithPassword.mockResolvedValue(mockResponse);
 
       await authStore.signInWithPassword('test@example.com', 'password');
 
-      expect(localStorage.getItem('auth_access_token')).toBe('access-token');
-      expect(localStorage.getItem('auth_refresh_token')).toBe('refresh-token');
-      expect(localStorage.getItem('auth_user')).toBe(JSON.stringify(mockResponse.user));
-      expect(localStorage.getItem('auth_expires_at')).toBeTruthy();
+      // Verify session was saved by checking localStorage (real session manager behavior)
+      const { getSession } = await import('../../src/utils/sessionManager');
+      const savedSession = getSession();
+      
+      expect(savedSession).toBeTruthy();
+      expect(savedSession?.user.email).toBe('test@example.com');
+      expect(savedSession?.tokens.accessToken).toBe('access-token');
     });
 
-    it('should clear tokens on sign out', async () => {
-      // Set up authenticated state
-      localStorage.setItem('auth_access_token', 'access-token');
-      localStorage.setItem('auth_refresh_token', 'refresh-token');
-      localStorage.setItem('auth_user', JSON.stringify({ id: '123' }));
+    it('should clear session on sign out', async () => {
+      // Set up authenticated state first
+      const { saveSession } = await import('../../src/utils/sessionManager');
+      const sessionData = {
+        user: { id: '123', email: 'test@example.com', name: 'Test User', initials: 'TU', avatar: null, preferences: {} },
+        tokens: { accessToken: 'access-token', refreshToken: 'refresh-token', expiresAt: Date.now() + 3600000 },
+        lastActivity: Date.now(),
+        createdAt: Date.now()
+      };
+      saveSession(sessionData);
 
-      const mockApi = authStore.api as any;
-      mockApi.signOut.mockResolvedValue(undefined);
+      mockApiClient.signOut.mockResolvedValue(undefined);
 
       await authStore.signOut();
 
-      expect(localStorage.getItem('auth_access_token')).toBeNull();
-      expect(localStorage.getItem('auth_refresh_token')).toBeNull();
-      expect(localStorage.getItem('auth_user')).toBeNull();
+      // Verify session was cleared by checking localStorage (real session manager behavior)
+      const { getSession } = await import('../../src/utils/sessionManager');
+      const clearedSession = getSession();
+      
+      expect(clearedSession).toBeNull();
 
       const state = get(authStore);
       expect(state.state).toBe('unauthenticated');
@@ -206,8 +250,7 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
 
       // Sign in to establish refresh token
       await authStore.signInWithPassword('test@example.com', 'password');
@@ -220,13 +263,18 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApi.refreshToken.mockResolvedValue(mockRefreshResponse);
+      mockApiClient.refreshToken.mockResolvedValue(mockRefreshResponse);
 
       await authStore.refreshTokens();
 
       const state = get(authStore);
       expect(state.accessToken).toBe('new-access-token');
-      expect(localStorage.getItem('auth_access_token')).toBe('new-access-token');
+      
+      // Verify session was updated with new tokens
+      const { getSession } = await import('../../src/utils/sessionManager');
+      const updatedSession = getSession();
+      expect(updatedSession?.tokens.accessToken).toBe('new-access-token');
+      expect(updatedSession?.tokens.refreshToken).toBe('new-refresh-token');
     });
   });
 
@@ -249,8 +297,7 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
 
       await authStore.signInWithPassword('test@example.com', 'password');
       expect(authStore.isAuthenticated()).toBe(true);
@@ -274,25 +321,34 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
 
       await authStore.signInWithPassword('test@example.com', 'password');
       expect(authStore.getAccessToken()).toBe('token');
     });
 
-    it('should reset store to initial state', () => {
-      // Set up some state
-      localStorage.setItem('auth_access_token', 'token');
-      localStorage.setItem('auth_user', JSON.stringify({ id: '123' }));
+    it('should reset store to initial state', async () => {
+      // Set up some authenticated session state first
+      const { saveSession } = await import('../../src/utils/sessionManager');
+      const sessionData = {
+        user: { id: '123', email: 'test@example.com', name: 'Test User', initials: 'TU', avatar: null, preferences: {} },
+        tokens: { accessToken: 'token', refreshToken: 'refresh-token', expiresAt: Date.now() + 3600000 },
+        lastActivity: Date.now(),
+        createdAt: Date.now()
+      };
+      saveSession(sessionData);
 
       authStore.reset();
+
+      // Verify session was cleared
+      const { getSession } = await import('../../src/utils/sessionManager');
+      const clearedSession = getSession();
+      expect(clearedSession).toBeNull();
 
       const state = get(authStore);
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
       expect(state.accessToken).toBeNull();
-      expect(localStorage.getItem('auth_access_token')).toBeNull();
     });
   });
 

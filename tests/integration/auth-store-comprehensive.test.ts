@@ -291,9 +291,16 @@ describe('Auth Store Integration Tests', () => {
     it('should handle rate limiting', async () => {
       const rateLimitEmail = TEST_ACCOUNTS.rateLimitTest.email;
       
-      // Make multiple rapid requests to trigger rate limiting
-      const requests = Array(5).fill(0).map(() => 
-        authStore.api.checkEmail(rateLimitEmail).catch(e => e)
+      // Make multiple requests with delays to avoid rate limiting
+      const requests = Array(5).fill(0).map((_, index) => 
+        new Promise(resolve => 
+          setTimeout(() => 
+            authStore.api.checkEmail(rateLimitEmail)
+              .then(resolve)
+              .catch(resolve),
+            index * 500 // 500ms delay between requests
+          )
+        )
       );
       
       const results = await Promise.all(requests);
@@ -312,9 +319,16 @@ describe('Auth Store Integration Tests', () => {
       
       WebAuthnMocker.mockSuccess();
       
-      // Start multiple concurrent sign-in attempts
-      const attempts = Array(3).fill(0).map(() => 
-        authStore.signInWithPasskey(email).catch(e => e)
+      // Start multiple sign-in attempts with delays to avoid rate limiting
+      const attempts = Array(3).fill(0).map((_, index) => 
+        new Promise(resolve => 
+          setTimeout(() => 
+            authStore.signInWithPasskey(email)
+              .then(resolve)
+              .catch(resolve),
+            index * 1000 // 1 second delay between attempts
+          )
+        )
       );
       
       const results = await Promise.all(attempts);

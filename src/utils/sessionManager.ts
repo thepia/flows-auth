@@ -81,11 +81,13 @@ export function saveSession(sessionData: FlowsSessionData): void {
     saveLastUser(sessionData);
 
     // Emit session update event
-    window.dispatchEvent(
-      new CustomEvent('sessionUpdate', {
-        detail: { session: sessionData },
-      })
-    );
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(
+        new CustomEvent('sessionUpdate', {
+          detail: { session: sessionData },
+        })
+      );
+    }
 
     console.log('💾 Session saved to', storage.getConfig().type, 'for user:', sessionData.user.email);
   } catch (error) {
@@ -99,11 +101,13 @@ export function clearSession(): void {
     storage.removeItem(SESSION_KEY);
 
     // Emit session update event
-    window.dispatchEvent(
-      new CustomEvent('sessionUpdate', {
-        detail: { session: null },
-      })
-    );
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(
+        new CustomEvent('sessionUpdate', {
+          detail: { session: null },
+        })
+      );
+    }
 
     console.log('🗑️ Session cleared from', storage.getConfig().type);
   } catch (error) {

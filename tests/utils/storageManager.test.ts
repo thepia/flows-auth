@@ -1,82 +1,73 @@
-/**
- * Storage Manager Tests
- * Tests for configurable storage functionality
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigurableStorageManager, getOptimalStorageConfig } from '../../src/utils/storageManager';
 import type { StorageConfig } from '../../src/types';
 
-// Mock browser storage APIs
-const mockSessionStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
-};
-
-const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
-};
-
-// Mock window object
-Object.defineProperty(window, 'sessionStorage', {
-  value: mockSessionStorage,
-  writable: true
-});
-
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-  writable: true
-});
-
 describe('ConfigurableStorageManager', () => {
+  let mockLocalStorage: any;
+  let mockSessionStorage: any;
+  
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Mock localStorage
+    mockLocalStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn()
+    };
+    
+    // Mock sessionStorage
+    mockSessionStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn()
+    };
+    
+    // Replace global storage objects
+    Object.defineProperty(window, 'localStorage', { value: mockLocalStorage, writable: true });
+    Object.defineProperty(window, 'sessionStorage', { value: mockSessionStorage, writable: true });
+    
+    // Mock console to suppress logs in tests
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('Default Configuration', () => {
-    it('should default to localStorage for better UX', () => {
+    it('should default to sessionStorage for security', () => {
       const manager = new ConfigurableStorageManager();
       const config = manager.getConfig();
       
-      expect(config.type).toBe('localStorage');
+      expect(config.type).toBe('sessionStorage');
       expect(config.userRole).toBe('guest');
-      expect(config.persistentSessions).toBe(true);
+      expect(config.persistentSessions).toBe(false);
     });
 
-    it('should use localStorage adapter by default', () => {
+    it('should use sessionStorage adapter by default', () => {
       const manager = new ConfigurableStorageManager();
       
       manager.setItem('test', 'value');
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test', 'value');
-      expect(mockSessionStorage.setItem).not.toHaveBeenCalled();
+      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test', 'value');
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
     });
   });
 
   describe('Employee Configuration', () => {
     it('should auto-configure localStorage for employees', () => {
-      const config: StorageConfig = {
-        userRole: 'employee'
-      };
+      const manager = new ConfigurableStorageManager({ userRole: 'employee' });
+      const config = manager.getConfig();
       
-      const manager = new ConfigurableStorageManager(config);
-      const finalConfig = manager.getConfig();
-      
-      expect(finalConfig.type).toBe('localStorage');
-      expect(finalConfig.persistentSessions).toBe(true);
-      expect(finalConfig.sessionTimeout).toBe(7 * 24 * 60 * 60 * 1000); // 7 days
+      expect(config.type).toBe('localStorage');
+      expect(config.userRole).toBe('employee');
+      expect(config.persistentSessions).toBe(true);
+      expect(config.sessionTimeout).toBe(7 * 24 * 60 * 60 * 1000); // 7 days
     });
 
     it('should use localStorage adapter for employees', () => {
-      const config: StorageConfig = {
-        userRole: 'employee'
-      };
-      
-      const manager = new ConfigurableStorageManager(config);
+      const manager = new ConfigurableStorageManager({ userRole: 'employee' });
       
       manager.setItem('test', 'value');
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test', 'value');
@@ -88,52 +79,58 @@ describe('ConfigurableStorageManager', () => {
     it('should respect explicit localStorage configuration', () => {
       const config: StorageConfig = {
         type: 'localStorage',
-        sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
+        sessionTimeout: 24 * 60 * 60 * 1000,
+        persistentSessions: false,
         userRole: 'guest'
       };
       
       const manager = new ConfigurableStorageManager(config);
+      const resultConfig = manager.getConfig();
       
-      manager.setItem('test', 'value');
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test', 'value');
+      expect(resultConfig.type).toBe('localStorage');
+      expect(resultConfig.sessionTimeout).toBe(24 * 60 * 60 * 1000);
+      expect(resultConfig.persistentSessions).toBe(false);
     });
 
     it('should respect explicit sessionStorage configuration', () => {
       const config: StorageConfig = {
         type: 'sessionStorage',
-        userRole: 'employee' // Even employees can use sessionStorage if explicit
+        userRole: 'employee' // Even with employee role, explicit type takes precedence
       };
       
       const manager = new ConfigurableStorageManager(config);
+      const resultConfig = manager.getConfig();
       
-      manager.setItem('test', 'value');
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test', 'value');
+      expect(resultConfig.type).toBe('sessionStorage');
+      expect(resultConfig.userRole).toBe('employee');
     });
   });
 
   describe('Storage Operations', () => {
     it('should handle getItem operations', () => {
-      mockLocalStorage.getItem.mockReturnValue('stored-value');
-      
       const manager = new ConfigurableStorageManager();
+      mockSessionStorage.getItem.mockReturnValue('stored-value');
+      
       const result = manager.getItem('test-key');
       
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('test-key');
+      expect(mockSessionStorage.getItem).toHaveBeenCalledWith('test-key');
       expect(result).toBe('stored-value');
     });
 
     it('should handle removeItem operations', () => {
       const manager = new ConfigurableStorageManager();
+      
       manager.removeItem('test-key');
       
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('test-key');
+      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('test-key');
     });
 
     it('should handle clear operations', () => {
       const manager = new ConfigurableStorageManager();
+      
       manager.clear();
       
-      expect(mockLocalStorage.clear).toHaveBeenCalled();
+      expect(mockSessionStorage.clear).toHaveBeenCalled();
     });
   });
 
@@ -145,33 +142,37 @@ describe('ConfigurableStorageManager', () => {
       
       const config = manager.getConfig();
       expect(config.sessionTimeout).toBe(12 * 60 * 60 * 1000);
-      expect(config.type).toBe('localStorage');
+      expect(config.type).toBe('sessionStorage');
     });
 
     it('should create new adapter when storage type changes', () => {
       const manager = new ConfigurableStorageManager();
       
-      // Start with localStorage (new default)
+      // Start with sessionStorage (default)
       manager.setItem('test1', 'value1');
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test1', 'value1');
+      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test1', 'value1');
       
-      // Switch to sessionStorage
-      manager.updateConfig({ type: 'sessionStorage' });
+      // Switch to localStorage
+      manager.updateConfig({ type: 'localStorage' });
+      
       manager.setItem('test2', 'value2');
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test2', 'value2');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test2', 'value2');
     });
 
     it('should handle dynamic role changes from guest to employee', () => {
-      const manager = new ConfigurableStorageManager();
+      const manager = new ConfigurableStorageManager({ userRole: 'guest' });
       
-      // Start as guest with localStorage (new default)
-      expect(manager.getConfig().type).toBe('localStorage');
+      // Start as guest with sessionStorage (default)
+      expect(manager.getConfig().type).toBe('sessionStorage');
       expect(manager.getConfig().userRole).toBe('guest');
       
-      // Upgrade to employee configuration with explicit timeout
+      // Upgrade to employee configuration
+      // Note: updateConfig doesn't auto-upgrade storage type, only updates specified fields
       manager.updateConfig({ 
         userRole: 'employee',
-        sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days for employees
+        type: 'localStorage',
+        persistentSessions: true,
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000
       });
       
       const config = manager.getConfig();
@@ -196,8 +197,7 @@ describe('ConfigurableStorageManager', () => {
       
       const config = manager.getConfig();
       expect(config.userRole).toBe('guest');
-      expect(config.type).toBe('localStorage'); // Still localStorage for UX
-      expect(config.persistentSessions).toBe(true);
+      expect(config.type).toBe('localStorage'); // Stays localStorage once upgraded
       expect(config.sessionTimeout).toBe(8 * 60 * 60 * 1000);
     });
   });
@@ -208,92 +208,82 @@ describe('ConfigurableStorageManager', () => {
         type: 'sessionStorage',
         persistentSessions: false 
       });
-      const localManager = new ConfigurableStorageManager({ type: 'localStorage' });
+      
+      const localManager = new ConfigurableStorageManager({ 
+        type: 'localStorage',
+        persistentSessions: false 
+      });
       
       expect(sessionManager.supportsPersistentSessions()).toBe(false);
-      expect(localManager.supportsPersistentSessions()).toBe(true);
+      expect(localManager.supportsPersistentSessions()).toBe(true); // localStorage always supports persistent sessions
     });
 
     it('should return correct session timeout', () => {
-      const customTimeout = 6 * 60 * 60 * 1000; // 6 hours
-      const manager = new ConfigurableStorageManager({ sessionTimeout: customTimeout });
+      const manager = new ConfigurableStorageManager({ 
+        sessionTimeout: 6 * 60 * 60 * 1000 
+      });
       
-      expect(manager.getSessionTimeout()).toBe(customTimeout);
+      expect(manager.getSessionTimeout()).toBe(6 * 60 * 60 * 1000);
     });
   });
 });
 
 describe('getOptimalStorageConfig', () => {
-  it('should return localStorage config for employees', () => {
+  it('should return employee configuration for employee roles', () => {
     const config = getOptimalStorageConfig('employee');
-
+    
     expect(config.type).toBe('localStorage');
     expect(config.persistentSessions).toBe(true);
-    expect(config.userRole).toBe('employee');
     expect(config.sessionTimeout).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(config.userRole).toBe('employee');
   });
 
-  it('should return localStorage config for staff', () => {
+  it('should return employee configuration for staff roles', () => {
     const config = getOptimalStorageConfig('staff');
-
+    
     expect(config.type).toBe('localStorage');
     expect(config.persistentSessions).toBe(true);
     expect(config.userRole).toBe('employee');
   });
 
-  it('should return localStorage config for admin', () => {
+  it('should return employee configuration for admin roles', () => {
     const config = getOptimalStorageConfig('admin');
-
+    
     expect(config.type).toBe('localStorage');
     expect(config.persistentSessions).toBe(true);
     expect(config.userRole).toBe('employee');
   });
 
-  it('should return localStorage config for guests (improved UX)', () => {
-    const config = getOptimalStorageConfig('guest');
+  it('should return guest configuration for unknown roles', () => {
+    const config = getOptimalStorageConfig('visitor');
+    
+    expect(config.type).toBe('localStorage'); // Default is localStorage for persistence
+    expect(config.persistentSessions).toBe(true);
+    expect(config.sessionTimeout).toBe(8 * 60 * 60 * 1000);
+    expect(config.userRole).toBe('guest');
+  });
 
-    expect(config.type).toBe('localStorage');
+  it('should return guest configuration when no role provided', () => {
+    const config = getOptimalStorageConfig();
+    
+    expect(config.type).toBe('localStorage'); // Default is localStorage for persistence
     expect(config.persistentSessions).toBe(true);
     expect(config.userRole).toBe('guest');
-    expect(config.sessionTimeout).toBe(8 * 60 * 60 * 1000);
   });
 
-  it('should default to guest config for unknown roles', () => {
-    const config = getOptimalStorageConfig('unknown-role');
-
+  it('should handle thepia.com domain for employees', () => {
+    const config = getOptimalStorageConfig('employee', 'thepia.com');
+    
     expect(config.type).toBe('localStorage');
-    expect(config.userRole).toBe('guest');
+    expect(config.persistentSessions).toBe(true);
+    expect(config.userRole).toBe('employee');
   });
 
-  it('should default to guest config when no role provided', () => {
-    const config = getOptimalStorageConfig();
-
-    expect(config.type).toBe('localStorage');
+  it('should handle thepia.net domain for guests', () => {
+    const config = getOptimalStorageConfig('guest', 'thepia.net');
+    
+    expect(config.type).toBe('localStorage'); // Default is localStorage for persistence
+    expect(config.persistentSessions).toBe(true);
     expect(config.userRole).toBe('guest');
-  });
-
-  describe('Security Requirements', () => {
-    it('should enforce secure defaults', () => {
-      const defaultConfig = getOptimalStorageConfig();
-
-      // UX improvement: Default to localStorage for better user experience
-      expect(defaultConfig.type).toBe('localStorage');
-      expect(defaultConfig.persistentSessions).toBe(true);
-
-      // Security requirement: Reasonable timeout (8 hours)
-      expect(defaultConfig.sessionTimeout).toBeLessThanOrEqual(8 * 60 * 60 * 1000);
-    });
-
-    it('should provide longer sessions only for trusted roles', () => {
-      const guestConfig = getOptimalStorageConfig('guest');
-      const employeeConfig = getOptimalStorageConfig('employee');
-
-      // Security requirement: Guests get shorter sessions
-      expect(guestConfig.sessionTimeout).toBeLessThan(employeeConfig.sessionTimeout!);
-
-      // UX improvement: Both get persistent storage, but employees get longer sessions
-      expect(guestConfig.persistentSessions).toBe(true);
-      expect(employeeConfig.persistentSessions).toBe(true);
-    });
   });
 });

@@ -145,6 +145,15 @@ export interface SessionMigrationResult {
 
 export type StorageType = 'sessionStorage' | 'localStorage';
 
+// Rate limiting configuration (DEPRECATED - now handled by intelligent client rate limiter)
+// This interface is kept for backward compatibility but is no longer used
+export interface RateLimitingConfig {
+  minRequestInterval?: number; // DEPRECATED: Use 5 req/sec intelligent rate limiter
+  maxRetries?: number;         // DEPRECATED: Handled by server response
+  baseDelay?: number;          // DEPRECATED: Handled by server response  
+  maxDelay?: number;           // DEPRECATED: Handled by server response
+}
+
 // Authentication configuration
 export interface AuthConfig {
   apiBaseUrl: string;
@@ -161,6 +170,7 @@ export interface AuthConfig {
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
+  rateLimiting?: RateLimitingConfig; // DEPRECATED: Use intelligent 5 req/sec rate limiter
 }
 
 // Auth0 configuration

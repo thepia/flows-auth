@@ -43,17 +43,9 @@ Object.defineProperty(global, 'localStorage', {
   writable: true
 });
 
-// Provide fetch for testing
-// For integration tests, we need real fetch
-// For unit tests, it will be mocked by individual test files
-if (!global.fetch) {
-  // Add fetch polyfill for Node.js environment
-  const nodeFetch = require('node-fetch');
-  global.fetch = nodeFetch;
-  global.Request = nodeFetch.Request;
-  global.Response = nodeFetch.Response;
-  global.Headers = nodeFetch.Headers;
-}
+// Client-side library - no server polyfills needed
+// Tests should use jsdom environment which provides browser APIs
+// For integration tests, individual tests can configure fetch as needed
 
 // Mock WebAuthn for passkey testing - use writable: true to allow redefinition
 Object.defineProperty(window, 'PublicKeyCredential', {
@@ -86,6 +78,36 @@ Object.defineProperty(navigator, 'userAgent', {
   value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
   writable: true
 });
+
+// Ensure window has dispatchEvent function
+if (!window.dispatchEvent || typeof window.dispatchEvent !== 'function') {
+  const eventListeners = new Map<string, Set<EventListener>>();
+  
+  window.addEventListener = vi.fn((type: string, listener: EventListener) => {
+    if (!eventListeners.has(type)) {
+      eventListeners.set(type, new Set());
+    }
+    eventListeners.get(type)?.add(listener);
+  });
+  
+  window.removeEventListener = vi.fn((type: string, listener: EventListener) => {
+    eventListeners.get(type)?.delete(listener);
+  });
+  
+  window.dispatchEvent = vi.fn((event: Event) => {
+    const listeners = eventListeners.get(event.type);
+    if (listeners) {
+      listeners.forEach(listener => {
+        try {
+          listener(event);
+        } catch (e) {
+          console.error('Error in event listener:', e);
+        }
+      });
+    }
+    return true;
+  });
+}
 
 // Setup before all tests  
 beforeAll(() => {

@@ -196,6 +196,114 @@ describe('API Response Contracts - IMMUTABLE', () => {
     });
   });
 
+  describe('sendMagicLinkEmail Response Contract', () => {
+    test('MUST support sendMagicLinkEmail response format: {success: true, message: string}', () => {
+      // This is the EXACT format the sendMagicLinkEmail API returns
+      const magicLinkResponse = {
+        success: true,
+        message: 'Check your email for a verification link'
+      };
+
+      // Contract validation
+      expect(magicLinkResponse).toHaveProperty('success', true);
+      expect(magicLinkResponse).toHaveProperty('message');
+
+      // Type validation
+      expect(typeof magicLinkResponse.success).toBe('boolean');
+      expect(typeof magicLinkResponse.message).toBe('string');
+      expect(magicLinkResponse.message.length).toBeGreaterThan(0);
+    });
+
+    test('MUST handle sendMagicLinkEmail failure responses', () => {
+      const failureResponse = {
+        success: false,
+        error: 'Invalid email address',
+        message: 'Please check your email address and try again'
+      };
+
+      // Contract validation
+      expect(failureResponse).toHaveProperty('success', false);
+      expect(failureResponse).toHaveProperty('error');
+      expect(failureResponse).toHaveProperty('message');
+
+      // Type validation
+      expect(typeof failureResponse.success).toBe('boolean');
+      expect(typeof failureResponse.error).toBe('string');
+      expect(typeof failureResponse.message).toBe('string');
+    });
+  });
+
+  describe('Passwordless Authentication Response Contract', () => {
+    test('MUST support startPasswordlessAuthentication response format', () => {
+      // This is the EXACT format the startPasswordlessAuthentication API returns
+      const passwordlessStartResponse = {
+        success: true,
+        timestamp: 1638360000000,
+        message: 'Check your email for a verification link',
+        user: {
+          email: 'test@example.com',
+          id: 'user-123'
+        }
+      };
+
+      // Contract validation
+      expect(passwordlessStartResponse).toHaveProperty('success', true);
+      expect(passwordlessStartResponse).toHaveProperty('timestamp');
+      expect(passwordlessStartResponse).toHaveProperty('message');
+      expect(passwordlessStartResponse).toHaveProperty('user');
+      expect(passwordlessStartResponse.user).toHaveProperty('email');
+      expect(passwordlessStartResponse.user).toHaveProperty('id');
+
+      // Type validation
+      expect(typeof passwordlessStartResponse.success).toBe('boolean');
+      expect(typeof passwordlessStartResponse.timestamp).toBe('number');
+      expect(typeof passwordlessStartResponse.message).toBe('string');
+      expect(typeof passwordlessStartResponse.user.email).toBe('string');
+      expect(typeof passwordlessStartResponse.user.id).toBe('string');
+    });
+
+    test('MUST support checkPasswordlessStatus response format', () => {
+      // This is the EXACT format the checkPasswordlessStatus API returns
+      const statusResponses = [
+        // Pending status
+        {
+          status: 'pending',
+          user: undefined
+        },
+        // Verified status
+        {
+          status: 'verified', 
+          user: {
+            id: 'user-123',
+            email: 'test@example.com',
+            email_verified: true
+          }
+        },
+        // Expired status
+        {
+          status: 'expired',
+          user: undefined
+        }
+      ];
+
+      for (const statusResponse of statusResponses) {
+        // Contract validation
+        expect(statusResponse).toHaveProperty('status');
+        expect(['pending', 'verified', 'expired']).toContain(statusResponse.status);
+
+        // Type validation
+        expect(typeof statusResponse.status).toBe('string');
+        
+        if (statusResponse.user) {
+          expect(statusResponse.user).toHaveProperty('id');
+          expect(statusResponse.user).toHaveProperty('email');
+          expect(typeof statusResponse.user.id).toBe('string');
+          expect(typeof statusResponse.user.email).toBe('string');
+        }
+      }
+    });
+  });
+
   describe('Event Contract', () => {
     test('MUST emit consistent authentication events', () => {
       // These are the EXACT events that must be emitted during authentication

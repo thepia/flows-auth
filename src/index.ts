@@ -86,7 +86,7 @@ export type { InvitationProcessingResult } from './utils/invitation-processing';
 export type * from './types';
 
 // Version
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.4';
 
 // Default configuration factory
 export function createDefaultConfig(

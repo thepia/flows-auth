@@ -99,6 +99,9 @@ describe('Unregistered User Sign-In Flow', () => {
       
       console.log(`🔍 Testing with unregistered email: ${testEmail}`);
 
+      // Add delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       try {
         const result = await apiClient.checkEmail(testEmail);
         
@@ -134,6 +137,9 @@ describe('Unregistered User Sign-In Flow', () => {
       
       console.log(`🔍 Testing with existing email: ${testEmail}`);
 
+      // Add delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       try {
         const result = await apiClient.checkEmail(testEmail);
         
@@ -168,6 +174,9 @@ describe('Unregistered User Sign-In Flow', () => {
       
       console.log(`🎭 Simulating SignInForm.handleSignIn for: ${email}`);
       
+      // Add delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       try {
         // Step 1: Check what auth methods are available for this email
         console.log('1️⃣ Checking email...');

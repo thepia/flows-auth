@@ -104,8 +104,44 @@ describe('detectApiServer', () => {
   });
 
   describe('localhost handling', () => {
-    it('should skip local check when running on localhost', async () => {
+    it('should try local API first when running on localhost', async () => {
       const mockLocation = { hostname: 'localhost' };
+
+      // Mock successful local health check
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          status: 'healthy',
+          version: '1.0.0',
+          environment: 'local'
+        })
+      });
+
+      const result = await detectApiServer(DEFAULT_API_CONFIG, mockLocation);
+
+      expect(result).toEqual({
+        url: 'https://dev.thepia.com:8443',
+        type: 'local',
+        isHealthy: true,
+        serverInfo: {
+          version: '1.0.0',
+          environment: 'local'
+        }
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://dev.thepia.com:8443/health',
+        expect.objectContaining({
+          signal: expect.any(AbortSignal)
+        })
+      );
+    });
+
+    it('should fallback to production when local API unavailable on localhost', async () => {
+      const mockLocation = { hostname: 'localhost' };
+
+      // Mock failed local health check
+      mockFetch.mockRejectedValueOnce(new Error('Connection refused'));
 
       const result = await detectApiServer(DEFAULT_API_CONFIG, mockLocation);
 
@@ -116,7 +152,12 @@ describe('detectApiServer', () => {
         serverInfo: undefined
       });
 
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://dev.thepia.com:8443/health',
+        expect.objectContaining({
+          signal: expect.any(AbortSignal)
+        })
+      );
     });
   });
 

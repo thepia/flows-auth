@@ -38,17 +38,5 @@ export default defineConfig({
     sourcemap: true,
     target: 'es2020',
     minify: false
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    pool: 'forks',
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/examples/**/tests/**',
-      '**/examples/**/*.test.js'
-    ]
   }
 });

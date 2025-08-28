@@ -1,12 +1,12 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 /**
  * CRITICAL EVENT EMISSION VALIDATION TESTS
- * 
+ *
  * These tests validate the event emission logic that was changed
  * but not properly tested. They ensure components emit the correct
  * events at the right times with the right data.
- * 
+ *
  * THESE TESTS MUST PASS to ensure proper component communication.
  */
 

@@ -5,9 +5,9 @@
  * Generates CSS custom properties from JSON token files
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tokensDir = path.join(__dirname, 'tokens');
@@ -17,10 +17,10 @@ const tokensDir = path.join(__dirname, 'tokens');
  */
 async function loadTokens() {
   const tokens = {};
-  
+
   try {
     const files = ['colors.json', 'typography.json', 'sizes.json'];
-    
+
     for (const file of files) {
       const filePath = path.join(tokensDir, file);
       try {
@@ -35,7 +35,7 @@ async function loadTokens() {
     console.error('Error loading tokens:', error.message);
     process.exit(1);
   }
-  
+
   return tokens;
 }
 
@@ -133,7 +133,7 @@ async function generateCSS(tokens) {
     ' * DO NOT EDIT - This file is auto-generated',
     ' */',
     '',
-    ':root {'
+    ':root {',
   ];
 
   for (const [key, value] of Object.entries(flattened)) {
@@ -175,7 +175,7 @@ async function generateCSS(tokens) {
 
   const outputPath = path.join(__dirname, 'design-tokens.css');
   await fs.writeFile(outputPath, lines.join('\n'));
-  
+
   console.log('✓ Generated design-tokens.css from JSON tokens');
 }
 
@@ -186,16 +186,16 @@ async function main() {
   try {
     console.log('🔄 Loading design tokens...');
     const rawTokens = await loadTokens();
-    
+
     console.log('🔄 Cleaning metadata...');
     const cleanTokens = removeMetadata(rawTokens);
-    
+
     console.log('🔄 Resolving token references...');
     const resolvedTokens = resolveReferences(cleanTokens);
-    
+
     console.log('🔄 Generating CSS...');
     await generateCSS(resolvedTokens);
-    
+
     console.log('✅ Build complete!');
   } catch (error) {
     console.error('❌ Build failed:', error.message);

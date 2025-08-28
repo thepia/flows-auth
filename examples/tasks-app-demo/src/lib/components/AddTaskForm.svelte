@@ -1,74 +1,73 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
-	
-	const dispatch = createEventDispatcher();
-	
-	let title = '';
-	let description = '';
-	let isExpanded = false;
-	let isSubmitting = false;
-	
-	function expandForm() {
-		isExpanded = true;
-	}
-	
-	function collapseForm() {
-		if (!title.trim() && !description.trim()) {
-			isExpanded = false;
-		}
-	}
-	
-	async function handleSubmit() {
-		const taskTitle = title.trim();
-		if (!taskTitle) return;
-		
-		isSubmitting = true;
-		
-		try {
-			dispatch('addTask', {
-				title: taskTitle,
-				description: description.trim()
-			});
-			
-			// Reset form
-			title = '';
-			description = '';
-			isExpanded = false;
-			
-		} catch (error) {
-			console.error('Failed to add task:', error);
-		} finally {
-			isSubmitting = false;
-		}
-	}
-	
-	function handleKeydown(event) {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault();
-			handleSubmit();
-		} else if (event.key === 'Escape') {
-			title = '';
-			description = '';
-			collapseForm();
-		}
-	}
-	
-	function handleTitleKeydown(event) {
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			if (isExpanded) {
-				// Move to description field or submit if description is empty
-				const descriptionField = event.target.closest('form').querySelector('textarea');
-				if (descriptionField) {
-					descriptionField.focus();
-				}
-			} else {
-				handleSubmit();
-			}
-		} else if (event.key === 'Tab' && !isExpanded) {
-			expandForm();
-		}
-	}
+import { createEventDispatcher } from 'svelte';
+
+const dispatch = createEventDispatcher();
+
+let title = '';
+let description = '';
+let isExpanded = false;
+let isSubmitting = false;
+
+function expandForm() {
+  isExpanded = true;
+}
+
+function collapseForm() {
+  if (!title.trim() && !description.trim()) {
+    isExpanded = false;
+  }
+}
+
+async function handleSubmit() {
+  const taskTitle = title.trim();
+  if (!taskTitle) return;
+
+  isSubmitting = true;
+
+  try {
+    dispatch('addTask', {
+      title: taskTitle,
+      description: description.trim(),
+    });
+
+    // Reset form
+    title = '';
+    description = '';
+    isExpanded = false;
+  } catch (error) {
+    console.error('Failed to add task:', error);
+  } finally {
+    isSubmitting = false;
+  }
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    handleSubmit();
+  } else if (event.key === 'Escape') {
+    title = '';
+    description = '';
+    collapseForm();
+  }
+}
+
+function handleTitleKeydown(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    if (isExpanded) {
+      // Move to description field or submit if description is empty
+      const descriptionField = event.target.closest('form').querySelector('textarea');
+      if (descriptionField) {
+        descriptionField.focus();
+      }
+    } else {
+      handleSubmit();
+    }
+  } else if (event.key === 'Tab' && !isExpanded) {
+    expandForm();
+  }
+}
 </script>
 
 <div class="add-task-form">

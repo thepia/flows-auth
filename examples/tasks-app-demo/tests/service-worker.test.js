@@ -2,9 +2,9 @@
  * Service Worker Integration Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Service Worker Integration', () => {
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe('Service Worker Integration', () => {
     let swContent;
     try {
       swContent = readFileSync(join(process.cwd(), 'static', 'sw.js'), 'utf-8');
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Service worker file not found in static directory');
     }
 
@@ -31,14 +31,13 @@ describe('Service Worker Integration', () => {
     try {
       manifestContent = readFileSync(join(process.cwd(), 'static', 'manifest.json'), 'utf-8');
       const manifest = JSON.parse(manifestContent);
-      
+
       expect(manifest.name).toBe('Tasks App - Flows Auth Demo');
       expect(manifest.short_name).toBe('Tasks App');
       expect(manifest.start_url).toBe('/');
       expect(manifest.display).toBe('standalone');
       expect(manifest.theme_color).toBe('#007bff');
-      
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Manifest file not found or invalid JSON');
     }
   });
@@ -47,7 +46,7 @@ describe('Service Worker Integration', () => {
     let appContent;
     try {
       appContent = readFileSync(join(process.cwd(), 'src', 'app.html'), 'utf-8');
-    } catch (error) {
+    } catch (_error) {
       throw new Error('app.html not found');
     }
 
@@ -61,21 +60,21 @@ describe('Service Worker Integration', () => {
       scope: '/',
       active: null,
       installing: null,
-      waiting: null
+      waiting: null,
     });
 
     global.navigator.serviceWorker = {
       register: mockRegister,
       controller: null,
-      addEventListener: vi.fn()
+      addEventListener: vi.fn(),
     };
 
     // Simulate registration
     const registration = global.navigator.serviceWorker.register('/sw.js');
-    
+
     expect(mockRegister).toHaveBeenCalledWith('/sw.js');
     expect(registration).resolves.toMatchObject({
-      scope: '/'
+      scope: '/',
     });
   });
 
@@ -93,7 +92,7 @@ describe('Service Worker Integration', () => {
   it('should handle IndexedDB mock for local storage', () => {
     expect(global.indexedDB).toBeDefined();
     expect(typeof global.indexedDB.open).toBe('function');
-    
+
     // Test that opening a database works with our mock
     const dbRequest = global.indexedDB.open('test-db', 1);
     expect(dbRequest).resolves.toBeDefined();
@@ -102,39 +101,39 @@ describe('Service Worker Integration', () => {
   it('should handle offline scenarios', () => {
     // Test offline/online state changes
     const originalOnLine = global.navigator.onLine;
-    
+
     // Set offline
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
-      value: false
+      value: false,
     });
-    
+
     expect(global.navigator.onLine).toBe(false);
-    
+
     // Set back online
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
-      value: true
+      value: true,
     });
-    
+
     expect(global.navigator.onLine).toBe(true);
-    
+
     // Restore original
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
-      value: originalOnLine
+      value: originalOnLine,
     });
   });
 
   it('should handle message passing with service worker', () => {
-    const mockPort = {
+    const _mockPort = {
       onmessage: null,
       postMessage: vi.fn(),
-      close: vi.fn()
+      close: vi.fn(),
     };
 
     const messageChannel = new global.MessageChannel();
-    
+
     expect(messageChannel.port1).toBeDefined();
     expect(messageChannel.port2).toBeDefined();
     expect(typeof messageChannel.port1.postMessage).toBe('function');
@@ -142,14 +141,9 @@ describe('Service Worker Integration', () => {
   });
 
   it('should export required functions from tasks store', async () => {
-    const { 
-      initTasks, 
-      addTask, 
-      updateTask, 
-      deleteTask, 
-      toggleTask, 
-      requestSync 
-    } = await import('../src/lib/stores/tasks.js');
+    const { initTasks, addTask, updateTask, deleteTask, toggleTask, requestSync } = await import(
+      '../src/lib/stores/tasks.js'
+    );
 
     // Verify all sync-related functions are available
     expect(typeof initTasks).toBe('function');

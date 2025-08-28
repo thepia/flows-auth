@@ -16,10 +16,10 @@ global.navigator.serviceWorker = {
     installing: null,
     waiting: null,
     addEventListener: vi.fn(),
-    unregister: vi.fn().mockResolvedValue(true)
+    unregister: vi.fn().mockResolvedValue(true),
   }),
   controller: null,
-  addEventListener: vi.fn()
+  addEventListener: vi.fn(),
 };
 
 // Mock IndexedDB
@@ -28,7 +28,7 @@ global.indexedDB = {
     result: {
       objectStoreNames: { contains: vi.fn().mockReturnValue(false) },
       createObjectStore: vi.fn().mockReturnValue({
-        createIndex: vi.fn()
+        createIndex: vi.fn(),
       }),
       transaction: vi.fn().mockReturnValue({
         objectStore: vi.fn().mockReturnValue({
@@ -36,11 +36,11 @@ global.indexedDB = {
           get: vi.fn(),
           getAll: vi.fn(),
           delete: vi.fn(),
-          clear: vi.fn()
-        })
-      })
-    }
-  })
+          clear: vi.fn(),
+        }),
+      }),
+    },
+  }),
 };
 
 // Mock localStorage
@@ -48,20 +48,20 @@ global.localStorage = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
 };
 
 // Mock fetch
 global.fetch = vi.fn().mockResolvedValue({
   ok: true,
   json: vi.fn().mockResolvedValue({}),
-  text: vi.fn().mockResolvedValue('')
+  text: vi.fn().mockResolvedValue(''),
 });
 
 // Mock WebAuthn APIs
 global.navigator.credentials = {
   create: vi.fn().mockResolvedValue({}),
-  get: vi.fn().mockResolvedValue({})
+  get: vi.fn().mockResolvedValue({}),
 };
 
 // Mock location
@@ -70,7 +70,7 @@ global.location = {
   href: 'http://localhost:5176',
   pathname: '/',
   search: '',
-  hash: ''
+  hash: '',
 };
 
 // Mock window properties
@@ -80,21 +80,21 @@ global.window.localStorage = global.localStorage;
 global.window.indexedDB = global.indexedDB;
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn(callback => setTimeout(callback, 16));
+global.requestAnimationFrame = vi.fn((callback) => setTimeout(callback, 16));
 global.cancelAnimationFrame = vi.fn();
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }));
 
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
 }));
 
 // Mock MessageChannel
@@ -102,13 +102,13 @@ global.MessageChannel = vi.fn().mockImplementation(() => ({
   port1: {
     onmessage: null,
     postMessage: vi.fn(),
-    close: vi.fn()
+    close: vi.fn(),
   },
   port2: {
-    onmessage: null, 
+    onmessage: null,
     postMessage: vi.fn(),
-    close: vi.fn()
-  }
+    close: vi.fn(),
+  },
 }));
 
 // Mock online/offline events
@@ -118,7 +118,7 @@ global.window.removeEventListener = vi.fn();
 // Set online status
 Object.defineProperty(global.navigator, 'onLine', {
   writable: true,
-  value: true
+  value: true,
 });
 
 console.log('Test setup complete - mocked browser APIs for Tasks App Demo');

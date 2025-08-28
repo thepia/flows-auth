@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { resolve } from 'path';
 import sveltePreprocess from 'svelte-preprocess';
+import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
@@ -9,21 +9,21 @@ export default defineConfig({
     svelte({
       preprocess: sveltePreprocess(),
       compilerOptions: {
-        dev: false
+        dev: false,
       },
-      emitCss: true
+      emitCss: true,
     }),
     dts({
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'tests/**/*']
-    })
+      exclude: ['src/**/*.test.ts', 'tests/**/*'],
+    }),
   ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'ThepiaAuthLibrary',
-      fileName: (format) => format === 'es' ? 'index.js' : 'index.cjs',
-      formats: ['es', 'cjs']
+      fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
+      formats: ['es', 'cjs'],
     },
     rollupOptions: {
       external: ['svelte', 'svelte/store', 'svelte/internal'],
@@ -31,12 +31,12 @@ export default defineConfig({
         globals: {
           svelte: 'Svelte',
           'svelte/store': 'SvelteStore',
-          'svelte/internal': 'SvelteInternal'
-        }
-      }
+          'svelte/internal': 'SvelteInternal',
+        },
+      },
     },
     sourcemap: true,
     target: 'es2020',
-    minify: false
-  }
+    minify: false,
+  },
 });

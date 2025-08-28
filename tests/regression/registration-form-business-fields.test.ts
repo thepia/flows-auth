@@ -1,16 +1,16 @@
 /**
  * Regression Test: RegistrationForm Business Fields Visibility
- * 
+ *
  * This test ensures that when additionalFields prop is provided,
  * the business fields (company, phone, jobTitle) are shown in the
  * webauthn-register step, not just the basic email field.
- * 
+ *
  * Bug: RegistrationForm showing basic "Create Account" form with just email
  * instead of the rich registration form with business fields.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrationForm from '../../src/components/RegistrationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -20,17 +20,17 @@ const mockWebAuthnCredential = {
   rawId: new ArrayBuffer(16),
   response: {
     clientDataJSON: new ArrayBuffer(32),
-    attestationObject: new ArrayBuffer(64)
+    attestationObject: new ArrayBuffer(64),
   },
-  type: 'public-key'
+  type: 'public-key',
 };
 
 Object.defineProperty(navigator, 'credentials', {
   value: {
     create: vi.fn().mockResolvedValue(mockWebAuthnCredential),
-    get: vi.fn().mockResolvedValue(mockWebAuthnCredential)
+    get: vi.fn().mockResolvedValue(mockWebAuthnCredential),
   },
-  writable: true
+  writable: true,
 });
 
 // Mock fetch for API calls
@@ -56,8 +56,8 @@ describe('RegistrationForm Business Fields Regression Test', () => {
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',
-        primaryColor: '#0066cc'
-      }
+        primaryColor: '#0066cc',
+      },
     };
 
     invitationTokenData = {
@@ -68,7 +68,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
       phone: '+1234567890',
       jobTitle: 'Software Engineer',
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-      message: 'Welcome to Test Company!'
+      message: 'Welcome to Test Company!',
     };
 
     // Mock successful API responses
@@ -76,32 +76,34 @@ describe('RegistrationForm Business Fields Regression Test', () => {
       if (url.includes('/auth/check-email')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            exists: false,
-            message: 'Email is available'
-          })
+          json: () =>
+            Promise.resolve({
+              exists: false,
+              message: 'Email is available',
+            }),
         });
       }
-      
+
       if (url.includes('/auth/register')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            user: {
-              id: 'user-123',
-              email: 'test@example.com',
-              emailVerified: false,
-              createdAt: new Date().toISOString()
-            },
-            accessToken: 'mock-access-token',
-            refreshToken: 'mock-refresh-token'
-          })
+          json: () =>
+            Promise.resolve({
+              user: {
+                id: 'user-123',
+                email: 'test@example.com',
+                emailVerified: false,
+                createdAt: new Date().toISOString(),
+              },
+              accessToken: 'mock-access-token',
+              refreshToken: 'mock-refresh-token',
+            }),
         });
       }
 
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
     });
   });
@@ -117,8 +119,8 @@ describe('RegistrationForm Business Fields Regression Test', () => {
         additionalFields: ['company', 'phone', 'jobTitle'],
         invitationTokenData,
         initialEmail: 'test@example.com',
-        readOnlyFields: ['email']
-      }
+        readOnlyFields: ['email'],
+      },
     });
 
     // Step 1: Email entry - should show just email field
@@ -147,7 +149,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     // Accept terms and continue to step 3
     const termsCheckbox = screen.getByRole('checkbox', { name: /Terms of Service/ });
     const privacyCheckbox = screen.getByRole('checkbox', { name: /Privacy Policy/ });
-    
+
     fireEvent.click(termsCheckbox);
     fireEvent.click(privacyCheckbox);
 
@@ -161,7 +163,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     // Step 3: WebAuthn Register - business fields should NOW be visible
     expect(screen.getByLabelText('First Name (optional)')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name (optional)')).toBeInTheDocument();
-    
+
     // These are the key business fields that should be visible
     expect(screen.getByLabelText('Company')).toBeInTheDocument();
     expect(screen.getByLabelText('Phone Number')).toBeInTheDocument();
@@ -180,8 +182,8 @@ describe('RegistrationForm Business Fields Regression Test', () => {
         additionalFields: [], // Empty array - no business fields
         invitationTokenData,
         initialEmail: 'test@example.com',
-        readOnlyFields: ['email']
-      }
+        readOnlyFields: ['email'],
+      },
     });
 
     // Progress through all steps
@@ -194,7 +196,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
 
     const termsCheckbox = screen.getByRole('checkbox', { name: /Terms of Service/ });
     const privacyCheckbox = screen.getByRole('checkbox', { name: /Privacy Policy/ });
-    
+
     fireEvent.click(termsCheckbox);
     fireEvent.click(privacyCheckbox);
 
@@ -208,7 +210,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     // In step 3, name fields should be visible but business fields should NOT be
     expect(screen.getByLabelText('First Name (optional)')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name (optional)')).toBeInTheDocument();
-    
+
     // Business fields should not be visible
     expect(screen.queryByLabelText('Company')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Phone Number')).not.toBeInTheDocument();
@@ -222,8 +224,8 @@ describe('RegistrationForm Business Fields Regression Test', () => {
         additionalFields: ['company', 'jobTitle'], // Only company and jobTitle, no phone
         invitationTokenData,
         initialEmail: 'test@example.com',
-        readOnlyFields: ['email']
-      }
+        readOnlyFields: ['email'],
+      },
     });
 
     // Progress to step 3
@@ -236,7 +238,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
 
     const termsCheckbox = screen.getByRole('checkbox', { name: /Terms of Service/ });
     const privacyCheckbox = screen.getByRole('checkbox', { name: /Privacy Policy/ });
-    
+
     fireEvent.click(termsCheckbox);
     fireEvent.click(privacyCheckbox);
 
@@ -259,8 +261,8 @@ describe('RegistrationForm Business Fields Regression Test', () => {
         config: authConfig,
         additionalFields: ['company', 'phone', 'jobTitle'],
         invitationTokenData,
-        initialEmail: 'test@example.com'
-      }
+        initialEmail: 'test@example.com',
+      },
     });
 
     // Verify we start in step 1
@@ -277,7 +279,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     // Step 2 → Step 3
     const termsCheckbox = screen.getByRole('checkbox', { name: /Terms of Service/ });
     const privacyCheckbox = screen.getByRole('checkbox', { name: /Privacy Policy/ });
-    
+
     fireEvent.click(termsCheckbox);
     fireEvent.click(privacyCheckbox);
 

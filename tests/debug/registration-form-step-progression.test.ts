@@ -1,12 +1,12 @@
 /**
  * Debug Test: RegistrationForm Step Progression
- * 
+ *
  * This test specifically debugs why the form is getting stuck in terms-of-service
  * step and not progressing to webauthn-register step.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrationForm from '../../src/components/RegistrationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -18,12 +18,12 @@ Object.defineProperty(navigator, 'credentials', {
       rawId: new ArrayBuffer(16),
       response: {
         clientDataJSON: new ArrayBuffer(32),
-        attestationObject: new ArrayBuffer(64)
+        attestationObject: new ArrayBuffer(64),
       },
-      type: 'public-key'
-    })
+      type: 'public-key',
+    }),
   },
-  writable: true
+  writable: true,
 });
 
 // Mock fetch for API calls
@@ -47,8 +47,8 @@ describe('RegistrationForm Step Progression Debug', () => {
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',
-        primaryColor: '#0066cc'
-      }
+        primaryColor: '#0066cc',
+      },
     };
 
     invitationTokenData = {
@@ -59,7 +59,7 @@ describe('RegistrationForm Step Progression Debug', () => {
       phone: '+1234567890',
       jobTitle: 'Software Engineer',
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-      message: 'Welcome to Test Company!'
+      message: 'Welcome to Test Company!',
     };
 
     // Mock successful API responses
@@ -67,30 +67,31 @@ describe('RegistrationForm Step Progression Debug', () => {
       if (url.includes('/auth/check-email')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            exists: false,
-            message: 'Email is available'
-          })
+          json: () =>
+            Promise.resolve({
+              exists: false,
+              message: 'Email is available',
+            }),
         });
       }
-      
+
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
     });
   });
 
   it('should debug step progression issue', async () => {
-    let stepChangeEvents: any[] = [];
+    const stepChangeEvents: any[] = [];
 
     const { component } = render(RegistrationForm, {
       props: {
         config: authConfig,
         additionalFields: ['company', 'phone', 'jobTitle'],
         invitationTokenData,
-        initialEmail: 'test@example.com'
-      }
+        initialEmail: 'test@example.com',
+      },
     });
 
     // Listen for step change events
@@ -122,7 +123,7 @@ describe('RegistrationForm Step Progression Debug', () => {
 
     const termsCheckbox = checkboxes[0];
     const privacyCheckbox = checkboxes[1];
-    const marketingCheckbox = checkboxes[2];
+    const _marketingCheckbox = checkboxes[2];
 
     console.log('Checkboxes found:', checkboxes.length);
     console.log('Terms checkbox checked before:', termsCheckbox.checked);
@@ -145,7 +146,7 @@ describe('RegistrationForm Step Progression Debug', () => {
     // Try to continue to step 3
     const acceptButton = screen.getByText('Accept & Continue');
     console.log('About to click Accept & Continue button, disabled:', acceptButton.disabled);
-    
+
     fireEvent.click(acceptButton);
 
     console.log('Clicked Accept & Continue button');
@@ -153,36 +154,39 @@ describe('RegistrationForm Step Progression Debug', () => {
 
     // Wait for step 3 to appear
     try {
-      await waitFor(() => {
-        const step3Title = screen.getByText('Create Account with Passkey');
-        console.log('Step 3 title found successfully!');
-        expect(step3Title).toBeInTheDocument();
-      }, { timeout: 5000 });
-      
+      await waitFor(
+        () => {
+          const step3Title = screen.getByText('Create Account with Passkey');
+          console.log('Step 3 title found successfully!');
+          expect(step3Title).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
+
       console.log('SUCCESS: Reached step 3!');
-    } catch (error) {
+    } catch (_error) {
       console.log('FAILED to reach step 3, checking current state...');
-      
+
       // Check what step we're currently showing
       const step1Title = screen.queryByText('Create Account');
       const step2Title = screen.queryByText('Terms & Privacy');
       const step3Title = screen.queryByText('Create Account with Passkey');
-      
+
       console.log('Current step check:', {
         step1: !!step1Title,
         step2: !!step2Title,
-        step3: !!step3Title
+        step3: !!step3Title,
       });
-      
+
       // Check for any error messages
       const errorMessage = document.querySelector('.error-message');
       console.log('Error message:', errorMessage?.textContent);
-      
+
       // Let's also check the current step classes
       const authContainer = document.querySelector('.auth-container');
       const currentStepDiv = authContainer?.querySelector('div[class*="step"]');
       console.log('Current step div class:', currentStepDiv?.className);
-      
+
       // Don't fail the test, just log the issue
       console.log('Test completed with step progression issue');
     }

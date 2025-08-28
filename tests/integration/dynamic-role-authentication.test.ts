@@ -3,9 +3,9 @@
  * Comprehensive test scenarios for the complete authentication flow with dynamic role upgrades
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse, ApplicationContext, StorageConfigurationUpdate } from '../../src/types';
+import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({
@@ -15,8 +15,8 @@ vi.mock('../../src/api/auth-api', () => ({
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
-    signOut: vi.fn()
-  }))
+    signOut: vi.fn(),
+  })),
 }));
 
 const mockConfig: AuthConfig = {
@@ -29,8 +29,8 @@ const mockConfig: AuthConfig = {
   enableSocialLogin: false,
   branding: {
     companyName: 'Test Company',
-    showPoweredBy: true
-  }
+    showPoweredBy: true,
+  },
 };
 
 describe('Dynamic Role Authentication Integration Tests', () => {
@@ -45,14 +45,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       const context = authStore.getApplicationContext();
       expect(context?.userType).toBe('mixed');
       expect(context?.forceGuestMode).toBe(true);
-      
+
       // Should start with sessionStorage for security
       // (This test assumes the implementation uses sessionStorage by default)
     });
@@ -62,8 +62,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful employee authentication
@@ -75,11 +75,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'employee-access-token',
         refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -98,7 +98,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       };
 
       await authStore.updateStorageConfiguration(expectedUpdate);
@@ -111,8 +111,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful guest authentication
@@ -124,11 +124,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Guest User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'guest' }
+          metadata: { role: 'guest' },
         },
         accessToken: 'guest-access-token',
         refreshToken: 'guest-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -152,14 +152,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'all_employees',
-          domain: 'internal.company.com'
-        }
+          domain: 'internal.company.com',
+        },
       });
 
       const context = authStore.getApplicationContext();
       expect(context?.userType).toBe('all_employees');
       expect(context?.domain).toBe('internal.company.com');
-      
+
       // Should still start with sessionStorage for security-first approach
     });
 
@@ -168,8 +168,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'all_employees',
-          domain: 'internal.company.com'
-        }
+          domain: 'internal.company.com',
+        },
       });
 
       // Mock successful employee authentication in corporate context
@@ -181,11 +181,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Corporate Employee',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee', department: 'engineering' }
+          metadata: { role: 'employee', department: 'engineering' },
         },
         accessToken: 'corporate-access-token',
         refreshToken: 'corporate-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -204,7 +204,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       };
 
       await authStore.updateStorageConfiguration(expectedUpdate);
@@ -220,8 +220,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         applicationContext: {
           userType: 'mixed',
           urlPath: '/admin/login',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       const context = authStore.getApplicationContext();
@@ -235,8 +235,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         applicationContext: {
           userType: 'mixed',
           urlPath: '/admin/login',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful admin authentication
@@ -248,11 +248,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Admin User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'admin', permissions: ['read', 'write', 'admin'] }
+          metadata: { role: 'admin', permissions: ['read', 'write', 'admin'] },
         },
         accessToken: 'admin-access-token',
         refreshToken: 'admin-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -271,7 +271,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         userRole: 'admin',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       };
 
       await authStore.updateStorageConfiguration(expectedUpdate);
@@ -286,8 +286,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock authentication response with unknown role
@@ -299,11 +299,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Unknown Role User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'unknown_role' }
+          metadata: { role: 'unknown_role' },
         },
         accessToken: 'unknown-access-token',
         refreshToken: 'unknown-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -325,8 +325,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful authentication
@@ -338,20 +338,20 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'employee-access-token',
         refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
       mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update failure
-      const mockUpdateStorageConfiguration = vi.fn().mockRejectedValue(
-        new Error('Storage configuration update failed')
-      );
+      const mockUpdateStorageConfiguration = vi
+        .fn()
+        .mockRejectedValue(new Error('Storage configuration update failed'));
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
@@ -364,7 +364,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           userRole: 'employee',
           sessionTimeout: 7 * 24 * 60 * 60 * 1000,
           migrateExistingSession: true,
-          preserveTokens: true
+          preserveTokens: true,
         });
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
@@ -380,8 +380,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock authentication response without metadata
@@ -392,12 +392,12 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           email: 'nometa@example.com',
           name: 'No Metadata User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
           // No metadata field
         },
         accessToken: 'nometa-access-token',
         refreshToken: 'nometa-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -421,8 +421,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful employee authentication
@@ -434,11 +434,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'employee-access-token',
         refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -451,7 +451,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         fromStorage: 'sessionStorage',
         toStorage: 'localStorage',
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       });
 
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
@@ -466,7 +466,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       };
 
       mockUpdateStorageConfiguration.mockImplementation(async (update) => {
@@ -488,8 +488,8 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful authentication
@@ -501,11 +501,11 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'employee-access-token',
         refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -519,7 +519,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
         toStorage: 'localStorage',
         dataPreserved: true,
         tokensPreserved: true,
-        error: 'Storage quota exceeded'
+        error: 'Storage quota exceeded',
       });
 
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
@@ -544,7 +544,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           userRole: 'employee',
           sessionTimeout: 7 * 24 * 60 * 60 * 1000,
           migrateExistingSession: true,
-          preserveTokens: true
+          preserveTokens: true,
         });
       } catch (error) {
         expect(error).toBeInstanceOf(Error);

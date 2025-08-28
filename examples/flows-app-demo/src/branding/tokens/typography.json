@@ -28,7 +28,7 @@
       "bold": { "value": "700", "type": "fontWeight", "$description": "Bold weight" }
     },
     "fontSize": {
-      "$description": "Font size values matching existing design system", 
+      "$description": "Font size values matching existing design system",
       "xs": { "value": "0.75rem", "type": "dimension", "$description": "12px - extra small" },
       "sm": { "value": "0.875rem", "type": "dimension", "$description": "14px - small" },
       "base": { "value": "1rem", "type": "dimension", "$description": "16px - base size" },

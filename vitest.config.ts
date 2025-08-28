@@ -1,5 +1,5 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
 
 export default defineConfig({
   test: {
@@ -10,13 +10,13 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/examples/**/tests/**',
-      '**/examples/**/*.test.js'
+      '**/examples/**/*.test.js',
     ],
-    testTimeout: 10000
+    testTimeout: 10000,
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-    }
-  }
+    },
+  },
 });

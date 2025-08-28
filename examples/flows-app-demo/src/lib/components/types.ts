@@ -1,6 +1,6 @@
 /**
  * Type definitions and guards for authentication components
- * 
+ *
  * Purpose: Prevent accidental usage of mock authentication in production
  * Context: Provides compile-time and runtime safety checks
  * Safe to remove: No - these types prevent security vulnerabilities
@@ -26,7 +26,7 @@ export interface RealAuthConfig {
 
 /**
  * Configuration for MOCK authentication (demo/testing only)
- * 
+ *
  * ⚠️ WARNING: This type should NEVER be used in production
  */
 export interface MockAuthConfig {
@@ -67,23 +67,26 @@ export function isMockAuthConfig(config: any): config is MockAuthConfig {
 
 /**
  * Runtime guard to prevent mock authentication in production
- * 
+ *
  * @throws Error if mock authentication is detected in production environment
  */
-export function validateAuthConfig(config: any, environment: 'development' | 'production' = 'development'): void {
+export function validateAuthConfig(
+  config: any,
+  environment: 'development' | 'production' = 'development'
+): void {
   if (environment === 'production' && isMockAuthConfig(config)) {
     throw new Error(
       '🚨 SECURITY ERROR: Mock authentication detected in production environment! ' +
-      'This would allow anyone to sign in without real authentication. ' +
-      'Use real flows-auth configuration instead.'
+        'This would allow anyone to sign in without real authentication. ' +
+        'Use real flows-auth configuration instead.'
     );
   }
-  
+
   if (isMockAuthConfig(config)) {
     console.warn('🚨 WARNING: Using mock authentication - only for demo/testing purposes');
     console.warn('🚨 This will accept ANY email without real verification');
   }
-  
+
   if (isRealAuthConfig(config)) {
     console.log('✅ Using real authentication configuration');
   }
@@ -91,29 +94,31 @@ export function validateAuthConfig(config: any, environment: 'development' | 'pr
 
 /**
  * Helper to create a safe mock config for development/testing
- * 
+ *
  * This function makes it explicit that mock authentication is being used
  */
 export function createMockAuthConfig(branding?: MockAuthConfig['branding']): MockAuthConfig {
   console.warn('🚨 Creating MOCK authentication config - not for production use');
-  
+
   return {
     __MOCK_AUTH_WARNING__: 'THIS_IS_FAKE_AUTHENTICATION_DO_NOT_USE_IN_PRODUCTION',
     branding,
     enablePasskeys: true,
-    enableMagicLinks: true
+    enableMagicLinks: true,
   };
 }
 
 /**
  * Helper to create a real auth config with validation
  */
-export function createRealAuthConfig(config: Omit<RealAuthConfig, 'enablePasskeys'> & { enablePasskeys?: boolean }): RealAuthConfig {
+export function createRealAuthConfig(
+  config: Omit<RealAuthConfig, 'enablePasskeys'> & { enablePasskeys?: boolean }
+): RealAuthConfig {
   const realConfig: RealAuthConfig = {
     enablePasskeys: true,
-    ...config
+    ...config,
   };
-  
+
   validateAuthConfig(realConfig, 'production');
   return realConfig;
 }

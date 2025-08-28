@@ -4,32 +4,34 @@
  * Based on documented authentication state machine in /docs/auth/authentication-state-machine.md
  */
 
+import type { AuthApiClient } from '../api/auth-api';
 import type {
   AuthConfig,
-  AuthMachineState,
-  AuthMachineEvent,
-  AuthMachineContext,
   AuthError,
-  User,
-  SessionData
+  AuthMachineContext,
+  AuthMachineEvent,
+  AuthMachineState,
+  SessionData,
 } from '../types';
-import { AuthApiClient } from '../api/auth-api';
-import { isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { reportAuthState, reportWebAuthnError } from '../utils/errorReporter';
 import { getSession, isSessionValid } from '../utils/sessionManager';
+import { isConditionalMediationSupported, isWebAuthnSupported } from '../utils/webauthn';
 
 /**
  * Guards - Conditional logic for state transitions
  */
 export class AuthGuards {
-  constructor(private api: AuthApiClient, private config: AuthConfig) {}
+  constructor(
+    private api: AuthApiClient,
+    private config: AuthConfig
+  ) {}
 
   hasValidSession(context: AuthMachineContext): boolean {
     if (!context.sessionData) return false;
-    
+
     const { accessToken } = context.sessionData;
     if (!accessToken) return false;
-    
+
     // For testing purposes, consider any session with accessToken as valid
     // In production, you'd check expiration time properly
     return true;
@@ -61,7 +63,10 @@ export class AuthGuards {
   }
 
   // Error classification based on timing (from documentation)
-  classifyWebAuthnError(error: any, duration: number): 'credential-not-found' | 'user-cancellation' | 'credential-mismatch' {
+  classifyWebAuthnError(
+    error: any,
+    duration: number
+  ): 'credential-not-found' | 'user-cancellation' | 'credential-mismatch' {
     if (duration < 500 || error.message?.includes('not found')) {
       return 'credential-not-found';
     } else if (duration >= 500 && duration < 30000 && this.containsCancellationPattern(error)) {
@@ -75,8 +80,8 @@ export class AuthGuards {
 
   private containsCancellationPattern(error: any): boolean {
     const cancellationPatterns = ['NotAllowedError', 'cancelled', 'aborted'];
-    return cancellationPatterns.some(pattern => 
-      error.name?.includes(pattern) || error.message?.includes(pattern)
+    return cancellationPatterns.some(
+      (pattern) => error.name?.includes(pattern) || error.message?.includes(pattern)
     );
   }
 }
@@ -86,7 +91,7 @@ export class AuthGuards {
  */
 export class AuthActions {
   constructor(
-    private api: AuthApiClient, 
+    private api: AuthApiClient,
     private config: AuthConfig,
     private updateContext: (updates: Partial<AuthMachineContext>) => void
   ) {}
@@ -97,12 +102,12 @@ export class AuthActions {
   }
 
   clearSession(): void {
-    this.updateContext({ 
-      sessionData: null, 
+    this.updateContext({
+      sessionData: null,
       user: null,
-      error: null 
+      error: null,
     });
-    
+
     // Clear localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_access_token');
@@ -113,9 +118,9 @@ export class AuthActions {
   }
 
   loadUserSession(session: SessionData): void {
-    this.updateContext({ 
-      sessionData: session, 
-      user: session.user 
+    this.updateContext({
+      sessionData: session,
+      user: session.user,
     });
   }
 
@@ -136,18 +141,18 @@ export class AuthActions {
   async handleBiometricPrompt(email: string): Promise<void> {
     try {
       const challenge = await this.api.getPasskeyChallenge(email);
-      
+
       const credential = await navigator.credentials.get({
         publicKey: {
           challenge: new Uint8Array(Buffer.from(challenge.challenge, 'base64')),
           allowCredentials: challenge.allowCredentials || [],
           timeout: challenge.timeout || 60000,
           userVerification: 'preferred',
-          rpId: challenge.rpId
+          rpId: challenge.rpId,
         },
-        mediation: 'required' // Not conditional for explicit prompts
+        mediation: 'required', // Not conditional for explicit prompts
       });
-      
+
       if (credential) {
         this.updateContext({ challengeId: credential.id });
       }
@@ -165,17 +170,32 @@ export class AuthActions {
       startTime: Date.now(),
       retryCount: 0,
       sessionData: null,
-      challengeId: null
+      challengeId: null,
     };
   }
 
-  private reportStateChange(event: 'login-attempt' | 'login-success' | 'login-failure' | 'webauthn-start' | 'webauthn-success' | 'webauthn-failure' | 'sign-in-started' | 'sign-in-success' | 'sign-in-error', data: any): void {
+  private reportStateChange(
+    event:
+      | 'login-attempt'
+      | 'login-success'
+      | 'login-failure'
+      | 'webauthn-start'
+      | 'webauthn-success'
+      | 'webauthn-failure'
+      | 'sign-in-started'
+      | 'sign-in-success'
+      | 'sign-in-error',
+    data: any
+  ): void {
     if (this.config.errorReporting?.enabled) {
       reportAuthState({ event, ...data });
     }
   }
 
-  private reportError(event: 'login-failure' | 'webauthn-failure' | 'sign-in-error', error: any): void {
+  private reportError(
+    event: 'login-failure' | 'webauthn-failure' | 'sign-in-error',
+    error: any
+  ): void {
     if (this.config.errorReporting?.enabled) {
       reportAuthState({ event, error: error.message });
     }
@@ -198,7 +218,10 @@ export class AuthStateMachine {
   private actions: AuthActions;
   private listeners: Set<(state: AuthMachineState, context: AuthMachineContext) => void>;
 
-  constructor(private api: AuthApiClient, private config: AuthConfig) {
+  constructor(
+    private api: AuthApiClient,
+    private config: AuthConfig
+  ) {
     this.context = this.createInitialContext();
     this.guards = new AuthGuards(api, config);
     this.actions = new AuthActions(api, config, (updates) => this.updateContext(updates));
@@ -213,7 +236,7 @@ export class AuthStateMachine {
       startTime: Date.now(),
       retryCount: 0,
       sessionData: null,
-      challengeId: null
+      challengeId: null,
     };
   }
 
@@ -223,7 +246,7 @@ export class AuthStateMachine {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state, this.context));
+    this.listeners.forEach((listener) => listener(this.state, this.context));
   }
 
   // XState-like transition method
@@ -237,12 +260,12 @@ export class AuthStateMachine {
   private setState(newState: AuthMachineState): void {
     const previousState = this.state;
     this.state = newState;
-    
+
     console.log(`🔄 State transition: ${previousState} → ${newState}`);
-    
+
     // Execute entry actions for new state
     this.executeEntryActions(newState);
-    
+
     this.notifyListeners();
   }
 
@@ -274,16 +297,19 @@ export class AuthStateMachine {
 
   // Core transition logic based on documented state machine
   private transition(
-    currentState: AuthMachineState, 
-    event: AuthMachineEvent, 
+    currentState: AuthMachineState,
+    event: AuthMachineEvent,
     context: AuthMachineContext
   ): AuthMachineState {
-    
     switch (currentState) {
       case 'checkingSession':
         if (event.type === 'VALID_SESSION') {
           // Update context first, then check if valid
-          const updatedContext = { ...context, sessionData: event.session, user: event.session.user };
+          const updatedContext = {
+            ...context,
+            sessionData: event.session,
+            user: event.session.user,
+          };
           if (this.guards.hasValidSession(updatedContext)) {
             this.actions.loadUserSession(event.session);
             return 'sessionValid';
@@ -419,7 +445,9 @@ export class AuthStateMachine {
   }
 
   // XState-like subscription
-  onTransition(listener: (state: AuthMachineState, context: AuthMachineContext) => void): () => void {
+  onTransition(
+    listener: (state: AuthMachineState, context: AuthMachineContext) => void
+  ): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -447,8 +475,8 @@ export class AuthStateMachine {
           user: {
             ...existingSession.user,
             emailVerified: true, // Assume verified if they have a session
-            createdAt: new Date().toISOString() // Fallback value
-          }
+            createdAt: new Date().toISOString(), // Fallback value
+          },
         };
 
         this.send({ type: 'VALID_SESSION', session: sessionData });

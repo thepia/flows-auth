@@ -1,12 +1,12 @@
 /**
  * AccountCreationForm Component Tests - Single Form Design
- * 
+ *
  * Tests for the simplified single-form AccountCreationForm component
  * after removal of multi-step functionality.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -15,7 +15,7 @@ const mockSubscriptionCallbacks: Array<(state: any) => void> = [];
 const mockAuthStore = {
   createAccount: vi.fn(),
   api: {
-    checkEmail: vi.fn()
+    checkEmail: vi.fn(),
   },
   subscribe: vi.fn((callback) => {
     mockSubscriptionCallbacks.push(callback);
@@ -26,8 +26,8 @@ const mockAuthStore = {
   }),
   // Helper to trigger state changes for testing
   _triggerStateChange: (state: any) => {
-    mockSubscriptionCallbacks.forEach(cb => cb(state));
-  }
+    mockSubscriptionCallbacks.forEach((cb) => cb(state));
+  },
 };
 
 // Mock the createAuthStore function
@@ -35,13 +35,13 @@ vi.mock('../../src/stores/auth-store', () => ({
   createAuthStore: vi.fn(() => {
     console.log('🔧 createAuthStore mock called');
     return mockAuthStore;
-  })
+  }),
 }));
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
-  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
 }));
 
 describe('AccountCreationForm - Single Form Design', () => {
@@ -49,7 +49,7 @@ describe('AccountCreationForm - Single Form Design', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     defaultConfig = {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
@@ -57,8 +57,8 @@ describe('AccountCreationForm - Single Form Design', () => {
       enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
-        logoUrl: '/logo.svg'
-      }
+        logoUrl: '/logo.svg',
+      },
     };
 
     // Mock successful API responses
@@ -68,16 +68,16 @@ describe('AccountCreationForm - Single Form Design', () => {
       user: {
         id: 'test-user',
         email: 'test@example.com',
-        name: 'Test User'
+        name: 'Test User',
       },
-      accessToken: 'test-token'
+      accessToken: 'test-token',
     });
   });
 
   describe('Basic Rendering', () => {
     it('should render single registration form', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Should show all form fields in one form
@@ -91,7 +91,7 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should show company logo when configured', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const logo = screen.getByAltText('Test Company');
@@ -103,7 +103,7 @@ describe('AccountCreationForm - Single Form Design', () => {
   describe('Form Validation', () => {
     it('should require all mandatory fields', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const submitButton = screen.getByText(/Create Account with Passkey/);
@@ -115,7 +115,7 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should validate email format', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -125,12 +125,12 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should require terms and privacy acceptance', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const termsCheckbox = screen.getByLabelText(/Terms of Service/);
       const privacyCheckbox = screen.getByLabelText(/Privacy Policy/);
-      
+
       expect(termsCheckbox).toHaveAttribute('required');
       expect(privacyCheckbox).toHaveAttribute('required');
     });
@@ -139,22 +139,22 @@ describe('AccountCreationForm - Single Form Design', () => {
   describe('Registration Flow', () => {
     it('should successfully register with valid data', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill all required fields
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'test@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'test@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
-      
+
       // Submit form
       await fireEvent.click(screen.getByText(/Create Account with Passkey/));
 
@@ -167,7 +167,7 @@ describe('AccountCreationForm - Single Form Design', () => {
           acceptedTerms: true,
           acceptedPrivacy: true,
           marketingConsent: false,
-          invitationToken: undefined
+          invitationToken: undefined,
         });
       });
     });
@@ -176,18 +176,18 @@ describe('AccountCreationForm - Single Form Design', () => {
       mockAuthStore.api.checkEmail.mockResolvedValue({ exists: true });
 
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill required fields and submit
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'existing@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'existing@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
@@ -205,15 +205,15 @@ describe('AccountCreationForm - Single Form Design', () => {
         email: 'invited@example.com',
         firstName: 'Jane',
         lastName: 'Smith',
-        company: 'ACME Corp'
+        company: 'ACME Corp',
       };
 
       render(AccountCreationForm, {
-        props: { 
+        props: {
           config: defaultConfig,
           invitationTokenData: invitationData,
-          invitationToken: 'jwt-token-string'
-        }
+          invitationToken: 'jwt-token-string',
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -232,15 +232,15 @@ describe('AccountCreationForm - Single Form Design', () => {
       const invitationData: InvitationTokenData = {
         email: 'invited@example.com',
         firstName: 'Jane',
-        lastName: 'Smith'
+        lastName: 'Smith',
       };
 
       render(AccountCreationForm, {
-        props: { 
+        props: {
           config: defaultConfig,
           invitationTokenData: invitationData,
-          invitationToken: 'jwt-token-string'
-        }
+          invitationToken: 'jwt-token-string',
+        },
       });
 
       // Accept terms and submit
@@ -251,7 +251,7 @@ describe('AccountCreationForm - Single Form Design', () => {
       await waitFor(() => {
         expect(mockAuthStore.createAccount).toHaveBeenCalledWith(
           expect.objectContaining({
-            invitationToken: 'jwt-token-string'
+            invitationToken: 'jwt-token-string',
           })
         );
       });
@@ -261,22 +261,22 @@ describe('AccountCreationForm - Single Form Design', () => {
   describe('Event Emission', () => {
     it('should emit success event on successful registration', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
-      
+
       component.$on('success', successHandler);
 
       // Complete registration
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'test@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'test@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
@@ -286,8 +286,8 @@ describe('AccountCreationForm - Single Form Design', () => {
         expect(successHandler).toHaveBeenCalledWith(
           expect.objectContaining({
             detail: expect.objectContaining({
-              user: expect.any(Object)
-            })
+              user: expect.any(Object),
+            }),
           })
         );
       });
@@ -295,22 +295,22 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should emit appAccess event only after auth store confirms authentication', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
-      
+
       component.$on('appAccess', appAccessHandler);
 
       // Complete registration
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'test@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'test@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
@@ -323,13 +323,13 @@ describe('AccountCreationForm - Single Form Design', () => {
       const mockUser = {
         id: 'test-user',
         email: 'test@example.com',
-        name: 'Test User'
+        name: 'Test User',
       };
-      
+
       mockAuthStore._triggerStateChange({
         state: 'authenticated',
         user: mockUser,
-        accessToken: 'test-token'
+        accessToken: 'test-token',
       });
 
       // Now appAccess should be emitted
@@ -337,8 +337,8 @@ describe('AccountCreationForm - Single Form Design', () => {
         expect(appAccessHandler).toHaveBeenCalledWith(
           expect.objectContaining({
             detail: expect.objectContaining({
-              user: expect.any(Object)
-            })
+              user: expect.any(Object),
+            }),
           })
         );
       });
@@ -346,11 +346,11 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should subscribe to auth store state changes', async () => {
       const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Wait a bit for onMount to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify auth store subscription was called
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
@@ -358,22 +358,22 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should not emit appAccess if auth store state is not authenticated', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
-      
+
       component.$on('appAccess', appAccessHandler);
 
       // Complete registration successfully
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'test@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'test@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
@@ -382,7 +382,7 @@ describe('AccountCreationForm - Single Form Design', () => {
       // Simulate auth store state change to error
       mockAuthStore._triggerStateChange({
         state: 'error',
-        error: 'Registration failed'
+        error: 'Registration failed',
       });
 
       // appAccess should not be emitted for error state
@@ -393,10 +393,10 @@ describe('AccountCreationForm - Single Form Design', () => {
   describe('Additional Fields', () => {
     it('should show additional business fields when requested', () => {
       render(AccountCreationForm, {
-        props: { 
+        props: {
           config: defaultConfig,
-          additionalFields: ['company', 'phone', 'jobTitle']
-        }
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       expect(screen.getByLabelText(/Company/)).toBeInTheDocument();
@@ -406,30 +406,30 @@ describe('AccountCreationForm - Single Form Design', () => {
 
     it('should include additional fields in registration data', async () => {
       render(AccountCreationForm, {
-        props: { 
+        props: {
           config: defaultConfig,
-          additionalFields: ['company', 'phone', 'jobTitle']
-        }
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       // Fill all fields including additional ones
-      await fireEvent.input(screen.getByLabelText(/Email Address/), { 
-        target: { value: 'test@example.com' } 
+      await fireEvent.input(screen.getByLabelText(/Email Address/), {
+        target: { value: 'test@example.com' },
       });
-      await fireEvent.input(screen.getByLabelText(/First Name/), { 
-        target: { value: 'John' } 
+      await fireEvent.input(screen.getByLabelText(/First Name/), {
+        target: { value: 'John' },
       });
-      await fireEvent.input(screen.getByLabelText(/Last Name/), { 
-        target: { value: 'Doe' } 
+      await fireEvent.input(screen.getByLabelText(/Last Name/), {
+        target: { value: 'Doe' },
       });
-      await fireEvent.input(screen.getByLabelText(/Company/), { 
-        target: { value: 'Test Corp' } 
+      await fireEvent.input(screen.getByLabelText(/Company/), {
+        target: { value: 'Test Corp' },
       });
-      await fireEvent.input(screen.getByLabelText(/Phone/), { 
-        target: { value: '+1-555-1234' } 
+      await fireEvent.input(screen.getByLabelText(/Phone/), {
+        target: { value: '+1-555-1234' },
       });
-      await fireEvent.input(screen.getByLabelText(/Job Title/), { 
-        target: { value: 'Developer' } 
+      await fireEvent.input(screen.getByLabelText(/Job Title/), {
+        target: { value: 'Developer' },
       });
       await fireEvent.click(screen.getByLabelText(/Terms of Service/));
       await fireEvent.click(screen.getByLabelText(/Privacy Policy/));
@@ -440,7 +440,7 @@ describe('AccountCreationForm - Single Form Design', () => {
           expect.objectContaining({
             company: 'Test Corp',
             phone: '+1-555-1234',
-            jobTitle: 'Developer'
+            jobTitle: 'Developer',
           })
         );
       });

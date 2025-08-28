@@ -33,7 +33,7 @@ export async function getWebAuthnDebugInfo(): Promise<WebAuthnDebugInfo> {
     userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server',
     errors: [],
     warnings: [],
-    recommendations: []
+    recommendations: [],
   };
 
   if (typeof window === 'undefined') {
@@ -65,16 +65,23 @@ export async function getWebAuthnDebugInfo(): Promise<WebAuthnDebugInfo> {
 
   // Check port issues
   if (info.port && !info.isLocalhost) {
-    info.warnings.push(`Running on port ${info.port} with non-localhost hostname - May cause WebAuthn issues`);
-    info.recommendations.push('Try using localhost instead of IP address or use standard ports (80/443)');
+    info.warnings.push(
+      `Running on port ${info.port} with non-localhost hostname - May cause WebAuthn issues`
+    );
+    info.recommendations.push(
+      'Try using localhost instead of IP address or use standard ports (80/443)'
+    );
   }
 
   // Check platform authenticator
   if (info.supported) {
     try {
-      info.platformAuthenticatorAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      info.platformAuthenticatorAvailable =
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
       if (!info.platformAuthenticatorAvailable) {
-        info.warnings.push('No platform authenticator available - Touch ID/Face ID/Windows Hello not available');
+        info.warnings.push(
+          'No platform authenticator available - Touch ID/Face ID/Windows Hello not available'
+        );
       }
     } catch (error) {
       info.errors.push(`Platform authenticator check failed: ${error}`);
@@ -85,9 +92,12 @@ export async function getWebAuthnDebugInfo(): Promise<WebAuthnDebugInfo> {
   if (info.supported) {
     try {
       if (PublicKeyCredential.isConditionalMediationAvailable) {
-        info.conditionalMediationSupported = await PublicKeyCredential.isConditionalMediationAvailable();
+        info.conditionalMediationSupported =
+          await PublicKeyCredential.isConditionalMediationAvailable();
         if (!info.conditionalMediationSupported) {
-          info.warnings.push('Conditional mediation not supported - Email-triggered WebAuthn will not work');
+          info.warnings.push(
+            'Conditional mediation not supported - Email-triggered WebAuthn will not work'
+          );
         }
       } else {
         info.warnings.push('Conditional mediation API not available - Older browser version');
@@ -101,7 +111,9 @@ export async function getWebAuthnDebugInfo(): Promise<WebAuthnDebugInfo> {
   const ua = info.userAgent.toLowerCase();
   if (ua.includes('chrome')) {
     if (info.port && ['5173', '5174', '5175', '5176', '3000', '8080'].includes(info.port)) {
-      info.warnings.push('Chrome on development port - WebAuthn should work but may have limitations');
+      info.warnings.push(
+        'Chrome on development port - WebAuthn should work but may have limitations'
+      );
     }
   } else if (ua.includes('firefox')) {
     info.warnings.push('Firefox WebAuthn support varies - Some features may not work');
@@ -125,20 +137,20 @@ export async function getWebAuthnDebugInfo(): Promise<WebAuthnDebugInfo> {
 
 export function logWebAuthnDebugInfo(info: WebAuthnDebugInfo) {
   console.group('🔐 WebAuthn Debug Information');
-  
+
   console.log('📍 Environment:', {
     url: info.url,
     protocol: info.protocol,
     hostname: info.hostname,
     port: info.port || 'default',
     isSecureContext: info.isSecureContext,
-    isLocalhost: info.isLocalhost
+    isLocalhost: info.isLocalhost,
   });
 
   console.log('✅ Support:', {
     webauthnSupported: info.supported,
     platformAuthenticator: info.platformAuthenticatorAvailable,
-    conditionalMediation: info.conditionalMediationSupported
+    conditionalMediation: info.conditionalMediationSupported,
   });
 
   if (info.errors.length > 0) {
@@ -154,14 +166,14 @@ export function logWebAuthnDebugInfo(info: WebAuthnDebugInfo) {
   }
 
   console.log('🌐 User Agent:', info.userAgent);
-  
+
   console.groupEnd();
 }
 
 export async function testWebAuthnBasicFlow(): Promise<{ success: boolean; error?: string }> {
   try {
     const debugInfo = await getWebAuthnDebugInfo();
-    
+
     if (!debugInfo.supported) {
       return { success: false, error: 'WebAuthn not supported' };
     }
@@ -172,34 +184,34 @@ export async function testWebAuthnBasicFlow(): Promise<{ success: boolean; error
 
     // Try to create a test credential (this will prompt user)
     console.log('🧪 Testing WebAuthn credential creation...');
-    
+
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: new Uint8Array(32),
         rp: {
-          name: "WebAuthn Test",
+          name: 'WebAuthn Test',
           id: debugInfo.hostname === 'localhost' ? 'localhost' : debugInfo.hostname,
         },
         user: {
           id: new Uint8Array(16),
-          name: "test@example.com",
-          displayName: "Test User",
+          name: 'test@example.com',
+          displayName: 'Test User',
         },
-        pubKeyCredParams: [{alg: -7, type: "public-key"}],
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
         authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          userVerification: "required"
+          authenticatorAttachment: 'platform',
+          userVerification: 'required',
         },
         timeout: 60000,
-        attestation: "direct"
-      }
+        attestation: 'direct',
+      },
     });
 
     return { success: !!credential };
   } catch (error: any) {
-    return { 
-      success: false, 
-      error: `${error.name}: ${error.message}` 
+    return {
+      success: false,
+      error: `${error.name}: ${error.message}`,
     };
   }
 }

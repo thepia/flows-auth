@@ -1,23 +1,23 @@
 /**
  * Regression Tests for Auto-Sign-In Bug
- * 
+ *
  * This test suite specifically addresses the reported bug where:
  * "After completing registration, I am not automatically signed in"
- * 
+ *
  * The bug manifested in the original SignInForm when in registration mode,
  * where users would complete WebAuthn registration but see a success screen
  * instead of being immediately signed in and granted app access.
- * 
+ *
  * These tests ensure that the auto-sign-in behavior works correctly and
  * prevents regression of this critical user experience issue.
- * 
+ *
  * Related Issue: Users should transition to `authenticated-unconfirmed` state
  * immediately after registration, allowing immediate app access while email
  * verification happens in the background.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrationForm from '../../src/components/RegistrationForm.svelte';
 import type { AuthConfig } from '../../src/types';
 
@@ -27,36 +27,36 @@ const mockWebAuthnCredential = {
   rawId: new ArrayBuffer(16),
   response: {
     clientDataJSON: new ArrayBuffer(32),
-    attestationObject: new ArrayBuffer(64)
+    attestationObject: new ArrayBuffer(64),
   },
-  type: 'public-key'
+  type: 'public-key',
 };
 
 Object.defineProperty(navigator, 'credentials', {
   value: {
     create: vi.fn().mockResolvedValue(mockWebAuthnCredential),
-    get: vi.fn().mockResolvedValue(mockWebAuthnCredential)
+    get: vi.fn().mockResolvedValue(mockWebAuthnCredential),
   },
-  writable: true
+  writable: true,
 });
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
-  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
 }));
 
 // Mock the auth store
 const mockAuthStore = {
   registerUser: vi.fn(),
   api: {
-    checkEmail: vi.fn()
-  }
+    checkEmail: vi.fn(),
+  },
 };
 
 // Mock the createAuthStore function
 vi.mock('../../src/stores/auth-store', () => ({
-  createAuthStore: vi.fn(() => mockAuthStore)
+  createAuthStore: vi.fn(() => mockAuthStore),
 }));
 
 // Mock fetch for API calls
@@ -78,62 +78,64 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       enableSocialLogin: false,
       enablePasswordLogin: false,
       branding: {
-        companyName: 'Test Company'
-      }
+        companyName: 'Test Company',
+      },
     };
 
     // Default mock implementations
     mockAuthStore.api.checkEmail.mockResolvedValue({ exists: false });
     mockAuthStore.registerUser.mockResolvedValue({
       step: 'success',
-      user: { id: 'user-123', email: 'test@example.com', emailVerified: false }
+      user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
     });
 
     // Mock successful registration flow
-    mockFetch.mockImplementation((url: string, options: any) => {
+    mockFetch.mockImplementation((url: string, _options: any) => {
       if (url.includes('/auth/check-email')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ exists: false })
+          json: () => Promise.resolve({ exists: false }),
         });
       }
-      
+
       if (url.includes('/auth/webauthn/register-challenge')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            challenge: 'mock-challenge',
-            user: { id: 'user-123', name: 'test@example.com' },
-            rp: { name: 'Test Company' },
-            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-            timeout: 60000
-          })
+          json: () =>
+            Promise.resolve({
+              challenge: 'mock-challenge',
+              user: { id: 'user-123', name: 'test@example.com' },
+              rp: { name: 'Test Company' },
+              pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+              timeout: 60000,
+            }),
         });
       }
-      
+
       if (url.includes('/auth/webauthn/register-verify')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            tokens: {
-              accessToken: 'mock-access-token',
-              refreshToken: 'mock-refresh-token',
-              expiresAt: Date.now() + 3600000
-            },
-            user: {
-              id: 'user-123',
-              email: 'test@example.com',
-              emailVerified: false, // This is key - user needs to verify email
-              name: 'Test User'
-            }
-          })
+          json: () =>
+            Promise.resolve({
+              success: true,
+              tokens: {
+                accessToken: 'mock-access-token',
+                refreshToken: 'mock-refresh-token',
+                expiresAt: Date.now() + 3600000,
+              },
+              user: {
+                id: 'user-123',
+                email: 'test@example.com',
+                emailVerified: false, // This is key - user needs to verify email
+                name: 'Test User',
+              },
+            }),
         });
       }
-      
+
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
     });
   });
@@ -146,9 +148,9 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should emit appAccess event immediately after successful registration', async () => {
       const appAccessHandler = vi.fn();
       const successHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       // Set up event listeners
@@ -175,10 +177,13 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       await fireEvent.click(screen.getByText('Create Account'));
 
       // CRITICAL: appAccess event must be emitted immediately
-      await waitFor(() => {
-        expect(appAccessHandler).toHaveBeenCalled();
-      }, { timeout: 5000 });
-      
+      await waitFor(
+        () => {
+          expect(appAccessHandler).toHaveBeenCalled();
+        },
+        { timeout: 5000 }
+      );
+
       // Check the event detail
       const appAccessCall = appAccessHandler.mock.calls[0][0];
       expect(appAccessCall.detail).toEqual(
@@ -186,8 +191,8 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
           user: expect.objectContaining({
             id: 'user-123',
             email: 'test@example.com',
-            emailVerified: false
-          })
+            emailVerified: false,
+          }),
         })
       );
 
@@ -198,18 +203,18 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
         expect.objectContaining({
           user: expect.objectContaining({
             id: 'user-123',
-            email: 'test@example.com'
+            email: 'test@example.com',
           }),
-          step: 'registration-success'
+          step: 'registration-success',
         })
       );
     });
 
     it('should NOT show persistent success screen that blocks app access', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -246,9 +251,9 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
 
     it('should handle registration success with unverified email correctly', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -275,15 +280,15 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       // Wait for registration to complete
       await waitFor(() => {
         expect(appAccessHandler).toHaveBeenCalled();
-        
+
         // Check the event detail
         const appAccessCall = appAccessHandler.mock.calls[0][0];
         expect(appAccessCall.detail).toEqual(
           expect.objectContaining({
             user: expect.objectContaining({
               email: 'test@example.com', // The mock always returns this email
-              emailVerified: false // Key: user should have unverified email
-            })
+              emailVerified: false, // Key: user should have unverified email
+            }),
           })
         );
       });
@@ -297,9 +302,9 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
   describe('State Machine Compliance', () => {
     it('should transition to authenticated-unconfirmed state after registration', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -331,21 +336,21 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       // Verify the user data aligns with authenticated-unconfirmed state
       const appAccessCall = appAccessHandler.mock.calls[0][0];
       const userData = appAccessCall.detail.user;
-      
+
       expect(userData).toEqual(
         expect.objectContaining({
           id: expect.any(String),
           email: expect.any(String),
-          emailVerified: false // This indicates authenticated-unconfirmed state
+          emailVerified: false, // This indicates authenticated-unconfirmed state
         })
       );
     });
 
     it('should allow immediate app exploration after registration', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -383,57 +388,59 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
   describe('Error Scenarios That Should NOT Block Auto-Sign-In', () => {
     it('should still emit appAccess even if welcome email fails', async () => {
       // Mock scenario where user creation succeeds but email sending fails
-      mockFetch.mockImplementation((url: string, options: any) => {
+      mockFetch.mockImplementation((url: string, _options: any) => {
         if (url.includes('/auth/check-email')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ exists: false })
+            json: () => Promise.resolve({ exists: false }),
           });
         }
-        
+
         if (url.includes('/auth/webauthn/register-challenge')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              challenge: 'mock-challenge',
-              user: { id: 'user-123', name: 'test@example.com' },
-              rp: { name: 'Test Company' },
-              pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-              timeout: 60000
-            })
+            json: () =>
+              Promise.resolve({
+                challenge: 'mock-challenge',
+                user: { id: 'user-123', name: 'test@example.com' },
+                rp: { name: 'Test Company' },
+                pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+                timeout: 60000,
+              }),
           });
         }
-        
+
         if (url.includes('/auth/webauthn/register-verify')) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              success: true,
-              tokens: {
-                accessToken: 'mock-access-token',
-                refreshToken: 'mock-refresh-token',
-                expiresAt: Date.now() + 3600000
-              },
-              user: {
-                id: 'user-123',
-                email: 'test@example.com',
-                emailVerified: false
-              },
-              welcomeEmailSent: false // Email sending failed
-            })
+            json: () =>
+              Promise.resolve({
+                success: true,
+                tokens: {
+                  accessToken: 'mock-access-token',
+                  refreshToken: 'mock-refresh-token',
+                  expiresAt: Date.now() + 3600000,
+                },
+                user: {
+                  id: 'user-123',
+                  email: 'test@example.com',
+                  emailVerified: false,
+                },
+                welcomeEmailSent: false, // Email sending failed
+              }),
           });
         }
-        
+
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({})
+          json: () => Promise.resolve({}),
         });
       });
 
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -470,17 +477,17 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
   describe('Event Timing and Order', () => {
     it('should emit appAccess before or simultaneously with success event', async () => {
       const events: Array<{ type: string; timestamp: number }> = [];
-      
+
       const appAccessHandler = vi.fn(() => {
         events.push({ type: 'appAccess', timestamp: Date.now() });
       });
-      
+
       const successHandler = vi.fn(() => {
         events.push({ type: 'success', timestamp: Date.now() });
       });
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       component.$on('appAccess', appAccessHandler);
@@ -513,21 +520,21 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
 
       // Verify event order - appAccess should come before or at the same time as success
       expect(events).toHaveLength(2);
-      const appAccessEvent = events.find(e => e.type === 'appAccess');
-      const successEvent = events.find(e => e.type === 'success');
-      
+      const appAccessEvent = events.find((e) => e.type === 'appAccess');
+      const successEvent = events.find((e) => e.type === 'success');
+
       expect(appAccessEvent).toBeDefined();
       expect(successEvent).toBeDefined();
-      expect(appAccessEvent!.timestamp).toBeLessThanOrEqual(successEvent!.timestamp);
+      expect(appAccessEvent?.timestamp).toBeLessThanOrEqual(successEvent?.timestamp);
     });
   });
 
   describe('Backward Compatibility', () => {
     it('should maintain backward compatibility with existing success event handlers', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
       });
 
       // Only listen to success event (old pattern)
@@ -556,16 +563,16 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       await waitFor(() => {
         expect(successHandler).toHaveBeenCalled();
       });
-      
+
       // Check the event detail
       const successCall = successHandler.mock.calls[0][0];
       expect(successCall.detail).toEqual(
         expect.objectContaining({
           user: expect.objectContaining({
             id: 'user-123',
-            email: 'test@example.com'
+            email: 'test@example.com',
           }),
-          step: 'registration-success'
+          step: 'registration-success',
         })
       );
     });

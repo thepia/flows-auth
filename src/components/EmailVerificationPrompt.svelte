@@ -3,95 +3,94 @@
   Shows when users try to access locked features, encouraging email verification
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
-  import type { EmailVerificationPromptProps } from '../types';
+import { createEventDispatcher, onMount } from 'svelte';
 
-  // Props
-  export let email: string;
-  export let featureName = 'this feature';
-  export let onVerify: (() => void) | undefined = undefined;
-  export let onResend: (() => void) | undefined = undefined;
-  export let onDismiss: (() => void) | undefined = undefined;
-  export let className = '';
+// Props
+export let email: string;
+export let featureName = 'this feature';
+export let onVerify: (() => void) | undefined = undefined;
+export let onResend: (() => void) | undefined = undefined;
+export let onDismiss: (() => void) | undefined = undefined;
+export let className = '';
 
-  // Events
-  const dispatch = createEventDispatcher<{
-    verify: void;
-    resend: void;
-    dismiss: void;
-  }>();
+// Events
+const dispatch = createEventDispatcher<{
+  verify: undefined;
+  resend: undefined;
+  dismiss: undefined;
+}>();
 
-  // Component state
-  let isVisible = false;
-  let isResending = false;
-  let isDismissed = false;
+// Component state
+let isVisible = false;
+let isResending = false;
+let isDismissed = false;
 
-  // Show prompt with animation
-  onMount(() => {
-    setTimeout(() => {
-      isVisible = true;
-    }, 100);
-  });
+// Show prompt with animation
+onMount(() => {
+  setTimeout(() => {
+    isVisible = true;
+  }, 100);
+});
 
-  // Handle verify action
-  function handleVerify() {
-    if (onVerify) {
-      onVerify();
+// Handle verify action
+function handleVerify() {
+  if (onVerify) {
+    onVerify();
+  } else {
+    dispatch('verify');
+  }
+  openEmailApp();
+}
+
+// Handle resend action
+async function handleResend() {
+  if (isResending) return;
+
+  isResending = true;
+  try {
+    if (onResend) {
+      onResend();
     } else {
-      dispatch('verify');
+      dispatch('resend');
     }
-    openEmailApp();
-  }
-
-  // Handle resend action
-  async function handleResend() {
-    if (isResending) return;
-    
-    isResending = true;
-    try {
-      if (onResend) {
-        onResend();
-      } else {
-        dispatch('resend');
-      }
-    } finally {
-      // Reset after 3 seconds
-      setTimeout(() => {
-        isResending = false;
-      }, 3000);
-    }
-  }
-
-  // Handle dismiss action
-  function handleDismiss() {
-    isDismissed = true;
-    isVisible = false;
-    
+  } finally {
+    // Reset after 3 seconds
     setTimeout(() => {
-      if (onDismiss) {
-        onDismiss();
-      } else {
-        dispatch('dismiss');
-      }
-    }, 300);
+      isResending = false;
+    }, 3000);
   }
+}
 
-  // Open email app (best effort)
-  function openEmailApp() {
-    try {
-      // Try to open default email client
-      window.location.href = 'mailto:';
-    } catch (error) {
-      console.log('Could not open email app:', error);
-    }
-  }
+// Handle dismiss action
+function handleDismiss() {
+  isDismissed = true;
+  isVisible = false;
 
-  // Handle escape key
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      handleDismiss();
+  setTimeout(() => {
+    if (onDismiss) {
+      onDismiss();
+    } else {
+      dispatch('dismiss');
     }
+  }, 300);
+}
+
+// Open email app (best effort)
+function openEmailApp() {
+  try {
+    // Try to open default email client
+    window.location.href = 'mailto:';
+  } catch (error) {
+    console.log('Could not open email app:', error);
   }
+}
+
+// Handle escape key
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    handleDismiss();
+  }
+}
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

@@ -3,47 +3,52 @@
  * Svelte store for managing authentication state
  */
 
-import { writable, derived, get } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 
 // Check if running in browser
 const browser = typeof window !== 'undefined';
+
 import { AuthApiClient } from '../api/auth-api';
-import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
-import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
+import type {
+  ApplicationContext,
+  AuthConfig,
+  AuthError,
+  AuthEventData,
+  AuthEventType,
+  AuthMachineContext,
+  AuthMachineState,
+  AuthMethod,
+  AuthStore,
+  SessionMigrationResult,
+  SignInResponse,
+  StorageConfigurationUpdate,
+  StorageType,
+} from '../types';
+import { initializeErrorReporter, reportAuthState } from '../utils/errorReporter';
 import {
-  saveSession,
   clearSession,
+  configureSessionStorage,
+  type FlowsSessionData,
+  generateInitials,
+  getOptimalSessionConfig,
   getSession,
   isSessionValid,
-  generateInitials,
-  configureSessionStorage,
-  getOptimalSessionConfig,
-  type FlowsSessionData
+  saveSession,
 } from '../utils/sessionManager';
+import {
+  authenticateWithPasskey,
+  isConditionalMediationSupported,
+  isWebAuthnSupported,
+  serializeCredential,
+} from '../utils/webauthn';
 import { AuthStateMachine } from './auth-state-machine';
-import type {
-  AuthConfig,
-  AuthStore,
-  AuthError,
-  SignInResponse,
-  RegistrationResponse,
-  AuthMethod,
-  AuthEventType,
-  AuthEventData,
-  AuthMachineState,
-  AuthMachineContext,
-  ApplicationContext,
-  StorageConfigurationUpdate,
-  SessionMigrationResult,
-  StorageType
-} from '../types';
 
 // Legacy localStorage migration (remove old localStorage entries if they exist)
 const LEGACY_STORAGE_KEYS = {
   ACCESS_TOKEN: 'auth_access_token',
   REFRESH_TOKEN: 'auth_refresh_token',
   EXPIRES_AT: 'auth_expires_at',
-  USER: 'auth_user'
+  USER: 'auth_user',
 } as const;
 
 // Create auth store with state machine integration
@@ -80,7 +85,7 @@ function createAuthStore(config: AuthConfig) {
     picture: sessionUser.avatar,
     emailVerified: true, // Assume verified if they have a session
     createdAt: new Date().toISOString(), // Fallback value
-    metadata: sessionUser.preferences
+    metadata: sessionUser.preferences,
   });
 
   const initialState: AuthStore = {
@@ -89,21 +94,21 @@ function createAuthStore(config: AuthConfig) {
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
-    error: null
+    error: null,
   };
 
   const store = writable<AuthStore>(initialState);
-  
+
   // Create state machine store
   const stateMachineStore = writable({
     state: stateMachine.currentState,
-    context: stateMachine.currentContext
+    context: stateMachine.currentContext,
   });
 
   // Subscribe to state machine changes
   const unsubscribeStateMachine = stateMachine.onTransition((state, context) => {
     stateMachineStore.set({ state, context });
-    
+
     // Update legacy store based on state machine state
     updateLegacyStoreFromStateMachine(state, context);
   });
@@ -116,7 +121,7 @@ function createAuthStore(config: AuthConfig) {
    */
   function emit(type: AuthEventType, data: AuthEventData = {}) {
     const handlers = eventHandlers.get(type) || [];
-    handlers.forEach(handler => handler(data));
+    handlers.forEach((handler) => handler(data));
   }
 
   /**
@@ -126,7 +131,7 @@ function createAuthStore(config: AuthConfig) {
     if (!eventHandlers.has(type)) {
       eventHandlers.set(type, []);
     }
-    eventHandlers.get(type)!.push(handler);
+    eventHandlers.get(type)?.push(handler);
 
     // Return unsubscribe function
     return () => {
@@ -144,13 +149,16 @@ function createAuthStore(config: AuthConfig) {
    * Update store state
    */
   function updateState(updates: Partial<AuthStore>) {
-    store.update(state => ({ ...state, ...updates }));
+    store.update((state) => ({ ...state, ...updates }));
   }
 
   /**
    * Save authentication session to sessionStorage
    */
-  function saveAuthSession(response: SignInResponse, authMethod: 'passkey' | 'password' = 'passkey') {
+  function saveAuthSession(
+    response: SignInResponse,
+    authMethod: 'passkey' | 'password' = 'passkey'
+  ) {
     if (!browser || !response.user || !response.accessToken) return;
 
     const sessionData: FlowsSessionData = {
@@ -160,15 +168,17 @@ function createAuthStore(config: AuthConfig) {
         name: response.user.name || response.user.email,
         initials: generateInitials(response.user.name || response.user.email),
         avatar: (response.user as any).avatar || (response.user as any).picture,
-        preferences: (response.user as any).preferences || (response.user as any).metadata
+        preferences: (response.user as any).preferences || (response.user as any).metadata,
       },
       tokens: {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken || '',
-        expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)
+        expiresAt: response.expiresIn
+          ? Date.now() + response.expiresIn * 1000
+          : Date.now() + 24 * 60 * 60 * 1000,
       },
       authMethod,
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
     };
 
     saveSession(sessionData);
@@ -212,15 +222,17 @@ function createAuthStore(config: AuthConfig) {
                 name: user.name || user.email,
                 initials: generateInitials(user.name || user.email),
                 avatar: user.picture || user.avatar,
-                preferences: user.metadata || user.preferences
+                preferences: user.metadata || user.preferences,
               },
               tokens: {
                 accessToken: legacyToken,
                 refreshToken: legacyRefreshToken || '',
-                expiresAt: legacyExpiresAt ? parseInt(legacyExpiresAt) : Date.now() + (24 * 60 * 60 * 1000)
+                expiresAt: legacyExpiresAt
+                  ? parseInt(legacyExpiresAt)
+                  : Date.now() + 24 * 60 * 60 * 1000,
               },
               authMethod: 'passkey', // Default assumption
-              lastActivity: Date.now()
+              lastActivity: Date.now(),
             };
 
             saveSession(sessionData);
@@ -232,7 +244,7 @@ function createAuthStore(config: AuthConfig) {
       }
 
       // Always clean up legacy localStorage entries
-      Object.values(LEGACY_STORAGE_KEYS).forEach(key => {
+      Object.values(LEGACY_STORAGE_KEYS).forEach((key) => {
         localStorage.removeItem(key);
       });
 
@@ -245,7 +257,7 @@ function createAuthStore(config: AuthConfig) {
   /**
    * Check if current session is expired
    */
-  function isTokenExpired(): boolean {
+  function _isTokenExpired(): boolean {
     const session = getSession();
     return !isSessionValid(session);
   }
@@ -258,7 +270,7 @@ function createAuthStore(config: AuthConfig) {
     if (!currentState.expiresAt || !currentState.refreshToken) return;
 
     const timeUntilExpiry = currentState.expiresAt - Date.now();
-    const refreshTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000); // 5 minutes before expiry
+    const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 1000); // 5 minutes before expiry
 
     setTimeout(async () => {
       try {
@@ -278,7 +290,7 @@ function createAuthStore(config: AuthConfig) {
 
     try {
       const response = await api.signIn({ email, method });
-      
+
       if (response.step === 'success' && response.user && response.accessToken) {
         saveAuthSession(response, method === 'passkey' ? 'passkey' : 'password');
         updateState({
@@ -286,8 +298,8 @@ function createAuthStore(config: AuthConfig) {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          error: null,
         });
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method });
@@ -297,9 +309,9 @@ function createAuthStore(config: AuthConfig) {
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'unknown_error',
-        message: error.message || 'Sign in failed'
+        message: error.message || 'Sign in failed',
       };
-      
+
       updateState({ state: 'error', error: authError });
       emit('sign_in_error', { error: authError, method });
       throw authError;
@@ -311,7 +323,7 @@ function createAuthStore(config: AuthConfig) {
    */
   async function signInWithPasskey(email: string, conditional = false): Promise<SignInResponse> {
     const startTime = Date.now();
-    
+
     console.log('🔍 auth-store signInWithPasskey called with:', { email, conditional });
 
     if (!isWebAuthnSupported()) {
@@ -325,7 +337,7 @@ function createAuthStore(config: AuthConfig) {
         event: 'webauthn-start',
         email,
         authMethod: 'passkey',
-        context: { conditional: false }
+        context: { conditional: false },
       });
     }
 
@@ -334,7 +346,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('🔍 Getting userId from email...');
       const userCheck = await api.checkEmail(email);
       console.log('🔍 userCheck result:', userCheck);
-      
+
       if (!userCheck.exists || !userCheck.userId) {
         throw new Error('User not found or missing userId');
       }
@@ -353,12 +365,12 @@ function createAuthStore(config: AuthConfig) {
       // Complete authentication with userId (not email)
       console.log('🔍 Calling api.signInWithPasskey with:', {
         userId: userCheck.userId,
-        authResponse: 'serialized credential object'
+        authResponse: 'serialized credential object',
       });
-      
+
       const response = await api.signInWithPasskey({
         userId: userCheck.userId,
-        authResponse: serializedCredential
+        authResponse: serializedCredential,
       });
 
       console.log('🔍 DEBUG: API call completed, response received:', typeof response);
@@ -367,7 +379,7 @@ function createAuthStore(config: AuthConfig) {
 
       try {
         // Handle both old format (step: 'success') and new format (success: true)
-        const isSuccess = (response.step === 'success') || (response as any).success;
+        const isSuccess = response.step === 'success' || (response as any).success;
         const accessToken = response.accessToken || (response as any).tokens?.accessToken;
         const refreshToken = response.refreshToken || (response as any).tokens?.refreshToken;
         const expiresAt = (response as any).tokens?.expiresAt;
@@ -383,48 +395,52 @@ function createAuthStore(config: AuthConfig) {
           hasAccessToken: !!accessToken,
           hasTokensObject: !!(response as any).tokens,
           tokensKeys: (response as any).tokens ? Object.keys((response as any).tokens) : null,
-          fullResponse: response
+          fullResponse: response,
         });
 
         if (isSuccess && response.user && accessToken) {
-        console.log('💾 Processing successful passkey authentication');
+          console.log('💾 Processing successful passkey authentication');
 
-        // Create normalized response in SignInResponse format
-        const normalizedResponse: SignInResponse = {
-          step: 'success',
-          user: response.user,
-          accessToken,
-          refreshToken,
-          expiresIn: expiresAt ? Math.floor((expiresAt - Date.now()) / 1000) : undefined
-        };
+          // Create normalized response in SignInResponse format
+          const normalizedResponse: SignInResponse = {
+            step: 'success',
+            user: response.user,
+            accessToken,
+            refreshToken,
+            expiresIn: expiresAt ? Math.floor((expiresAt - Date.now()) / 1000) : undefined,
+          };
 
-        saveAuthSession(normalizedResponse, 'passkey');
-        updateState({
-          state: 'authenticated',
-          user: response.user,
-          accessToken,
-          refreshToken,
-          expiresAt: expiresAt || (normalizedResponse.expiresIn ? Date.now() + (normalizedResponse.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)),
-          error: null
-        });
-        scheduleTokenRefresh();
-        emit('sign_in_success', { user: response.user, method: 'passkey' });
-        emit('passkey_used', { user: response.user });
+          saveAuthSession(normalizedResponse, 'passkey');
+          updateState({
+            state: 'authenticated',
+            user: response.user,
+            accessToken,
+            refreshToken,
+            expiresAt:
+              expiresAt ||
+              (normalizedResponse.expiresIn
+                ? Date.now() + normalizedResponse.expiresIn * 1000
+                : Date.now() + 24 * 60 * 60 * 1000),
+            error: null,
+          });
+          scheduleTokenRefresh();
+          emit('sign_in_success', { user: response.user, method: 'passkey' });
+          emit('passkey_used', { user: response.user });
 
-        reportAuthState({
-          event: 'webauthn-success',
-          email,
-          userId: response.user.id,
-          authMethod: 'passkey',
-          duration: Date.now() - startTime,
-          context: { conditional }
-        });
+          reportAuthState({
+            event: 'webauthn-success',
+            email,
+            userId: response.user.id,
+            authMethod: 'passkey',
+            duration: Date.now() - startTime,
+            context: { conditional },
+          });
         } else {
           console.error('❌ Passkey authentication failed - missing required fields:', {
             isSuccess,
             hasUser: !!response.user,
             hasAccessToken: !!accessToken,
-            response
+            response,
           });
         }
       } catch (processingError) {
@@ -436,7 +452,7 @@ function createAuthStore(config: AuthConfig) {
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'passkey_failed',
-        message: error.message || 'Passkey authentication failed'
+        message: error.message || 'Passkey authentication failed',
       };
 
       reportAuthState({
@@ -445,7 +461,7 @@ function createAuthStore(config: AuthConfig) {
         authMethod: 'passkey',
         error: authError.message,
         duration: Date.now() - startTime,
-        context: { conditional }
+        context: { conditional },
       });
 
       if (!conditional) {
@@ -473,8 +489,8 @@ function createAuthStore(config: AuthConfig) {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          error: null,
         });
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'password' });
@@ -484,9 +500,9 @@ function createAuthStore(config: AuthConfig) {
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'invalid_credentials',
-        message: error.message || 'Invalid email or password'
+        message: error.message || 'Invalid email or password',
       };
-      
+
       updateState({ state: 'error', error: authError });
       emit('sign_in_error', { error: authError, method: 'password' });
       throw authError;
@@ -498,43 +514,43 @@ function createAuthStore(config: AuthConfig) {
    */
   async function signInWithMagicLink(email: string): Promise<SignInResponse> {
     const startTime = Date.now();
-    
+
     updateState({ state: 'loading', error: null });
     emit('sign_in_started', { method: 'magic-link' });
-    
+
     reportAuthState({
       event: 'magic-link-request',
       email,
-      authMethod: 'email'
+      authMethod: 'email',
     });
 
     try {
       const response = await api.signInWithMagicLink({ email });
-      
+
       updateState({ state: 'unauthenticated', error: null });
-      
+
       reportAuthState({
         event: 'magic-link-sent',
         email,
         authMethod: 'email',
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       });
-      
+
       return response;
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'unknown_error',
-        message: error.message || 'Magic link request failed'
+        message: error.message || 'Magic link request failed',
       };
-      
+
       reportAuthState({
         event: 'magic-link-failure',
         email,
         authMethod: 'email',
         error: authError.message,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       });
-      
+
       updateState({ state: 'error', error: authError });
       emit('sign_in_error', { error: authError, method: 'magic-link' });
       throw authError;
@@ -546,12 +562,12 @@ function createAuthStore(config: AuthConfig) {
    */
   async function signOut(): Promise<void> {
     const currentState = get(store);
-    
+
     try {
       if (currentState.accessToken) {
         await api.signOut({
           accessToken: currentState.accessToken,
-          refreshToken: currentState.refreshToken || undefined
+          refreshToken: currentState.refreshToken || undefined,
         });
       }
     } catch (error) {
@@ -564,7 +580,7 @@ function createAuthStore(config: AuthConfig) {
         accessToken: null,
         refreshToken: null,
         expiresAt: null,
-        error: null
+        error: null,
       });
       emit('sign_out');
     }
@@ -581,23 +597,25 @@ function createAuthStore(config: AuthConfig) {
 
     try {
       const response = await api.refreshToken({ refreshToken: currentState.refreshToken });
-      
+
       if (response.accessToken) {
         // Update session with new tokens
         const session = getSession();
         if (session) {
           session.tokens.accessToken = response.accessToken;
           session.tokens.refreshToken = response.refreshToken || session.tokens.refreshToken;
-          session.tokens.expiresAt = response.expiresIn ? Date.now() + (response.expiresIn * 1000) : session.tokens.expiresAt;
+          session.tokens.expiresAt = response.expiresIn
+            ? Date.now() + response.expiresIn * 1000
+            : session.tokens.expiresAt;
           session.lastActivity = Date.now();
           saveSession(session);
         }
-        
+
         updateState({
           accessToken: response.accessToken,
           refreshToken: response.refreshToken || currentState.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          error: null,
         });
         scheduleTokenRefresh();
         emit('token_refreshed');
@@ -636,7 +654,7 @@ function createAuthStore(config: AuthConfig) {
       accessToken: null,
       refreshToken: null,
       expiresAt: null,
-      error: null
+      error: null,
     });
   }
 
@@ -650,7 +668,7 @@ function createAuthStore(config: AuthConfig) {
         exists: result.exists,
         hasWebAuthn: result.hasPasskey,
         userId: result.userId,
-        invitationTokenHash: result.invitationTokenHash
+        invitationTokenHash: result.invitationTokenHash,
       };
     } catch (error) {
       console.error('Error checking user:', error);
@@ -678,10 +696,10 @@ function createAuthStore(config: AuthConfig) {
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { 
+        context: {
           operation: 'registerUser',
-          hasInvitationToken: !!userData.invitationToken
-        }
+          hasInvitationToken: !!userData.invitationToken,
+        },
       });
 
       const response = await api.registerUser(userData);
@@ -693,8 +711,8 @@ function createAuthStore(config: AuthConfig) {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          error: null,
         });
         scheduleTokenRefresh();
         emit('registration_success', { user: response.user });
@@ -704,7 +722,7 @@ function createAuthStore(config: AuthConfig) {
           email: userData.email,
           userId: response.user.id,
           duration: Date.now() - startTime,
-          context: { operation: 'registerUser' }
+          context: { operation: 'registerUser' },
         });
       }
 
@@ -712,7 +730,7 @@ function createAuthStore(config: AuthConfig) {
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'registration_failed',
-        message: error.message || 'User registration failed'
+        message: error.message || 'User registration failed',
       };
 
       reportAuthState({
@@ -720,7 +738,7 @@ function createAuthStore(config: AuthConfig) {
         email: userData.email,
         error: authError.message,
         duration: Date.now() - startTime,
-        context: { operation: 'registerUser' }
+        context: { operation: 'registerUser' },
       });
 
       updateState({ state: 'error', error: authError });
@@ -750,23 +768,29 @@ function createAuthStore(config: AuthConfig) {
     try {
       // Check WebAuthn support first
       if (!isWebAuthnSupported()) {
-        throw new Error('Passkey authentication is not supported on this device. Please use a device with biometric authentication.');
+        throw new Error(
+          'Passkey authentication is not supported on this device. Please use a device with biometric authentication.'
+        );
       }
 
-      const platformAvailable = await browser ? (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
+      const platformAvailable = (await browser)
+        ? (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable()
+        : false;
       if (!platformAvailable) {
-        throw new Error('No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.');
+        throw new Error(
+          'No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.'
+        );
       }
 
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { 
+        context: {
           operation: 'createAccount',
           hasInvitationToken: !!userData.invitationToken,
           webauthnSupported: true,
-          platformAvailable
-        }
+          platformAvailable,
+        },
       });
 
       // Step 1: Register user account in Auth0
@@ -784,7 +808,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('🔄 Step 2: Getting WebAuthn registration options...');
       const registrationOptions = await api.getWebAuthnRegistrationOptions({
         email: userData.email,
-        userId: user.id
+        userId: user.id,
       });
 
       console.log('✅ WebAuthn registration options received');
@@ -800,7 +824,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('🔄 Step 4: Verifying WebAuthn registration...');
       const verificationResult = await api.verifyWebAuthnRegistration({
         userId: user.id,
-        registrationResponse: credential
+        registrationResponse: credential,
       });
 
       if (!verificationResult.success) {
@@ -817,7 +841,7 @@ function createAuthStore(config: AuthConfig) {
         accessToken: verificationResult.tokens?.accessToken,
         refreshToken: verificationResult.tokens?.refreshToken,
         expiresAt: verificationResult.tokens?.expiresAt,
-        emailVerifiedViaInvitation: registrationResponse.emailVerifiedViaInvitation
+        emailVerifiedViaInvitation: registrationResponse.emailVerifiedViaInvitation,
       };
 
       // Save session only if we have authentication tokens from WebAuthn verification
@@ -830,7 +854,7 @@ function createAuthStore(config: AuthConfig) {
           accessToken: verificationResult.tokens.accessToken,
           refreshToken: verificationResult.tokens.refreshToken,
           expiresAt: verificationResult.tokens.expiresAt,
-          error: null
+          error: null,
         });
         scheduleTokenRefresh();
         emit('registration_success', { user: user });
@@ -840,17 +864,21 @@ function createAuthStore(config: AuthConfig) {
           email: userData.email,
           userId: user.id,
           duration: Date.now() - startTime,
-          context: { 
+          context: {
             operation: 'createAccount',
             passkeyCreated: true,
             deviceLinked: true,
-            sessionSaved: true
-          }
+            sessionSaved: true,
+          },
         });
 
-        console.log('✅ Account creation completed with WebAuthn device registration and session saved');
+        console.log(
+          '✅ Account creation completed with WebAuthn device registration and session saved'
+        );
       } else {
-        console.warn('⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved');
+        console.warn(
+          '⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved'
+        );
         // Still update state but without authentication
         updateState({
           state: 'unauthenticated',
@@ -858,7 +886,7 @@ function createAuthStore(config: AuthConfig) {
           accessToken: null,
           refreshToken: null,
           expiresAt: null,
-          error: null
+          error: null,
         });
         emit('registration_success', { user: user });
 
@@ -867,13 +895,13 @@ function createAuthStore(config: AuthConfig) {
           email: userData.email,
           userId: user.id,
           duration: Date.now() - startTime,
-          context: { 
+          context: {
             operation: 'createAccount',
             passkeyCreated: true,
             deviceLinked: true,
             sessionSaved: false,
-            reason: 'No accessToken in WebAuthn verification response'
-          }
+            reason: 'No accessToken in WebAuthn verification response',
+          },
         });
       }
 
@@ -881,18 +909,22 @@ function createAuthStore(config: AuthConfig) {
     } catch (error: any) {
       const authError: AuthError = {
         code: error.code || 'account_creation_failed',
-        message: error.message || 'Account creation failed'
+        message: error.message || 'Account creation failed',
       };
 
       // Enhanced error handling for WebAuthn-specific errors
       if (error.name === 'NotAllowedError') {
-        authError.message = 'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
+        authError.message =
+          'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
       } else if (error.name === 'NotSupportedError') {
-        authError.message = 'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
+        authError.message =
+          'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
       } else if (error.name === 'SecurityError') {
-        authError.message = 'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
+        authError.message =
+          'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
       } else if (error.name === 'InvalidStateError') {
-        authError.message = 'A passkey for this account may already exist. Please try signing in instead.';
+        authError.message =
+          'A passkey for this account may already exist. Please try signing in instead.';
       }
 
       reportAuthState({
@@ -900,11 +932,11 @@ function createAuthStore(config: AuthConfig) {
         email: userData.email,
         error: authError.message,
         duration: Date.now() - startTime,
-        context: { 
+        context: {
           operation: 'createAccount',
           errorName: error.name,
-          errorCode: error.code
-        }
+          errorCode: error.code,
+        },
       });
 
       updateState({ state: 'error', error: authError });
@@ -926,7 +958,7 @@ function createAuthStore(config: AuthConfig) {
   ) {
     try {
       const result = await api.checkEmail(email);
-      
+
       // Base user check result
       const userCheck = {
         exists: result.exists,
@@ -935,7 +967,7 @@ function createAuthStore(config: AuthConfig) {
         invitationTokenHash: result.invitationTokenHash,
         userId: result.userId,
         requiresPasskeySetup: false,
-        registrationMode: 'sign_in' as 'new_user' | 'complete_passkey' | 'sign_in'
+        registrationMode: 'sign_in' as 'new_user' | 'complete_passkey' | 'sign_in',
       };
 
       // If no invitation token, return basic result
@@ -949,20 +981,20 @@ function createAuthStore(config: AuthConfig) {
         if (result.invitationTokenHash && !invitationOptions.skipTokenValidation) {
           const { hashInvitationToken } = await import('../utils/invitation-tokens');
           const currentTokenHash = await hashInvitationToken(invitationOptions.token);
-          
+
           if (currentTokenHash !== result.invitationTokenHash) {
             console.warn('🔒 Token hash mismatch - token may not be valid for this user');
             return {
               ...userCheck,
-              registrationMode: 'sign_in' // Force sign-in mode on token mismatch
+              registrationMode: 'sign_in', // Force sign-in mode on token mismatch
             };
           }
         }
-        
+
         return {
           ...userCheck,
           requiresPasskeySetup: true,
-          registrationMode: 'complete_passkey'
+          registrationMode: 'complete_passkey',
         };
       }
 
@@ -970,7 +1002,7 @@ function createAuthStore(config: AuthConfig) {
       if (!result.exists && invitationOptions.token) {
         return {
           ...userCheck,
-          registrationMode: 'new_user'
+          registrationMode: 'new_user',
         };
       }
 
@@ -981,7 +1013,7 @@ function createAuthStore(config: AuthConfig) {
         exists: false,
         hasPasskey: false,
         hasWebAuthn: false,
-        registrationMode: 'new_user' as const
+        registrationMode: 'new_user' as const,
       };
     }
   }
@@ -995,7 +1027,8 @@ function createAuthStore(config: AuthConfig) {
   async function determineAuthFlow(email: string, invitationToken?: string) {
     try {
       // Import utilities for token handling
-      const { decodeInvitationToken, validateInvitationToken, extractRegistrationData } = await import('../utils/invitation-tokens');
+      const { decodeInvitationToken, validateInvitationToken, extractRegistrationData } =
+        await import('../utils/invitation-tokens');
 
       let tokenData = null;
       let prefillData = null;
@@ -1005,12 +1038,12 @@ function createAuthStore(config: AuthConfig) {
         try {
           tokenData = decodeInvitationToken(invitationToken);
           const validation = validateInvitationToken(invitationToken, tokenData);
-          
+
           if (!validation.isValid) {
             console.warn('Invalid invitation token:', validation.reason);
             return {
               mode: 'sign_in' as const,
-              message: 'Invalid or expired invitation token. Please sign in normally.'
+              message: 'Invalid or expired invitation token. Please sign in normally.',
             };
           }
 
@@ -1020,17 +1053,22 @@ function createAuthStore(config: AuthConfig) {
           console.warn('Failed to process invitation token:', error);
           return {
             mode: 'sign_in' as const,
-            message: 'Invalid invitation token format. Please sign in normally.'
+            message: 'Invalid invitation token format. Please sign in normally.',
           };
         }
       }
 
       // Check user status with invitation context
-      const userCheck = await checkUserWithInvitation(email, invitationToken ? {
-        token: invitationToken,
-        tokenData,
-        skipTokenValidation: false
-      } : undefined);
+      const userCheck = await checkUserWithInvitation(
+        email,
+        invitationToken
+          ? {
+              token: invitationToken,
+              tokenData,
+              skipTokenValidation: false,
+            }
+          : undefined
+      );
 
       // Return appropriate flow based on user status
       switch (userCheck.registrationMode) {
@@ -1038,30 +1076,29 @@ function createAuthStore(config: AuthConfig) {
           return {
             mode: 'register' as const,
             prefillData,
-            message: 'Welcome! Please complete your registration.'
+            message: 'Welcome! Please complete your registration.',
           };
-        
+
         case 'complete_passkey':
           return {
             mode: 'complete_passkey' as const,
             prefillData,
-            message: 'Your account exists but needs a passkey for secure access. Please create your passkey.'
+            message:
+              'Your account exists but needs a passkey for secure access. Please create your passkey.',
           };
-        
-        case 'sign_in':
         default:
           return {
             mode: 'sign_in' as const,
-            message: userCheck.hasPasskey 
+            message: userCheck.hasPasskey
               ? 'Welcome back! Please sign in with your passkey.'
-              : 'Please sign in to your account.'
+              : 'Please sign in to your account.',
           };
       }
     } catch (error) {
       console.error('Error determining auth flow:', error);
       return {
         mode: 'sign_in' as const,
-        message: 'Unable to determine authentication flow. Please sign in normally.'
+        message: 'Unable to determine authentication flow. Please sign in normally.',
       };
     }
   }
@@ -1080,7 +1117,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('🔍 Starting conditional WebAuthn authentication for:', email);
 
       // Check if conditional mediation is supported
-      if (!await isConditionalMediationSupported()) {
+      if (!(await isConditionalMediationSupported())) {
         console.log('⚠️ Conditional mediation not supported');
         return false;
       }
@@ -1096,7 +1133,7 @@ function createAuthStore(config: AuthConfig) {
         event: 'webauthn-start',
         email,
         authMethod: 'passkey',
-        context: { conditional: true, operation: 'startConditionalAuthentication' }
+        context: { conditional: true, operation: 'startConditionalAuthentication' },
       });
 
       // Use conditional authentication with proper browser autofill integration
@@ -1116,7 +1153,7 @@ function createAuthStore(config: AuthConfig) {
       // Complete authentication with server using userId
       const response = await api.signInWithPasskey({
         userId: userCheck.userId,
-        authResponse: serializedCredential
+        authResponse: serializedCredential,
       });
 
       if (response.step === 'success' && response.user && response.accessToken) {
@@ -1129,8 +1166,8 @@ function createAuthStore(config: AuthConfig) {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          error: null,
         });
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'passkey' });
@@ -1142,7 +1179,7 @@ function createAuthStore(config: AuthConfig) {
           userId: response.user.id,
           authMethod: 'passkey',
           duration: Date.now() - startTime,
-          context: { conditional: true, operation: 'startConditionalAuthentication' }
+          context: { conditional: true, operation: 'startConditionalAuthentication' },
         });
 
         return true;
@@ -1151,7 +1188,10 @@ function createAuthStore(config: AuthConfig) {
       return false;
     } catch (error: any) {
       // Conditional auth should fail silently for most errors
-      console.log('⚠️ Conditional authentication failed (this is expected if no passkeys exist):', error.message);
+      console.log(
+        '⚠️ Conditional authentication failed (this is expected if no passkeys exist):',
+        error.message
+      );
 
       reportAuthState({
         event: 'login-failure',
@@ -1159,7 +1199,7 @@ function createAuthStore(config: AuthConfig) {
         authMethod: 'passkey',
         error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - startTime,
-        context: { conditional: true, operation: 'startConditionalAuthentication' }
+        context: { conditional: true, operation: 'startConditionalAuthentication' },
       });
 
       return false;
@@ -1169,9 +1209,12 @@ function createAuthStore(config: AuthConfig) {
   /**
    * Update legacy store based on state machine state
    */
-  function updateLegacyStoreFromStateMachine(state: AuthMachineState, context: AuthMachineContext): void {
-    const currentStore = get(store);
-    
+  function updateLegacyStoreFromStateMachine(
+    state: AuthMachineState,
+    context: AuthMachineContext
+  ): void {
+    const _currentStore = get(store);
+
     switch (state) {
       case 'sessionValid':
       case 'appLoaded':
@@ -1181,11 +1224,11 @@ function createAuthStore(config: AuthConfig) {
             user: context.user,
             accessToken: context.sessionData.accessToken,
             refreshToken: context.sessionData.refreshToken || null,
-            error: null
+            error: null,
           });
         }
         break;
-        
+
       case 'sessionInvalid':
       case 'combinedAuth':
         updateState({
@@ -1193,25 +1236,25 @@ function createAuthStore(config: AuthConfig) {
           user: null,
           accessToken: null,
           refreshToken: null,
-          error: null
+          error: null,
         });
         break;
-        
+
       case 'checkingSession':
       case 'loadingApp':
         updateState({
           state: 'loading',
-          error: null
+          error: null,
         });
         break;
-        
+
       case 'passkeyError':
       case 'credentialNotFound':
       case 'userCancellation':
       case 'credentialMismatch':
         updateState({
           state: 'error',
-          error: context.error
+          error: context.error,
         });
         break;
     }
@@ -1229,10 +1272,12 @@ function createAuthStore(config: AuthConfig) {
    * Get current application context
    */
   function getApplicationContext(): ApplicationContext | null {
-    return config.applicationContext || {
-      userType: 'mixed',
-      forceGuestMode: true
-    };
+    return (
+      config.applicationContext || {
+        userType: 'mixed',
+        forceGuestMode: true,
+      }
+    );
   }
 
   /**
@@ -1266,7 +1311,7 @@ function createAuthStore(config: AuthConfig) {
       toRole: update.userRole,
       fromStorage: 'sessionStorage', // Current default
       toStorage: update.type,
-      userId: currentState.user?.id
+      userId: currentState.user?.id,
     });
 
     try {
@@ -1276,7 +1321,7 @@ function createAuthStore(config: AuthConfig) {
         userRole: update.userRole,
         sessionTimeout: update.sessionTimeout,
         persistentSessions: update.type === 'localStorage',
-        migrateExistingSession: update.migrateExistingSession
+        migrateExistingSession: update.migrateExistingSession,
       };
 
       // Import storage manager for dynamic configuration
@@ -1287,7 +1332,7 @@ function createAuthStore(config: AuthConfig) {
       if (update.migrateExistingSession) {
         const fromStorage = 'sessionStorage' as StorageType;
         const toStorage = update.type as StorageType;
-        
+
         if (fromStorage !== toStorage) {
           await migrateSession(fromStorage, toStorage);
         }
@@ -1303,7 +1348,10 @@ function createAuthStore(config: AuthConfig) {
   /**
    * Migrate session data between storage types
    */
-  async function migrateSession(fromType: StorageType, toType: StorageType): Promise<SessionMigrationResult> {
+  async function migrateSession(
+    fromType: StorageType,
+    toType: StorageType
+  ): Promise<SessionMigrationResult> {
     if (!browser) {
       return {
         success: false,
@@ -1311,12 +1359,12 @@ function createAuthStore(config: AuthConfig) {
         toStorage: toType,
         dataPreserved: false,
         tokensPreserved: false,
-        error: 'Not in browser environment'
+        error: 'Not in browser environment',
       };
     }
 
     const startTime = Date.now();
-    
+
     try {
       // Get current session data
       const currentSession = getSession();
@@ -1327,7 +1375,7 @@ function createAuthStore(config: AuthConfig) {
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'No active session to migrate'
+          error: 'No active session to migrate',
         };
       }
 
@@ -1339,7 +1387,7 @@ function createAuthStore(config: AuthConfig) {
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'Expired tokens cannot be migrated'
+          error: 'Expired tokens cannot be migrated',
         };
       }
 
@@ -1352,7 +1400,7 @@ function createAuthStore(config: AuthConfig) {
           toStorage: toType,
           dataPreserved: true,
           tokensPreserved: true,
-          error: 'Admin sessions cannot be downgraded to sessionStorage'
+          error: 'Admin sessions cannot be downgraded to sessionStorage',
         };
       }
 
@@ -1362,7 +1410,7 @@ function createAuthStore(config: AuthConfig) {
         userRole: userRole || 'guest',
         sessionTimeout: toType === 'localStorage' ? 7 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000,
         persistentSessions: toType === 'localStorage',
-        migrateExistingSession: false // Prevent recursion
+        migrateExistingSession: false, // Prevent recursion
       };
 
       // Import storage manager for migration
@@ -1373,7 +1421,7 @@ function createAuthStore(config: AuthConfig) {
       saveSession(currentSession);
 
       const duration = Date.now() - startTime;
-      
+
       // Performance check
       if (duration > 500) {
         console.warn(`⚠️ Session migration took ${duration}ms (requirement: <500ms)`);
@@ -1382,7 +1430,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('✅ Session migration completed successfully', {
         fromStorage: fromType,
         toStorage: toType,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
       });
 
       return {
@@ -1390,11 +1438,11 @@ function createAuthStore(config: AuthConfig) {
         fromStorage: fromType,
         toStorage: toType,
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       };
     } catch (error) {
       console.error('❌ Session migration failed:', error);
-      
+
       // Clear sensitive data on failure
       try {
         clearSession();
@@ -1408,7 +1456,7 @@ function createAuthStore(config: AuthConfig) {
         toStorage: toType,
         dataPreserved: false,
         tokensPreserved: false,
-        error: error instanceof Error ? error.message : 'Migration failed, sensitive data cleared'
+        error: error instanceof Error ? error.message : 'Migration failed, sensitive data cleared',
       };
     }
   }
@@ -1439,30 +1487,30 @@ function createAuthStore(config: AuthConfig) {
     determineAuthFlow,
     on,
     api,
-    
+
     // Dynamic role configuration methods
     getApplicationContext,
     updateStorageConfiguration,
     migrateSession,
-    
+
     // State machine interface
     stateMachine: {
       subscribe: stateMachineStore.subscribe,
       send: (event: any) => stateMachine.send(event),
       matches: (state: AuthMachineState) => stateMachine.matches(state),
       currentState: () => stateMachine.currentState,
-      currentContext: () => stateMachine.currentContext
+      currentContext: () => stateMachine.currentContext,
     },
-    
+
     // State machine event senders (convenience methods)
     checkSession: () => stateMachine.send({ type: 'CHECK_SESSION' }),
     typeEmail: (email: string) => stateMachine.send({ type: 'EMAIL_TYPED', email }),
     clickContinue: () => stateMachine.send({ type: 'CONTINUE_CLICKED' }),
     clickNext: () => stateMachine.send({ type: 'USER_CLICKS_NEXT' }),
     resetToAuth: () => stateMachine.send({ type: 'RESET_TO_COMBINED_AUTH' }),
-    
+
     // Cleanup
-    destroy: unsubscribeStateMachine
+    destroy: unsubscribeStateMachine,
   };
 }
 
@@ -1473,23 +1521,29 @@ export { createAuthStore };
 export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthStore>) {
   return {
     // Legacy derived stores
-    user: derived(authStore, $auth => $auth.user),
-    isAuthenticated: derived(authStore, $auth => $auth.state === 'authenticated'),
-    isLoading: derived(authStore, $auth => $auth.state === 'loading'),
-    error: derived(authStore, $auth => $auth.error),
-    
+    user: derived(authStore, ($auth) => $auth.user),
+    isAuthenticated: derived(authStore, ($auth) => $auth.state === 'authenticated'),
+    isLoading: derived(authStore, ($auth) => $auth.state === 'loading'),
+    error: derived(authStore, ($auth) => $auth.error),
+
     // State machine derived stores
-    currentStep: derived(authStore.stateMachine, $sm => $sm.state),
-    machineContext: derived(authStore.stateMachine, $sm => $sm.context),
-    isInState: (state: AuthMachineState) => derived(authStore.stateMachine, $sm => $sm.state === state),
-    
+    currentStep: derived(authStore.stateMachine, ($sm) => $sm.state),
+    machineContext: derived(authStore.stateMachine, ($sm) => $sm.context),
+    isInState: (state: AuthMachineState) =>
+      derived(authStore.stateMachine, ($sm) => $sm.state === state),
+
     // Convenience derived stores for common states
-    isCheckingSession: derived(authStore.stateMachine, $sm => $sm.state === 'checkingSession'),
-    isCombinedAuth: derived(authStore.stateMachine, $sm => $sm.state === 'combinedAuth'),
-    isConditionalAuth: derived(authStore.stateMachine, $sm => $sm.state === 'conditionalMediation'),
-    isBiometricPrompt: derived(authStore.stateMachine, $sm => $sm.state === 'biometricPrompt'),
-    hasError: derived(authStore.stateMachine, $sm => 
-      ['passkeyError', 'credentialNotFound', 'userCancellation', 'credentialMismatch'].includes($sm.state)
-    )
+    isCheckingSession: derived(authStore.stateMachine, ($sm) => $sm.state === 'checkingSession'),
+    isCombinedAuth: derived(authStore.stateMachine, ($sm) => $sm.state === 'combinedAuth'),
+    isConditionalAuth: derived(
+      authStore.stateMachine,
+      ($sm) => $sm.state === 'conditionalMediation'
+    ),
+    isBiometricPrompt: derived(authStore.stateMachine, ($sm) => $sm.state === 'biometricPrompt'),
+    hasError: derived(authStore.stateMachine, ($sm) =>
+      ['passkeyError', 'credentialNotFound', 'userCancellation', 'credentialMismatch'].includes(
+        $sm.state
+      )
+    ),
   };
 }

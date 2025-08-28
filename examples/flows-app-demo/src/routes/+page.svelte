@@ -1,72 +1,71 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import AccountIcon from '$lib/components/AccountIcon.svelte';
-  import AuthModalManager from '$lib/components/AuthModalManager.svelte';
-  import DevSidebar from '$lib/components/DevSidebar.svelte';
-  import { devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
-  import type { User } from '@thepia/flows-auth';
-  import { onMount } from 'svelte';
-  
-  let currentScenario: DevScenario;
-  let currentUser: User | null = null;
-  let unsubscribe: (() => void) | null = null;
-  
-  onMount(() => {
-    if (!browser) return;
-    
-    // Initialize with current scenario
-    currentScenario = devScenarioManager.getCurrentScenario();
-    
-    // Subscribe to scenario changes
-    unsubscribe = devScenarioManager.subscribe((scenario) => {
-      currentScenario = scenario;
-    });
-    
-    // Listen for auth events
-    const handleAuthSuccess = (event: CustomEvent) => {
-      currentUser = event.detail.user;
-    };
-    
-    const handleAuthSignOut = () => {
-      currentUser = null;
-    };
-    
-    window.addEventListener('auth:success', handleAuthSuccess as EventListener);
-    window.addEventListener('auth:signout', handleAuthSignOut as EventListener);
-    
-    // Check initial auth state
-    checkInitialAuthState();
-    
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-      window.removeEventListener('auth:success', handleAuthSuccess as EventListener);
-      window.removeEventListener('auth:signout', handleAuthSignOut as EventListener);
-    };
-  });
-  
-  function checkInitialAuthState() {
-    if (!browser) return;
-    
-    try {
-      const token = localStorage.getItem('auth_access_token');
-      const userStr = localStorage.getItem('auth_user');
-      
-      if (token && userStr) {
-        currentUser = JSON.parse(userStr);
-      }
-    } catch (error) {
-      console.error('Error checking initial auth state:', error);
-    }
-  }
+import { browser } from '$app/environment';
+import { type DevScenario, devScenarioManager } from '$lib/dev/scenarios.js';
+import type { User } from '@thepia/flows-auth';
+import { onMount } from 'svelte';
 
-  function handleOpenAuth(event: CustomEvent<{ switchUser?: boolean }>) {
-    // Dispatch the openAuthModal event that AuthModalManager listens for
-    window.dispatchEvent(new CustomEvent('openAuthModal', { 
-      detail: { switchUser: event.detail.switchUser } 
-    }));
+let currentScenario: DevScenario;
+let currentUser: User | null = null;
+let unsubscribe: (() => void) | null = null;
+
+onMount(() => {
+  if (!browser) return;
+
+  // Initialize with current scenario
+  currentScenario = devScenarioManager.getCurrentScenario();
+
+  // Subscribe to scenario changes
+  unsubscribe = devScenarioManager.subscribe((scenario) => {
+    currentScenario = scenario;
+  });
+
+  // Listen for auth events
+  const handleAuthSuccess = (event: CustomEvent) => {
+    currentUser = event.detail.user;
+  };
+
+  const handleAuthSignOut = () => {
+    currentUser = null;
+  };
+
+  window.addEventListener('auth:success', handleAuthSuccess as EventListener);
+  window.addEventListener('auth:signout', handleAuthSignOut as EventListener);
+
+  // Check initial auth state
+  checkInitialAuthState();
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+    window.removeEventListener('auth:success', handleAuthSuccess as EventListener);
+    window.removeEventListener('auth:signout', handleAuthSignOut as EventListener);
+  };
+});
+
+function checkInitialAuthState() {
+  if (!browser) return;
+
+  try {
+    const token = localStorage.getItem('auth_access_token');
+    const userStr = localStorage.getItem('auth_user');
+
+    if (token && userStr) {
+      currentUser = JSON.parse(userStr);
+    }
+  } catch (error) {
+    console.error('Error checking initial auth state:', error);
   }
+}
+
+function handleOpenAuth(event: CustomEvent<{ switchUser?: boolean }>) {
+  // Dispatch the openAuthModal event that AuthModalManager listens for
+  window.dispatchEvent(
+    new CustomEvent('openAuthModal', {
+      detail: { switchUser: event.detail.switchUser },
+    })
+  );
+}
 </script>
 
 <svelte:head>

@@ -1,13 +1,13 @@
 /**
  * Comprehensive Test Suite for AccountCreationForm Component
- * 
+ *
  * This test suite covers all aspects of the enhanced AccountCreationForm component
  * including business fields, invitation token integration, and dynamic field behavior.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -16,19 +16,19 @@ const mockAuthStore = {
   createAccount: vi.fn(), // FIXED: Use createAccount instead of registerUser
   registerUser: vi.fn(), // Keep for backward compatibility tests
   api: {
-    checkEmail: vi.fn()
-  }
+    checkEmail: vi.fn(),
+  },
 };
 
 // Mock the createAuthStore function
 vi.mock('../../src/stores/auth-store', () => ({
-  createAuthStore: vi.fn(() => mockAuthStore)
+  createAuthStore: vi.fn(() => mockAuthStore),
 }));
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
-  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
 }));
 
 describe('AccountCreationForm Component', () => {
@@ -37,7 +37,7 @@ describe('AccountCreationForm Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     defaultConfig = {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
@@ -47,8 +47,8 @@ describe('AccountCreationForm Component', () => {
       enablePasswordLogin: false,
       branding: {
         companyName: 'Test Company',
-        logoUrl: '/logo.svg'
-      }
+        logoUrl: '/logo.svg',
+      },
     };
 
     mockInvitationTokenData = {
@@ -59,7 +59,7 @@ describe('AccountCreationForm Component', () => {
       phone: '+1-555-0123',
       jobTitle: 'Software Engineer',
       expires: new Date('2025-12-31'),
-      message: 'Welcome to our team!'
+      message: 'Welcome to our team!',
     };
 
     // Default mock implementations
@@ -68,19 +68,19 @@ describe('AccountCreationForm Component', () => {
     mockAuthStore.createAccount.mockResolvedValue({
       step: 'success',
       user: { id: '123', email: 'test@example.com' },
-      emailVerifiedViaInvitation: false // Add this field for invitation flow tests
+      emailVerifiedViaInvitation: false, // Add this field for invitation flow tests
     });
     // Keep registerUser mock for backward compatibility
     mockAuthStore.registerUser.mockResolvedValue({
       step: 'success',
-      user: { id: '123', email: 'test@example.com' }
+      user: { id: '123', email: 'test@example.com' },
     });
   });
 
   describe('Basic Component Rendering', () => {
     it('should render with minimal props', () => {
       const { container } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       expect(container.querySelector('.registration-form')).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should render with company logo when provided', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig, showLogo: true }
+        props: { config: defaultConfig, showLogo: true },
       });
 
       expect(screen.getByAltText('Test Company')).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should render in compact mode', () => {
       const { container } = render(AccountCreationForm, {
-        props: { config: defaultConfig, compact: true }
+        props: { config: defaultConfig, compact: true },
       });
 
       expect(container.querySelector('.registration-form.compact')).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should apply custom className', () => {
       const { container } = render(AccountCreationForm, {
-        props: { config: defaultConfig, className: 'custom-form' }
+        props: { config: defaultConfig, className: 'custom-form' },
       });
 
       expect(container.querySelector('.registration-form.custom-form')).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('AccountCreationForm Component', () => {
   describe('Basic Field Behavior', () => {
     it('should prefill email from initialEmail prop', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig, initialEmail: 'initial@test.com' }
+        props: { config: defaultConfig, initialEmail: 'initial@test.com' },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -125,7 +125,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should validate email format', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -149,7 +149,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should call checkEmail and createAccount with valid form data', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill in all required fields
@@ -178,7 +178,7 @@ describe('AccountCreationForm Component', () => {
             firstName: 'John',
             lastName: 'Doe',
             acceptedTerms: true,
-            acceptedPrivacy: true
+            acceptedPrivacy: true,
           })
         );
       });
@@ -188,7 +188,7 @@ describe('AccountCreationForm Component', () => {
       mockAuthStore.api.checkEmail.mockResolvedValue({ exists: true });
 
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill in all required fields
@@ -215,10 +215,10 @@ describe('AccountCreationForm Component', () => {
   describe('Business Fields Integration', () => {
     it('should render business fields when specified', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
-          additionalFields: ['company', 'phone', 'jobTitle'] 
-        }
+        props: {
+          config: defaultConfig,
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       // Navigate to webauthn-register step
@@ -236,8 +236,8 @@ describe('AccountCreationForm Component', () => {
       render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          additionalFields: ['company', 'phone']
-        }
+          additionalFields: ['company', 'phone'],
+        },
       });
 
       // All fields should be visible immediately in single form design
@@ -256,8 +256,8 @@ describe('AccountCreationForm Component', () => {
       render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          additionalFields: ['company', 'phone', 'jobTitle']
-        }
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       // Fill all required and business fields in single form
@@ -292,7 +292,7 @@ describe('AccountCreationForm Component', () => {
           acceptedTerms: true,
           acceptedPrivacy: true,
           marketingConsent: false,
-          invitationToken: undefined
+          invitationToken: undefined,
         });
       });
     });
@@ -301,11 +301,11 @@ describe('AccountCreationForm Component', () => {
   describe('Invitation Token Integration', () => {
     it('should prefill fields from invitation token data', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData,
-          additionalFields: ['company', 'phone', 'jobTitle']
-        }
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -316,8 +316,8 @@ describe('AccountCreationForm Component', () => {
       render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          invitationTokenData: mockInvitationTokenData
-        }
+          invitationTokenData: mockInvitationTokenData,
+        },
       });
 
       // Invitation message should be visible immediately in single form
@@ -327,14 +327,14 @@ describe('AccountCreationForm Component', () => {
     it('should show warning for expired invitation token', () => {
       const expiredTokenData = {
         ...mockInvitationTokenData,
-        expires: new Date('2020-01-01')
+        expires: new Date('2020-01-01'),
       };
 
       render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          invitationTokenData: expiredTokenData
-        }
+          invitationTokenData: expiredTokenData,
+        },
       });
 
       // Warning should be visible immediately in single form
@@ -343,11 +343,11 @@ describe('AccountCreationForm Component', () => {
 
     it('should make email field read-only when from invitation token', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData,
-          readOnlyFields: ['email']
-        }
+          readOnlyFields: ['email'],
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -358,21 +358,21 @@ describe('AccountCreationForm Component', () => {
     it('should respect readOnlyFields from invitation token data', () => {
       const tokenDataWithReadOnly = {
         ...mockInvitationTokenData,
-        readOnlyFields: ['firstName', 'lastName']
+        readOnlyFields: ['firstName', 'lastName'],
       };
 
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
-          invitationTokenData: tokenDataWithReadOnly
-        }
+        props: {
+          config: defaultConfig,
+          invitationTokenData: tokenDataWithReadOnly,
+        },
       });
 
       // Navigate to webauthn-register step
       const emailInput = screen.getByLabelText(/Email Address/);
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(screen.getByText(/Create Account with Passkey/));
-      
+
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
       fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
@@ -388,11 +388,11 @@ describe('AccountCreationForm Component', () => {
   describe('Dynamic Read-Only Field Support', () => {
     it('should make specified fields read-only', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           readOnlyFields: ['email'],
-          initialEmail: 'readonly@test.com'
-        }
+          initialEmail: 'readonly@test.com',
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -403,15 +403,15 @@ describe('AccountCreationForm Component', () => {
     it('should combine readOnlyFields prop with invitation token readOnlyFields', () => {
       const tokenDataWithReadOnly = {
         ...mockInvitationTokenData,
-        readOnlyFields: ['firstName']
+        readOnlyFields: ['firstName'],
       };
 
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: tokenDataWithReadOnly,
-          readOnlyFields: ['email']
-        }
+          readOnlyFields: ['email'],
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
@@ -420,7 +420,7 @@ describe('AccountCreationForm Component', () => {
       // Navigate to webauthn-register step
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(screen.getByText(/Create Account with Passkey/));
-      
+
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
       fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
@@ -433,7 +433,7 @@ describe('AccountCreationForm Component', () => {
   describe('Single Form Behavior', () => {
     it('should show all form fields immediately', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // All fields should be visible in single form
@@ -450,7 +450,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should require terms acceptance for form submission', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill required fields but don't accept terms
@@ -469,7 +469,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should enable submission when all required fields and terms are completed', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -493,7 +493,7 @@ describe('AccountCreationForm Component', () => {
       const onSwitchToSignIn = vi.fn();
 
       render(AccountCreationForm, {
-        props: { config: defaultConfig, onSwitchToSignIn }
+        props: { config: defaultConfig, onSwitchToSignIn },
       });
 
       const signInLink = screen.getByText('Sign in instead');
@@ -509,7 +509,7 @@ describe('AccountCreationForm Component', () => {
       mockAuthStore.createAccount.mockRejectedValue(new Error('Registration failed'));
 
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const component = screen.getByRole('form').closest('.registration-form');
@@ -536,9 +536,9 @@ describe('AccountCreationForm Component', () => {
             detail: {
               error: expect.objectContaining({
                 code: 'registration_failed',
-                message: 'Registration failed'
-              })
-            }
+                message: 'Registration failed',
+              }),
+            },
           })
         );
       });
@@ -546,7 +546,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should prevent submission without required terms acceptance', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill required fields but don't accept terms
@@ -572,11 +572,11 @@ describe('AccountCreationForm Component', () => {
   describe('Form Reset and State Management', () => {
     it('should reset form state correctly', async () => {
       const { component } = render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           initialEmail: 'initial@test.com',
-          additionalFields: ['company', 'phone', 'jobTitle']
-        }
+          additionalFields: ['company', 'phone', 'jobTitle'],
+        },
       });
 
       // Fill form and navigate
@@ -594,15 +594,15 @@ describe('AccountCreationForm Component', () => {
 
     it('should maintain invitation token data after reset', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
-          invitationTokenData: mockInvitationTokenData
-        }
+        props: {
+          config: defaultConfig,
+          invitationTokenData: mockInvitationTokenData,
+        },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.value).toBe('test@example.com');
-      
+
       // Value should remain from invitation token even after changes
       expect(emailInput.value).toBe('test@example.com');
     });
@@ -611,7 +611,7 @@ describe('AccountCreationForm Component', () => {
   describe('Accessibility and UX', () => {
     it('should have proper ARIA labels', () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       expect(screen.getByLabelText(/Email Address/)).toHaveAttribute('aria-label', 'Email Address');
@@ -620,7 +620,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should support keyboard navigation', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -636,7 +636,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should show loading states appropriately', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -651,7 +651,7 @@ describe('AccountCreationForm Component', () => {
 
     it('should disable form elements during loading', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -672,8 +672,8 @@ describe('AccountCreationForm Component', () => {
         props: {
           config: defaultConfig,
           additionalFields: ['company', 'phone', 'jobTitle'],
-          invitationTokenData: mockInvitationTokenData
-        }
+          invitationTokenData: mockInvitationTokenData,
+        },
       });
 
       // Fill all fields in single form (invitation data should prefill some fields)
@@ -711,14 +711,14 @@ describe('AccountCreationForm Component', () => {
           acceptedTerms: true,
           acceptedPrivacy: true,
           marketingConsent: false,
-          invitationToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token'
+          invitationToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token',
         });
       });
     });
 
     it('should handle email check API calls', async () => {
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       const emailInput = screen.getByLabelText(/Email Address/);
@@ -737,20 +737,20 @@ describe('AccountCreationForm Component', () => {
       mockAuthStore.createAccount.mockResolvedValue({
         step: 'success',
         user: { id: '123', email: 'test@example.com', emailVerified: true },
-        emailVerifiedViaInvitation: true // CRITICAL: Email already verified via invitation
+        emailVerifiedViaInvitation: true, // CRITICAL: Email already verified via invitation
       });
 
       const invitationData: InvitationTokenData = {
         email: 'test@example.com',
         firstName: 'John',
-        lastName: 'Doe'
+        lastName: 'Doe',
       };
 
       const { component } = render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          invitationTokenData: invitationData
-        }
+          invitationTokenData: invitationData,
+        },
       });
 
       // Fill required fields and submit
@@ -771,16 +771,16 @@ describe('AccountCreationForm Component', () => {
       mockAuthStore.createAccount.mockResolvedValue({
         step: 'success',
         user: { id: '123', email: 'test@example.com', emailVerified: false },
-        emailVerifiedViaInvitation: false // CRITICAL: Email verification required
+        emailVerifiedViaInvitation: false, // CRITICAL: Email verification required
       });
 
       render(AccountCreationForm, {
-        props: { config: defaultConfig }
+        props: { config: defaultConfig },
       });
 
       // Fill form and submit
       await fireEvent.input(screen.getByLabelText(/email/i), {
-        target: { value: 'test@example.com' }
+        target: { value: 'test@example.com' },
       });
       await fireEvent.click(screen.getByLabelText(/terms of service/i));
       await fireEvent.click(screen.getByLabelText(/privacy policy/i));
@@ -799,18 +799,18 @@ describe('AccountCreationForm Component', () => {
       mockAuthStore.createAccount.mockResolvedValue({
         step: 'success',
         user: { id: '123', email: 'test@example.com', emailVerified: true },
-        emailVerifiedViaInvitation: true
+        emailVerifiedViaInvitation: true,
       });
 
       const invitationData: InvitationTokenData = {
-        email: 'test@example.com'
+        email: 'test@example.com',
       };
 
       render(AccountCreationForm, {
         props: {
           config: defaultConfig,
-          invitationTokenData: invitationData
-        }
+          invitationTokenData: invitationData,
+        },
       });
 
       // Fill required fields and submit
@@ -824,7 +824,7 @@ describe('AccountCreationForm Component', () => {
           expect.objectContaining({
             email: 'test@example.com',
             acceptedTerms: true,
-            acceptedPrivacy: true
+            acceptedPrivacy: true,
           })
         );
       });

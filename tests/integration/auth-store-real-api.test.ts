@@ -1,13 +1,13 @@
 /**
  * Auth Store Real API Integration Tests - Following thepia.com patterns
- * 
+ *
  * Purpose: Test auth-store with real API calls, NO MOCKING
  * Context: Integration tests using real API server and test accounts
  * Safe to remove: No - critical for preventing authentication regressions
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { get } from 'svelte/store';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
@@ -27,8 +27,8 @@ const getTestConfig = (): AuthConfig => {
     enableSocialLogin: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
-      showPoweredBy: true
-    }
+      showPoweredBy: true,
+    },
   };
 };
 
@@ -39,12 +39,14 @@ describe('Auth Store Real API Integration Tests', () => {
   beforeAll(async () => {
     // Following thepia.com pattern - detect API server availability
     testEmail = process.env.TEST_AUTH_EMAIL || 'test@thepia.com';
-    
+
     try {
       const response = await fetch(`${API_BASE}/health`);
       apiServerRunning = response.ok;
-      console.log(`🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`);
-    } catch (error) {
+      console.log(
+        `🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`
+      );
+    } catch (_error) {
       console.warn('Local API server not available - skipping integration tests');
       apiServerRunning = false;
     }
@@ -55,12 +57,12 @@ describe('Auth Store Real API Integration Tests', () => {
     localStorage.clear();
     sessionStorage.clear();
     vi.clearAllMocks();
-    
+
     if (apiServerRunning) {
       authStore = createAuthStore(testConfig);
-      
+
       // Wait for initial state machine setup
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   });
 
@@ -81,7 +83,7 @@ describe('Auth Store Real API Integration Tests', () => {
 
       const response = await fetch(`${API_BASE}/health`);
       expect(response.ok).toBe(true);
-      
+
       const data = await response.json();
       expect(data).toHaveProperty('status');
       expect(data.status).toBe('ok');
@@ -163,7 +165,7 @@ describe('Auth Store Real API Integration Tests', () => {
       }
 
       const nonExistentEmail = `non-existent-${Date.now()}@example.com`;
-      
+
       const response = await fetch(`${API_BASE}/auth/check-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -188,7 +190,7 @@ describe('Auth Store Real API Integration Tests', () => {
 
       expect(authStore).toBeDefined();
       expect(authStore.isAuthenticated()).toBe(false);
-      
+
       const state = get(authStore);
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
@@ -204,10 +206,10 @@ describe('Auth Store Real API Integration Tests', () => {
       try {
         // This tests the auth store's API wrapper
         const result = await authStore.api.checkEmail(testEmail);
-        
+
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
-        
+
         if (result.exists) {
           console.log(`✅ Auth store API: User ${testEmail} exists`);
         } else {
@@ -226,7 +228,7 @@ describe('Auth Store Real API Integration Tests', () => {
       }
 
       const invalidEmail = 'invalid-email-format';
-      
+
       try {
         await authStore.api.checkEmail(invalidEmail);
         // Should not reach here if validation works
@@ -246,11 +248,11 @@ describe('Auth Store Real API Integration Tests', () => {
       // Create auth store with invalid API URL
       const invalidConfig = {
         ...testConfig,
-        apiBaseUrl: 'https://invalid-api-url.example.com'
+        apiBaseUrl: 'https://invalid-api-url.example.com',
       };
-      
+
       const invalidAuthStore = createAuthStore(invalidConfig);
-      
+
       try {
         await invalidAuthStore.api.checkEmail('test@example.com');
         expect(false).toBe(true); // Should not reach here
@@ -278,11 +280,11 @@ describe('Auth Store Real API Integration Tests', () => {
       // Make API call and verify state remains consistent
       try {
         await authStore.api.checkEmail(testEmail);
-        
+
         const stateAfterApiCall = get(authStore);
         expect(stateAfterApiCall.state).toBe('unauthenticated');
         expect(stateAfterApiCall.user).toBeNull();
-      } catch (error) {
+      } catch (_error) {
         // API call might fail, but state should still be consistent
         const stateAfterError = get(authStore);
         expect(stateAfterError.state).toBe('unauthenticated');
@@ -297,18 +299,18 @@ describe('Auth Store Real API Integration Tests', () => {
 
       // Make multiple concurrent API calls
       const emails = ['test1@example.com', 'test2@example.com', 'test3@example.com'];
-      
-      const promises = emails.map(email => 
-        authStore.api.checkEmail(email).catch(e => ({ error: e.message }))
+
+      const promises = emails.map((email) =>
+        authStore.api.checkEmail(email).catch((e) => ({ error: e.message }))
       );
-      
+
       const results = await Promise.all(promises);
-      
+
       // Verify state is still consistent after concurrent calls
       const finalState = get(authStore);
       expect(finalState.state).toBe('unauthenticated');
       expect(finalState.user).toBeNull();
-      
+
       console.log(`✅ Concurrent API calls completed: ${results.length} requests`);
     });
   });

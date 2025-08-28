@@ -1,28 +1,26 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, screen, waitFor } from '@testing-library/svelte';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
-import type { AuthConfig, InvitationTokenData } from '../../src/types';
+import { beforeEach, describe, expect, test } from 'vitest';
+import type { AuthConfig } from '../../src/types';
 
 /**
  * CRITICAL REGISTRATION FORM REAL INTEGRATION TESTS
- * 
+ *
  * These tests validate the RegistrationForm component with REAL auth store
  * integration, not mocked methods. They test actual user flows.
- * 
+ *
  * THESE TESTS MUST PASS to ensure the component works in production.
  */
 
 describe('CRITICAL: RegistrationForm Real Integration', () => {
-  let authConfig: AuthConfig;
+  let _authConfig: AuthConfig;
 
   beforeEach(() => {
     // TODO: Setup real auth config and minimal mocking
-    authConfig = {
+    _authConfig = {
       apiBaseUrl: 'https://api.test.com',
       appBaseUrl: 'https://app.test.com',
       enableWebAuthn: true,
       enableEmailAuth: false,
-      requireEmailVerification: true
+      requireEmailVerification: true,
     };
   });
 

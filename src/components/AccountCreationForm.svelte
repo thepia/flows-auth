@@ -3,229 +3,239 @@
   Implements the optimal account creation journey: Account Creation → Passkey Setup → App Access
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import { createAuthStore } from '../stores/auth-store';
-  import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
-  import type { 
-    AuthConfig, 
-    User, 
-    AuthError, 
-    RegistrationRequest,
-    AuthEventData,
-    InvitationTokenData,
-    AdditionalField
-  } from '../types';
+import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+import { createAuthStore } from '../stores/auth-store';
+import type {
+  AdditionalField,
+  AuthConfig,
+  AuthError,
+  InvitationTokenData,
+  RegistrationRequest,
+  User,
+} from '../types';
+import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../utils/webauthn';
 
-  // Props
-  export let config: AuthConfig;
-  export let showLogo = true;
-  export let compact = false;
-  export let className = '';
-  export let initialEmail = '';
-  export let invitationTokenData: InvitationTokenData | null = null;
-  export let invitationToken: string | null = null; // Original JWT token string
-  export let additionalFields: AdditionalField[] = [];
-  export let readOnlyFields: string[] = [];
-  export let onSwitchToSignIn: (() => void) | undefined = undefined;
+// Props
+export let config: AuthConfig;
+export let showLogo = true;
+export let compact = false;
+export let className = '';
+export let initialEmail = '';
+export let invitationTokenData: InvitationTokenData | null = null;
+export let invitationToken: string | null = null; // Original JWT token string
+export let additionalFields: AdditionalField[] = [];
+export let readOnlyFields: string[] = [];
+export let onSwitchToSignIn: (() => void) | undefined = undefined;
 
-  // Events
-  const dispatch = createEventDispatcher<{
-    success: { user: User };
-    error: { error: AuthError };
-    appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
-    switchToSignIn: {};
-  }>();
+// Events
+const dispatch = createEventDispatcher<{
+  success: { user: User };
+  error: { error: AuthError };
+  appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
+  switchToSignIn: {};
+}>();
 
-  // Auth store
-  const authStore = createAuthStore(config);
-  
-  // Track registration completion for auth store subscription
-  let registrationCompleted = false;
-  let registrationResult: { user: User; emailVerifiedViaInvitation?: boolean } | null = null;
-  
-  // Auth store subscription unsubscribe function
-  let unsubscribeAuthStore: (() => void) | null = null;
+// Auth store
+const authStore = createAuthStore(config);
 
-  // Component state
-  let email = invitationTokenData?.email || initialEmail;
-  let firstName = invitationTokenData?.firstName || '';
-  let lastName = invitationTokenData?.lastName || '';
-  let company = invitationTokenData?.company || '';
-  let phone = invitationTokenData?.phone || '';
-  let jobTitle = invitationTokenData?.jobTitle || '';
-  let loading = false;
-  let error: string | null = null;
-  let supportsWebAuthn = false;
-  let userExists = false;
-  // Note: No success step - flow goes directly to authenticated app after passkey creation
+// Track registration completion for auth store subscription
+let registrationCompleted = false;
+let registrationResult: { user: User; emailVerifiedViaInvitation?: boolean } | null = null;
 
-  // Terms of Service state
-  let acceptedTerms = false;
-  let acceptedPrivacy = false;
-  let marketingConsent = false;
+// Auth store subscription unsubscribe function
+let unsubscribeAuthStore: (() => void) | null = null;
 
-  // WebAuthn state
-  let platformAuthenticatorAvailable = false;
+// Component state
+let email = invitationTokenData?.email || initialEmail;
+let firstName = invitationTokenData?.firstName || '';
+let lastName = invitationTokenData?.lastName || '';
+let company = invitationTokenData?.company || '';
+let phone = invitationTokenData?.phone || '';
+let jobTitle = invitationTokenData?.jobTitle || '';
+let loading = false;
+let error: string | null = null;
+let supportsWebAuthn = false;
+let userExists = false;
+// Note: No success step - flow goes directly to authenticated app after passkey creation
 
-  // Initialize component
-  onMount(async () => {
-    supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
-    platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
-    
-    console.log('🔐 RegistrationForm WebAuthn Status:', {
-      supportsWebAuthn,
-      platformAuthenticatorAvailable,
-      enablePasskeys: config.enablePasskeys
-    });
-    
-    if (invitationTokenData) {
-      console.log('🎫 Form prefilled from invitation token:', {
-        email: invitationTokenData.email,
-        fieldsPopulated: {
-          firstName: !!invitationTokenData.firstName,
-          lastName: !!invitationTokenData.lastName,
-          company: !!invitationTokenData.company,
-          phone: !!invitationTokenData.phone,
-          jobTitle: !!invitationTokenData.jobTitle
-        }
-      });
-    }
+// Terms of Service state
+let acceptedTerms = false;
+let acceptedPrivacy = false;
+let marketingConsent = false;
 
-    // Subscribe to auth store state changes
-    console.log('🔧 RegistrationForm subscribing to auth store in onMount');
-    unsubscribeAuthStore = authStore.subscribe(($auth) => {
-      console.log('🔍 RegistrationForm auth state change:', {
-        state: $auth.state,
-        hasUser: !!$auth.user,
-        registrationCompleted,
-        hasRegistrationResult: !!registrationResult
-      });
+// WebAuthn state
+let platformAuthenticatorAvailable = false;
 
-      // Only emit appAccess after successful registration AND auth store confirms authentication
-      if (registrationCompleted && registrationResult && $auth.state === 'authenticated' && $auth.user) {
-        console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
-        
-        dispatch('appAccess', {
-          user: registrationResult.user,
-          emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,
-          autoSignIn: registrationResult.emailVerifiedViaInvitation || false
-        });
+// Initialize component
+onMount(async () => {
+  supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
+  platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
 
-        // Reset registration tracking
-        registrationCompleted = false;
-        registrationResult = null;
-      }
-    });
+  console.log('🔐 RegistrationForm WebAuthn Status:', {
+    supportsWebAuthn,
+    platformAuthenticatorAvailable,
+    enablePasskeys: config.enablePasskeys,
   });
 
-  // Clean up subscription on component destroy
-  onDestroy(() => {
-    if (unsubscribeAuthStore) {
-      unsubscribeAuthStore();
+  if (invitationTokenData) {
+    console.log('🎫 Form prefilled from invitation token:', {
+      email: invitationTokenData.email,
+      fieldsPopulated: {
+        firstName: !!invitationTokenData.firstName,
+        lastName: !!invitationTokenData.lastName,
+        company: !!invitationTokenData.company,
+        phone: !!invitationTokenData.phone,
+        jobTitle: !!invitationTokenData.jobTitle,
+      },
+    });
+  }
+
+  // Subscribe to auth store state changes
+  console.log('🔧 RegistrationForm subscribing to auth store in onMount');
+  unsubscribeAuthStore = authStore.subscribe(($auth) => {
+    console.log('🔍 RegistrationForm auth state change:', {
+      state: $auth.state,
+      hasUser: !!$auth.user,
+      registrationCompleted,
+      hasRegistrationResult: !!registrationResult,
+    });
+
+    // Only emit appAccess after successful registration AND auth store confirms authentication
+    if (
+      registrationCompleted &&
+      registrationResult &&
+      $auth.state === 'authenticated' &&
+      $auth.user
+    ) {
+      console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
+
+      dispatch('appAccess', {
+        user: registrationResult.user,
+        emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,
+        autoSignIn: registrationResult.emailVerifiedViaInvitation || false,
+      });
+
+      // Reset registration tracking
+      registrationCompleted = false;
+      registrationResult = null;
     }
   });
-  
-  // Utility functions
-  function isFieldReadOnly(fieldName: string): boolean {
-    return readOnlyFields.includes(fieldName) || 
-           (invitationTokenData?.readOnlyFields?.includes(fieldName) ?? false);
+});
+
+// Clean up subscription on component destroy
+onDestroy(() => {
+  if (unsubscribeAuthStore) {
+    unsubscribeAuthStore();
   }
-  
-  function isFieldVisible(fieldName: AdditionalField): boolean {
-    return additionalFields.includes(fieldName);
+});
+
+// Utility functions
+function isFieldReadOnly(fieldName: string): boolean {
+  return (
+    readOnlyFields.includes(fieldName) ||
+    (invitationTokenData?.readOnlyFields?.includes(fieldName) ?? false)
+  );
+}
+
+function isFieldVisible(fieldName: AdditionalField): boolean {
+  return additionalFields.includes(fieldName);
+}
+
+function isInvitationExpired(): boolean {
+  return invitationTokenData?.expires ? invitationTokenData.expires < new Date() : false;
+}
+
+function handleSwitchToSignIn() {
+  if (onSwitchToSignIn) {
+    onSwitchToSignIn();
   }
-  
-  function isInvitationExpired(): boolean {
-    return invitationTokenData?.expires ? invitationTokenData.expires < new Date() : false;
+  dispatch('switchToSignIn');
+}
+
+// Handle registration form submission
+async function handleRegistration() {
+  // Validate required fields
+  if (!email.trim()) {
+    error = 'Email is required';
+    return;
   }
-  
-  function handleSwitchToSignIn() {
-    if (onSwitchToSignIn) {
-      onSwitchToSignIn();
-    }
-    dispatch('switchToSignIn');
+  if (!firstName.trim()) {
+    error = 'First name is required';
+    return;
+  }
+  if (!lastName.trim()) {
+    error = 'Last name is required';
+    return;
+  }
+  if (!acceptedTerms || !acceptedPrivacy) {
+    error = 'You must accept the Terms of Service and Privacy Policy to continue.';
+    return;
   }
 
-  // Handle registration form submission
-  async function handleRegistration() {
-    // Validate required fields
-    if (!email.trim()) {
-      error = 'Email is required';
-      return;
-    }
-    if (!firstName.trim()) {
-      error = 'First name is required';
-      return;
-    }
-    if (!lastName.trim()) {
-      error = 'Last name is required';
-      return;
-    }
-    if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
-      return;
-    }
+  loading = true;
+  error = null;
 
-    loading = true;
-    error = null;
-
-    try {
-      // Check if user already exists
-      const emailCheck = await authStore.api.checkEmail(email);
-      if (emailCheck.exists) {
-        error = 'An account with this email already exists. Please sign in instead.';
-        loading = false;
-        return;
-      }
-
-      const registrationData: RegistrationRequest = {
-        email,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        company: company.trim() || undefined,
-        phone: phone.trim() || undefined,
-        jobTitle: jobTitle.trim() || undefined,
-        acceptedTerms,
-        acceptedPrivacy,
-        marketingConsent,
-        invitationToken: invitationToken || undefined // Pass actual JWT token string
-      };
-
-      // Create account with passkey (full WebAuthn registration flow)
-      const result = await authStore.createAccount(registrationData);
-
-      if (result.step === 'success' && result.user) {
-        loading = false;
-
-        // Store registration result for auth store subscription to handle
-        registrationResult = {
-          user: result.user,
-          emailVerifiedViaInvitation: result.emailVerifiedViaInvitation
-        };
-        registrationCompleted = true;
-
-        console.log('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
-
-        // Account creation completed - auth store will handle session creation and app transition
-        console.log('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
-
-        // Emit success event immediately (for UI feedback)
-        console.log('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
-        dispatch('success', { user: result.user });
-      }
-    } catch (err: any) {
+  try {
+    // Check if user already exists
+    const emailCheck = await authStore.api.checkEmail(email);
+    if (emailCheck.exists) {
+      error = 'An account with this email already exists. Please sign in instead.';
       loading = false;
-      error = err.message || 'Registration failed';
-      dispatch('error', { error: { code: 'registration_failed', message: error } });
+      return;
     }
-  }
 
-  // Handle form submission
-  function handleSubmit() {
-    handleRegistration();
-  }
+    const registrationData: RegistrationRequest = {
+      email,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      company: company.trim() || undefined,
+      phone: phone.trim() || undefined,
+      jobTitle: jobTitle.trim() || undefined,
+      acceptedTerms,
+      acceptedPrivacy,
+      marketingConsent,
+      invitationToken: invitationToken || undefined, // Pass actual JWT token string
+    };
 
-  // Note: resetForm removed - no longer needed since there's no success step
+    // Create account with passkey (full WebAuthn registration flow)
+    const result = await authStore.createAccount(registrationData);
+
+    if (result.step === 'success' && result.user) {
+      loading = false;
+
+      // Store registration result for auth store subscription to handle
+      registrationResult = {
+        user: result.user,
+        emailVerifiedViaInvitation: result.emailVerifiedViaInvitation,
+      };
+      registrationCompleted = true;
+
+      console.log(
+        '🎉 Registration API call successful - waiting for auth store to confirm session persistence'
+      );
+
+      // Account creation completed - auth store will handle session creation and app transition
+      console.log(
+        '🎉 Account creation API call successful - waiting for auth store to confirm session persistence'
+      );
+
+      // Emit success event immediately (for UI feedback)
+      console.log('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
+      dispatch('success', { user: result.user });
+    }
+  } catch (err: any) {
+    loading = false;
+    error = err.message || 'Registration failed';
+    dispatch('error', { error: { code: 'registration_failed', message: error } });
+  }
+}
+
+// Handle form submission
+function handleSubmit() {
+  handleRegistration();
+}
+
+// Note: resetForm removed - no longer needed since there's no success step
 </script>
 
 <div class="registration-form {className}" class:compact>

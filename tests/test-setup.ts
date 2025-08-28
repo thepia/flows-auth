@@ -9,29 +9,29 @@ import type { AuthConfig } from '../src/types';
 /**
  * API Server Selection Strategy for Testing
  * =========================================
- * 
+ *
  * This function determines which API server to use for integration tests.
  * The strategy prioritizes developer experience while ensuring CI reliability.
- * 
+ *
  * API Server Options:
  * ------------------
  * 1. LOCAL DEV SERVER: https://dev.thepia.com:8443
  *    - Preferred for development (fastest feedback)
  *    - Requires thepia.com repo running locally
  *    - Full feature parity with production
- * 
+ *
  * 2. PRODUCTION API: https://api.thepia.com
  *    - Fallback when local unavailable
  *    - Used automatically in CI environments
  *    - Enables testing without local infrastructure
- * 
+ *
  * Environment Variables:
  * ---------------------
  * - TEST_API_URL: Explicit override (highest priority)
  * - TEST_API_ENV: 'local' | 'public' | 'auto' (manual selection)
  * - CI: Auto-detected CI environment (triggers production fallback)
  * - CI_API_SERVER_RUNNING: Manual CI flag if local server available
- * 
+ *
  * See: /CLAUDE.md "API Server Architecture" section
  * See: /docs/development/testing-strategy.md
  */
@@ -49,8 +49,7 @@ const getApiUrl = () => {
       return 'https://dev.thepia.com:8443';
     case 'public':
       return 'https://api.thepia.com';
-    case 'auto':
-    default:
+    default: {
       // Auto-detect: prefer local, fallback to production in CI
       const isCI = process.env.CI === 'true';
       const hasLocalServer = process.env.CI_API_SERVER_RUNNING === 'true';
@@ -61,6 +60,7 @@ const getApiUrl = () => {
 
       // Default to local for development environment
       return 'https://dev.thepia.com:8443';
+    }
   }
 };
 
@@ -76,12 +76,12 @@ export const TEST_CONFIG: AuthConfig = {
   errorReporting: {
     enabled: false, // Disable error reporting in tests to avoid fetch issues
     debug: false,
-    endpoint: process.env.ERROR_REPORTING_ENDPOINT
+    endpoint: process.env.ERROR_REPORTING_ENDPOINT,
   },
   branding: {
     companyName: 'Thepia Test Environment',
-    showPoweredBy: true
-  }
+    showPoweredBy: true,
+  },
 };
 
 // Test account definitions - following main codebase patterns
@@ -92,40 +92,40 @@ export const TEST_ACCOUNTS = {
     hasPasskey: true,
     hasPassword: false,
     userId: 'auth0|passkey-test-with-passkey@thepia.net-1234567890',
-    name: 'Test User (With Passkey)'
+    name: 'Test User (With Passkey)',
   },
-  
+
   // User without passkey (should exist in Auth0)
   existingWithoutPasskey: {
     email: process.env.TEST_AUTH_EMAIL_NO_PASSKEY || 'test-without-passkey@thepia.net',
     hasPasskey: false,
     hasPassword: false,
     userId: 'auth0|test-without-passkey@thepia.net-1234567890',
-    name: 'Test User (No Passkey)'
+    name: 'Test User (No Passkey)',
   },
-  
+
   // Dynamic new user for registration testing
   newUser: {
     email: `test-new-${Date.now()}@thepia.net`,
     hasPasskey: false,
     hasPassword: false,
-    shouldCreate: true
+    shouldCreate: true,
   },
-  
+
   // Non-existent user for negative testing
   invalidEmail: {
     email: 'definitely-nonexistent@thepia.net',
     hasPasskey: false,
-    hasPassword: false
+    hasPassword: false,
   },
-  
+
   // Rate limiting test account
   rateLimitTest: {
     email: 'test-rate-limit@thepia.net',
     hasPasskey: false,
     hasPassword: false,
-    maxRequests: 3 // Reduced for faster testing
-  }
+    maxRequests: 3, // Reduced for faster testing
+  },
 } as const;
 
 // WebAuthn mock helpers
@@ -135,16 +135,18 @@ export class WebAuthnMocker {
       id: credentialId,
       rawId: new ArrayBuffer(16),
       response: {
-        clientDataJSON: new TextEncoder().encode(JSON.stringify({
-          type: 'webauthn.get',
-          challenge: 'test-challenge',
-          origin: 'https://dev.thepia.net'
-        })),
+        clientDataJSON: new TextEncoder().encode(
+          JSON.stringify({
+            type: 'webauthn.get',
+            challenge: 'test-challenge',
+            origin: 'https://dev.thepia.net',
+          })
+        ),
         authenticatorData: new ArrayBuffer(32),
         signature: new ArrayBuffer(32),
-        userHandle: new TextEncoder().encode('test-user-id')
+        userHandle: new TextEncoder().encode('test-user-id'),
       },
-      type: 'public-key'
+      type: 'public-key',
     } as any);
   }
 
@@ -164,12 +166,12 @@ export class WebAuthnMocker {
     const error = new Error('No credentials found');
     error.name = 'NotAllowedError';
     vi.spyOn(navigator.credentials, 'get').mockRejectedValue(error);
-    
+
     // Simulate quick failure (< 500ms)
     setTimeout(() => {
       const mockGet = navigator.credentials.get as any;
       mockGet.mockImplementation(() => {
-        const start = Date.now();
+        const _start = Date.now();
         return new Promise((_, reject) => {
           setTimeout(() => reject(error), 100); // Quick failure
         });
@@ -181,7 +183,7 @@ export class WebAuthnMocker {
     Object.defineProperty(PublicKeyCredential, 'isConditionalMediationAvailable', {
       value: vi.fn().mockResolvedValue(false),
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
 
@@ -189,7 +191,7 @@ export class WebAuthnMocker {
     Object.defineProperty(PublicKeyCredential, 'isConditionalMediationAvailable', {
       value: vi.fn().mockResolvedValue(true),
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
 
@@ -200,19 +202,23 @@ export class WebAuthnMocker {
 
 // API mock helpers
 export class APIMocker {
-  static mockEmailCheck(email: string, response: { exists: boolean; hasPasskey: boolean; hasPassword?: boolean }) {
+  static mockEmailCheck(
+    email: string,
+    response: { exists: boolean; hasPasskey: boolean; hasPassword?: boolean }
+  ) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
       if (url.toString().includes('/auth/check-user')) {
-        const body = JSON.parse(options?.body as string || '{}');
+        const body = JSON.parse((options?.body as string) || '{}');
         if (body.email === email) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              exists: response.exists,
-              hasPasskey: response.hasPasskey,
-              hasPassword: response.hasPassword || false,
-              socialProviders: []
-            })
+            json: () =>
+              Promise.resolve({
+                exists: response.exists,
+                hasPasskey: response.hasPasskey,
+                hasPassword: response.hasPassword || false,
+                socialProviders: [],
+              }),
           } as any);
         }
       }
@@ -223,19 +229,22 @@ export class APIMocker {
   static mockPasskeyChallenge(email: string, challenge = 'test-challenge') {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
       if (url.toString().includes('/auth/webauthn/challenge')) {
-        const body = JSON.parse(options?.body as string || '{}');
+        const body = JSON.parse((options?.body as string) || '{}');
         if (body.email === email) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              challenge,
-              rpId: 'thepia.net',
-              allowCredentials: [{
-                id: 'test-credential-id',
-                type: 'public-key'
-              }],
-              timeout: 60000
-            })
+            json: () =>
+              Promise.resolve({
+                challenge,
+                rpId: 'thepia.net',
+                allowCredentials: [
+                  {
+                    id: 'test-credential-id',
+                    type: 'public-key',
+                  },
+                ],
+                timeout: 60000,
+              }),
           } as any);
         }
       }
@@ -246,23 +255,24 @@ export class APIMocker {
   static mockSuccessfulAuthentication(email: string, user = TEST_ACCOUNTS.existingWithPasskey) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
       if (url.toString().includes('/auth/signin/passkey')) {
-        const body = JSON.parse(options?.body as string || '{}');
+        const body = JSON.parse((options?.body as string) || '{}');
         if (body.email === email) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              step: 'success',
-              user: {
-                id: user.userId,
-                email: user.email,
-                name: user.name,
-                emailVerified: true,
-                createdAt: new Date().toISOString()
-              },
-              accessToken: 'test-access-token',
-              refreshToken: 'test-refresh-token',
-              expiresIn: 3600
-            })
+            json: () =>
+              Promise.resolve({
+                step: 'success',
+                user: {
+                  id: user.userId,
+                  email: user.email,
+                  name: user.name,
+                  emailVerified: true,
+                  createdAt: new Date().toISOString(),
+                },
+                accessToken: 'test-access-token',
+                refreshToken: 'test-refresh-token',
+                expiresIn: 3600,
+              }),
           } as any);
         }
       }
@@ -273,15 +283,16 @@ export class APIMocker {
   static mockMagicLinkSent(email: string) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
       if (url.toString().includes('/auth/signin/magic-link')) {
-        const body = JSON.parse(options?.body as string || '{}');
+        const body = JSON.parse((options?.body as string) || '{}');
         if (body.email === email) {
           return Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({
-              step: 'magic_link_sent',
-              magicLinkSent: true,
-              message: 'Check your email for the sign-in link'
-            })
+            json: () =>
+              Promise.resolve({
+                step: 'magic_link_sent',
+                magicLinkSent: true,
+                message: 'Check your email for the sign-in link',
+              }),
           } as any);
         }
       }
@@ -298,10 +309,11 @@ export class APIMocker {
       ok: false,
       status: 429,
       statusText: 'Too Many Requests',
-      json: () => Promise.resolve({
-        error: 'rate_limit_exceeded',
-        message: 'Too many requests, please try again later'
-      })
+      json: () =>
+        Promise.resolve({
+          error: 'rate_limit_exceeded',
+          message: 'Too many requests, please try again later',
+        }),
     } as any);
   }
 
@@ -315,11 +327,7 @@ export class TestUtils {
   /**
    * Wait for state machine to reach specific state
    */
-  static async waitForState(
-    stateMachine: any, 
-    targetState: string, 
-    timeout = 5000
-  ): Promise<void> {
+  static async waitForState(stateMachine: any, targetState: string, timeout = 5000): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Timeout waiting for state: ${targetState}`));
@@ -341,11 +349,7 @@ export class TestUtils {
   /**
    * Wait for async operation with timeout
    */
-  static async waitFor(
-    condition: () => boolean, 
-    timeout = 5000, 
-    interval = 10
-  ): Promise<void> {
+  static async waitFor(condition: () => boolean, timeout = 5000, interval = 10): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error('Timeout waiting for condition'));
@@ -374,7 +378,7 @@ export class TestUtils {
       name: 'Test User',
       emailVerified: true,
       createdAt: new Date().toISOString(),
-      ...overrides
+      ...overrides,
     };
   }
 
@@ -386,18 +390,14 @@ export class TestUtils {
       accessToken: 'test-access-token',
       refreshToken: 'test-refresh-token',
       expiresIn: 3600,
-      user
+      user,
     };
   }
 
   /**
    * Simulate timing for error classification
    */
-  static async simulateWebAuthnTiming(
-    mockFn: any, 
-    duration: number, 
-    error: Error
-  ): Promise<void> {
+  static async simulateWebAuthnTiming(mockFn: any, duration: number, error: Error): Promise<void> {
     mockFn.mockImplementation(() => {
       return new Promise((_, reject) => {
         setTimeout(() => reject(error), duration);
@@ -422,27 +422,27 @@ export class PerformanceTestUtils {
   private static performanceMarks: Map<string, number> = new Map();
 
   static startMark(name: string) {
-    this.performanceMarks.set(name, performance.now());
+    PerformanceTestUtils.performanceMarks.set(name, performance.now());
   }
 
   static endMark(name: string): number {
-    const start = this.performanceMarks.get(name);
+    const start = PerformanceTestUtils.performanceMarks.get(name);
     if (!start) {
       throw new Error(`No start mark found for: ${name}`);
     }
-    
+
     const duration = performance.now() - start;
-    this.performanceMarks.delete(name);
+    PerformanceTestUtils.performanceMarks.delete(name);
     return duration;
   }
 
   static async measureAsync<T>(
-    name: string, 
+    name: string,
     operation: () => Promise<T>
   ): Promise<{ result: T; duration: number }> {
-    this.startMark(name);
+    PerformanceTestUtils.startMark(name);
     const result = await operation();
-    const duration = this.endMark(name);
+    const duration = PerformanceTestUtils.endMark(name);
     return { result, duration };
   }
 
@@ -463,14 +463,14 @@ export class MemoryTestUtils {
   } {
     const instances = new WeakSet<T>();
     const originalConstructor = constructor;
-    
+
     // Replace constructor to track instances
-    const TrackedConstructor = function(this: T, ...args: any[]) {
+    const TrackedConstructor = function (this: T, ...args: any[]) {
       const instance = new originalConstructor(...args);
       instances.add(instance);
       return instance;
     } as any;
-    
+
     return {
       count: () => {
         // This is a simplified tracking - in real scenarios you'd use more sophisticated memory profiling
@@ -479,7 +479,7 @@ export class MemoryTestUtils {
       cleanup: () => {
         // Restore original constructor
         Object.setPrototypeOf(TrackedConstructor, originalConstructor);
-      }
+      },
     };
   }
 }
@@ -492,5 +492,5 @@ export default {
   APIMocker,
   TestUtils,
   PerformanceTestUtils,
-  MemoryTestUtils
+  MemoryTestUtils,
 };

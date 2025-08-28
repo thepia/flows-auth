@@ -57,7 +57,7 @@ export function validatePassword(password: string): PasswordValidation {
   return {
     isValid: errors.length === 0,
     errors,
-    score: Math.min(score, 4)
+    score: Math.min(score, 4),
   };
 }
 
@@ -103,7 +103,8 @@ export function getPasswordStrengthColor(score: number): string {
  * Validate domain format
  */
 export function isValidDomain(domain: string): boolean {
-  const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+  const domainRegex =
+    /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
   return domainRegex.test(domain);
 }
 
@@ -177,6 +178,6 @@ export function validateAuthConfig(config: any): { isValid: boolean; errors: str
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }

@@ -3,22 +3,22 @@
  * These tests ensure components can be imported and instantiated correctly
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Component Exports', () => {
   beforeEach(() => {
     // Mock fetch for API calls
     global.fetch = vi.fn();
-    
+
     // Mock localStorage
     Object.defineProperty(global, 'localStorage', {
       value: {
         getItem: vi.fn(),
         setItem: vi.fn(),
-        removeItem: vi.fn()
+        removeItem: vi.fn(),
       },
-      writable: true
+      writable: true,
     });
 
     // Mock WebAuthn
@@ -26,7 +26,7 @@ describe('Component Exports', () => {
       value: class MockPublicKeyCredential {
         static isUserVerifyingPlatformAuthenticatorAvailable = vi.fn().mockResolvedValue(true);
       },
-      writable: true
+      writable: true,
     });
   });
 
@@ -49,13 +49,13 @@ describe('Component Exports', () => {
   });
 
   it('should import WebAuthn utilities as named exports', async () => {
-    const { 
-      isWebAuthnSupported, 
+    const {
+      isWebAuthnSupported,
       isPlatformAuthenticatorAvailable,
       authenticateWithPasskey,
-      createPasskey
+      createPasskey,
     } = await import('../../src/index');
-    
+
     expect(isWebAuthnSupported).toBeDefined();
     expect(isPlatformAuthenticatorAvailable).toBeDefined();
     expect(authenticateWithPasskey).toBeDefined();
@@ -64,10 +64,10 @@ describe('Component Exports', () => {
 
   it('should create and render SignInForm component without errors', async () => {
     const { SignInForm, createDefaultConfig } = await import('../../src/index');
-    
+
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
+      clientId: 'test-client',
     });
 
     expect(() => {
@@ -77,10 +77,10 @@ describe('Component Exports', () => {
 
   it('should create auth store without errors', async () => {
     const { createAuthStore, createDefaultConfig } = await import('../../src/index');
-    
+
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
+      clientId: 'test-client',
     });
 
     expect(() => {
@@ -90,10 +90,10 @@ describe('Component Exports', () => {
 
   it('should create API client without errors', async () => {
     const { AuthApiClient, createDefaultConfig } = await import('../../src/index');
-    
+
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
+      clientId: 'test-client',
     });
 
     expect(() => {
@@ -103,7 +103,7 @@ describe('Component Exports', () => {
 
   it('should have correct component properties and methods', async () => {
     const { SignInForm } = await import('../../src/index');
-    
+
     // Check if it's a Svelte component constructor
     expect(SignInForm.prototype).toBeDefined();
     expect(SignInForm.prototype.$set).toBeDefined();
@@ -113,21 +113,21 @@ describe('Component Exports', () => {
 
   it('should maintain consistent exports between builds', async () => {
     const authLib = await import('../../src/index');
-    
+
     // Check all expected exports are present
     const expectedExports = [
       'SignInForm',
-      'createAuthStore', 
+      'createAuthStore',
       'createAuthDerivedStores',
       'AuthApiClient',
       'isWebAuthnSupported',
-      'isPlatformAuthenticatorAvailable', 
+      'isPlatformAuthenticatorAvailable',
       'authenticateWithPasskey',
       'createPasskey',
       'serializeCredential',
       'generatePasskeyName',
       'createDefaultConfig',
-      'VERSION'
+      'VERSION',
     ];
 
     for (const exportName of expectedExports) {
@@ -138,10 +138,10 @@ describe('Component Exports', () => {
 
   it('should handle component instantiation in different environments', async () => {
     const { SignInForm, createDefaultConfig } = await import('../../src/index');
-    
+
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
+      clientId: 'test-client',
     });
 
     // Test with different prop combinations
@@ -151,13 +151,13 @@ describe('Component Exports', () => {
       { config, compact: true },
       { config, className: 'custom-class' },
       { config, initialEmail: 'test@example.com' },
-      { 
-        config, 
-        showLogo: false, 
-        compact: true, 
+      {
+        config,
+        showLogo: false,
+        compact: true,
         className: 'custom-class',
-        initialEmail: 'test@example.com'
-      }
+        initialEmail: 'test@example.com',
+      },
     ];
 
     for (const props of propCombinations) {

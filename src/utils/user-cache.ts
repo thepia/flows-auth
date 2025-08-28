@@ -22,24 +22,24 @@ export class UserCache {
   get(email: string): CacheEntry | null {
     const normalizedEmail = email.toLowerCase().trim();
     const entry = this.cache.get(normalizedEmail);
-    
+
     // DEBUGGING: Force cache miss for henrik@thepia.com to debug the issue
     if (normalizedEmail === 'henrik@thepia.com') {
       console.log(`🐛 [DEBUG] Forcing cache miss for ${normalizedEmail} to debug API issue`);
       this.cache.delete(normalizedEmail);
       return null;
     }
-    
+
     if (!entry) {
       return null;
     }
-    
+
     // Check if cache entry is still valid
     if (Date.now() - entry.timestamp > this.CACHE_TTL) {
       this.cache.delete(normalizedEmail);
       return null;
     }
-    
+
     console.log(`📋 Cache hit for ${normalizedEmail}`);
     return entry;
   }
@@ -49,7 +49,7 @@ export class UserCache {
    */
   set(email: string, data: Omit<CacheEntry, 'timestamp'>): void {
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     // Implement simple LRU by removing oldest entries
     if (this.cache.size >= this.MAX_CACHE_SIZE) {
       const oldestKey = this.cache.keys().next().value;
@@ -57,12 +57,12 @@ export class UserCache {
         this.cache.delete(oldestKey);
       }
     }
-    
+
     this.cache.set(normalizedEmail, {
       ...data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
-    
+
     console.log(`📝 Cached user data for ${normalizedEmail}`);
   }
 
@@ -89,14 +89,14 @@ export class UserCache {
   getStats() {
     const now = Date.now();
     const validEntries = Array.from(this.cache.values()).filter(
-      entry => now - entry.timestamp <= this.CACHE_TTL
+      (entry) => now - entry.timestamp <= this.CACHE_TTL
     );
-    
+
     return {
       totalEntries: this.cache.size,
       validEntries: validEntries.length,
       expiredEntries: this.cache.size - validEntries.length,
-      cacheHitRate: this.cache.size > 0 ? (validEntries.length / this.cache.size) * 100 : 0
+      cacheHitRate: this.cache.size > 0 ? (validEntries.length / this.cache.size) * 100 : 0,
     };
   }
 
@@ -106,15 +106,15 @@ export class UserCache {
   cleanup(): void {
     const now = Date.now();
     const expiredKeys: string[] = [];
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp > this.CACHE_TTL) {
         expiredKeys.push(key);
       }
     }
-    
-    expiredKeys.forEach(key => this.cache.delete(key));
-    
+
+    expiredKeys.forEach((key) => this.cache.delete(key));
+
     if (expiredKeys.length > 0) {
       console.log(`🧹 Cleaned up ${expiredKeys.length} expired cache entries`);
     }
@@ -126,7 +126,10 @@ export const globalUserCache = new UserCache();
 
 // Auto-cleanup expired entries every 5 minutes
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    globalUserCache.cleanup();
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      globalUserCache.cleanup();
+    },
+    5 * 60 * 1000
+  );
 }

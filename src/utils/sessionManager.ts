@@ -11,8 +11,12 @@
  * - Role-based storage strategy
  */
 
-import { getStorageManager, initializeStorageManager, getOptimalStorageConfig } from './storageManager';
 import type { StorageConfig } from '../types';
+import {
+  getOptimalStorageConfig,
+  getStorageManager,
+  initializeStorageManager,
+} from './storageManager';
 
 export interface FlowsSessionData {
   user: {
@@ -89,7 +93,12 @@ export function saveSession(sessionData: FlowsSessionData): void {
       );
     }
 
-    console.log('💾 Session saved to', storage.getConfig().type, 'for user:', sessionData.user.email);
+    console.log(
+      '💾 Session saved to',
+      storage.getConfig().type,
+      'for user:',
+      sessionData.user.email
+    );
   } catch (error) {
     console.error('Failed to save session:', error);
   }

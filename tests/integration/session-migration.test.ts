@@ -3,8 +3,7 @@
  * Tests for dynamic role-based session migration functionality
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ConfigurableStorageManager } from '../../src/utils/storageManager';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SessionMigrationResult, StorageConfigurationUpdate } from '../../src/types';
 
 // Mock browser storage APIs
@@ -12,25 +11,25 @@ const mockSessionStorage = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
 };
 
 const mockLocalStorage = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
 };
 
 // Mock window object
 Object.defineProperty(window, 'sessionStorage', {
   value: mockSessionStorage,
-  writable: true
+  writable: true,
 });
 
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
-  writable: true
+  writable: true,
 });
 
 // Mock session migration utility (will be implemented later)
@@ -48,16 +47,16 @@ describe('Session Migration Integration Tests', () => {
       // Set up initial guest session in sessionStorage
       mockSessionStorage.getItem.mockImplementation((key: string) => {
         const data = {
-          'auth_access_token': 'guest-access-token',
-          'auth_refresh_token': 'guest-refresh-token',
-          'auth_user': JSON.stringify({
+          auth_access_token: 'guest-access-token',
+          auth_refresh_token: 'guest-refresh-token',
+          auth_user: JSON.stringify({
             id: '123',
             email: 'user@example.com',
             name: 'Test User',
             emailVerified: true,
-            createdAt: '2023-01-01T00:00:00Z'
+            createdAt: '2023-01-01T00:00:00Z',
           }),
-          'auth_expires_at': (Date.now() + 3600000).toString()
+          auth_expires_at: (Date.now() + 3600000).toString(),
         };
         return data[key as keyof typeof data] || null;
       });
@@ -67,7 +66,7 @@ describe('Session Migration Integration Tests', () => {
         fromStorage: 'sessionStorage',
         toStorage: 'localStorage',
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       } as SessionMigrationResult);
 
       const result = await mockMigrateSession('sessionStorage', 'localStorage');
@@ -81,17 +80,17 @@ describe('Session Migration Integration Tests', () => {
 
     it('should preserve all session data during migration', async () => {
       const sessionData = {
-        'auth_access_token': 'access-token-123',
-        'auth_refresh_token': 'refresh-token-456',
-        'auth_user': JSON.stringify({
+        auth_access_token: 'access-token-123',
+        auth_refresh_token: 'refresh-token-456',
+        auth_user: JSON.stringify({
           id: '123',
           email: 'employee@company.com',
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         }),
-        'auth_expires_at': (Date.now() + 3600000).toString()
+        auth_expires_at: (Date.now() + 3600000).toString(),
       };
 
       mockSessionStorage.getItem.mockImplementation((key: string) => {
@@ -103,21 +102,27 @@ describe('Session Migration Integration Tests', () => {
         Object.entries(sessionData).forEach(([key, value]) => {
           mockLocalStorage.setItem(key, value);
         });
-        
+
         return {
           success: true,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
-          tokensPreserved: true
+          tokensPreserved: true,
         };
       });
 
       const result = await mockMigrateSession('sessionStorage', 'localStorage');
 
       expect(result.success).toBe(true);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_access_token', 'access-token-123');
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_refresh_token', 'refresh-token-456');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'auth_access_token',
+        'access-token-123'
+      );
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'auth_refresh_token',
+        'refresh-token-456'
+      );
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_user', sessionData.auth_user);
     });
   });
@@ -127,17 +132,17 @@ describe('Session Migration Integration Tests', () => {
       // Set up initial employee session in localStorage
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         const data = {
-          'auth_access_token': 'employee-access-token',
-          'auth_refresh_token': 'employee-refresh-token',
-          'auth_user': JSON.stringify({
+          auth_access_token: 'employee-access-token',
+          auth_refresh_token: 'employee-refresh-token',
+          auth_user: JSON.stringify({
             id: '456',
             email: 'employee@company.com',
             name: 'Employee User',
             emailVerified: true,
             createdAt: '2023-01-01T00:00:00Z',
-            metadata: { role: 'employee' }
+            metadata: { role: 'employee' },
           }),
-          'auth_expires_at': (Date.now() + 7 * 24 * 60 * 60 * 1000).toString()
+          auth_expires_at: (Date.now() + 7 * 24 * 60 * 60 * 1000).toString(),
         };
         return data[key as keyof typeof data] || null;
       });
@@ -147,7 +152,7 @@ describe('Session Migration Integration Tests', () => {
         fromStorage: 'localStorage',
         toStorage: 'sessionStorage',
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       } as SessionMigrationResult);
 
       const result = await mockMigrateSession('localStorage', 'sessionStorage');
@@ -161,7 +166,7 @@ describe('Session Migration Integration Tests', () => {
       mockMigrateSession.mockImplementation(async (fromType, toType) => {
         // Guest sessions have shorter timeout (8 hours vs 7 days)
         const adjustedTimeout = 8 * 60 * 60 * 1000; // 8 hours
-        
+
         return {
           success: true,
           fromStorage: fromType,
@@ -169,7 +174,7 @@ describe('Session Migration Integration Tests', () => {
           dataPreserved: true,
           tokensPreserved: true,
           timeoutAdjusted: true,
-          newTimeout: adjustedTimeout
+          newTimeout: adjustedTimeout,
         };
       });
 
@@ -189,7 +194,7 @@ describe('Session Migration Integration Tests', () => {
         toStorage: 'localStorage',
         dataPreserved: false,
         tokensPreserved: false,
-        error: 'Storage quota exceeded'
+        error: 'Storage quota exceeded',
       } as SessionMigrationResult);
 
       const result = await mockMigrateSession('sessionStorage', 'localStorage');
@@ -204,17 +209,17 @@ describe('Session Migration Integration Tests', () => {
       mockMigrateSession.mockImplementation(async (fromType, toType) => {
         // Simulate partial failure - some data copied but process failed
         mockLocalStorage.setItem('auth_access_token', 'partial-token');
-        
+
         // Then simulate rollback
         mockLocalStorage.removeItem('auth_access_token');
-        
+
         return {
           success: false,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'Migration failed, changes rolled back'
+          error: 'Migration failed, changes rolled back',
         };
       });
 
@@ -227,8 +232,8 @@ describe('Session Migration Integration Tests', () => {
 
     it('should preserve original data when migration fails', async () => {
       const originalData = {
-        'auth_access_token': 'original-token',
-        'auth_user': JSON.stringify({ id: '123', email: 'user@example.com' })
+        auth_access_token: 'original-token',
+        auth_user: JSON.stringify({ id: '123', email: 'user@example.com' }),
       };
 
       mockSessionStorage.getItem.mockImplementation((key: string) => {
@@ -243,7 +248,7 @@ describe('Session Migration Integration Tests', () => {
           toStorage: toType,
           dataPreserved: true, // Original data preserved
           tokensPreserved: true,
-          error: 'Target storage unavailable'
+          error: 'Target storage unavailable',
         };
       });
 
@@ -258,29 +263,29 @@ describe('Session Migration Integration Tests', () => {
   describe('Authentication Flow Integration', () => {
     it('should trigger migration after successful authentication', async () => {
       // Mock authentication response with employee role
-      const authResponse = {
+      const _authResponse = {
         user: {
           id: '123',
           email: 'employee@company.com',
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
-      
+
       const storageUpdate: StorageConfigurationUpdate = {
         type: 'localStorage',
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       };
 
       mockUpdateStorageConfiguration.mockImplementation(async (update) => {
@@ -294,7 +299,7 @@ describe('Session Migration Integration Tests', () => {
         fromStorage: 'sessionStorage',
         toStorage: 'localStorage',
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       });
 
       await mockUpdateStorageConfiguration(storageUpdate);
@@ -307,24 +312,24 @@ describe('Session Migration Integration Tests', () => {
       // Mock storage event listener for cross-tab communication
       const mockStorageEventListener = vi.fn();
       const mockAddEventListener = vi.fn();
-      
+
       Object.defineProperty(window, 'addEventListener', {
         value: mockAddEventListener,
-        writable: true
+        writable: true,
       });
 
       mockMigrateSession.mockImplementation(async (fromType, toType) => {
         // Simulate cross-tab storage event
         const storageEvent = new Event('storage');
         mockStorageEventListener(storageEvent);
-        
+
         return {
           success: true,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
           tokensPreserved: true,
-          crossTabSync: true
+          crossTabSync: true,
         };
       });
 
@@ -338,8 +343,8 @@ describe('Session Migration Integration Tests', () => {
   describe('Security Considerations', () => {
     it('should validate tokens before migration', async () => {
       const expiredToken = {
-        'auth_access_token': 'expired-token',
-        'auth_expires_at': (Date.now() - 3600000).toString() // Expired 1 hour ago
+        auth_access_token: 'expired-token',
+        auth_expires_at: (Date.now() - 3600000).toString(), // Expired 1 hour ago
       };
 
       mockSessionStorage.getItem.mockImplementation((key: string) => {
@@ -350,7 +355,7 @@ describe('Session Migration Integration Tests', () => {
         // Check if token is expired
         const expiresAt = parseInt(expiredToken.auth_expires_at);
         const isExpired = expiresAt < Date.now();
-        
+
         if (isExpired) {
           return {
             success: false,
@@ -358,16 +363,16 @@ describe('Session Migration Integration Tests', () => {
             toStorage: toType,
             dataPreserved: false,
             tokensPreserved: false,
-            error: 'Expired tokens cannot be migrated'
+            error: 'Expired tokens cannot be migrated',
           };
         }
-        
+
         return {
           success: true,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
-          tokensPreserved: true
+          tokensPreserved: true,
         };
       });
 
@@ -383,7 +388,7 @@ describe('Session Migration Integration Tests', () => {
         // Simulate security check
         const currentRole = 'admin';
         const targetRole = 'guest';
-        
+
         if (currentRole === 'admin' && targetRole === 'guest') {
           return {
             success: false,
@@ -391,16 +396,16 @@ describe('Session Migration Integration Tests', () => {
             toStorage: toType,
             dataPreserved: true,
             tokensPreserved: true,
-            error: 'Downgrade from admin to guest not allowed'
+            error: 'Downgrade from admin to guest not allowed',
           };
         }
-        
+
         return {
           success: true,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
-          tokensPreserved: true
+          tokensPreserved: true,
         };
       });
 
@@ -415,14 +420,14 @@ describe('Session Migration Integration Tests', () => {
         // Simulate clearing sensitive data on failure
         mockSessionStorage.removeItem('auth_access_token');
         mockSessionStorage.removeItem('auth_refresh_token');
-        
+
         return {
           success: false,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'Migration failed, sensitive data cleared'
+          error: 'Migration failed, sensitive data cleared',
         };
       });
 

@@ -1,207 +1,210 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { browser, dev } from '$app/environment';
-  import { createEventDispatcher } from 'svelte';
-  import { devScenarioManager } from '$lib/dev/scenarios.js';
-  import type { User } from '@thepia/flows-auth';
-  
-  // Import console bridge helpers
-  let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
-  let logStateChange: ((component: string, state: any) => void) | null = null;
-  
-  // Auth store for proper sign out
-  let authStore: any = null;
-  
-  if (browser && dev) {
-    import('$lib/dev/console-bridge').then(module => {
-      logAuthEvent = module.logAuthEvent;
-      logStateChange = module.logStateChange;
-    });
-  }
+import { browser, dev } from '$app/environment';
+import { devScenarioManager } from '$lib/dev/scenarios.js';
+import type { User } from '@thepia/flows-auth';
+import { createEventDispatcher, onMount } from 'svelte';
 
-  const dispatch = createEventDispatcher<{
-    openAuth: { switchUser?: boolean };
-  }>();
+// Import console bridge helpers
+let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
+let logStateChange: ((component: string, state: any) => void) | null = null;
 
-  let currentUser: User | null = null;
-  let showProfileMenu = false;
-  let isLoading = true;
-  let profileMenuRef: HTMLDivElement;
+// Auth store for proper sign out
+let authStore: any = null;
 
-  onMount(async () => {
-    if (!browser) return;
-
-    // Initialize auth store
-    try {
-      const { createAuthStore } = await import('@thepia/flows-auth');
-      const currentScenario = await devScenarioManager.getCurrentScenario();
-      
-      authStore = createAuthStore({
-        apiBaseUrl: currentScenario.config.apiBaseUrl,
-        clientId: currentScenario.config.clientId,
-        domain: 'dev.thepia.net',
-        enablePasskeys: currentScenario.config.enablePasskeys,
-        enableMagicLinks: currentScenario.config.enableMagicLinks,
-        enablePasswordLogin: currentScenario.config.enablePasswordLogin,
-        enableSocialLogin: false,
-        branding: {
-          companyName: currentScenario.branding.companyName,
-          logoUrl: '/thepia-logo.svg',
-          showPoweredBy: currentScenario.branding.name !== 'Thepia Default',
-          primaryColor: currentScenario.branding.colors.primary,
-          secondaryColor: currentScenario.branding.colors.accent
-        }
-      });
-      
-      console.log('✅ Auth store initialized for AccountIcon');
-    } catch (error) {
-      console.error('❌ Failed to initialize auth store:', error);
-    }
-
-    // Check for existing session in localStorage
-    checkAuthState();
-
-    // Listen for auth state changes
-    const handleAuthUpdate = (event: CustomEvent) => {
-      if (event.detail.user) {
-        currentUser = event.detail.user;
-        logAuthEvent?.('user-authenticated', {
-          userId: event.detail.user.id,
-          email: event.detail.user.email,
-          method: event.detail.method || 'unknown'
-        });
-      } else {
-        currentUser = null;
-        logAuthEvent?.('user-cleared', {});
-      }
-      isLoading = false;
-      logStateChange?.('AccountIcon', { currentUser, isLoading });
-    };
-
-    const handleSignOutEvent = () => {
-      currentUser = null;
-      showProfileMenu = false;
-      logAuthEvent?.('user-signed-out', {});
-    };
-
-    // Listen for auth library events
-    window.addEventListener('auth:success', handleAuthUpdate as EventListener);
-    window.addEventListener('auth:signout', handleSignOutEvent as EventListener);
-    window.addEventListener('auth:error', (() => { isLoading = false; }) as EventListener);
-
-    // Listen for storage changes (cross-tab sync)
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'auth_access_token' || event.key === 'auth_user') {
-        checkAuthState();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
-    // Close menu when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef && !profileMenuRef.contains(event.target as Node)) {
-        showProfileMenu = false;
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      window.removeEventListener('auth:success', handleAuthUpdate as EventListener);
-      window.removeEventListener('auth:signout', handleSignOutEvent as EventListener);
-      window.removeEventListener('auth:error', (() => { isLoading = false; }) as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+if (browser && dev) {
+  import('$lib/dev/console-bridge').then((module) => {
+    logAuthEvent = module.logAuthEvent;
+    logStateChange = module.logStateChange;
   });
+}
 
-  function checkAuthState() {
-    if (!browser) return;
+const dispatch = createEventDispatcher<{
+  openAuth: { switchUser?: boolean };
+}>();
 
-    try {
-      const token = localStorage.getItem('auth_access_token');
-      const userStr = localStorage.getItem('auth_user');
-      
-      if (token && userStr) {
-        currentUser = JSON.parse(userStr);
-      } else {
-        currentUser = null;
-      }
-    } catch (error) {
-      console.error('Error checking auth state:', error);
+let currentUser: User | null = null;
+let showProfileMenu = false;
+let isLoading = true;
+let profileMenuRef: HTMLDivElement;
+
+onMount(async () => {
+  if (!browser) return;
+
+  // Initialize auth store
+  try {
+    const { createAuthStore } = await import('@thepia/flows-auth');
+    const currentScenario = await devScenarioManager.getCurrentScenario();
+
+    authStore = createAuthStore({
+      apiBaseUrl: currentScenario.config.apiBaseUrl,
+      clientId: currentScenario.config.clientId,
+      domain: 'dev.thepia.net',
+      enablePasskeys: currentScenario.config.enablePasskeys,
+      enableMagicLinks: currentScenario.config.enableMagicLinks,
+      enablePasswordLogin: currentScenario.config.enablePasswordLogin,
+      enableSocialLogin: false,
+      branding: {
+        companyName: currentScenario.branding.companyName,
+        logoUrl: '/thepia-logo.svg',
+        showPoweredBy: currentScenario.branding.name !== 'Thepia Default',
+        primaryColor: currentScenario.branding.colors.primary,
+        secondaryColor: currentScenario.branding.colors.accent,
+      },
+    });
+
+    console.log('✅ Auth store initialized for AccountIcon');
+  } catch (error) {
+    console.error('❌ Failed to initialize auth store:', error);
+  }
+
+  // Check for existing session in localStorage
+  checkAuthState();
+
+  // Listen for auth state changes
+  const handleAuthUpdate = (event: CustomEvent) => {
+    if (event.detail.user) {
+      currentUser = event.detail.user;
+      logAuthEvent?.('user-authenticated', {
+        userId: event.detail.user.id,
+        email: event.detail.user.email,
+        method: event.detail.method || 'unknown',
+      });
+    } else {
+      currentUser = null;
+      logAuthEvent?.('user-cleared', {});
+    }
+    isLoading = false;
+    logStateChange?.('AccountIcon', { currentUser, isLoading });
+  };
+
+  const handleSignOutEvent = () => {
+    currentUser = null;
+    showProfileMenu = false;
+    logAuthEvent?.('user-signed-out', {});
+  };
+
+  // Listen for auth library events
+  window.addEventListener('auth:success', handleAuthUpdate as EventListener);
+  window.addEventListener('auth:signout', handleSignOutEvent as EventListener);
+  window.addEventListener('auth:error', (() => {
+    isLoading = false;
+  }) as EventListener);
+
+  // Listen for storage changes (cross-tab sync)
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === 'auth_access_token' || event.key === 'auth_user') {
+      checkAuthState();
+    }
+  };
+  window.addEventListener('storage', handleStorageChange);
+
+  // Close menu when clicking outside
+  const handleClickOutside = (event: MouseEvent) => {
+    if (profileMenuRef && !profileMenuRef.contains(event.target as Node)) {
+      showProfileMenu = false;
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+
+  return () => {
+    window.removeEventListener('auth:success', handleAuthUpdate as EventListener);
+    window.removeEventListener('auth:signout', handleSignOutEvent as EventListener);
+    window.removeEventListener('auth:error', (() => {
+      isLoading = false;
+    }) as EventListener);
+    window.removeEventListener('storage', handleStorageChange);
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+});
+
+function checkAuthState() {
+  if (!browser) return;
+
+  try {
+    const token = localStorage.getItem('auth_access_token');
+    const userStr = localStorage.getItem('auth_user');
+
+    if (token && userStr) {
+      currentUser = JSON.parse(userStr);
+    } else {
       currentUser = null;
     }
-    
-    isLoading = false;
+  } catch (error) {
+    console.error('Error checking auth state:', error);
+    currentUser = null;
   }
 
-  function handleAuthClick() {
-    logAuthEvent?.('auth-dialog-requested', { trigger: 'account-icon-click' });
-    dispatch('openAuth', {});
-  }
+  isLoading = false;
+}
 
-  function handleSwitchUser() {
-    showProfileMenu = false;
-    logAuthEvent?.('switch-user-requested', { currentUser: currentUser?.email });
-    dispatch('openAuth', { switchUser: true });
-  }
+function handleAuthClick() {
+  logAuthEvent?.('auth-dialog-requested', { trigger: 'account-icon-click' });
+  dispatch('openAuth', {});
+}
 
-  async function handleSignOut() {
-    if (!browser) return;
-    
-    const userEmail = currentUser?.email;
-    logAuthEvent?.('sign-out-initiated', { userEmail });
-    
-    try {
-      if (authStore) {
-        // Use proper auth store signOut method
-        console.log('🔒 Signing out via auth store...');
-        await authStore.signOut();
-        console.log('✅ Auth store sign out completed');
-      } else {
-        // Fallback to manual cleanup if auth store not available
-        console.warn('⚠️ Auth store not available, falling back to manual cleanup');
-        localStorage.removeItem('auth_access_token');
-        localStorage.removeItem('auth_user');
-      }
-      
-      // Update local state
-      currentUser = null;
-      showProfileMenu = false;
-      
-      // Dispatch sign out event for other components
-      window.dispatchEvent(new CustomEvent('auth:signout'));
-      
-      logAuthEvent?.('sign-out-completed', { userEmail });
-      
-      // Trigger page reload to reset state
-      window.location.reload();
-    } catch (error) {
-      console.error('❌ Sign out failed:', error);
-      logAuthEvent?.('sign-out-failed', { userEmail, error: error?.message });
-      
-      // Fallback: manual cleanup and reload
+function handleSwitchUser() {
+  showProfileMenu = false;
+  logAuthEvent?.('switch-user-requested', { currentUser: currentUser?.email });
+  dispatch('openAuth', { switchUser: true });
+}
+
+async function handleSignOut() {
+  if (!browser) return;
+
+  const userEmail = currentUser?.email;
+  logAuthEvent?.('sign-out-initiated', { userEmail });
+
+  try {
+    if (authStore) {
+      // Use proper auth store signOut method
+      console.log('🔒 Signing out via auth store...');
+      await authStore.signOut();
+      console.log('✅ Auth store sign out completed');
+    } else {
+      // Fallback to manual cleanup if auth store not available
+      console.warn('⚠️ Auth store not available, falling back to manual cleanup');
       localStorage.removeItem('auth_access_token');
       localStorage.removeItem('auth_user');
-      currentUser = null;
-      showProfileMenu = false;
-      window.dispatchEvent(new CustomEvent('auth:signout'));
-      window.location.reload();
     }
-  }
 
-  function toggleProfileMenu() {
-    showProfileMenu = !showProfileMenu;
-  }
+    // Update local state
+    currentUser = null;
+    showProfileMenu = false;
 
-  function getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0).toUpperCase())
-      .join('')
-      .substring(0, 2);
-  }
+    // Dispatch sign out event for other components
+    window.dispatchEvent(new CustomEvent('auth:signout'));
 
-  $: userInitials = currentUser?.name ? getInitials(currentUser.name) : '';
+    logAuthEvent?.('sign-out-completed', { userEmail });
+
+    // Trigger page reload to reset state
+    window.location.reload();
+  } catch (error) {
+    console.error('❌ Sign out failed:', error);
+    logAuthEvent?.('sign-out-failed', { userEmail, error: error?.message });
+
+    // Fallback: manual cleanup and reload
+    localStorage.removeItem('auth_access_token');
+    localStorage.removeItem('auth_user');
+    currentUser = null;
+    showProfileMenu = false;
+    window.dispatchEvent(new CustomEvent('auth:signout'));
+    window.location.reload();
+  }
+}
+
+function toggleProfileMenu() {
+  showProfileMenu = !showProfileMenu;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
+}
+
+$: userInitials = currentUser?.name ? getInitials(currentUser.name) : '';
 </script>
 
 {#if isLoading}

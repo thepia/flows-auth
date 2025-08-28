@@ -1,7 +1,7 @@
 /**
  * Service Worker - Flows Auth Spike
  * Handles background sync and offline functionality
- * 
+ *
  * SPIKE: Experimental service worker implementation
  */
 
@@ -9,19 +9,17 @@ const CACHE_NAME = 'flows-auth-v1';
 const SYNC_TAG = 'workflow-sync';
 
 // Cache strategy for static assets
-const STATIC_CACHE_URLS = [
-  '/',
-  '/manifest.json'
-];
+const STATIC_CACHE_URLS = ['/', '/manifest.json'];
 
 /**
  * Service Worker Installation
  */
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker');
-  
+
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches
+      .open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Caching static assets');
         return cache.addAll(STATIC_CACHE_URLS);
@@ -38,9 +36,10 @@ self.addEventListener('install', (event) => {
  */
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker');
-  
+
   event.waitUntil(
-    caches.keys()
+    caches
+      .keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
@@ -63,7 +62,7 @@ self.addEventListener('activate', (event) => {
  */
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync triggered:', event.tag);
-  
+
   if (event.tag === SYNC_TAG) {
     event.waitUntil(syncWorkflowData());
   }
@@ -74,9 +73,9 @@ self.addEventListener('sync', (event) => {
  */
 self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);
-  
+
   const { type, payload } = event.data;
-  
+
   switch (type) {
     case 'SYNC_NOW':
       handleImmediateSync(event.ports[0]);
@@ -98,15 +97,19 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Handle API requests with network-first strategy
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/sync/')) {
     event.respondWith(networkFirst(request));
     return;
   }
-  
+
   // Handle static assets with cache-first strategy
-  if (request.destination === 'document' || request.destination === 'script' || request.destination === 'style') {
+  if (
+    request.destination === 'document' ||
+    request.destination === 'script' ||
+    request.destination === 'style'
+  ) {
     event.respondWith(cacheFirst(request));
     return;
   }
@@ -118,15 +121,15 @@ self.addEventListener('fetch', (event) => {
 async function syncWorkflowData() {
   try {
     console.log('[SW] Starting workflow sync');
-    
+
     // Get pending workflows from IndexedDB
     const pendingWorkflows = await getPendingWorkflows();
-    
+
     if (pendingWorkflows.length === 0) {
       console.log('[SW] No pending workflows to sync');
       return;
     }
-    
+
     // Sync each workflow
     for (const workflow of pendingWorkflows) {
       try {
@@ -138,20 +141,19 @@ async function syncWorkflowData() {
         await markWorkflowFailed(workflow.uid, error.message);
       }
     }
-    
+
     console.log('[SW] Workflow sync completed');
-    
+
     // Notify main thread
-    await notifyClients('SYNC_COMPLETE', { 
+    await notifyClients('SYNC_COMPLETE', {
       synced: pendingWorkflows.length,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
-    
   } catch (error) {
     console.error('[SW] Workflow sync failed:', error);
-    await notifyClients('SYNC_ERROR', { 
+    await notifyClients('SYNC_ERROR', {
       error: error.message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 }
@@ -164,12 +166,12 @@ async function syncSingleWorkflow(workflow) {
   if (!token) {
     throw new Error('No auth token available');
   }
-  
+
   const response = await fetch('/sync/workflows/upload', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       metadata: {
@@ -178,11 +180,11 @@ async function syncSingleWorkflow(workflow) {
         timestamp: workflow.timestamp,
         version: workflow.version,
         checksum: workflow.checksum,
-        recordingCount: workflow.recordingCount
-      }
-    })
+        recordingCount: workflow.recordingCount,
+      },
+    }),
   });
-  
+
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
@@ -207,14 +209,14 @@ async function handleGetSyncStatus(port) {
   try {
     const pendingCount = await getPendingWorkflowCount();
     const lastSync = await getLastSyncTimestamp();
-    
+
     port.postMessage({
       success: true,
       status: {
         pendingUploads: pendingCount,
         lastSync: lastSync,
-        isOnline: navigator.onLine
-      }
+        isOnline: navigator.onLine,
+      },
     });
   } catch (error) {
     port.postMessage({ success: false, error: error.message });
@@ -230,7 +232,7 @@ async function handleClearCache(port) {
     port.postMessage({ success: true });
   } catch (error) {
     port.postMessage({ success: false, error: error.message });
-  }  
+  }
 }
 
 /**
@@ -258,7 +260,7 @@ async function cacheFirst(request) {
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   try {
     const response = await fetch(request);
     const cache = await caches.open(CACHE_NAME);
@@ -275,7 +277,7 @@ async function cacheFirst(request) {
  */
 async function notifyClients(type, payload) {
   const clients = await self.clients.matchAll();
-  clients.forEach(client => {
+  clients.forEach((client) => {
     client.postMessage({ type, payload });
   });
 }

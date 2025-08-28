@@ -1,22 +1,22 @@
 /**
  * Session Management Requirements Tests
- * 
+ *
  * These tests verify compliance with SESSION_MANAGEMENT_REQUIREMENTS.md
  * Each test maps to specific requirements (R1, R2, etc.)
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStateMachine } from '../../src/stores/auth-state-machine';
-import { 
-  getSession, 
-  saveSession, 
-  clearSession, 
-  isSessionValid,
-  configureSessionStorage,
-  getStorageConfig,
-  getOptimalSessionConfig
-} from '../../src/utils/sessionManager';
 import type { AuthConfig, FlowsSessionData } from '../../src/types';
+import {
+  clearSession,
+  configureSessionStorage,
+  getOptimalSessionConfig,
+  getSession,
+  getStorageConfig,
+  isSessionValid,
+  saveSession,
+} from '../../src/utils/sessionManager';
 
 // Mock browser storage APIs
 const createMockStorage = () => ({
@@ -24,7 +24,7 @@ const createMockStorage = () => ({
   getItem: vi.fn((key: string) => createMockStorage.data?.get(key) || null),
   setItem: vi.fn((key: string, value: string) => createMockStorage.data?.set(key, value)),
   removeItem: vi.fn((key: string) => createMockStorage.data?.delete(key)),
-  clear: vi.fn(() => createMockStorage.data?.clear())
+  clear: vi.fn(() => createMockStorage.data?.clear()),
 });
 
 const mockSessionStorage = createMockStorage();
@@ -40,7 +40,7 @@ const mockConfig: AuthConfig = {
   enablePasskeys: true,
   enableMagicLinks: true,
   enableSocialLogin: false,
-  enablePasswordLogin: false
+  enablePasswordLogin: false,
 };
 
 const createTestSession = (): FlowsSessionData => ({
@@ -48,15 +48,15 @@ const createTestSession = (): FlowsSessionData => ({
     id: 'test-user-id',
     email: 'test@example.com',
     name: 'Test User',
-    initials: 'TU'
+    initials: 'TU',
   },
   tokens: {
     accessToken: 'test-access-token',
     refreshToken: 'test-refresh-token',
-    expiresAt: Date.now() + 60000
+    expiresAt: Date.now() + 60000,
   },
   authMethod: 'passkey',
-  lastActivity: Date.now()
+  lastActivity: Date.now(),
 });
 
 describe('R1: Session Storage Consistency (CRITICAL)', () => {
@@ -87,7 +87,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       // Direct storage access should not be used
       const directAccess = mockSessionStorage.getItem('thepia_auth_session');
       expect(directAccess).toBeTruthy(); // sessionManager did store it
-      
+
       // But applications should only use sessionManager functions
       const properAccess = getSession();
       expect(properAccess).not.toBeNull();
@@ -110,9 +110,15 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       saveSession(session);
 
       // Verify legacy keys are not used
-      expect(mockSessionStorage.setItem).not.toHaveBeenCalledWith('auth_access_token', expect.any(String));
+      expect(mockSessionStorage.setItem).not.toHaveBeenCalledWith(
+        'auth_access_token',
+        expect.any(String)
+      );
       expect(mockSessionStorage.setItem).not.toHaveBeenCalledWith('auth_user', expect.any(String));
-      expect(mockSessionStorage.setItem).not.toHaveBeenCalledWith('auth_refresh_token', expect.any(String));
+      expect(mockSessionStorage.setItem).not.toHaveBeenCalledWith(
+        'auth_refresh_token',
+        expect.any(String)
+      );
     });
   });
 
@@ -123,7 +129,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
 
       const mockApiClient = { signInWithPasskey: vi.fn() };
       const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-      
+
       // State machine should find session through sessionManager
       stateMachine.start();
       expect(stateMachine.currentState).toBe('sessionValid');
@@ -136,7 +142,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
 
       const mockApiClient = { signInWithPasskey: vi.fn() };
       const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-      
+
       // State machine should NOT find legacy localStorage data
       stateMachine.start();
       expect(stateMachine.currentState).toBe('sessionInvalid');
@@ -233,8 +239,8 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           accessToken: 'expired-token',
           refreshToken: 'expired-refresh',
-          expiresAt: Date.now() - 60000 // Expired 1 minute ago
-        }
+          expiresAt: Date.now() - 60000, // Expired 1 minute ago
+        },
       };
 
       expect(isSessionValid(expiredSession)).toBe(false);
@@ -246,12 +252,12 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           accessToken: 'expired-token',
           refreshToken: 'expired-refresh',
-          expiresAt: Date.now() - 60000
-        }
+          expiresAt: Date.now() - 60000,
+        },
       };
 
       saveSession(expiredSession);
-      
+
       // getSession should clear expired session and return null
       const retrievedSession = getSession();
       expect(retrievedSession).toBeNull();
@@ -263,12 +269,12 @@ describe('R3: Session Validation (MUST)', () => {
       configureSessionStorage({
         type: 'sessionStorage',
         sessionTimeout: 1000, // 1 second
-        userRole: 'guest'
+        userRole: 'guest',
       });
 
       const inactiveSession: FlowsSessionData = {
         ...createTestSession(),
-        lastActivity: Date.now() - 2000 // 2 seconds ago
+        lastActivity: Date.now() - 2000, // 2 seconds ago
       };
 
       expect(isSessionValid(inactiveSession)).toBe(false);
@@ -278,16 +284,16 @@ describe('R3: Session Validation (MUST)', () => {
       configureSessionStorage({
         type: 'sessionStorage',
         sessionTimeout: 1000, // 1 second
-        userRole: 'guest'
+        userRole: 'guest',
       });
 
       const inactiveSession: FlowsSessionData = {
         ...createTestSession(),
-        lastActivity: Date.now() - 2000
+        lastActivity: Date.now() - 2000,
       };
 
       saveSession(inactiveSession);
-      
+
       // getSession should clear inactive session
       const retrievedSession = getSession();
       expect(retrievedSession).toBeNull();
@@ -298,7 +304,7 @@ describe('R3: Session Validation (MUST)', () => {
     it('MUST handle corrupted session data gracefully', () => {
       // Manually insert corrupted data
       mockSessionStorage.data.set('thepia_auth_session', 'invalid-json');
-      
+
       // Should return null and clear corrupted data
       const session = getSession();
       expect(session).toBeNull();
@@ -312,7 +318,7 @@ describe('R3: Session Validation (MUST)', () => {
       };
 
       mockSessionStorage.data.set('thepia_auth_session', JSON.stringify(incompleteSession));
-      
+
       // Should handle incomplete session gracefully
       expect(() => getSession()).not.toThrow();
     });
@@ -348,10 +354,15 @@ describe('R4: Legacy Migration (MUST)', () => {
     });
 
     it('MUST clean up specific legacy keys', () => {
-      const legacyKeys = ['auth_access_token', 'auth_user', 'auth_refresh_token', 'auth_expires_at'];
+      const legacyKeys = [
+        'auth_access_token',
+        'auth_user',
+        'auth_refresh_token',
+        'auth_expires_at',
+      ];
 
       // Set up legacy data
-      legacyKeys.forEach(key => {
+      legacyKeys.forEach((key) => {
         mockLocalStorage.data.set(key, 'legacy-value');
       });
 
@@ -360,7 +371,7 @@ describe('R4: Legacy Migration (MUST)', () => {
       stateMachine.start();
 
       // Verify all legacy keys are cleaned up
-      legacyKeys.forEach(key => {
+      legacyKeys.forEach((key) => {
         expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(key);
       });
     });
@@ -418,7 +429,7 @@ describe('R5: Event System (MUST)', () => {
 
       expect(eventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          detail: { session: session }
+          detail: { session: session },
         })
       );
 
@@ -433,7 +444,7 @@ describe('R5: Event System (MUST)', () => {
 
       expect(eventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          detail: { session: null }
+          detail: { session: null },
         })
       );
 
@@ -452,7 +463,7 @@ describe('R7: Security Requirements (CRITICAL)', () => {
   describe('R7.1: Default Security', () => {
     it('MUST default to sessionStorage', () => {
       configureSessionStorage({ userRole: 'guest' }); // No type specified
-      
+
       const config = getStorageConfig();
       expect(config.type).toBe('sessionStorage');
     });
@@ -460,7 +471,7 @@ describe('R7: Security Requirements (CRITICAL)', () => {
     it('MUST require explicit configuration for localStorage', () => {
       const guestConfig = getOptimalSessionConfig('guest');
       const employeeConfig = getOptimalSessionConfig('employee');
-      
+
       expect(guestConfig.type).toBe('sessionStorage');
       expect(employeeConfig.type).toBe('localStorage'); // Explicit for employees
     });
@@ -470,14 +481,14 @@ describe('R7: Security Requirements (CRITICAL)', () => {
     it('MUST enforce guest sessions ≤ 8 hours', () => {
       const guestConfig = getOptimalSessionConfig('guest');
       const eightHours = 8 * 60 * 60 * 1000;
-      
+
       expect(guestConfig.sessionTimeout).toBeLessThanOrEqual(eightHours);
     });
 
     it('MUST enforce employee sessions ≤ 7 days', () => {
       const employeeConfig = getOptimalSessionConfig('employee');
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      
+
       expect(employeeConfig.sessionTimeout).toBeLessThanOrEqual(sevenDays);
     });
   });
@@ -486,9 +497,9 @@ describe('R7: Security Requirements (CRITICAL)', () => {
     it('MUST clear sessions on sign out', () => {
       const session = createTestSession();
       saveSession(session);
-      
+
       clearSession();
-      
+
       expect(getSession()).toBeNull();
       expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('thepia_auth_session');
     });

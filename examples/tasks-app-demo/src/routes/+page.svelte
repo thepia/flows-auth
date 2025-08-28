@@ -1,186 +1,178 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
-	import TaskCard from '../lib/components/TaskCard.svelte';
-	import {
-		SignInForm,
-		type User
-	} from '@thepia/flows-auth';
-	import { mockTasks, getPendingTasks, getUnreadNotifications, formatDate } from '../lib/stores/mockData.js';
+import { browser } from '$app/environment';
+import { type User } from '@thepia/flows-auth';
+import { onMount } from 'svelte';
+import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 
-	let currentUser: User | null = null;
-	let isLoading = false;
-	let activeTab: 'tasks' | 'documents' | 'notifications' = 'tasks';
-	let tasks: any[] = [];
-	let pendingTasks: any[] = [];
-	let unreadNotifications: any[] = [];
-	let authStore: any = null;
+let currentUser: User | null = null;
+let isLoading = false;
+let activeTab: 'tasks' | 'documents' | 'notifications' = 'tasks';
+let tasks: any[] = [];
+let pendingTasks: any[] = [];
+let unreadNotifications: any[] = [];
+let authStore: any = null;
 
-	// Authentication UI state
-	let showAuthForm = true; // Always show the auth form when not authenticated
-	let isUnconfirmed = false;
-	let showVerificationBanner = false;
-	let showVerificationPrompt = false;
-	
-	// Test error reporting function
-	async function testErrorReporting() {
-		try {
-			const { testErrorReporting } = await import('../lib/config/errorReporting.js');
-			await testErrorReporting();
-		} catch (error) {
-			console.error('Failed to test error reporting:', error);
-		}
-	}
+// Authentication UI state
+let showAuthForm = true; // Always show the auth form when not authenticated
+let isUnconfirmed = false;
+let showVerificationBanner = false;
+let showVerificationPrompt = false;
 
-	// Determine API base URL at runtime
-	const getApiBaseUrl = () => {
-		// Production API URL (hardcoded as requested)
-		const prodApiBaseUrl = 'https://api.thepia.com';
+// Test error reporting function
+async function testErrorReporting() {
+  try {
+    const { testErrorReporting } = await import('../lib/config/errorReporting.js');
+    await testErrorReporting();
+  } catch (error) {
+    console.error('Failed to test error reporting:', error);
+  }
+}
 
-		if (typeof window === 'undefined') return prodApiBaseUrl;
+// Determine API base URL at runtime
+const getApiBaseUrl = () => {
+  // Production API URL (hardcoded as requested)
+  const prodApiBaseUrl = 'https://api.thepia.com';
 
-		const hostname = window.location.hostname;
-		const isDev = hostname === 'localhost' ||
-					 hostname === '127.0.0.1' ||
-					 hostname.endsWith('.thepia.net');
+  if (typeof window === 'undefined') return prodApiBaseUrl;
 
-		// Development: Check for local API server, fallback to production
-		if (isDev) {
-			// TODO: Add health check for local API server (dev.thepia.com:8443)
-			// For now, always use production API for reliability
-			return prodApiBaseUrl;
-		}
+  const hostname = window.location.hostname;
+  const isDev =
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.thepia.net');
 
-		// Production: Always use production API
-		return prodApiBaseUrl;
-	};
+  // Development: Check for local API server, fallback to production
+  if (isDev) {
+    // TODO: Add health check for local API server (dev.thepia.com:8443)
+    // For now, always use production API for reliability
+    return prodApiBaseUrl;
+  }
 
-	// Real authentication using flows-auth
-	async function initializeAuth() {
-		if (!browser) return;
+  // Production: Always use production API
+  return prodApiBaseUrl;
+};
 
-		try {
-			isLoading = true;
-			const { createAuthStore } = await import('@thepia/flows-auth');
+// Real authentication using flows-auth
+async function initializeAuth() {
+  if (!browser) return;
 
-			authStore = createAuthStore({
-				apiBaseUrl: getApiBaseUrl(),
-				clientId: 'flows-auth-demo',
-				domain: 'thepia.net',
-				enablePasskeys: true,
-				enableMagicLinks: true,
-				enablePasswordLogin: true,
-				enableSocialLogin: false
-			});
-			
-			// Subscribe to auth state changes
-			authStore.subscribe((state) => {
-				currentUser = state.user;
-				isLoading = state.isLoading;
+  try {
+    isLoading = true;
+    const { createAuthStore } = await import('@thepia/flows-auth');
 
-				// Check if user is unconfirmed (has account but email not verified)
-				isUnconfirmed = currentUser && !currentUser.emailVerified;
-				showVerificationBanner = isUnconfirmed;
+    authStore = createAuthStore({
+      apiBaseUrl: getApiBaseUrl(),
+      clientId: 'flows-auth-demo',
+      domain: 'thepia.net',
+      enablePasskeys: true,
+      enableMagicLinks: true,
+      enablePasswordLogin: true,
+      enableSocialLogin: false,
+    });
 
-				if (currentUser) {
-					loadData();
-				} else {
-					tasks = [];
-					pendingTasks = [];
-					unreadNotifications = [];
-				}
+    // Subscribe to auth state changes
+    authStore.subscribe((state) => {
+      currentUser = state.user;
+      isLoading = state.isLoading;
 
-				console.log('Auth state changed:', {
-					state: state.state,
-					user: state.user,
-					isUnconfirmed,
-					emailVerified: currentUser?.emailVerified
-				});
-			});
-			
-			// Check for existing session
-			await authStore.initialize();
-			
-		} catch (error) {
-			console.error('Failed to initialize authentication:', error);
-			isLoading = false;
-		}
-	}
-	
-	// Authentication event handlers
-	function handleAuthSuccess(event) {
-		console.log('Authentication successful:', event.detail);
-		showAuthForm = false;
-	}
+      // Check if user is unconfirmed (has account but email not verified)
+      isUnconfirmed = currentUser && !currentUser.emailVerified;
+      showVerificationBanner = isUnconfirmed;
 
-	function handleAuthError(event) {
-		console.error('Authentication error:', event.detail);
-	}
+      if (currentUser) {
+        loadData();
+      } else {
+        tasks = [];
+        pendingTasks = [];
+        unreadNotifications = [];
+      }
 
-	function handleStateChange(event) {
-		console.log('Auth state change:', event.detail);
-	}
+      console.log('Auth state changed:', {
+        state: state.state,
+        user: state.user,
+        isUnconfirmed,
+        emailVerified: currentUser?.emailVerified,
+      });
+    });
 
+    // Check for existing session
+    await authStore.initialize();
+  } catch (error) {
+    console.error('Failed to initialize authentication:', error);
+    isLoading = false;
+  }
+}
 
+// Authentication event handlers
+function handleAuthSuccess(event) {
+  console.log('Authentication successful:', event.detail);
+  showAuthForm = false;
+}
 
-	// Email verification handlers
-	function handleVerificationBannerDismiss() {
-		showVerificationBanner = false;
-	}
+function handleAuthError(event) {
+  console.error('Authentication error:', event.detail);
+}
 
-	function handleResendVerificationEmail() {
-		console.log('Resending verification email to:', currentUser?.email);
-		// In real implementation, call API to resend email
-	}
+function handleStateChange(event) {
+  console.log('Auth state change:', event.detail);
+}
 
-	function handleShowVerificationPrompt() {
-		showVerificationPrompt = true;
-	}
+// Email verification handlers
+function handleVerificationBannerDismiss() {
+  showVerificationBanner = false;
+}
 
-	function handleVerificationPromptDismiss() {
-		showVerificationPrompt = false;
-	}
+function handleResendVerificationEmail() {
+  console.log('Resending verification email to:', currentUser?.email);
+  // In real implementation, call API to resend email
+}
 
-	async function handleSignOut() {
-		if (!authStore) return;
+function handleShowVerificationPrompt() {
+  showVerificationPrompt = true;
+}
 
-		try {
-			await authStore.signOut();
-		} catch (error) {
-			console.error('Sign out failed:', error);
-		}
-	}
-	
-	function loadData() {
-		tasks = mockTasks;
-		pendingTasks = getPendingTasks();
-		unreadNotifications = getUnreadNotifications();
-	}
-	
-	function handleMarkComplete(task) {
-		// Update task status to completed_pending
-		task.status = 'completed_pending';
-		task.completedAt = new Date();
-		
-		// Trigger reactivity
-		tasks = [...tasks];
-		pendingTasks = getPendingTasks();
-		
-		console.log(`Task "${task.title}" marked as complete`);
-	}
-	
-	function handleViewDetails(task) {
-		console.log('View details for task:', task.title);
-		// TODO: Open task detail modal/page
-	}
+function handleVerificationPromptDismiss() {
+  showVerificationPrompt = false;
+}
 
-	onMount(async () => {
-		if (!browser) return;
-		console.log('Tasks app loaded successfully');
-		
-		// Initialize real authentication
-		await initializeAuth();
-	});
+async function handleSignOut() {
+  if (!authStore) return;
+
+  try {
+    await authStore.signOut();
+  } catch (error) {
+    console.error('Sign out failed:', error);
+  }
+}
+
+function loadData() {
+  tasks = mockTasks;
+  pendingTasks = getPendingTasks();
+  unreadNotifications = getUnreadNotifications();
+}
+
+function handleMarkComplete(task) {
+  // Update task status to completed_pending
+  task.status = 'completed_pending';
+  task.completedAt = new Date();
+
+  // Trigger reactivity
+  tasks = [...tasks];
+  pendingTasks = getPendingTasks();
+
+  console.log(`Task "${task.title}" marked as complete`);
+}
+
+function handleViewDetails(task) {
+  console.log('View details for task:', task.title);
+  // TODO: Open task detail modal/page
+}
+
+onMount(async () => {
+  if (!browser) return;
+  console.log('Tasks app loaded successfully');
+
+  // Initialize real authentication
+  await initializeAuth();
+});
 </script>
 
 <svelte:head>

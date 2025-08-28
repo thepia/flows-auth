@@ -1,18 +1,18 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
 /**
  * CRITICAL AUTH STORE REGISTRATION TESTS
- * 
+ *
  * These tests validate the core auth store registration functionality
  * that was completely missing from the original test suite.
- * 
+ *
  * THESE TESTS MUST PASS for production readiness.
  */
 
 describe('CRITICAL: Auth Store Registration Methods', () => {
-  let authStore: any;
+  let _authStore: any;
   let authConfig: AuthConfig;
 
   beforeEach(() => {
@@ -22,10 +22,10 @@ describe('CRITICAL: Auth Store Registration Methods', () => {
       appBaseUrl: 'https://app.test.com',
       enableWebAuthn: true,
       enableEmailAuth: false,
-      requireEmailVerification: true
+      requireEmailVerification: true,
     };
 
-    authStore = createAuthStore(authConfig);
+    _authStore = createAuthStore(authConfig);
   });
 
   describe('createAccount Method', () => {

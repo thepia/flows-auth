@@ -3,10 +3,10 @@
  * Focused testing of state machine logic, transitions, guards, and actions
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AuthStateMachine, AuthGuards, AuthActions } from '../../src/stores/auth-state-machine';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import type { AuthConfig, AuthMachineState, AuthMachineContext } from '../../src/types';
+import { AuthActions, AuthGuards, AuthStateMachine } from '../../src/stores/auth-state-machine';
+import type { AuthConfig, AuthMachineContext, AuthMachineState } from '../../src/types';
 
 const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
@@ -18,8 +18,8 @@ const mockConfig: AuthConfig = {
   enableSocialLogin: false,
   branding: {
     companyName: 'Test Company',
-    showPoweredBy: true
-  }
+    showPoweredBy: true,
+  },
 };
 
 describe('AuthStateMachine', () => {
@@ -38,7 +38,7 @@ describe('AuthStateMachine', () => {
 
     it('should have initial context with default values', () => {
       const context = stateMachine.currentContext;
-      
+
       expect(context.email).toBeNull();
       expect(context.user).toBeNull();
       expect(context.error).toBeNull();
@@ -56,15 +56,15 @@ describe('AuthStateMachine', () => {
           name: 'Test User',
           initials: 'TU',
           avatar: undefined,
-          preferences: {}
+          preferences: {},
         },
         tokens: {
           accessToken: 'valid-token',
           refreshToken: 'refresh-token',
-          expiresAt: Date.now() + 3600000 // 1 hour from now
+          expiresAt: Date.now() + 3600000, // 1 hour from now
         },
         authMethod: 'passkey' as const,
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       sessionStorage.setItem('thepia_auth_session', JSON.stringify(mockSessionData));
@@ -95,26 +95,26 @@ describe('AuthStateMachine', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        }
+          createdAt: '2023-01-01T00:00:00Z',
+        },
       };
 
       stateMachine.send({ type: 'VALID_SESSION', session: sessionData });
-      
+
       expect(stateMachine.currentState).toBe('sessionValid');
       expect(stateMachine.currentContext.sessionData).toEqual(sessionData);
     });
 
     it('should transition from checkingSession to sessionInvalid with invalid session', () => {
       stateMachine.send({ type: 'INVALID_SESSION' });
-      
+
       expect(stateMachine.currentState).toBe('sessionInvalid');
     });
 
     it('should transition from sessionInvalid to combinedAuth when user clicks next', () => {
       stateMachine.send({ type: 'INVALID_SESSION' });
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
-      
+
       expect(stateMachine.currentState).toBe('combinedAuth');
     });
 
@@ -122,7 +122,7 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'INVALID_SESSION' });
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
-      
+
       expect(stateMachine.currentState).toBe('conditionalMediation');
       expect(stateMachine.currentContext.email).toBe('test@example.com');
     });
@@ -131,7 +131,7 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'INVALID_SESSION' });
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'CONTINUE_CLICKED' });
-      
+
       expect(stateMachine.currentState).toBe('explicitAuth');
     });
 
@@ -140,13 +140,13 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      
+
       expect(stateMachine.currentState).toBe('biometricPrompt');
     });
 
     it('should transition through complete successful authentication flow', async () => {
       const transitions: AuthMachineState[] = [];
-      
+
       stateMachine.onTransition((state) => {
         transitions.push(state);
       });
@@ -158,9 +158,9 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
       stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} });
       stateMachine.send({ type: 'TOKEN_EXCHANGE_SUCCESS', tokens: {} });
-      
+
       // Wait for automatic transitions to complete
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Filter out checkingSession initial state and duplicates
       const filteredTransitions = transitions.filter((state, index) => {
@@ -169,13 +169,13 @@ describe('AuthStateMachine', () => {
 
       expect(filteredTransitions).toEqual([
         'sessionInvalid',
-        'combinedAuth', 
+        'combinedAuth',
         'conditionalMediation',
         'biometricPrompt',
         'auth0WebAuthnVerify',
         'sessionCreated',
         'loadingApp',
-        'appLoaded'
+        'appLoaded',
       ]);
     });
   });
@@ -187,11 +187,11 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      
+
       // Trigger error (1000ms = user cancellation)
       const error = { name: 'NotAllowedError', message: 'WebAuthn failed' };
       stateMachine.send({ type: 'WEBAUTHN_ERROR', error: error as any, timing: 1000 });
-      
+
       expect(stateMachine.currentState).toBe('userCancellation');
     });
 
@@ -201,10 +201,10 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      
+
       const error = { message: 'not found' };
       stateMachine.send({ type: 'WEBAUTHN_ERROR', error: error as any, timing: 100 });
-      
+
       expect(stateMachine.currentState).toBe('credentialNotFound');
     });
 
@@ -214,10 +214,10 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      
+
       const error = { name: 'NotAllowedError', message: 'cancelled' };
       stateMachine.send({ type: 'WEBAUTHN_ERROR', error: error as any, timing: 5000 });
-      
+
       expect(stateMachine.currentState).toBe('userCancellation');
     });
 
@@ -227,10 +227,10 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      
+
       const error = { message: 'timeout' };
       stateMachine.send({ type: 'WEBAUTHN_ERROR', error: error as any, timing: 35000 });
-      
+
       expect(stateMachine.currentState).toBe('credentialMismatch');
     });
 
@@ -241,11 +241,11 @@ describe('AuthStateMachine', () => {
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
       stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
       stateMachine.send({ type: 'WEBAUTHN_ERROR', error: {} as any, timing: 100 });
-      
+
       expect(stateMachine.currentState).toBe('credentialNotFound');
-      
+
       stateMachine.send({ type: 'RESET_TO_COMBINED_AUTH' });
-      
+
       expect(stateMachine.currentState).toBe('combinedAuth');
     });
   });
@@ -254,10 +254,10 @@ describe('AuthStateMachine', () => {
     it('should correctly match current state', () => {
       expect(stateMachine.matches('checkingSession')).toBe(true);
       expect(stateMachine.matches('combinedAuth')).toBe(false);
-      
+
       stateMachine.send({ type: 'INVALID_SESSION' });
       stateMachine.send({ type: 'USER_CLICKS_NEXT' });
-      
+
       expect(stateMachine.matches('combinedAuth')).toBe(true);
       expect(stateMachine.matches('checkingSession')).toBe(false);
     });
@@ -266,9 +266,10 @@ describe('AuthStateMachine', () => {
   describe('Event Subscription', () => {
     it('should notify listeners on state transitions', () => {
       const transitions: { state: AuthMachineState; context: AuthMachineContext }[] = [];
-      
+
       const unsubscribe = stateMachine.onTransition((state, context) => {
-        if (state !== 'checkingSession') { // Ignore initial state
+        if (state !== 'checkingSession') {
+          // Ignore initial state
           transitions.push({ state, context });
         }
       });
@@ -281,11 +282,11 @@ describe('AuthStateMachine', () => {
       expect(transitions[1].state).toBe('combinedAuth');
 
       unsubscribe();
-      
+
       const lengthAfterUnsubscribe = transitions.length;
-      
+
       stateMachine.send({ type: 'EMAIL_TYPED', email: 'test@example.com' });
-      
+
       // Should not receive more events after unsubscribe
       expect(transitions.length).toBe(lengthAfterUnsubscribe);
     });
@@ -293,7 +294,7 @@ describe('AuthStateMachine', () => {
     it('should support multiple listeners', () => {
       const listener1Events: AuthMachineState[] = [];
       const listener2Events: AuthMachineState[] = [];
-      
+
       stateMachine.onTransition((state) => {
         if (state !== 'checkingSession') listener1Events.push(state);
       });
@@ -327,7 +328,7 @@ describe('AuthGuards', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
         },
         error: null,
         startTime: Date.now(),
@@ -339,10 +340,10 @@ describe('AuthGuards', () => {
             email: 'test@example.com',
             name: 'Test User',
             emailVerified: true,
-            createdAt: '2023-01-01T00:00:00Z'
-          }
+            createdAt: '2023-01-01T00:00:00Z',
+          },
         },
-        challengeId: null
+        challengeId: null,
       };
 
       expect(guards.hasValidSession(context)).toBe(true);
@@ -356,7 +357,7 @@ describe('AuthGuards', () => {
         startTime: Date.now(),
         retryCount: 0,
         sessionData: null,
-        challengeId: null
+        challengeId: null,
       };
 
       expect(guards.hasValidSession(context)).toBe(false);
@@ -376,10 +377,10 @@ describe('AuthGuards', () => {
             email: 'test@example.com',
             name: 'Test User',
             emailVerified: true,
-            createdAt: '2023-01-01T00:00:00Z'
-          }
+            createdAt: '2023-01-01T00:00:00Z',
+          },
         },
-        challengeId: null
+        challengeId: null,
       };
 
       expect(guards.hasValidSession(context)).toBe(false);
@@ -408,7 +409,7 @@ describe('AuthGuards', () => {
       Object.defineProperty(global, 'PublicKeyCredential', {
         value: class MockPublicKeyCredential {},
         writable: true,
-        configurable: true
+        configurable: true,
       });
 
       expect(guards.isWebAuthnSupported()).toBe(true);
@@ -426,27 +427,27 @@ describe('AuthGuards', () => {
     it('should classify quick errors as credential not found', () => {
       const error = { message: 'credential not found' };
       const classification = guards.classifyWebAuthnError(error, 300);
-      
+
       expect(classification).toBe('credential-not-found');
     });
 
     it('should classify cancellation errors correctly', () => {
       const error = { name: 'NotAllowedError', message: 'cancelled by user' };
       const classification = guards.classifyWebAuthnError(error, 5000);
-      
+
       expect(classification).toBe('user-cancellation');
     });
 
     it('should classify timeout errors correctly', () => {
       const error = { message: 'operation timed out' };
       const classification = guards.classifyWebAuthnError(error, 35000);
-      
+
       expect(classification).toBe('credential-mismatch');
     });
 
     it('should handle edge case timing', () => {
       const error = { message: 'generic error' };
-      
+
       expect(guards.classifyWebAuthnError(error, 499)).toBe('credential-not-found');
       expect(guards.classifyWebAuthnError(error, 500)).toBe('user-cancellation');
       expect(guards.classifyWebAuthnError(error, 29999)).toBe('user-cancellation');
@@ -470,17 +471,17 @@ describe('AuthActions', () => {
   describe('Context Updates', () => {
     it('should update email in context', () => {
       actions.setEmail('test@example.com');
-      
+
       expect(mockUpdateContext).toHaveBeenCalledWith({ email: 'test@example.com' });
     });
 
     it('should clear session data', () => {
       actions.clearSession();
-      
+
       expect(mockUpdateContext).toHaveBeenCalledWith({
         sessionData: null,
         user: null,
-        error: null
+        error: null,
       });
     });
 
@@ -492,26 +493,26 @@ describe('AuthActions', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        }
+          createdAt: '2023-01-01T00:00:00Z',
+        },
       };
 
       actions.loadUserSession(sessionData);
-      
+
       expect(mockUpdateContext).toHaveBeenCalledWith({
         sessionData,
-        user: sessionData.user
+        user: sessionData.user,
       });
     });
 
     it('should set error in context', () => {
       const error = {
         code: 'test_error',
-        message: 'Test error message'
+        message: 'Test error message',
       };
 
       actions.setError(error);
-      
+
       expect(mockUpdateContext).toHaveBeenCalledWith({ error });
     });
   });
@@ -523,7 +524,7 @@ describe('AuthActions', () => {
         challenge: 'test-challenge',
         rpId: 'test.com',
         allowCredentials: [],
-        timeout: 60000
+        timeout: 60000,
       });
 
       // Mock WebAuthn
@@ -531,7 +532,7 @@ describe('AuthActions', () => {
         id: 'credential-id',
         rawId: new ArrayBuffer(16),
         response: {},
-        type: 'public-key'
+        type: 'public-key',
       } as any);
 
       await actions.handleBiometricPrompt('test@example.com');
@@ -554,28 +555,32 @@ describe('AuthActions', () => {
     it('should report state changes when error reporting enabled', () => {
       const configWithReporting = {
         ...mockConfig,
-        errorReporting: { enabled: true }
+        errorReporting: { enabled: true },
       };
 
       const reportingActions = new AuthActions(mockApi, configWithReporting, mockUpdateContext);
-      
+
       // This would normally call reportAuthState, but we're not mocking it
       // Just verify it doesn't throw
       reportingActions.setEmail('test@example.com');
-      
+
       expect(mockUpdateContext).toHaveBeenCalled();
     });
 
     it('should skip reporting when error reporting disabled', () => {
       const configWithoutReporting = {
         ...mockConfig,
-        errorReporting: { enabled: false }
+        errorReporting: { enabled: false },
       };
 
-      const nonReportingActions = new AuthActions(mockApi, configWithoutReporting, mockUpdateContext);
-      
+      const nonReportingActions = new AuthActions(
+        mockApi,
+        configWithoutReporting,
+        mockUpdateContext
+      );
+
       nonReportingActions.setEmail('test@example.com');
-      
+
       expect(mockUpdateContext).toHaveBeenCalled();
     });
   });

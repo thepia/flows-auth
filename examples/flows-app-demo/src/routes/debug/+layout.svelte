@@ -1,26 +1,25 @@
 <script lang="ts">
-  import { browser, dev } from '$app/environment';
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+import { browser } from '$app/environment';
+import { onMount } from 'svelte';
 
-  let showBackButton = true;
+let showBackButton = true;
 
-  onMount(() => {
-    if (browser) {
-      // Show back button for all debug pages
-      showBackButton = $page.url.pathname.startsWith('/debug');
-    }
-  });
+onMount(() => {
+  if (browser) {
+    // Show back button for all debug pages
+    showBackButton = $page.url.pathname.startsWith('/debug');
+  }
+});
 
-  function goBack() {
-    if (browser) {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = '/';
-      }
+function goBack() {
+  if (browser) {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
     }
   }
+}
 </script>
 
 <svelte:head>

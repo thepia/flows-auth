@@ -3,15 +3,15 @@
  * These tests ensure the complete flow from UI to WebAuthn API works correctly
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import { createDefaultConfig } from '../../src/index';
 
 // Mock WebAuthn APIs
 const mockNavigatorCredentials = {
   create: vi.fn(),
-  get: vi.fn()
+  get: vi.fn(),
 };
 
 // Mock fetch
@@ -21,16 +21,16 @@ global.fetch = mockFetch;
 describe('WebAuthn Integration Flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset navigator credentials mock
     mockNavigatorCredentials.create.mockReset();
     mockNavigatorCredentials.get.mockReset();
-    
+
     // Update navigator.credentials
     Object.defineProperty(navigator, 'credentials', {
       value: mockNavigatorCredentials,
       writable: true,
-      configurable: true
+      configurable: true,
     });
   });
 
@@ -42,35 +42,38 @@ describe('WebAuthn Integration Flow', () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: true
+      enablePasskeys: true,
     });
 
     // Mock API responses
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: true,
-          hasPassword: false,
-          socialProviders: []
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: true,
+            hasPassword: false,
+            socialProviders: [],
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          challenge: 'test-challenge',
-          rpId: 'test.com',
-          allowCredentials: []
-        })
+        json: () =>
+          Promise.resolve({
+            challenge: 'test-challenge',
+            rpId: 'test.com',
+            allowCredentials: [],
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          step: 'success',
-          user: { id: '1', email: 'test@example.com', name: 'Test User' },
-          accessToken: 'test-token'
-        })
+        json: () =>
+          Promise.resolve({
+            step: 'success',
+            user: { id: '1', email: 'test@example.com', name: 'Test User' },
+            accessToken: 'test-token',
+          }),
       });
 
     // Mock WebAuthn credential response
@@ -81,13 +84,13 @@ describe('WebAuthn Integration Flow', () => {
         clientDataJSON: new ArrayBuffer(32),
         authenticatorData: new ArrayBuffer(32),
         signature: new ArrayBuffer(32),
-        userHandle: new ArrayBuffer(8)
+        userHandle: new ArrayBuffer(8),
       },
-      type: 'public-key'
+      type: 'public-key',
     });
 
     const { getByLabelText, getByRole } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -98,14 +101,26 @@ describe('WebAuthn Integration Flow', () => {
     await fireEvent.click(continueButton);
 
     // Wait for WebAuthn flow to complete
-    await waitFor(() => {
-      expect(mockNavigatorCredentials.get).toHaveBeenCalled();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(mockNavigatorCredentials.get).toHaveBeenCalled();
+      },
+      { timeout: 5000 }
+    );
 
     // Verify API calls were made
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/check-user', expect.any(Object));
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/webauthn/challenge', expect.any(Object));
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/signin/passkey', expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/auth/check-user',
+      expect.any(Object)
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/auth/webauthn/challenge',
+      expect.any(Object)
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.test.com/auth/signin/passkey',
+      expect.any(Object)
+    );
   });
 
   it('should fallback to password when WebAuthn fails', async () => {
@@ -113,34 +128,36 @@ describe('WebAuthn Integration Flow', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock API responses
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: true,
-          hasPassword: true,
-          socialProviders: []
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: true,
+            hasPassword: true,
+            socialProviders: [],
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          challenge: 'test-challenge',
-          rpId: 'test.com',
-          allowCredentials: []
-        })
+        json: () =>
+          Promise.resolve({
+            challenge: 'test-challenge',
+            rpId: 'test.com',
+            allowCredentials: [],
+          }),
       });
 
     // Mock WebAuthn failure
     mockNavigatorCredentials.get.mockRejectedValueOnce(new Error('User cancelled'));
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -163,22 +180,23 @@ describe('WebAuthn Integration Flow', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock API response
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        exists: true,
-        hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
-      })
+      json: () =>
+        Promise.resolve({
+          exists: true,
+          hasPasskey: true,
+          hasPassword: true,
+          socialProviders: [],
+        }),
     });
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -206,21 +224,22 @@ describe('WebAuthn Integration Flow', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        exists: true,
-        hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
-      })
+      json: () =>
+        Promise.resolve({
+          exists: true,
+          hasPasskey: true,
+          hasPassword: true,
+          socialProviders: [],
+        }),
     });
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -234,7 +253,7 @@ describe('WebAuthn Integration Flow', () => {
     await waitFor(() => {
       expect(queryByText('Enter your password')).toBeInTheDocument();
     });
-    
+
     // Restore WebAuthn support
     (global as any).PublicKeyCredential = originalPKC;
   });

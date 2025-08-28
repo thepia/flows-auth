@@ -4,7 +4,11 @@
  */
 
 import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens';
-import { decodeInvitationToken, validateInvitationToken, hashInvitationToken } from './invitation-tokens';
+import {
+  decodeInvitationToken,
+  hashInvitationToken,
+  validateInvitationToken,
+} from './invitation-tokens';
 
 /**
  * Result of invitation token processing
@@ -46,7 +50,7 @@ export async function processInvitationToken(
   } = {}
 ): Promise<InvitationProcessingResult> {
   const { errorReporter, enableDebugLogging = false } = options;
-  
+
   try {
     // Step 1: Decode the invitation token
     const tokenData = decodeInvitationToken(invitationToken);
@@ -57,7 +61,7 @@ export async function processInvitationToken(
     // Step 2: Validate the token
     const tokenValidationResult = validateInvitationToken(invitationToken, tokenData);
     const tokenValid = tokenValidationResult.isValid;
-    
+
     if (enableDebugLogging) {
       console.log('Token validation result:', tokenValidationResult);
     }
@@ -66,7 +70,9 @@ export async function processInvitationToken(
       return {
         success: false,
         action: 'error',
-        error: tokenValidationResult.reason || 'Invalid or expired invitation token. Please contact support for a new invitation.',
+        error:
+          tokenValidationResult.reason ||
+          'Invalid or expired invitation token. Please contact support for a new invitation.',
         userExists: false,
         hasPasskey: false,
         tokenData,
@@ -75,14 +81,14 @@ export async function processInvitationToken(
           userCheck: null,
           tokenValidation: tokenValidationResult,
           expectedProperties: [],
-          actualProperties: []
-        }
+          actualProperties: [],
+        },
       };
     }
 
     // Step 3: Check if user exists
     const userCheck = await authStore.checkUser(tokenData.email);
-    
+
     if (enableDebugLogging) {
       console.log('User exists, checking passkey status:', userCheck);
       console.log('🔍 DEBUG: userCheck properties:', {
@@ -90,7 +96,7 @@ export async function processInvitationToken(
         hasPasskey: userCheck.hasPasskey,
         hasWebAuthn: userCheck.hasWebAuthn,
         invitationTokenHash: userCheck.invitationTokenHash,
-        invitationTokenHashExists: !!userCheck.invitationTokenHash
+        invitationTokenHashExists: !!userCheck.invitationTokenHash,
       });
     }
 
@@ -100,13 +106,13 @@ export async function processInvitationToken(
         email: tokenData.email,
         userCheck: userCheck,
         expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-        actualProperties: Object.keys(userCheck)
+        actualProperties: Object.keys(userCheck),
       });
     }
 
     // Check for passkey using both possible property names (API inconsistency)
     const hasPasskey = userCheck.hasPasskey || userCheck.hasWebAuthn;
-    
+
     if (userCheck.exists) {
       // User exists - determine next action
       if (!hasPasskey && tokenValid) {
@@ -120,15 +126,15 @@ export async function processInvitationToken(
         if (userCheck.invitationTokenHash) {
           const currentTokenHash = await hashInvitationToken(invitationToken);
           tokenHashMatches = currentTokenHash === userCheck.invitationTokenHash;
-          
+
           if (enableDebugLogging) {
             console.log('Token hash verification:', {
-              stored: userCheck.invitationTokenHash?.substring(0, 8) + '...',
-              current: currentTokenHash?.substring(0, 8) + '...',
-              matches: tokenHashMatches
+              stored: `${userCheck.invitationTokenHash?.substring(0, 8)}...`,
+              current: `${currentTokenHash?.substring(0, 8)}...`,
+              matches: tokenHashMatches,
             });
           }
-          
+
           // Send hash comparison data to error reporter
           if (errorReporter) {
             errorReporter('Token hash verification', {
@@ -136,10 +142,10 @@ export async function processInvitationToken(
               hasStoredHash: !!userCheck.invitationTokenHash,
               storedHashPreview: `${userCheck.invitationTokenHash?.substring(0, 8)}...`,
               currentHashPreview: `${currentTokenHash?.substring(0, 8)}...`,
-              hashesMatch: tokenHashMatches
+              hashesMatch: tokenHashMatches,
             });
           }
-          
+
           if (!tokenHashMatches) {
             if (enableDebugLogging) {
               console.warn('🔒 Token hash mismatch - token may not be valid for this user');
@@ -147,7 +153,8 @@ export async function processInvitationToken(
             return {
               success: false,
               action: 'error',
-              error: 'Invalid invitation token for this user. Please use the original invitation link.',
+              error:
+                'Invalid invitation token for this user. Please use the original invitation link.',
               userExists: true,
               hasPasskey: false,
               tokenData,
@@ -157,26 +164,28 @@ export async function processInvitationToken(
                 userCheck,
                 tokenValidation: tokenValidationResult,
                 expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-                actualProperties: Object.keys(userCheck)
-              }
+                actualProperties: Object.keys(userCheck),
+              },
             };
           }
-          
+
           if (enableDebugLogging) {
             console.log('✅ Token hash verified - resuming passkey registration');
           }
         } else {
           if (enableDebugLogging) {
-            console.warn('⚠️ No stored token hash found - allowing registration without token verification');
+            console.warn(
+              '⚠️ No stored token hash found - allowing registration without token verification'
+            );
           }
-          
+
           // Send missing hash data to error reporter
           if (errorReporter) {
             errorReporter('Missing invitation token hash', {
               email: tokenData.email,
               userCheckKeys: Object.keys(userCheck),
               hasInvitationTokenHash: 'invitationTokenHash' in userCheck,
-              invitationTokenHashValue: userCheck.invitationTokenHash
+              invitationTokenHashValue: userCheck.invitationTokenHash,
             });
           }
         }
@@ -196,14 +205,14 @@ export async function processInvitationToken(
             lastName: tokenData.lastName || tokenData.name?.split(' ').slice(1).join(' ') || '',
             company: tokenData.company || tokenData.companyName || '',
             phone: tokenData.phone || '',
-            jobTitle: tokenData.jobTitle || 'Hiring Manager'
+            jobTitle: tokenData.jobTitle || 'Hiring Manager',
           },
           debugInfo: {
             userCheck,
             tokenValidation: tokenValidationResult,
             expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-            actualProperties: Object.keys(userCheck)
-          }
+            actualProperties: Object.keys(userCheck),
+          },
         };
       }
 
@@ -223,11 +232,11 @@ export async function processInvitationToken(
             userCheck,
             tokenValidation: tokenValidationResult,
             expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-            actualProperties: Object.keys(userCheck)
-          }
+            actualProperties: Object.keys(userCheck),
+          },
         };
       }
-      
+
       // User exists but no passkey and no valid token - show error
       if (enableDebugLogging) {
         console.log('User exists but no passkey and no valid token');
@@ -244,8 +253,8 @@ export async function processInvitationToken(
           userCheck,
           tokenValidation: tokenValidationResult,
           expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-          actualProperties: Object.keys(userCheck)
-        }
+          actualProperties: Object.keys(userCheck),
+        },
       };
     }
 
@@ -267,20 +276,20 @@ export async function processInvitationToken(
         lastName: tokenData.lastName || tokenData.name?.split(' ').slice(1).join(' ') || '',
         company: tokenData.company || tokenData.companyName || '',
         phone: tokenData.phone || '',
-        jobTitle: tokenData.jobTitle || ''
+        jobTitle: tokenData.jobTitle || '',
       },
       debugInfo: {
         userCheck,
         tokenValidation: tokenValidationResult,
         expectedProperties: ['exists', 'hasPasskey', 'hasWebAuthn', 'invitationTokenHash'],
-        actualProperties: Object.keys(userCheck)
-      }
+        actualProperties: Object.keys(userCheck),
+      },
     };
   } catch (error) {
     if (enableDebugLogging) {
       console.error('Failed to process invitation token:', error);
     }
-    
+
     return {
       success: false,
       action: 'error',
@@ -292,8 +301,8 @@ export async function processInvitationToken(
         userCheck: null,
         tokenValidation: { isValid: false, reason: (error as Error).message },
         expectedProperties: [],
-        actualProperties: []
-      }
+        actualProperties: [],
+      },
     };
   }
 }
@@ -315,6 +324,6 @@ export function extractRegistrationDataFromToken(tokenData: InvitationTokenData)
     lastName: tokenData.lastName || tokenData.name?.split(' ').slice(1).join(' ') || '',
     company: tokenData.company || tokenData.companyName || '',
     phone: tokenData.phone || '',
-    jobTitle: tokenData.jobTitle || 'Hiring Manager'
+    jobTitle: tokenData.jobTitle || 'Hiring Manager',
   };
 }

@@ -1,7 +1,7 @@
 /**
  * IndexedDB Local Storage Wrapper
  * Privacy-first local storage for workflow data
- * 
+ *
  * SPIKE: Experimental IndexedDB implementation for service worker sync
  */
 
@@ -94,11 +94,11 @@ export class LocalStorageDB {
 
     const record: WorkflowRecord = {
       ...workflow,
-      lastModified: Date.now()
+      lastModified: Date.now(),
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readwrite');
+      const transaction = this.db?.transaction(['workflows'], 'readwrite');
       const store = transaction.objectStore('workflows');
       const request = store.put(record);
 
@@ -114,7 +114,7 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
       const store = transaction.objectStore('workflows');
       const request = store.get(uid);
 
@@ -130,7 +130,7 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
       const store = transaction.objectStore('workflows');
       const index = store.index('syncStatus');
       const request = index.getAll(status);
@@ -147,7 +147,7 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
       const store = transaction.objectStore('workflows');
       const request = store.getAll();
 
@@ -159,7 +159,11 @@ export class LocalStorageDB {
   /**
    * Update workflow sync status
    */
-  async updateSyncStatus(uid: string, status: 'pending' | 'synced' | 'failed', error?: string): Promise<void> {
+  async updateSyncStatus(
+    uid: string,
+    status: 'pending' | 'synced' | 'failed',
+    error?: string
+  ): Promise<void> {
     await this.ensureInitialized();
 
     const workflow = await this.getWorkflow(uid);
@@ -181,7 +185,7 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readwrite');
+      const transaction = this.db?.transaction(['workflows'], 'readwrite');
       const store = transaction.objectStore('workflows');
       const request = store.delete(uid);
 
@@ -197,18 +201,20 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['sync_metadata'], 'readonly');
+      const transaction = this.db?.transaction(['sync_metadata'], 'readonly');
       const store = transaction.objectStore('sync_metadata');
       const request = store.get('sync');
 
       request.onerror = () => reject(new Error('Failed to get sync metadata'));
       request.onsuccess = () => {
         const result = request.result;
-        resolve(result || {
-          lastSyncTimestamp: 0,
-          pendingUploads: 0,
-          syncInProgress: false
-        });
+        resolve(
+          result || {
+            lastSyncTimestamp: 0,
+            pendingUploads: 0,
+            syncInProgress: false,
+          }
+        );
       };
     });
   }
@@ -223,7 +229,7 @@ export class LocalStorageDB {
     const updated = { ...current, ...metadata };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['sync_metadata'], 'readwrite');
+      const transaction = this.db?.transaction(['sync_metadata'], 'readwrite');
       const store = transaction.objectStore('sync_metadata');
       const request = store.put({ id: 'sync', ...updated });
 
@@ -247,11 +253,11 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows', 'sync_metadata'], 'readwrite');
-      
+      const transaction = this.db?.transaction(['workflows', 'sync_metadata'], 'readwrite');
+
       const workflowStore = transaction.objectStore('workflows');
       const metadataStore = transaction.objectStore('sync_metadata');
-      
+
       const clearWorkflows = workflowStore.clear();
       const clearMetadata = metadataStore.clear();
 
@@ -265,7 +271,7 @@ export class LocalStorageDB {
 
       clearWorkflows.onerror = () => reject(new Error('Failed to clear workflows'));
       clearWorkflows.onsuccess = checkComplete;
-      
+
       clearMetadata.onerror = () => reject(new Error('Failed to clear metadata'));
       clearMetadata.onsuccess = checkComplete;
     });

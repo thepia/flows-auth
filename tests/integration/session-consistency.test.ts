@@ -1,22 +1,21 @@
 /**
  * Session Consistency Integration Tests
- * 
+ *
  * These tests verify that the sessionManager and auth state machine
  * use consistent storage and maintain authentication state properly.
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthStateMachine } from '../../src/stores/auth-state-machine';
-import { 
-  getSession, 
-  saveSession, 
-  clearSession, 
-  isSessionValid,
-  configureSessionStorage,
-  getStorageConfig
-} from '../../src/utils/sessionManager';
-import { ConfigurableStorageManager } from '../../src/utils/storageManager';
 import type { AuthConfig, FlowsSessionData } from '../../src/types';
+import {
+  clearSession,
+  configureSessionStorage,
+  getSession,
+  getStorageConfig,
+  isSessionValid,
+  saveSession,
+} from '../../src/utils/sessionManager';
 
 // Mock browser storage APIs
 const mockSessionStorage = {
@@ -24,7 +23,7 @@ const mockSessionStorage = {
   getItem: vi.fn((key: string) => mockSessionStorage.data.get(key) || null),
   setItem: vi.fn((key: string, value: string) => mockSessionStorage.data.set(key, value)),
   removeItem: vi.fn((key: string) => mockSessionStorage.data.delete(key)),
-  clear: vi.fn(() => mockSessionStorage.data.clear())
+  clear: vi.fn(() => mockSessionStorage.data.clear()),
 };
 
 const mockLocalStorage = {
@@ -32,25 +31,25 @@ const mockLocalStorage = {
   getItem: vi.fn((key: string) => mockLocalStorage.data.get(key) || null),
   setItem: vi.fn((key: string, value: string) => mockLocalStorage.data.set(key, value)),
   removeItem: vi.fn((key: string) => mockLocalStorage.data.delete(key)),
-  clear: vi.fn(() => mockLocalStorage.data.clear())
+  clear: vi.fn(() => mockLocalStorage.data.clear()),
 };
 
 // Mock window object
 Object.defineProperty(window, 'sessionStorage', {
   value: mockSessionStorage,
-  writable: true
+  writable: true,
 });
 
 Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
-  writable: true
+  writable: true,
 });
 
 // Mock AuthApiClient
 const mockApiClient = {
   signInWithPasskey: vi.fn(),
   createAccount: vi.fn(),
-  checkUser: vi.fn()
+  checkUser: vi.fn(),
 };
 
 const mockConfig: AuthConfig = {
@@ -60,23 +59,23 @@ const mockConfig: AuthConfig = {
   enablePasskeys: true,
   enableMagicLinks: true,
   enableSocialLogin: false,
-  enablePasswordLogin: false
+  enablePasswordLogin: false,
 };
 
 describe('Session Consistency Integration Tests', () => {
   let stateMachine: AuthStateMachine;
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockSessionStorage.data.clear();
     mockLocalStorage.data.clear();
-    
+
     // Reset storage configuration to default
     configureSessionStorage({
       type: 'sessionStorage',
-      userRole: 'guest'
+      userRole: 'guest',
     });
-    
+
     stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
   });
 
@@ -91,15 +90,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() + 60000
+          expiresAt: Date.now() + 60000,
         },
         authMethod: 'passkey',
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       // Save session using sessionManager
@@ -112,7 +111,7 @@ describe('Session Consistency Integration Tests', () => {
       );
       // Note: localStorage.setItem may be called for lastUser data, which is expected
       const sessionStorageCalls = mockSessionStorage.setItem.mock.calls.filter(
-        call => call[0] === 'thepia_auth_session'
+        (call) => call[0] === 'thepia_auth_session'
       );
       expect(sessionStorageCalls.length).toBeGreaterThan(0);
 
@@ -130,15 +129,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() + 60000
+          expiresAt: Date.now() + 60000,
         },
         authMethod: 'passkey',
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       saveSession(testSession);
@@ -147,7 +146,7 @@ describe('Session Consistency Integration Tests', () => {
       // Switch to localStorage
       configureSessionStorage({
         type: 'localStorage',
-        userRole: 'employee'
+        userRole: 'employee',
       });
 
       // Save another session
@@ -167,15 +166,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() + 60000
+          expiresAt: Date.now() + 60000,
         },
         authMethod: 'passkey',
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       // Save to sessionStorage
@@ -203,15 +202,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() + 60000
+          expiresAt: Date.now() + 60000,
         },
         authMethod: 'passkey',
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       saveSession(testSession);
@@ -226,15 +225,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() - 60000 // Expired 1 minute ago
+          expiresAt: Date.now() - 60000, // Expired 1 minute ago
         },
         authMethod: 'passkey',
-        lastActivity: Date.now() - 60000
+        lastActivity: Date.now() - 60000,
       };
 
       saveSession(expiredSession);
@@ -248,11 +247,14 @@ describe('Session Consistency Integration Tests', () => {
     it('should clean up legacy localStorage entries', () => {
       // Simulate legacy localStorage data
       mockLocalStorage.data.set('auth_access_token', 'legacy-token');
-      mockLocalStorage.data.set('auth_user', JSON.stringify({
-        id: 'legacy-user',
-        email: 'legacy@example.com',
-        name: 'Legacy User'
-      }));
+      mockLocalStorage.data.set(
+        'auth_user',
+        JSON.stringify({
+          id: 'legacy-user',
+          email: 'legacy@example.com',
+          name: 'Legacy User',
+        })
+      );
       mockLocalStorage.data.set('auth_refresh_token', 'legacy-refresh');
 
       // Start state machine - should clean up legacy data
@@ -274,7 +276,7 @@ describe('Session Consistency Integration Tests', () => {
       configureSessionStorage({
         type: 'localStorage',
         userRole: 'employee',
-        sessionTimeout: 7 * 24 * 60 * 60 * 1000
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000,
       });
 
       const updatedConfig = getStorageConfig();
@@ -288,7 +290,7 @@ describe('Session Consistency Integration Tests', () => {
       configureSessionStorage({
         type: 'sessionStorage',
         sessionTimeout: 1000, // 1 second
-        userRole: 'guest'
+        userRole: 'guest',
       });
 
       const testSession: FlowsSessionData = {
@@ -296,15 +298,15 @@ describe('Session Consistency Integration Tests', () => {
           id: 'test-user-id',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU'
+          initials: 'TU',
         },
         tokens: {
           accessToken: 'test-access-token',
           refreshToken: 'test-refresh-token',
-          expiresAt: Date.now() + 60000 // Token valid for 1 minute
+          expiresAt: Date.now() + 60000, // Token valid for 1 minute
         },
         authMethod: 'passkey',
-        lastActivity: Date.now() - 2000 // Last activity 2 seconds ago
+        lastActivity: Date.now() - 2000, // Last activity 2 seconds ago
       };
 
       saveSession(testSession);

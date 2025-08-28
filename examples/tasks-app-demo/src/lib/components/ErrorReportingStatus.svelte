@@ -1,151 +1,151 @@
 <script>
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
+import { browser } from '$app/environment';
+import { onMount } from 'svelte';
 
-	let queueSize = 0;
-	let config = null;
-	let isReporting = false;
-	let showDetails = false;
+let queueSize = 0;
+let config = null;
+let isReporting = false;
+let showDetails = false;
 
-	// Service Worker state
-	let serviceWorkerManager = null;
-	let swState = {
-		supported: false,
-		registered: false,
-		active: false,
-		syncStatus: null
-	};
+// Service Worker state
+let serviceWorkerManager = null;
+let swState = {
+  supported: false,
+  registered: false,
+  active: false,
+  syncStatus: null,
+};
 
-	// Auth store debugging
-	let authStore = null;
-	let authState = null;
-	let authStateMachine = null;
+// Auth store debugging
+let authStore = null;
+let authState = null;
+let authStateMachine = null;
 
-	onMount(async () => {
-		if (!browser) return;
+onMount(async () => {
+  if (!browser) return;
 
-		try {
-			const { getErrorReportingConfig } = await import('../config/errorReporting.js');
-			config = await getErrorReportingConfig();
+  try {
+    const { getErrorReportingConfig } = await import('../config/errorReporting.js');
+    config = await getErrorReportingConfig();
 
-			// Initialize service worker manager
-			try {
-				const { getServiceWorkerManager } = await import('@thepia/flows-auth');
-				serviceWorkerManager = getServiceWorkerManager();
-				await updateServiceWorkerStatus();
-			} catch (swError) {
-				console.warn('Service worker manager not available:', swError);
-			}
+    // Initialize service worker manager
+    try {
+      const { getServiceWorkerManager } = await import('@thepia/flows-auth');
+      serviceWorkerManager = getServiceWorkerManager();
+      await updateServiceWorkerStatus();
+    } catch (swError) {
+      console.warn('Service worker manager not available:', swError);
+    }
 
-			// Initialize auth store debugging
-			try {
-				const { createAuthStore } = await import('@thepia/flows-auth');
-				authStore = createAuthStore({
-					apiBaseUrl: 'https://dev.thepia.com:8443',
-					clientId: 'flows-auth-demo',
-					domain: 'thepia.net',
-					enablePasskeys: true,
-					enableMagicLinks: true,
-					enablePasswordLogin: true,
-					enableSocialLogin: false
-				});
+    // Initialize auth store debugging
+    try {
+      const { createAuthStore } = await import('@thepia/flows-auth');
+      authStore = createAuthStore({
+        apiBaseUrl: 'https://dev.thepia.com:8443',
+        clientId: 'flows-auth-demo',
+        domain: 'thepia.net',
+        enablePasskeys: true,
+        enableMagicLinks: true,
+        enablePasswordLogin: true,
+        enableSocialLogin: false,
+      });
 
-				// Subscribe to auth state changes for debugging
-				authStore.subscribe((state) => {
-					authState = state;
-					console.log('🔍 Auth State Debug:', state);
-				});
+      // Subscribe to auth state changes for debugging
+      authStore.subscribe((state) => {
+        authState = state;
+        console.log('🔍 Auth State Debug:', state);
+      });
 
-				// Get auth state machine for debugging
-				authStateMachine = authStore.stateMachine || null;
-			} catch (authError) {
-				console.warn('Auth store debugging not available:', authError);
-			}
+      // Get auth state machine for debugging
+      authStateMachine = authStore.stateMachine || null;
+    } catch (authError) {
+      console.warn('Auth store debugging not available:', authError);
+    }
 
-			// Check status periodically
-			updateQueueStatus();
-			const interval = setInterval(() => {
-				updateQueueStatus();
-				updateServiceWorkerStatus();
-			}, 5000);
+    // Check status periodically
+    updateQueueStatus();
+    const interval = setInterval(() => {
+      updateQueueStatus();
+      updateServiceWorkerStatus();
+    }, 5000);
 
-			return () => clearInterval(interval);
-		} catch (error) {
-			console.error('Failed to initialize error reporting status:', error);
-		}
-	});
-	
-	async function updateQueueStatus() {
-		if (!browser) return;
+    return () => clearInterval(interval);
+  } catch (error) {
+    console.error('Failed to initialize error reporting status:', error);
+  }
+});
 
-		try {
-			const { getErrorReportQueueSize } = await import('@thepia/flows-auth');
-			queueSize = await getErrorReportQueueSize();
-		} catch (error) {
-			// Silently fail - error reporter may not be initialized yet
-		}
-	}
+async function updateQueueStatus() {
+  if (!browser) return;
 
-	async function updateServiceWorkerStatus() {
-		if (!browser || !serviceWorkerManager) return;
+  try {
+    const { getErrorReportQueueSize } = await import('@thepia/flows-auth');
+    queueSize = await getErrorReportQueueSize();
+  } catch (error) {
+    // Silently fail - error reporter may not be initialized yet
+  }
+}
 
-		try {
-			// Check if service workers are supported
-			swState.supported = 'serviceWorker' in navigator;
+async function updateServiceWorkerStatus() {
+  if (!browser || !serviceWorkerManager) return;
 
-			// Check if service worker is registered and active
-			swState.registered = !!navigator.serviceWorker.controller || serviceWorkerManager.isActive();
-			swState.active = serviceWorkerManager.isActive();
+  try {
+    // Check if service workers are supported
+    swState.supported = 'serviceWorker' in navigator;
 
-			// Get sync status from service worker
-			swState.syncStatus = await serviceWorkerManager.getSyncStatus();
-		} catch (error) {
-			console.warn('Failed to update service worker status:', error);
-		}
-	}
-	
-	async function flushReports() {
-		if (!browser || isReporting) return;
-		
-		isReporting = true;
-		try {
-			const { flushTasksErrorReports } = await import('../config/errorReporting.js');
-			await flushTasksErrorReports();
-			await updateQueueStatus();
-		} catch (error) {
-			console.error('Failed to flush error reports:', error);
-		} finally {
-			isReporting = false;
-		}
-	}
-	
-	function getStatusColor() {
-		if (!config?.enabled) return 'disabled';
-		if (queueSize > 0) return 'pending';
-		return 'active';
-	}
-	
-	function getStatusText() {
-		if (!config?.enabled) return 'Disabled';
-		if (queueSize > 0) return `${queueSize} pending`;
-		return 'Active';
-	}
+    // Check if service worker is registered and active
+    swState.registered = !!navigator.serviceWorker.controller || serviceWorkerManager.isActive();
+    swState.active = serviceWorkerManager.isActive();
 
-	function formatLastSync(timestamp) {
-		if (!timestamp) return 'Never';
+    // Get sync status from service worker
+    swState.syncStatus = await serviceWorkerManager.getSyncStatus();
+  } catch (error) {
+    console.warn('Failed to update service worker status:', error);
+  }
+}
 
-		const date = new Date(timestamp);
-		const now = new Date();
-		const diffMs = now - date;
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
+async function flushReports() {
+  if (!browser || isReporting) return;
 
-		if (diffMins < 1) return 'Just now';
-		if (diffMins < 60) return `${diffMins}m ago`;
-		if (diffHours < 24) return `${diffHours}h ago`;
+  isReporting = true;
+  try {
+    const { flushTasksErrorReports } = await import('../config/errorReporting.js');
+    await flushTasksErrorReports();
+    await updateQueueStatus();
+  } catch (error) {
+    console.error('Failed to flush error reports:', error);
+  } finally {
+    isReporting = false;
+  }
+}
 
-		return date.toLocaleString();
-	}
+function getStatusColor() {
+  if (!config?.enabled) return 'disabled';
+  if (queueSize > 0) return 'pending';
+  return 'active';
+}
+
+function getStatusText() {
+  if (!config?.enabled) return 'Disabled';
+  if (queueSize > 0) return `${queueSize} pending`;
+  return 'Active';
+}
+
+function formatLastSync(timestamp) {
+  if (!timestamp) return 'Never';
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  return date.toLocaleString();
+}
 </script>
 
 {#if config}

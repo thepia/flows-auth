@@ -3,8 +3,8 @@
  * Tests various network conditions and fallback scenarios
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { detectApiServer, DEFAULT_API_CONFIG } from '../../../src/utils/api-detection';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_API_CONFIG, detectApiServer } from '../../../src/utils/api-detection';
 
 describe('detectApiServer', () => {
   // Mock fetch
@@ -27,8 +27,8 @@ describe('detectApiServer', () => {
         json: async () => ({
           status: 'healthy',
           server: 'thepia-api-local',
-          version: '1.0.0'
-        })
+          version: '1.0.0',
+        }),
       });
 
       const result = await detectApiServer(DEFAULT_API_CONFIG);
@@ -39,14 +39,14 @@ describe('detectApiServer', () => {
         isHealthy: true,
         serverInfo: {
           version: '1.0.0',
-          environment: 'local'
-        }
+          environment: 'local',
+        },
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://dev.thepia.com:8443/health',
         expect.objectContaining({
-          signal: expect.any(AbortSignal)
+          signal: expect.any(AbortSignal),
         })
       );
     });
@@ -61,14 +61,14 @@ describe('detectApiServer', () => {
         url: 'https://api.thepia.com',
         type: 'production',
         isHealthy: true,
-        serverInfo: undefined
+        serverInfo: undefined,
       });
     });
 
     it('should prefer production when preferLocal is false', async () => {
       const config = {
         ...DEFAULT_API_CONFIG,
-        preferLocal: false
+        preferLocal: false,
       };
 
       const result = await detectApiServer(config);
@@ -77,7 +77,7 @@ describe('detectApiServer', () => {
         url: 'https://api.thepia.com',
         type: 'production',
         isHealthy: true,
-        serverInfo: undefined
+        serverInfo: undefined,
       });
 
       expect(mockFetch).not.toHaveBeenCalled();
@@ -87,13 +87,11 @@ describe('detectApiServer', () => {
   describe('timeout handling', () => {
     it('should timeout after specified duration', async () => {
       // Mock slow response
-      mockFetch.mockImplementationOnce(() => 
-        new Promise((resolve) => setTimeout(resolve, 5000))
-      );
+      mockFetch.mockImplementationOnce(() => new Promise((resolve) => setTimeout(resolve, 5000)));
 
       const config = {
         ...DEFAULT_API_CONFIG,
-        healthTimeout: 100 // 100ms timeout
+        healthTimeout: 100, // 100ms timeout
       };
 
       const result = await detectApiServer(config);
@@ -113,8 +111,8 @@ describe('detectApiServer', () => {
         json: async () => ({
           status: 'healthy',
           version: '1.0.0',
-          environment: 'local'
-        })
+          environment: 'local',
+        }),
       });
 
       const result = await detectApiServer(DEFAULT_API_CONFIG, mockLocation);
@@ -125,14 +123,14 @@ describe('detectApiServer', () => {
         isHealthy: true,
         serverInfo: {
           version: '1.0.0',
-          environment: 'local'
-        }
+          environment: 'local',
+        },
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://dev.thepia.com:8443/health',
         expect.objectContaining({
-          signal: expect.any(AbortSignal)
+          signal: expect.any(AbortSignal),
         })
       );
     });
@@ -149,13 +147,13 @@ describe('detectApiServer', () => {
         url: 'https://api.thepia.com',
         type: 'production',
         isHealthy: true,
-        serverInfo: undefined
+        serverInfo: undefined,
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://dev.thepia.com:8443/health',
         expect.objectContaining({
-          signal: expect.any(AbortSignal)
+          signal: expect.any(AbortSignal),
         })
       );
     });
@@ -167,12 +165,12 @@ describe('detectApiServer', () => {
         localUrl: 'https://custom.local:9000',
         productionUrl: 'https://custom.api.com',
         healthTimeout: 5000,
-        preferLocal: true
+        preferLocal: true,
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ status: 'healthy' })
+        json: async () => ({ status: 'healthy' }),
       });
 
       const result = await detectApiServer(customConfig);
@@ -187,7 +185,7 @@ describe('detectApiServer', () => {
     it('should handle missing localUrl', async () => {
       const config = {
         productionUrl: 'https://api.example.com',
-        preferLocal: true
+        preferLocal: true,
       };
 
       const result = await detectApiServer(config as any);
@@ -196,7 +194,7 @@ describe('detectApiServer', () => {
         url: 'https://api.example.com',
         type: 'production',
         isHealthy: true,
-        serverInfo: undefined
+        serverInfo: undefined,
       });
     });
   });
@@ -205,7 +203,7 @@ describe('detectApiServer', () => {
     it('should handle non-200 health check responses', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 503
+        status: 503,
       });
 
       const result = await detectApiServer(DEFAULT_API_CONFIG);
@@ -216,7 +214,9 @@ describe('detectApiServer', () => {
     it('should handle malformed health check responses', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => { throw new Error('Invalid JSON'); }
+        json: async () => {
+          throw new Error('Invalid JSON');
+        },
       });
 
       const result = await detectApiServer(DEFAULT_API_CONFIG);
@@ -225,7 +225,7 @@ describe('detectApiServer', () => {
         url: 'https://dev.thepia.com:8443',
         type: 'local',
         isHealthy: true,
-        serverInfo: undefined
+        serverInfo: undefined,
       });
     });
   });

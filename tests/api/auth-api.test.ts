@@ -1,9 +1,9 @@
 /**
  * Auth API Client Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import type { AuthConfig, SignInResponse, AuthError } from '../../src/types';
+import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -17,8 +17,8 @@ const mockConfig: AuthConfig = {
   enablePasswordLogin: true,
   enableSocialLogin: false,
   branding: {
-    companyName: 'Test Company'
-  }
+    companyName: 'Test Company',
+  },
 };
 
 describe('AuthApiClient', () => {
@@ -33,16 +33,16 @@ describe('AuthApiClient', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ success: true })
+          json: () => Promise.resolve({ success: true }),
         });
       }
       // Default to rejecting unknown URLs
       return Promise.reject(new Error(`Unmocked URL: ${url}`));
     };
-    
+
     mockFetch = vi.fn(baseMockImplementation);
     global.fetch = mockFetch;
-    
+
     apiClient = new AuthApiClient(mockConfig);
     localStorage.clear();
   });
@@ -56,9 +56,9 @@ describe('AuthApiClient', () => {
     it('should remove trailing slash from base URL', () => {
       const configWithTrailingSlash = {
         ...mockConfig,
-        apiBaseUrl: 'https://api.test.com/'
+        apiBaseUrl: 'https://api.test.com/',
       };
-      
+
       const client = new AuthApiClient(configWithTrailingSlash);
       expect(client).toBeInstanceOf(AuthApiClient);
     });
@@ -69,7 +69,7 @@ describe('AuthApiClient', () => {
       const mockResponse = { success: true };
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.getProfile();
@@ -79,8 +79,8 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          })
+            'Content-Type': 'application/json',
+          }),
         })
       );
 
@@ -89,10 +89,10 @@ describe('AuthApiClient', () => {
 
     it('should include authorization header when authenticated', async () => {
       localStorage.setItem('auth_access_token', 'test-token');
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.getProfile();
@@ -101,8 +101,8 @@ describe('AuthApiClient', () => {
         'https://api.test.com/auth/profile',
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
-          })
+            Authorization: 'Bearer test-token',
+          }),
         })
       );
     });
@@ -115,20 +115,20 @@ describe('AuthApiClient', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
         },
         accessToken: 'token',
-        refreshToken: 'refresh'
+        refreshToken: 'refresh',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.signInWithPassword({
         email: 'test@example.com',
-        password: 'password'
+        password: 'password',
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -136,12 +136,12 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           }),
           body: JSON.stringify({
             email: 'test@example.com',
-            password: 'password'
-          })
+            password: 'password',
+          }),
         })
       );
 
@@ -153,20 +153,20 @@ describe('AuthApiClient', () => {
     it('should handle HTTP error responses', async () => {
       const errorResponse = {
         code: 'invalid_credentials',
-        message: 'Invalid email or password'
+        message: 'Invalid email or password',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: () => Promise.resolve(errorResponse)
+        json: () => Promise.resolve(errorResponse),
       });
 
       await expect(
         apiClient.signInWithPassword({ email: 'test@example.com', password: 'wrong' })
       ).rejects.toEqual({
         code: 'invalid_credentials',
-        message: 'Invalid email or password'
+        message: 'Invalid email or password',
       });
     });
 
@@ -175,14 +175,12 @@ describe('AuthApiClient', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.reject(new Error('Failed to parse JSON'))
+        json: () => Promise.reject(new Error('Failed to parse JSON')),
       });
 
-      await expect(
-        apiClient.signIn({ email: 'test@example.com' })
-      ).rejects.toEqual({
+      await expect(apiClient.signIn({ email: 'test@example.com' })).rejects.toEqual({
         code: 'network_error',
-        message: 'HTTP 500: Internal Server Error'
+        message: 'HTTP 500: Internal Server Error',
       });
     });
 
@@ -190,14 +188,12 @@ describe('AuthApiClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
-      await expect(
-        apiClient.signIn({ email: 'test@example.com' })
-      ).rejects.toEqual({
+      await expect(apiClient.signIn({ email: 'test@example.com' })).rejects.toEqual({
         code: 'unknown_error',
-        message: 'An unknown error occurred'
+        message: 'An unknown error occurred',
       });
     });
   });
@@ -205,12 +201,12 @@ describe('AuthApiClient', () => {
   describe('Authentication Methods', () => {
     it('should handle basic sign in', async () => {
       const mockResponse: SignInResponse = {
-        step: 'password_required'
+        step: 'password_required',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.signIn({ email: 'test@example.com' });
@@ -219,7 +215,7 @@ describe('AuthApiClient', () => {
         'https://api.test.com/auth/signin',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ email: 'test@example.com' })
+          body: JSON.stringify({ email: 'test@example.com' }),
         })
       );
 
@@ -234,21 +230,21 @@ describe('AuthApiClient', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
         },
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.signInWithPassword({
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
 
       expect(result).toEqual(mockResponse);
@@ -262,9 +258,9 @@ describe('AuthApiClient', () => {
           clientDataJSON: 'Y2xpZW50RGF0YQ==',
           authenticatorData: 'YXV0aGVudGljYXRvckRhdGE=',
           signature: 'c2lnbmF0dXJl',
-          userHandle: 'dXNlckhhbmRsZQ=='
+          userHandle: 'dXNlckhhbmRsZQ==',
         },
-        type: 'public-key'
+        type: 'public-key',
       };
 
       const mockResponse: SignInResponse = {
@@ -274,20 +270,20 @@ describe('AuthApiClient', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
         },
-        accessToken: 'access-token'
+        accessToken: 'access-token',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.signInWithPasskey({
         email: 'test@example.com',
         challengeId: 'challenge-123',
-        credential: mockCredential
+        credential: mockCredential,
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -298,8 +294,8 @@ describe('AuthApiClient', () => {
             email: 'test@example.com',
             challengeId: 'challenge-123',
             credential: mockCredential,
-            clientId: 'test-client' // Include clientId for token strategy
-          })
+            clientId: 'test-client', // Include clientId for token strategy
+          }),
         })
       );
 
@@ -309,16 +305,16 @@ describe('AuthApiClient', () => {
     it('should handle magic link sign in', async () => {
       const mockResponse: SignInResponse = {
         step: 'magic_link_sent',
-        message: 'Check your email for the magic link'
+        message: 'Check your email for the magic link',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.signInWithMagicLink({
-        email: 'test@example.com'
+        email: 'test@example.com',
       });
 
       expect(result).toEqual(mockResponse);
@@ -331,16 +327,16 @@ describe('AuthApiClient', () => {
         step: 'success',
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.refreshToken({
-        refreshToken: 'old-refresh-token'
+        refreshToken: 'old-refresh-token',
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -348,8 +344,8 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
-            refreshToken: 'old-refresh-token'
-          })
+            refreshToken: 'old-refresh-token',
+          }),
         })
       );
 
@@ -361,12 +357,12 @@ describe('AuthApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.signOut({
         accessToken: 'test-token',
-        refreshToken: 'refresh-token'
+        refreshToken: 'refresh-token',
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -374,12 +370,12 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token',
           }),
           body: JSON.stringify({
             accessToken: 'test-token',
-            refreshToken: 'refresh-token'
-          })
+            refreshToken: 'refresh-token',
+          }),
         })
       );
     });
@@ -394,12 +390,12 @@ describe('AuthApiClient', () => {
       const mockChallenge = {
         challenge: 'Y2hhbGxlbmdl',
         rpId: 'test.com',
-        timeout: 60000
+        timeout: 60000,
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockChallenge)
+        json: () => Promise.resolve(mockChallenge),
       });
 
       const result = await apiClient.getPasskeyChallenge('test@example.com');
@@ -408,7 +404,7 @@ describe('AuthApiClient', () => {
         'https://api.test.com/auth/webauthn/challenge',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ email: 'test@example.com' })
+          body: JSON.stringify({ email: 'test@example.com' }),
         })
       );
 
@@ -420,12 +416,12 @@ describe('AuthApiClient', () => {
         id: 'credential-id',
         rawId: 'cmF3SWQ=',
         response: { attestationObject: 'YXR0ZXN0YXRpb24=' },
-        type: 'public-key'
+        type: 'public-key',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.createPasskey(mockCredential);
@@ -435,9 +431,9 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token',
           }),
-          body: JSON.stringify({ credential: mockCredential })
+          body: JSON.stringify({ credential: mockCredential }),
         })
       );
     });
@@ -447,18 +443,18 @@ describe('AuthApiClient', () => {
         {
           id: 'passkey-1',
           name: 'iPhone - 1/1/2024',
-          createdAt: '2024-01-01T00:00:00Z'
+          createdAt: '2024-01-01T00:00:00Z',
         },
         {
           id: 'passkey-2',
           name: 'Mac - 1/2/2024',
-          createdAt: '2024-01-02T00:00:00Z'
-        }
+          createdAt: '2024-01-02T00:00:00Z',
+        },
       ];
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockPasskeys)
+        json: () => Promise.resolve(mockPasskeys),
       });
 
       const result = await apiClient.listPasskeys();
@@ -468,8 +464,8 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
-          })
+            Authorization: 'Bearer test-token',
+          }),
         })
       );
 
@@ -479,7 +475,7 @@ describe('AuthApiClient', () => {
     it('should delete passkey', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.deletePasskey('passkey-id');
@@ -489,8 +485,8 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'DELETE',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
-          })
+            Authorization: 'Bearer test-token',
+          }),
         })
       );
     });
@@ -502,7 +498,7 @@ describe('AuthApiClient', () => {
       const mockApiResponse = {
         exists: true,
         hasWebAuthn: true,
-        userId: '123'
+        userId: '123',
       };
 
       // Expected result after mapping
@@ -512,12 +508,12 @@ describe('AuthApiClient', () => {
         hasPassword: false,
         socialProviders: [],
         userId: '123',
-        invitationTokenHash: undefined
+        invitationTokenHash: undefined,
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockApiResponse)
+        json: () => Promise.resolve(mockApiResponse),
       });
 
       const result = await apiClient.checkEmail('test@example.com');
@@ -528,7 +524,7 @@ describe('AuthApiClient', () => {
     it('should request password reset', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.requestPasswordReset('test@example.com');
@@ -537,7 +533,7 @@ describe('AuthApiClient', () => {
         'https://api.test.com/auth/password-reset',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ email: 'test@example.com' })
+          body: JSON.stringify({ email: 'test@example.com' }),
         })
       );
     });
@@ -545,7 +541,7 @@ describe('AuthApiClient', () => {
     it('should reset password with token', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({})
+        json: () => Promise.resolve({}),
       });
 
       await apiClient.resetPassword('reset-token', 'new-password');
@@ -556,8 +552,8 @@ describe('AuthApiClient', () => {
           method: 'POST',
           body: JSON.stringify({
             token: 'reset-token',
-            password: 'new-password'
-          })
+            password: 'new-password',
+          }),
         })
       );
     });
@@ -570,14 +566,14 @@ describe('AuthApiClient', () => {
           email: 'test@example.com',
           name: 'Test User',
           emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
+          createdAt: '2023-01-01T00:00:00Z',
         },
-        accessToken: 'access-token'
+        accessToken: 'access-token',
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockResponse),
       });
 
       const result = await apiClient.verifyMagicLink('magic-token');

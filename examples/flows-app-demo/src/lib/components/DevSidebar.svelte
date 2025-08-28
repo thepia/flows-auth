@@ -1,83 +1,83 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { browser, dev } from '$app/environment';
-  import { DEV_SCENARIOS, devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
-  
-  // Import console bridge helpers
-  let logStateChange: ((component: string, state: any) => void) | null = null;
-  
-  if (browser && dev) {
-    import('$lib/dev/console-bridge').then(module => {
-      logStateChange = module.logStateChange;
-    });
-  }
-  
-  let isOpen = false;
-  let currentScenario: DevScenario;
-  let unsubscribe: (() => void) | null = null;
-  
-  onMount(() => {
-    if (!browser) return;
-    
-    currentScenario = devScenarioManager.getCurrentScenario();
-    
-    // Subscribe to scenario changes
-    unsubscribe = devScenarioManager.subscribe((scenario) => {
-      currentScenario = scenario;
-    });
-    
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+import { browser, dev } from '$app/environment';
+import { DEV_SCENARIOS, type DevScenario, devScenarioManager } from '$lib/dev/scenarios.js';
+import { onMount } from 'svelte';
+
+// Import console bridge helpers
+let logStateChange: ((component: string, state: any) => void) | null = null;
+
+if (browser && dev) {
+  import('$lib/dev/console-bridge').then((module) => {
+    logStateChange = module.logStateChange;
   });
-  
-  function toggleSidebar() {
-    isOpen = !isOpen;
-  }
-  
-  function selectScenario(scenarioId: string) {
-    const previousScenario = currentScenario?.name;
-    devScenarioManager.setScenario(scenarioId);
-    const newScenario = DEV_SCENARIOS.find(s => s.id === scenarioId);
-    
-    logStateChange?.('DevSidebar', {
-      action: 'scenario-changed',
-      from: previousScenario,
-      to: newScenario?.name,
-      config: newScenario?.config
-    });
-  }
-  
-  function triggerScenario(type: 'new-user' | 'existing-user' | 'error' | 'network-error') {
-    logStateChange?.('DevSidebar', {
-      action: 'scenario-triggered',
-      type,
-      scenario: currentScenario?.name
-    });
-    devScenarioManager.triggerScenario(type);
-  }
-  
-  function clearLocalStorage() {
-    if (browser) {
-      logStateChange?.('DevSidebar', {
-        action: 'storage-cleared',
-        scenario: currentScenario?.name
-      });
-      localStorage.clear();
-      console.log('🧹 Cleared all localStorage');
-      window.location.reload();
+}
+
+let isOpen = false;
+let currentScenario: DevScenario;
+let unsubscribe: (() => void) | null = null;
+
+onMount(() => {
+  if (!browser) return;
+
+  currentScenario = devScenarioManager.getCurrentScenario();
+
+  // Subscribe to scenario changes
+  unsubscribe = devScenarioManager.subscribe((scenario) => {
+    currentScenario = scenario;
+  });
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
     }
+  };
+});
+
+function toggleSidebar() {
+  isOpen = !isOpen;
+}
+
+function selectScenario(scenarioId: string) {
+  const previousScenario = currentScenario?.name;
+  devScenarioManager.setScenario(scenarioId);
+  const newScenario = DEV_SCENARIOS.find((s) => s.id === scenarioId);
+
+  logStateChange?.('DevSidebar', {
+    action: 'scenario-changed',
+    from: previousScenario,
+    to: newScenario?.name,
+    config: newScenario?.config,
+  });
+}
+
+function triggerScenario(type: 'new-user' | 'existing-user' | 'error' | 'network-error') {
+  logStateChange?.('DevSidebar', {
+    action: 'scenario-triggered',
+    type,
+    scenario: currentScenario?.name,
+  });
+  devScenarioManager.triggerScenario(type);
+}
+
+function clearLocalStorage() {
+  if (browser) {
+    logStateChange?.('DevSidebar', {
+      action: 'storage-cleared',
+      scenario: currentScenario?.name,
+    });
+    localStorage.clear();
+    console.log('🧹 Cleared all localStorage');
+    window.location.reload();
   }
-  
-  function copyConfig() {
-    if (browser && currentScenario) {
-      const configText = JSON.stringify(currentScenario.config, null, 2);
-      navigator.clipboard.writeText(configText);
-      console.log('📋 Config copied to clipboard');
-    }
+}
+
+function copyConfig() {
+  if (browser && currentScenario) {
+    const configText = JSON.stringify(currentScenario.config, null, 2);
+    navigator.clipboard.writeText(configText);
+    console.log('📋 Config copied to clipboard');
   }
+}
 </script>
 
 {#if browser}

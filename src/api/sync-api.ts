@@ -1,12 +1,12 @@
 /**
  * Sync API Client - Service Worker Spike
  * Handles workflow data synchronization between local and central storage
- * 
+ *
  * SPIKE: This is experimental code that can be easily removed
  */
 
-import { reportApiError } from '../utils/errorReporter';
 import type { AuthConfig } from '../types';
+import { reportApiError } from '../utils/errorReporter';
 
 export interface WorkflowMetadata {
   uid: string;
@@ -46,15 +46,12 @@ export class SyncApiClient {
   /**
    * Make authenticated sync API request
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}/sync${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers as Record<string, string>
+      ...(options.headers as Record<string, string>),
     };
 
     // Always include auth for sync operations
@@ -65,20 +62,17 @@ export class SyncApiClient {
 
     const response = await fetch(url, {
       ...options,
-      headers
+      headers,
     });
 
     if (!response.ok) {
       const error = await this.handleErrorResponse(response);
-      
-      reportApiError(
-        url,
-        options.method || 'GET',
-        response.status,
-        error.message,
-        { endpoint, syncOperation: true }
-      );
-      
+
+      reportApiError(url, options.method || 'GET', response.status, error.message, {
+        endpoint,
+        syncOperation: true,
+      });
+
       throw error;
     }
 
@@ -111,7 +105,7 @@ export class SyncApiClient {
   async syncWorkflows(request: SyncRequest): Promise<SyncResponse> {
     return this.request<SyncResponse>('/workflows', {
       method: 'POST',
-      body: JSON.stringify(request)
+      body: JSON.stringify(request),
     });
   }
 
@@ -126,12 +120,12 @@ export class SyncApiClient {
       timestamp: request.workflowMetadata.timestamp,
       version: request.workflowMetadata.version,
       checksum: request.workflowMetadata.checksum,
-      recordingCount: request.workflowMetadata.recordingCount
+      recordingCount: request.workflowMetadata.recordingCount,
     };
 
     await this.request<void>('/workflows/upload', {
       method: 'POST',
-      body: JSON.stringify({ metadata })
+      body: JSON.stringify({ metadata }),
     });
   }
 
@@ -141,7 +135,7 @@ export class SyncApiClient {
   async downloadWorkflows(since?: number): Promise<WorkflowMetadata[]> {
     const params = since ? `?since=${since}` : '';
     return this.request<WorkflowMetadata[]>(`/workflows/download${params}`, {
-      method: 'GET'
+      method: 'GET',
     });
   }
 
@@ -150,7 +144,7 @@ export class SyncApiClient {
    */
   async ping(): Promise<{ status: 'ok'; timestamp: number }> {
     return this.request<{ status: 'ok'; timestamp: number }>('/ping', {
-      method: 'GET'
+      method: 'GET',
     });
   }
 
@@ -167,7 +161,7 @@ export class SyncApiClient {
       pendingUploads: number;
       pendingDownloads: number;
     }>('/status', {
-      method: 'GET'            
+      method: 'GET',
     });
   }
 }

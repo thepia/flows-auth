@@ -8,9 +8,9 @@
  * This is a regression test that should be kept to prevent future regressions.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
+import { createAuthStore } from '../../src/stores/auth-store';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;
@@ -23,7 +23,7 @@ describe('SignInForm Registration Flow Regression', () => {
     clientId: 'flows-auth-demo',
     enablePasskeys: true,
     enableMagicLinks: true,
-    enablePasswordLogin: true
+    enablePasswordLogin: true,
   };
 
   beforeAll(async () => {
@@ -31,8 +31,10 @@ describe('SignInForm Registration Flow Regression', () => {
     try {
       const response = await fetch(`${API_BASE}/health`);
       apiServerRunning = response.ok;
-      console.log(`🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`);
-    } catch (error) {
+      console.log(
+        `🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`
+      );
+    } catch (_error) {
       console.warn('Local API server not available - skipping debug tests');
       apiServerRunning = false;
     }
@@ -69,17 +71,17 @@ describe('SignInForm Registration Flow Regression', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: 'test@example.com' })
+          body: JSON.stringify({ email: 'test@example.com' }),
         });
-        
+
         console.log(`📡 /auth/check-user endpoint status: ${response.status}`);
         console.log(`📡 Response headers:`, Object.fromEntries(response.headers.entries()));
-        
+
         if (response.status === 500) {
           const errorText = await response.text();
           console.log(`❌ Server error response: ${errorText}`);
         }
-        
+
         // Endpoint should exist (not 404)
         expect(response.status).not.toBe(404);
       } catch (error) {
@@ -97,17 +99,17 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       try {
         const result = await apiClient.checkEmail('test@thepia.com');
         console.log('✅ checkEmail result for test@thepia.com:', result);
-        
+
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
         expect(result).toHaveProperty('hasPassword');
         expect(result).toHaveProperty('socialProviders');
-        
+
         console.log(`📊 User exists: ${result.exists}, Has passkey: ${result.hasPasskey}`);
       } catch (error) {
         console.error('❌ checkEmail failed for existing user:', error);
@@ -122,16 +124,16 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       try {
         const nonExistentEmail = `nonexistent-${Date.now()}@example.com`;
         const result = await apiClient.checkEmail(nonExistentEmail);
         console.log(`✅ checkEmail result for ${nonExistentEmail}:`, result);
-        
+
         expect(result).toHaveProperty('exists');
         expect(result.exists).toBe(false);
-        
+
         console.log(`📊 Non-existent user correctly identified: exists=${result.exists}`);
       } catch (error) {
         console.error('❌ checkEmail failed for non-existing user:', error);
@@ -146,7 +148,7 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       try {
         await apiClient.checkEmail('invalid-email');
@@ -169,7 +171,7 @@ describe('SignInForm Registration Flow Regression', () => {
       expect(authStore).toBeDefined();
       expect(authStore.checkUser).toBeDefined();
       expect(authStore.api).toBeDefined();
-      
+
       console.log('✅ Auth store initialized with required methods');
     });
 
@@ -180,16 +182,18 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       try {
         const result = await authStore.checkUser('test@thepia.com');
         console.log('✅ Auth store checkUser result:', result);
-        
+
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasWebAuthn');
-        
-        console.log(`📊 Auth store result: exists=${result.exists}, hasWebAuthn=${result.hasWebAuthn}`);
+
+        console.log(
+          `📊 Auth store result: exists=${result.exists}, hasWebAuthn=${result.hasWebAuthn}`
+        );
       } catch (error) {
         console.error('❌ Auth store checkUser failed:', error);
         throw error;
@@ -205,29 +209,29 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Simulate the exact logic from SignInForm.svelte handleEmailSubmit
       const email = 'newuser@example.com';
-      
+
       try {
         console.log(`🔍 Simulating email submission for: ${email}`);
-        
+
         // Step 1: Check what auth methods are available for this email
         const emailCheck = await authStore.api.checkEmail(email);
         const userExists = emailCheck.exists;
         const hasPasskeys = emailCheck.hasPasskey;
-        
+
         console.log(`📊 Email check results:`, {
           email,
           userExists,
           hasPasskeys,
-          fullResult: emailCheck
+          fullResult: emailCheck,
         });
-        
+
         // Step 2: Determine next step based on results
         let expectedStep = 'unknown';
-        
+
         if (hasPasskeys) {
           expectedStep = 'passkey-auth';
           console.log('🔐 Expected flow: Passkey authentication');
@@ -241,10 +245,10 @@ describe('SignInForm Registration Flow Regression', () => {
           expectedStep = 'no-auth-methods';
           console.log('❌ Expected flow: No authentication methods available');
         }
-        
+
         // Step 3: Verify the logic is working correctly
         expect(expectedStep).not.toBe('unknown');
-        
+
         if (!userExists) {
           console.log('✅ NEW USER DETECTED - Registration flow should be triggered');
           expect(expectedStep).toBe('registration-terms');
@@ -252,7 +256,6 @@ describe('SignInForm Registration Flow Regression', () => {
           console.log('✅ EXISTING USER DETECTED - Authentication flow should be triggered');
           expect(['passkey-auth', 'magic-link']).toContain(expectedStep);
         }
-        
       } catch (error) {
         console.error('❌ Email submission simulation failed:', error);
         throw error;
@@ -266,17 +269,16 @@ describe('SignInForm Registration Flow Regression', () => {
       }
 
       // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const email = 'test@thepia.com'; // Known existing user
-      
+
       try {
         const emailCheck = await authStore.api.checkEmail(email);
         console.log(`📊 Known user check for ${email}:`, emailCheck);
-        
+
         expect(emailCheck.exists).toBe(true);
         console.log('✅ Known existing user correctly identified');
-        
       } catch (error) {
         console.error('❌ Known user check failed:', error);
         throw error;
@@ -301,9 +303,9 @@ describe('SignInForm Registration Flow Regression', () => {
       for (const [index, testCase] of testCases.entries()) {
         // Add delay between each test case to avoid rate limiting
         if (index > 0) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
-        
+
         try {
           await apiClient.checkEmail(testCase.email);
           console.log(`⚠️ ${testCase.description} was unexpectedly accepted`);
@@ -325,23 +327,22 @@ describe('SignInForm Registration Flow Regression', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Origin': 'https://dev.thepia.net:5176'
+            Origin: 'https://dev.thepia.net:5176',
           },
-          body: JSON.stringify({ email: 'test@thepia.com' })
+          body: JSON.stringify({ email: 'test@thepia.com' }),
         });
 
         console.log(`📡 Direct fetch status: ${response.status}`);
         console.log(`📡 CORS headers:`, {
           'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
           'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
-          'access-control-allow-headers': response.headers.get('access-control-allow-headers')
+          'access-control-allow-headers': response.headers.get('access-control-allow-headers'),
         });
 
         if (!response.ok) {
           const errorText = await response.text();
           console.log(`❌ Error response body: ${errorText}`);
         }
-
       } catch (error) {
         console.error('❌ Network/CORS error:', error);
       }

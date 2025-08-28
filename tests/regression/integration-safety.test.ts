@@ -1,15 +1,15 @@
 /**
  * Safe Integration Regression Tests
- * 
+ *
  * These tests verify the fixes work in integration without making real API calls
  * or requiring external dependencies. They focus on the component behavior and
  * error handling patterns we fixed.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, waitFor, cleanup } from '@testing-library/svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/stores/auth-store';
 
 // Mock fetch to avoid real API calls
 const mockFetch = vi.fn();
@@ -29,19 +29,19 @@ describe('Integration Regression Tests (Safe)', () => {
   describe('End-to-End Error Handling Flow', () => {
     it('should handle complete unregistered user flow without technical errors', async () => {
       // Mock API responses for unregistered user
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
             exists: false,
-            hasWebAuthn: false
-          })
-        });
+            hasWebAuthn: false,
+          }),
+      });
 
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         clientId: 'test-client',
-        domain: 'test.com'
+        domain: 'test.com',
       });
 
       const { getByText, getByPlaceholderText, queryByText } = render(SignInForm, {
@@ -49,10 +49,10 @@ describe('Integration Regression Tests (Safe)', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test-client',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', authStore]])
+        context: new Map([['authStore', authStore]]),
       });
 
       // Enter email and attempt sign in
@@ -62,25 +62,29 @@ describe('Integration Regression Tests (Safe)', () => {
       await fireEvent.input(emailInput, { target: { value: 'newuser@example.com' } });
       await fireEvent.click(signInButton);
 
-      await waitFor(() => {
-        // ✅ REGRESSION TEST: Should NOT show technical errors
-        expect(queryByText(/endpoint.*not found/i)).toBeNull();
-        expect(queryByText(/auth\/signin\/magic-link/)).toBeNull();
-        expect(queryByText(/404/)).toBeNull();
+      await waitFor(
+        () => {
+          // ✅ REGRESSION TEST: Should NOT show technical errors
+          expect(queryByText(/endpoint.*not found/i)).toBeNull();
+          expect(queryByText(/auth\/signin\/magic-link/)).toBeNull();
+          expect(queryByText(/404/)).toBeNull();
 
-        // ✅ Should transition to registration OR show user-friendly message
-        const hasGoodUX = queryByText(/terms of service/i) || 
-                         queryByText(/try again/i) ||
-                         queryByText(/register/i);
-        expect(hasGoodUX).toBeTruthy();
-      }, { timeout: 3000 });
+          // ✅ Should transition to registration OR show user-friendly message
+          const hasGoodUX =
+            queryByText(/terms of service/i) ||
+            queryByText(/try again/i) ||
+            queryByText(/register/i);
+          expect(hasGoodUX).toBeTruthy();
+        },
+        { timeout: 3000 }
+      );
 
       // ✅ Verify API was called correctly
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.thepia.com/auth/check-user',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ email: 'newuser@example.com' })
+          body: JSON.stringify({ email: 'newuser@example.com' }),
         })
       );
     });
@@ -92,7 +96,7 @@ describe('Integration Regression Tests (Safe)', () => {
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         clientId: 'test-client',
-        domain: 'test.com'
+        domain: 'test.com',
       });
 
       const { getByText, getByPlaceholderText, queryByText } = render(SignInForm, {
@@ -100,10 +104,10 @@ describe('Integration Regression Tests (Safe)', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test-client',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', authStore]])
+        context: new Map([['authStore', authStore]]),
       });
 
       const emailInput = getByPlaceholderText(/email/i);
@@ -112,17 +116,21 @@ describe('Integration Regression Tests (Safe)', () => {
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(signInButton);
 
-      await waitFor(() => {
-        // ✅ REGRESSION TEST: Technical error should be hidden
-        expect(queryByText('Endpoint /auth/signin/magic-link not found')).toBeNull();
-        expect(queryByText('/auth/signin/magic-link')).toBeNull();
+      await waitFor(
+        () => {
+          // ✅ REGRESSION TEST: Technical error should be hidden
+          expect(queryByText('Endpoint /auth/signin/magic-link not found')).toBeNull();
+          expect(queryByText('/auth/signin/magic-link')).toBeNull();
 
-        // ✅ Should show user-friendly message OR auto-transition
-        const hasUserFriendlyResponse = queryByText(/terms of service/i) ||
-                                      queryByText(/try again/i) ||
-                                      queryByText(/authentication.*failed/i);
-        expect(hasUserFriendlyResponse).toBeTruthy();
-      }, { timeout: 3000 });
+          // ✅ Should show user-friendly message OR auto-transition
+          const hasUserFriendlyResponse =
+            queryByText(/terms of service/i) ||
+            queryByText(/try again/i) ||
+            queryByText(/authentication.*failed/i);
+          expect(hasUserFriendlyResponse).toBeTruthy();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -131,18 +139,19 @@ describe('Integration Regression Tests (Safe)', () => {
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         clientId: 'test-client',
-        domain: 'test.com'
+        domain: 'test.com',
       });
 
       // Spy on auth store methods
       const checkUserSpy = vi.spyOn(authStore, 'checkUser');
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasWebAuthn: true
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasWebAuthn: true,
+          }),
       });
 
       const { getByText, getByPlaceholderText } = render(SignInForm, {
@@ -150,10 +159,10 @@ describe('Integration Regression Tests (Safe)', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test-client',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', authStore]])
+        context: new Map([['authStore', authStore]]),
       });
 
       const emailInput = getByPlaceholderText(/email/i);
@@ -172,7 +181,7 @@ describe('Integration Regression Tests (Safe)', () => {
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         clientId: 'test-client',
-        domain: 'test.com'
+        domain: 'test.com',
       });
 
       // ✅ REGRESSION TEST: Component should render without its own API config
@@ -182,10 +191,10 @@ describe('Integration Regression Tests (Safe)', () => {
             config: {
               // Note: No apiBaseUrl - should inherit from auth store
               clientId: 'test-client',
-              domain: 'test.com'
-            }
+              domain: 'test.com',
+            },
           },
-          context: new Map([['authStore', authStore]])
+          context: new Map([['authStore', authStore]]),
         });
       }).not.toThrow();
     });
@@ -198,7 +207,7 @@ describe('Integration Regression Tests (Safe)', () => {
         const authStore = createAuthStore({
           apiBaseUrl: 'https://api.thepia.com',
           clientId: 'test-client',
-          domain: 'test.com'
+          domain: 'test.com',
         });
 
         render(SignInForm, {
@@ -206,10 +215,10 @@ describe('Integration Regression Tests (Safe)', () => {
             config: {
               apiBaseUrl: 'https://api.thepia.com',
               clientId: 'test-client',
-              domain: 'test.com'
-            }
+              domain: 'test.com',
+            },
           },
-          context: new Map([['authStore', authStore]])
+          context: new Map([['authStore', authStore]]),
         });
       }).not.toThrow();
     });
@@ -217,7 +226,7 @@ describe('Integration Regression Tests (Safe)', () => {
     it('should have all expected exports available', async () => {
       // ✅ REGRESSION TEST: Main exports should be available
       const exports = await import('../../src/index');
-      
+
       expect(exports.SignInForm).toBeDefined();
       expect(exports.createAuthStore).toBeDefined();
       expect(exports.RegistrationForm).toBeDefined();
@@ -233,7 +242,7 @@ describe('Integration Regression Tests (Safe)', () => {
         new Error('404: Not Found'),
         { status: 404, message: 'API endpoint not available' },
         new Error('Network request failed'),
-        new Error('TypeError: Cannot read properties of undefined')
+        new Error('TypeError: Cannot read properties of undefined'),
       ];
 
       for (const error of errorTypes) {
@@ -242,7 +251,7 @@ describe('Integration Regression Tests (Safe)', () => {
         const authStore = createAuthStore({
           apiBaseUrl: 'https://api.thepia.com',
           clientId: 'test-client',
-          domain: 'test.com'
+          domain: 'test.com',
         });
 
         const { getByText, getByPlaceholderText, queryByText } = render(SignInForm, {
@@ -250,10 +259,10 @@ describe('Integration Regression Tests (Safe)', () => {
             config: {
               apiBaseUrl: 'https://api.thepia.com',
               clientId: 'test-client',
-              domain: 'test.com'
-            }
+              domain: 'test.com',
+            },
           },
-          context: new Map([['authStore', authStore]])
+          context: new Map([['authStore', authStore]]),
         });
 
         const emailInput = getByPlaceholderText(/email/i);

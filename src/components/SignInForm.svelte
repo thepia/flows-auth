@@ -3,359 +3,369 @@
   Features email-triggered WebAuthn, conditional authentication, and white labeling
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
-  import { createAuthStore } from '../stores/auth-store';
-  import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
-  import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
-  import type { AuthConfig, User, AuthError, AuthMethod } from '../types';
+import { createEventDispatcher, onMount } from 'svelte';
+import { createAuthStore } from '../stores/auth-store';
+import type { AuthConfig, AuthError, AuthMethod, User } from '../types';
+import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../utils/webauthn';
+import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
 
-  // Props - Mirror React component props
-  export let config: AuthConfig;
-  export let showLogo = true;
-  export let compact = false;
-  export let className = '';
-  export let initialEmail = '';
+// Props - Mirror React component props
+export let config: AuthConfig;
+export let showLogo = true;
+export let compact = false;
+export let className = '';
+export let initialEmail = '';
 
-  // Events
-  const dispatch = createEventDispatcher<{
-    success: { user: User; method: AuthMethod };
-    error: { error: AuthError };
-    stepChange: { step: string };
-  }>();
+// Events
+const dispatch = createEventDispatcher<{
+  success: { user: User; method: AuthMethod };
+  error: { error: AuthError };
+  stepChange: { step: string };
+}>();
 
-  // Auth store
-  const authStore = createAuthStore(config);
+// Auth store
+const authStore = createAuthStore(config);
 
-  // Component state - Mirror React component state
-  let email = initialEmail;
-  let loading = false;
-  let error: string | null = null;
-  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' | 'magic_link' | 'registration-terms' | 'registration-success' = 'combined-auth';
-  let supportsWebAuthn = false;
-  let conditionalAuthActive = false;
-  let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
-  let userExists = false;
-  let hasPasskeys = false;
+// Component state - Mirror React component state
+let email = initialEmail;
+let loading = false;
+let error: string | null = null;
+let step:
+  | 'combined-auth'
+  | 'auto-auth'
+  | 'webauthn-register'
+  | 'email-sent'
+  | 'credential-recovery'
+  | 'magic_link'
+  | 'registration-terms'
+  | 'registration-success' = 'combined-auth';
+let supportsWebAuthn = false;
+let conditionalAuthActive = false;
+let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
+let userExists = false;
+let hasPasskeys = false;
 
-  // Registration state - GDPR compliant (no name fields)
-  let acceptedTerms = false;
-  let acceptedPrivacy = false;
+// Registration state - GDPR compliant (no name fields)
+let acceptedTerms = false;
+let acceptedPrivacy = false;
 
-  // WebAuthn state
-  let platformAuthenticatorAvailable = false;
+// WebAuthn state
+let platformAuthenticatorAvailable = false;
 
-  // Initialize component
-  onMount(async () => {
-    // Debug WebAuthn support in development
-    if (config.errorReporting?.debug) {
-      const debugInfo = await getWebAuthnDebugInfo();
-      logWebAuthnDebugInfo(debugInfo);
-      
-      console.log('🔍 SignInForm WebAuthn Check:', {
-        isWebAuthnSupported: isWebAuthnSupported(),
-        enablePasskeys: config.enablePasskeys,
-        finalSupport: isWebAuthnSupported() && config.enablePasskeys
-      });
-    }
-    
-    supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
-    platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
-    
-    console.log('🔐 WebAuthn Status:', {
-      supportsWebAuthn,
-      platformAuthenticatorAvailable,
-      enablePasskeys: config.enablePasskeys
+// Initialize component
+onMount(async () => {
+  // Debug WebAuthn support in development
+  if (config.errorReporting?.debug) {
+    const debugInfo = await getWebAuthnDebugInfo();
+    logWebAuthnDebugInfo(debugInfo);
+
+    console.log('🔍 SignInForm WebAuthn Check:', {
+      isWebAuthnSupported: isWebAuthnSupported(),
+      enablePasskeys: config.enablePasskeys,
+      finalSupport: isWebAuthnSupported() && config.enablePasskeys,
     });
-    
-    // If initial email is provided, trigger conditional auth
-    if (initialEmail && supportsWebAuthn) {
-      await startConditionalAuthentication();
-    }
+  }
+
+  supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
+  platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
+
+  console.log('🔐 WebAuthn Status:', {
+    supportsWebAuthn,
+    platformAuthenticatorAvailable,
+    enablePasskeys: config.enablePasskeys,
   });
 
-  // Email change handler - mirrors thepia.com AuthModal implementation
-  async function handleEmailChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    email = target.value;
+  // If initial email is provided, trigger conditional auth
+  if (initialEmail && supportsWebAuthn) {
+    await startConditionalAuthentication();
+  }
+});
 
-    if (!email.trim() || !supportsWebAuthn || loading) return;
+// Email change handler - mirrors thepia.com AuthModal implementation
+async function handleEmailChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  email = target.value;
 
-    // Clear previous timeout
-    if (emailChangeTimeout) {
-      clearTimeout(emailChangeTimeout);
-    }
+  if (!email.trim() || !supportsWebAuthn || loading) return;
 
-    // Debounce email changes (1 second delay like thepia.com)
-    // Only attempt conditional auth for valid email format
-    emailChangeTimeout = setTimeout(async () => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (email && emailRegex.test(email) && !conditionalAuthActive) {
-        try {
-          await startConditionalAuthentication();
-        } catch (err) {
-          // Conditional auth should fail silently
-          console.log('⚠️ Conditional authentication failed (expected if no passkeys):', err);
-        }
-      }
-    }, 1000);
+  // Clear previous timeout
+  if (emailChangeTimeout) {
+    clearTimeout(emailChangeTimeout);
   }
 
-  // Start conditional authentication - mirrors thepia.com AuthModal implementation
-  async function startConditionalAuthentication() {
-    if (conditionalAuthActive || !email.trim()) return;
-
-    // Only attempt conditional auth for valid email format
+  // Debounce email changes (1 second delay like thepia.com)
+  // Only attempt conditional auth for valid email format
+  emailChangeTimeout = setTimeout(async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return;
-
-    try {
-      conditionalAuthActive = true;
-      console.log('🔍 Starting conditional authentication for:', email);
-
-      // Use the auth store's conditional authentication
-      const success = await authStore.startConditionalAuthentication(email);
-
-      if (success) {
-        // Authentication succeeded - dispatch success event to parent
-        console.log('✅ Conditional authentication successful - user signed in');
-        // The auth store will handle state updates, we just need to let parent know
-        dispatch('success', {
-          user: $authStore.user,
-          method: 'passkey'
-        });
+    if (email && emailRegex.test(email) && !conditionalAuthActive) {
+      try {
+        await startConditionalAuthentication();
+      } catch (err) {
+        // Conditional auth should fail silently
+        console.log('⚠️ Conditional authentication failed (expected if no passkeys):', err);
       }
-    } catch (error) {
-      // Conditional auth should fail silently - this is expected if no passkeys exist
-      console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
-    } finally {
-      conditionalAuthActive = false;
     }
+  }, 1000);
+}
+
+// Start conditional authentication - mirrors thepia.com AuthModal implementation
+async function startConditionalAuthentication() {
+  if (conditionalAuthActive || !email.trim()) return;
+
+  // Only attempt conditional auth for valid email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) return;
+
+  try {
+    conditionalAuthActive = true;
+    console.log('🔍 Starting conditional authentication for:', email);
+
+    // Use the auth store's conditional authentication
+    const success = await authStore.startConditionalAuthentication(email);
+
+    if (success) {
+      // Authentication succeeded - dispatch success event to parent
+      console.log('✅ Conditional authentication successful - user signed in');
+      // The auth store will handle state updates, we just need to let parent know
+      dispatch('success', {
+        user: $authStore.user,
+        method: 'passkey',
+      });
+    }
+  } catch (error) {
+    // Conditional auth should fail silently - this is expected if no passkeys exist
+    console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
+  } finally {
+    conditionalAuthActive = false;
   }
+}
 
-  // Handle primary sign in action
-  async function handleSignIn() {
-    if (!email.trim()) return;
-    
-    loading = true;
-    error = null;
+// Handle primary sign in action
+async function handleSignIn() {
+  if (!email.trim()) return;
 
-    try {
-      // Check what auth methods are available for this email
-      const userCheck = await authStore.checkUser(email);
-      userExists = userCheck.exists;
-      hasPasskeys = userCheck.hasWebAuthn;
-      
-      if (userCheck.hasWebAuthn && supportsWebAuthn) {
-        // Try passkey authentication first
-        try {
-          await handlePasskeyAuth(false); // Not silent mode
-        } catch (passkeyError) {
-          console.warn('Passkey authentication failed:', passkeyError);
-          // Fall back to magic link if enabled
-          if (config.enableMagicLinks) {
-            try {
-              await handleMagicLinkAuth();
-            } catch (magicLinkError) {
-              console.warn('Magic link failed:', magicLinkError);
-              error = getUserFriendlyErrorMessage(magicLinkError);
-              loading = false;
-            }
-          } else {
-            error = getUserFriendlyErrorMessage(passkeyError);
+  loading = true;
+  error = null;
+
+  try {
+    // Check what auth methods are available for this email
+    const userCheck = await authStore.checkUser(email);
+    userExists = userCheck.exists;
+    hasPasskeys = userCheck.hasWebAuthn;
+
+    if (userCheck.hasWebAuthn && supportsWebAuthn) {
+      // Try passkey authentication first
+      try {
+        await handlePasskeyAuth(false); // Not silent mode
+      } catch (passkeyError) {
+        console.warn('Passkey authentication failed:', passkeyError);
+        // Fall back to magic link if enabled
+        if (config.enableMagicLinks) {
+          try {
+            await handleMagicLinkAuth();
+          } catch (magicLinkError) {
+            console.warn('Magic link failed:', magicLinkError);
+            error = getUserFriendlyErrorMessage(magicLinkError);
             loading = false;
           }
-        }
-      } else if (userExists && config.enableMagicLinks) {
-        // User exists but no passkey - send magic link
-        try {
-          await handleMagicLinkAuth();
-        } catch (magicLinkError) {
-          console.warn('Magic link failed:', magicLinkError);
-          error = 'Failed to send magic link. Please try again.';
+        } else {
+          error = getUserFriendlyErrorMessage(passkeyError);
           loading = false;
         }
-      } else if (!userExists) {
-        // User doesn't exist - switch to registration flow
-        step = 'registration-terms';
-        loading = false;
-      } else {
-        // No authentication methods available
-        error = 'No authentication methods available for this email.';
+      }
+    } else if (userExists && config.enableMagicLinks) {
+      // User exists but no passkey - send magic link
+      try {
+        await handleMagicLinkAuth();
+      } catch (magicLinkError) {
+        console.warn('Magic link failed:', magicLinkError);
+        error = 'Failed to send magic link. Please try again.';
         loading = false;
       }
-    } catch (err: any) {
+    } else if (!userExists) {
+      // User doesn't exist - switch to registration flow
+      step = 'registration-terms';
       loading = false;
-
-      // Check if this is a "user not found" or "no passkey" error
-      const message = err.message || '';
-      if (message.includes('/auth/signin/magic-link') ||
-          message.includes('not found') ||
-          message.includes('404')) {
-        // User doesn't exist or has no passkey - transition to registration
-        console.log('🔄 User not found or no passkey available - transitioning to registration');
-        step = 'registration-terms';
-        error = null; // Clear error since we're handling it
-      } else {
-        // Other errors - show user-friendly message
-        error = getUserFriendlyErrorMessage(err);
-      }
-    }
-  }
-
-  // Password authentication removed - passwordless system only
-
-  // Handle passkey authentication with silent mode support
-  async function handlePasskeyAuth(silent = false) {
-    try {
-      const result = await authStore.signInWithPasskey(email);
-
-      if (result.step === 'success' && result.user) {
-        loading = false;
-        dispatch('success', {
-          user: result.user,
-          method: 'passkey'
-        });
-      }
-    } catch (err: any) {
-      if (!silent) {
-        loading = false;
-        // Provide user-friendly error messages instead of technical details
-        error = getUserFriendlyErrorMessage(err);
-      }
-      throw err; // Re-throw for caller to handle
-    }
-  }
-
-  // Convert technical errors to user-friendly messages
-  function getUserFriendlyErrorMessage(err: any): string {
-    const message = err.message || '';
-    const status = err.status || 0;
-
-    // Handle specific API endpoint errors
-    if (message.includes('/auth/signin/magic-link') || message.includes('not found')) {
-      return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
-    }
-
-    if (message.includes('/auth/webauthn/challenge') || status === 404) {
-      return 'Authentication service temporarily unavailable. Please try again in a moment.';
-    }
-
-    // Handle WebAuthn-specific errors
-    if (message.includes('NotAllowedError') || message.includes('cancelled')) {
-      return 'Authentication was cancelled. Please try again.';
-    }
-
-    if (message.includes('NotSupportedError')) {
-      return 'Passkey authentication is not supported on this device.';
-    }
-
-    if (message.includes('SecurityError')) {
-      return 'Security error occurred. Please ensure you\'re on a secure connection.';
-    }
-
-    if (message.includes('InvalidStateError')) {
-      return 'No passkey available on this device. Please register a new passkey.';
-    }
-
-    // Generic fallback
-    return 'Authentication failed. Please try again or use a different sign-in method.';
-  }
-
-  // Handle magic link authentication
-  async function handleMagicLinkAuth() {
-    try {
-      const result = await authStore.signInWithMagicLink(email);
-
-      // Check for magic link sent response - the API returns 'magic-link' step
-      if (result.step === 'magic-link' || result.magicLinkSent) {
-        step = 'magic_link';
-        loading = false;
-      }
-    } catch (err: any) {
+    } else {
+      // No authentication methods available
+      error = 'No authentication methods available for this email.';
       loading = false;
-      error = err.message || 'Failed to send magic link';
     }
-  }
-
-  // Handle form submission based on current step
-  function handleSubmit() {
-    if (step === 'combined-auth') {
-      handleSignIn();
-    }
-  }
-
-  // Handle Terms of Service acceptance
-  function handleTermsAcceptance() {
-    if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
-      return;
-    }
-
-    error = null;
-    // Proceed directly to registration since we have ToS acceptance
-    handleRegistration();
-  }
-
-  // Handle registration with passkey
-  async function handleRegistration() {
-    if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'Terms of Service must be accepted';
-      return;
-    }
-
-    loading = true;
-    error = null;
-
-    try {
-      const registrationData = {
-        email,
-        acceptedTerms,
-        acceptedPrivacy
-      };
-
-      // Register user with passkey
-      const result = await authStore.registerUser(registrationData);
-
-      if (result.step === 'success' && result.user) {
-        // Registration successful - user enters app immediately
-        step = 'registration-success';
-        loading = false;
-
-        // Dispatch success event
-        dispatch('success', {
-          user: result.user,
-          method: 'passkey' as AuthMethod
-        });
-      }
-    } catch (err: any) {
-      loading = false;
-      error = err.message || 'Registration failed';
-      dispatch('error', { error: { code: 'registration_failed', message: error } });
-    }
-  }
-
-  // Go back to previous step
-  function handleBack() {
-    error = null;
-    switch (step) {
-      case 'registration-terms':
-        step = 'combined-auth';
-        break;
-      default:
-        step = 'combined-auth';
-    }
-    dispatch('stepChange', { step });
-  }
-
-  // Reset form to initial state
-  function resetForm() {
-    step = 'combined-auth';
-    error = null;
+  } catch (err: any) {
     loading = false;
-    // Reset registration state
-    acceptedTerms = false;
-    acceptedPrivacy = false;
+
+    // Check if this is a "user not found" or "no passkey" error
+    const message = err.message || '';
+    if (
+      message.includes('/auth/signin/magic-link') ||
+      message.includes('not found') ||
+      message.includes('404')
+    ) {
+      // User doesn't exist or has no passkey - transition to registration
+      console.log('🔄 User not found or no passkey available - transitioning to registration');
+      step = 'registration-terms';
+      error = null; // Clear error since we're handling it
+    } else {
+      // Other errors - show user-friendly message
+      error = getUserFriendlyErrorMessage(err);
+    }
   }
+}
+
+// Password authentication removed - passwordless system only
+
+// Handle passkey authentication with silent mode support
+async function handlePasskeyAuth(silent = false) {
+  try {
+    const result = await authStore.signInWithPasskey(email);
+
+    if (result.step === 'success' && result.user) {
+      loading = false;
+      dispatch('success', {
+        user: result.user,
+        method: 'passkey',
+      });
+    }
+  } catch (err: any) {
+    if (!silent) {
+      loading = false;
+      // Provide user-friendly error messages instead of technical details
+      error = getUserFriendlyErrorMessage(err);
+    }
+    throw err; // Re-throw for caller to handle
+  }
+}
+
+// Convert technical errors to user-friendly messages
+function getUserFriendlyErrorMessage(err: any): string {
+  const message = err.message || '';
+  const status = err.status || 0;
+
+  // Handle specific API endpoint errors
+  if (message.includes('/auth/signin/magic-link') || message.includes('not found')) {
+    return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
+  }
+
+  if (message.includes('/auth/webauthn/challenge') || status === 404) {
+    return 'Authentication service temporarily unavailable. Please try again in a moment.';
+  }
+
+  // Handle WebAuthn-specific errors
+  if (message.includes('NotAllowedError') || message.includes('cancelled')) {
+    return 'Authentication was cancelled. Please try again.';
+  }
+
+  if (message.includes('NotSupportedError')) {
+    return 'Passkey authentication is not supported on this device.';
+  }
+
+  if (message.includes('SecurityError')) {
+    return "Security error occurred. Please ensure you're on a secure connection.";
+  }
+
+  if (message.includes('InvalidStateError')) {
+    return 'No passkey available on this device. Please register a new passkey.';
+  }
+
+  // Generic fallback
+  return 'Authentication failed. Please try again or use a different sign-in method.';
+}
+
+// Handle magic link authentication
+async function handleMagicLinkAuth() {
+  try {
+    const result = await authStore.signInWithMagicLink(email);
+
+    // Check for magic link sent response - the API returns 'magic-link' step
+    if (result.step === 'magic-link' || result.magicLinkSent) {
+      step = 'magic_link';
+      loading = false;
+    }
+  } catch (err: any) {
+    loading = false;
+    error = err.message || 'Failed to send magic link';
+  }
+}
+
+// Handle form submission based on current step
+function handleSubmit() {
+  if (step === 'combined-auth') {
+    handleSignIn();
+  }
+}
+
+// Handle Terms of Service acceptance
+function handleTermsAcceptance() {
+  if (!acceptedTerms || !acceptedPrivacy) {
+    error = 'You must accept the Terms of Service and Privacy Policy to continue.';
+    return;
+  }
+
+  error = null;
+  // Proceed directly to registration since we have ToS acceptance
+  handleRegistration();
+}
+
+// Handle registration with passkey
+async function handleRegistration() {
+  if (!acceptedTerms || !acceptedPrivacy) {
+    error = 'Terms of Service must be accepted';
+    return;
+  }
+
+  loading = true;
+  error = null;
+
+  try {
+    const registrationData = {
+      email,
+      acceptedTerms,
+      acceptedPrivacy,
+    };
+
+    // Register user with passkey
+    const result = await authStore.registerUser(registrationData);
+
+    if (result.step === 'success' && result.user) {
+      // Registration successful - user enters app immediately
+      step = 'registration-success';
+      loading = false;
+
+      // Dispatch success event
+      dispatch('success', {
+        user: result.user,
+        method: 'passkey' as AuthMethod,
+      });
+    }
+  } catch (err: any) {
+    loading = false;
+    error = err.message || 'Registration failed';
+    dispatch('error', { error: { code: 'registration_failed', message: error } });
+  }
+}
+
+// Go back to previous step
+function handleBack() {
+  error = null;
+  switch (step) {
+    case 'registration-terms':
+      step = 'combined-auth';
+      break;
+    default:
+      step = 'combined-auth';
+  }
+  dispatch('stepChange', { step });
+}
+
+// Reset form to initial state
+function resetForm() {
+  step = 'combined-auth';
+  error = null;
+  loading = false;
+  // Reset registration state
+  acceptedTerms = false;
+  acceptedPrivacy = false;
+}
 </script>
 
 <div class="auth-form {className}" class:compact>

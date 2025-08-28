@@ -1,27 +1,26 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 /**
  * CRITICAL UI/UX INTEGRATION TESTS
- * 
+ *
  * These tests validate the UI/UX integration requirements (FR9) to ensure
  * proper behavior of AuthSection and landing page interactions.
- * 
+ *
  * These tests MUST PASS to ensure correct user experience.
  */
 describe('UI/UX Integration Requirements - CRITICAL', () => {
-
   // Helper function to simulate auth state
   function createMockAuthState(isAuthenticated: boolean, user?: any) {
     return {
       state: isAuthenticated ? 'authenticated' : 'unauthenticated',
       user: user || null,
       isAuthenticated,
-      accessToken: isAuthenticated ? 'mock-token' : null
+      accessToken: isAuthenticated ? 'mock-token' : null,
     };
   }
 
   // Helper function to simulate AuthSection behavior
-  function simulateAuthSection(authState: any, hasInvitationToken: boolean = false) {
+  function simulateAuthSection(authState: any, _hasInvitationToken: boolean = false) {
     const isAuthenticated = authState.state === 'authenticated';
     const user = authState.user;
 
@@ -33,7 +32,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
         showUserEmail: true,
         userEmail: user.email,
         buttonText: 'Open Demo App',
-        buttonAction: '/app'
+        buttonAction: '/app',
       };
     }
 
@@ -44,7 +43,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
       showUserEmail: false,
       userEmail: null,
       buttonText: null,
-      buttonAction: null
+      buttonAction: null,
     };
   }
 
@@ -56,13 +55,13 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
       // FR9.4: Landing page "Open Button" MUST navigate to /app if user is authenticated
       return {
         action: 'navigate',
-        destination: '/app'
+        destination: '/app',
       };
     } else {
       // FR9.5: Landing page "Open Button" MUST scroll to AuthSection if user is not authenticated
       return {
         action: 'scroll',
-        destination: 'AuthSection'
+        destination: 'AuthSection',
       };
     }
   }
@@ -71,7 +70,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
       email: 'test@example.com',
-      name: 'Test User'
+      name: 'Test User',
     });
 
     const authSectionUI = simulateAuthSection(authenticatedState);
@@ -86,7 +85,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.2: AuthSection MUST NOT automatically redirect authenticated users from landing page', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
 
     const authSectionUI = simulateAuthSection(authenticatedState);
@@ -94,7 +93,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // CRITICAL: Should show UI, not redirect
     expect(authSectionUI.showOpenDemoButton).toBe(true);
     expect(authSectionUI.showSignInForm).toBe(false);
-    
+
     // The component should render UI, not perform automatic redirect
     // (This test validates that we removed the automatic redirect behavior)
   });
@@ -102,7 +101,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.3: "Open Demo" button MUST navigate to /app when clicked', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
 
     const authSectionUI = simulateAuthSection(authenticatedState);
@@ -115,7 +114,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.4: Landing page "Open Button" MUST navigate to /app if user is authenticated', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
 
     const openButtonBehavior = simulateLandingPageOpenButton(authenticatedState);
@@ -138,24 +137,24 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.6: Invitation flow (?token= present) MAY redirect to /app after authentication', () => {
     // This test validates that invitation flow can redirect
     // The actual implementation may choose to redirect or show button
-    
+
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
 
     // Simulate invitation token present
     const hasInvitationToken = true;
-    
+
     // Both behaviors are acceptable for invitation flow:
     // 1. Show "Open Demo" button (consistent with normal flow)
     // 2. Automatic redirect (special invitation behavior)
-    
+
     const authSectionUI = simulateAuthSection(authenticatedState, hasInvitationToken);
-    
+
     // At minimum, user should be able to access the app
     const canAccessApp = authSectionUI.showOpenDemoButton && authSectionUI.buttonAction === '/app';
-    
+
     expect(canAccessApp).toBe(true);
   });
 
@@ -164,7 +163,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
       email: userEmail,
-      name: 'Test User'
+      name: 'Test User',
     });
 
     const authSectionUI = simulateAuthSection(authenticatedState);
@@ -177,9 +176,9 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.8: AuthSection MUST provide clear visual distinction between authenticated/unauthenticated states', () => {
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
-    
+
     const unauthenticatedState = createMockAuthState(false);
 
     const authenticatedUI = simulateAuthSection(authenticatedState);
@@ -210,7 +209,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // Should show sign-in form
     expect(initialAuthSection.showSignInForm).toBe(true);
     expect(initialAuthSection.showOpenDemoButton).toBe(false);
-    
+
     // Open button should scroll to auth section
     expect(initialOpenButton.action).toBe('scroll');
     expect(initialOpenButton.destination).toBe('AuthSection');
@@ -218,7 +217,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // Step 2: User successfully authenticates
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
-      email: 'test@example.com'
+      email: 'test@example.com',
     });
     const authenticatedAuthSection = simulateAuthSection(authenticatedState);
     const authenticatedOpenButton = simulateLandingPageOpenButton(authenticatedState);
@@ -228,7 +227,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     expect(authenticatedAuthSection.showOpenDemoButton).toBe(true);
     expect(authenticatedAuthSection.buttonAction).toBe('/app');
     expect(authenticatedAuthSection.showUserEmail).toBe(true);
-    
+
     // Open button should navigate to app
     expect(authenticatedOpenButton.action).toBe('navigate');
     expect(authenticatedOpenButton.destination).toBe('/app');
@@ -238,7 +237,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     const authenticatedStateNoEmail = createMockAuthState(true, {
       id: 'user-123',
       // Missing email
-      name: 'Test User'
+      name: 'Test User',
     });
 
     const authSectionUI = simulateAuthSection(authenticatedStateNoEmail);
@@ -253,14 +252,14 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
 
   describe('Registration Flow Email Verification', () => {
     // Helper function to simulate registration success message
-    function simulateRegistrationSuccessMessage(
+    function _simulateRegistrationSuccessMessage(
       emailVerifiedViaInvitation: boolean,
-      hasInvitationToken: boolean = false
+      _hasInvitationToken: boolean = false
     ) {
-      const registrationResult = {
+      const _registrationResult = {
         step: 'success',
         user: { id: 'user-123', email: 'test@example.com' },
-        emailVerifiedViaInvitation
+        emailVerifiedViaInvitation,
       };
 
       if (emailVerifiedViaInvitation) {
@@ -268,14 +267,14 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
           showEmailVerificationMessage: false,
           showEmailVerifiedMessage: true,
           message: 'Your email test@example.com has been verified',
-          subMessage: 'You have full access to all features'
+          subMessage: 'You have full access to all features',
         };
       } else {
         return {
           showEmailVerificationMessage: true,
           showEmailVerifiedMessage: false,
           message: "We've sent a welcome email to test@example.com",
-          subMessage: 'Verify your email to unlock all features'
+          subMessage: 'Verify your email to unlock all features',
         };
       }
     }
@@ -285,7 +284,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
       const registrationResult = {
         step: 'success' as const,
         user: { id: 'user-123', email: 'test@example.com', emailVerified: true },
-        emailVerifiedViaInvitation: true
+        emailVerifiedViaInvitation: true,
       };
 
       // Simulate the registration form logic
@@ -304,7 +303,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
       const registrationResult = {
         step: 'success' as const,
         user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
-        emailVerifiedViaInvitation: false
+        emailVerifiedViaInvitation: false,
       };
 
       // Simulate the registration form logic
@@ -324,14 +323,14 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
         step: 'success' as const,
         user: { id: 'user-123', email: 'test@example.com', emailVerified: true },
         emailVerifiedViaInvitation: true, // CRITICAL: This field must be present
-        welcomeEmailSent: false // No welcome email needed for invitation users
+        welcomeEmailSent: false, // No welcome email needed for invitation users
       };
 
       const standardRegistrationResponse = {
         step: 'success' as const,
         user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
         emailVerifiedViaInvitation: false, // CRITICAL: This field must be present
-        welcomeEmailSent: true // Welcome email sent for standard registration
+        welcomeEmailSent: true, // Welcome email sent for standard registration
       };
 
       // Validate invitation response

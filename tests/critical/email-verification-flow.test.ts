@@ -1,12 +1,12 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 /**
  * CRITICAL EMAIL VERIFICATION FLOW TESTS
- * 
+ *
  * These tests validate the email verification logic that was changed
  * but not properly tested. They ensure invitation vs standard user
  * flows work correctly.
- * 
+ *
  * THESE TESTS MUST PASS to ensure proper UX for different user types.
  */
 

@@ -1,6 +1,6 @@
 /**
  * Regression Tests for Error Handling Fixes
- * 
+ *
  * These tests guard against the specific bugs we fixed:
  * 1. Technical error exposure to users
  * 2. Incorrect API configuration architecture
@@ -8,9 +8,8 @@
  * 4. Missing automatic registration flow
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 
 describe('Error Handling Regression Tests', () => {
@@ -26,8 +25,8 @@ describe('Error Handling Regression Tests', () => {
       signInWithMagicLink: vi.fn(),
       subscribe: vi.fn(() => () => {}),
       api: {
-        checkEmail: vi.fn() // Should NOT be called directly by components
-      }
+        checkEmail: vi.fn(), // Should NOT be called directly by components
+      },
     };
   });
 
@@ -42,10 +41,10 @@ describe('Error Handling Regression Tests', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       const emailInput = getByText('Email address').closest('input') as HTMLInputElement;
@@ -59,11 +58,12 @@ describe('Error Handling Regression Tests', () => {
         expect(queryByText('Endpoint /auth/signin/magic-link not found')).toBeNull();
         expect(queryByText('/auth/signin/magic-link')).toBeNull();
         expect(queryByText('not found')).toBeNull();
-        
+
         // ✅ Should show user-friendly message OR auto-transition to registration
-        const hasUserFriendlyError = queryByText(/authentication.*failed/i) || 
-                                   queryByText(/try again/i) ||
-                                   queryByText(/Terms of Service/i); // Registration step
+        const hasUserFriendlyError =
+          queryByText(/authentication.*failed/i) ||
+          queryByText(/try again/i) ||
+          queryByText(/Terms of Service/i); // Registration step
         expect(hasUserFriendlyError).toBeTruthy();
       });
     });
@@ -72,16 +72,16 @@ describe('Error Handling Regression Tests', () => {
       const testCases = [
         {
           error: new Error('Endpoint /auth/signin/magic-link not found'),
-          expectedPattern: /no passkey found|register.*passkey|try again/i
+          expectedPattern: /no passkey found|register.*passkey|try again/i,
         },
         {
           error: new Error('404: /auth/webauthn/challenge not found'),
-          expectedPattern: /service.*unavailable|try again/i
+          expectedPattern: /service.*unavailable|try again/i,
         },
         {
           error: { status: 404, message: 'Not found' },
-          expectedPattern: /service.*unavailable|try again/i
-        }
+          expectedPattern: /service.*unavailable|try again/i,
+        },
       ];
 
       for (const testCase of testCases) {
@@ -92,10 +92,10 @@ describe('Error Handling Regression Tests', () => {
             config: {
               apiBaseUrl: 'https://api.thepia.com',
               clientId: 'test',
-              domain: 'test.com'
-            }
+              domain: 'test.com',
+            },
           },
-          context: new Map([['authStore', mockAuthStore]])
+          context: new Map([['authStore', mockAuthStore]]),
         });
 
         const emailInput = getByText('Email address').closest('input') as HTMLInputElement;
@@ -107,7 +107,7 @@ describe('Error Handling Regression Tests', () => {
         await waitFor(() => {
           // ✅ Should show user-friendly message
           const errorElements = document.querySelectorAll('[class*="error"], [role="alert"]');
-          const hasUserFriendlyMessage = Array.from(errorElements).some(el => 
+          const hasUserFriendlyMessage = Array.from(errorElements).some((el) =>
             testCase.expectedPattern.test(el.textContent || '')
           );
           expect(hasUserFriendlyMessage).toBeTruthy();
@@ -122,7 +122,7 @@ describe('Error Handling Regression Tests', () => {
       mockCheckUser.mockResolvedValue({
         exists: false,
         hasWebAuthn: false,
-        userId: undefined
+        userId: undefined,
       });
 
       const { getByText, queryByText } = render(SignInForm, {
@@ -130,10 +130,10 @@ describe('Error Handling Regression Tests', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       const emailInput = getByText('Email address').closest('input') as HTMLInputElement;
@@ -146,7 +146,7 @@ describe('Error Handling Regression Tests', () => {
         // ✅ REGRESSION TEST: Should auto-transition to registration
         expect(queryByText('Terms of Service')).toBeTruthy();
         expect(queryByText('Privacy Policy')).toBeTruthy();
-        
+
         // ✅ Should NOT show error message for unregistered user
         expect(queryByText(/authentication.*failed/i)).toBeNull();
         expect(queryByText(/no.*passkey.*found/i)).toBeNull();
@@ -158,7 +158,7 @@ describe('Error Handling Regression Tests', () => {
       mockCheckUser.mockResolvedValue({
         exists: true,
         hasWebAuthn: false,
-        userId: 'user123'
+        userId: 'user123',
       });
 
       const { getByText, queryByText } = render(SignInForm, {
@@ -167,10 +167,10 @@ describe('Error Handling Regression Tests', () => {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
             domain: 'test.com',
-            enableMagicLinks: true
-          }
+            enableMagicLinks: true,
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       const emailInput = getByText('Email address').closest('input') as HTMLInputElement;
@@ -182,11 +182,12 @@ describe('Error Handling Regression Tests', () => {
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should NOT show "what's wrong" without solution
         expect(queryByText(/no passkey found.*register/i)).toBeNull();
-        
+
         // ✅ Should either auto-transition or provide clear action
-        const hasActionableFlow = queryByText(/magic link/i) || 
-                                queryByText(/Terms of Service/i) ||
-                                queryByText(/check.*email/i);
+        const hasActionableFlow =
+          queryByText(/magic link/i) ||
+          queryByText(/Terms of Service/i) ||
+          queryByText(/check.*email/i);
         expect(hasActionableFlow).toBeTruthy();
       });
     });
@@ -197,7 +198,7 @@ describe('Error Handling Regression Tests', () => {
       mockCheckUser.mockResolvedValue({
         exists: true,
         hasWebAuthn: true,
-        userId: 'user123'
+        userId: 'user123',
       });
 
       const { getByText } = render(SignInForm, {
@@ -205,10 +206,10 @@ describe('Error Handling Regression Tests', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       const emailInput = getByText('Email address').closest('input') as HTMLInputElement;
@@ -220,7 +221,7 @@ describe('Error Handling Regression Tests', () => {
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should use authStore.checkUser()
         expect(mockCheckUser).toHaveBeenCalledWith('test@example.com');
-        
+
         // ✅ Should NOT call API directly
         expect(mockAuthStore.api.checkEmail).not.toHaveBeenCalled();
       });
@@ -233,10 +234,10 @@ describe('Error Handling Regression Tests', () => {
           config: {
             // Note: No apiBaseUrl here - should inherit from auth store
             clientId: 'test',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       // Component should render without requiring its own API config
@@ -253,10 +254,10 @@ describe('Error Handling Regression Tests', () => {
             config: {
               apiBaseUrl: 'https://api.thepia.com',
               clientId: 'test',
-              domain: 'test.com'
-            }
+              domain: 'test.com',
+            },
           },
-          context: new Map([['authStore', mockAuthStore]])
+          context: new Map([['authStore', mockAuthStore]]),
         });
       }).not.toThrow();
     });
@@ -267,10 +268,10 @@ describe('Error Handling Regression Tests', () => {
           config: {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
-            domain: 'test.com'
-          }
+            domain: 'test.com',
+          },
         },
-        context: new Map([['authStore', mockAuthStore]])
+        context: new Map([['authStore', mockAuthStore]]),
       });
 
       // ✅ REGRESSION TEST: Core UI elements should be present

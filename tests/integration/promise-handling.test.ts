@@ -3,26 +3,26 @@
  * These tests ensure promise rejections are properly handled to prevent unhandled promise rejections
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import { createDefaultConfig } from '../../src/index';
 
 describe('Promise Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock fetch with rejection
     global.fetch = vi.fn();
-    
+
     // Reset WebAuthn mocks
     Object.defineProperty(navigator, 'credentials', {
       value: {
         create: vi.fn(),
-        get: vi.fn()
+        get: vi.fn(),
       },
       writable: true,
-      configurable: true
+      configurable: true,
     });
   });
 
@@ -31,14 +31,14 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock API to reject
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     const { getByLabelText, getByRole } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -64,18 +64,19 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock successful email check with passkey
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        exists: true,
-        hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
-      })
+      json: () =>
+        Promise.resolve({
+          exists: true,
+          hasPasskey: true,
+          hasPassword: true,
+          socialProviders: [],
+        }),
     });
 
     // Mock WebAuthn to reject
@@ -84,7 +85,7 @@ describe('Promise Handling', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -111,26 +112,28 @@ describe('Promise Handling', () => {
       clientId: 'test-client',
       enablePasskeys: false,
       enableMagicLinks: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock successful email check, then reject magic link
-    global.fetch = vi.fn()
+    global.fetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: false,
-          hasPassword: true,
-          socialProviders: []
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: false,
+            hasPassword: true,
+            socialProviders: [],
+          }),
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');
@@ -157,19 +160,21 @@ describe('Promise Handling', () => {
       clientId: 'test-client',
       enablePasskeys: true,
       enableMagicLinks: true,
-      enablePasswordLogin: true
+      enablePasswordLogin: true,
     });
 
     // Mock successful email check with passkey
-    global.fetch = vi.fn()
+    global.fetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: true,
-          hasPassword: true,
-          socialProviders: []
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: true,
+            hasPassword: true,
+            socialProviders: [],
+          }),
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
 
@@ -179,7 +184,7 @@ describe('Promise Handling', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const { getByLabelText, getByRole, queryByText } = render(SignInForm, {
-      props: { config }
+      props: { config },
     });
 
     const emailInput = getByLabelText('Email address');

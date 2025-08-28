@@ -5,7 +5,30 @@
 
 export interface AuthStateEvent {
   type: 'auth-state-change';
-  event: 'login-attempt' | 'login-success' | 'login-failure' | 'webauthn-start' | 'webauthn-success' | 'webauthn-failure' | 'webauthn-register-start' | 'webauthn-register-success' | 'webauthn-register-failure' | 'magic-link-request' | 'magic-link-sent' | 'magic-link-failure' | 'magic-link-verify-start' | 'magic-link-verify-success' | 'magic-link-verify-failure' | 'sign-in-started' | 'sign-in-success' | 'sign-in-error' | 'token-refreshed' | 'sign-out' | 'registration-start' | 'registration-success' | 'registration-failure';
+  event:
+    | 'login-attempt'
+    | 'login-success'
+    | 'login-failure'
+    | 'webauthn-start'
+    | 'webauthn-success'
+    | 'webauthn-failure'
+    | 'webauthn-register-start'
+    | 'webauthn-register-success'
+    | 'webauthn-register-failure'
+    | 'magic-link-request'
+    | 'magic-link-sent'
+    | 'magic-link-failure'
+    | 'magic-link-verify-start'
+    | 'magic-link-verify-success'
+    | 'magic-link-verify-failure'
+    | 'sign-in-started'
+    | 'sign-in-success'
+    | 'sign-in-error'
+    | 'token-refreshed'
+    | 'sign-out'
+    | 'registration-start'
+    | 'registration-success'
+    | 'registration-failure';
   email?: string;
   userId?: string;
   authMethod?: 'passkey' | 'password' | 'email' | 'magic-link';
@@ -51,7 +74,7 @@ class ErrorReporter {
       maxRetries: 3,
       retryDelay: 1000,
       debug: false,
-      ...config
+      ...config,
     };
   }
 
@@ -93,15 +116,15 @@ class ErrorReporter {
       ...event,
       timestamp: Date.now(),
       userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown',
     };
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     };
 
     if (this.config.apiKey) {
-      headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+      headers.Authorization = `Bearer ${this.config.apiKey}`;
     }
 
     let response: Response;
@@ -109,7 +132,7 @@ class ErrorReporter {
       response = await fetch(this.config.endpoint!, {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
     } catch (error) {
       throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -143,13 +166,13 @@ class ErrorReporter {
 
       try {
         await this.sendEvent(event);
-      } catch (error) {
+      } catch (_error) {
         failedRetries.push({ event, attempts: attempts + 1 });
       }
     }
 
     this.retryQueue = failedRetries;
-    
+
     if (this.retryQueue.length > 0) {
       this.scheduleRetry();
     }
@@ -164,7 +187,7 @@ class ErrorReporter {
     const queuedEvents = [...this.queue];
     this.queue = [];
 
-    queuedEvents.forEach(event => this.report(event));
+    queuedEvents.forEach((event) => this.report(event));
   }
 
   getQueueSize() {
@@ -177,7 +200,7 @@ let reporter: ErrorReporter | null = null;
 
 export function initializeErrorReporter(config: ErrorReporterConfig) {
   reporter = new ErrorReporter(config);
-  
+
   if (config.debug) {
     console.log('📊 [ErrorReporter] Initialized with config:', config);
   }
@@ -188,22 +211,26 @@ export function updateErrorReporterConfig(config: Partial<ErrorReporterConfig>) 
     console.warn('📊 [ErrorReporter] Not initialized. Call initializeErrorReporter first.');
     return;
   }
-  
+
   reporter.updateConfig(config);
 }
 
 export function reportAuthState(event: Omit<AuthStateEvent, 'type'>) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'auth-state-change',
-    ...event
+    ...event,
   });
 }
 
-export function reportWebAuthnError(operation: 'authentication' | 'registration', error: any, context?: Record<string, any>) {
+export function reportWebAuthnError(
+  operation: 'authentication' | 'registration',
+  error: any,
+  context?: Record<string, any>
+) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'webauthn-error',
     operation,
@@ -211,22 +238,28 @@ export function reportWebAuthnError(operation: 'authentication' | 'registration'
       name: error?.name,
       message: error?.message,
       code: error?.code,
-      stack: error?.stack
+      stack: error?.stack,
     },
-    context
+    context,
   });
 }
 
-export function reportApiError(url: string, method: string, status: number, message: string, context?: Record<string, any>) {
+export function reportApiError(
+  url: string,
+  method: string,
+  status: number,
+  message: string,
+  context?: Record<string, any>
+) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'api-error',
     url,
     method,
     status,
     message,
-    context
+    context,
   });
 }
 
@@ -243,14 +276,15 @@ export function getErrorReportQueueSize() {
 // Auto-initialize with basic config if running in browser
 if (typeof window !== 'undefined') {
   // Check for development environment
-  const isDev = window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1' ||
-                window.location.hostname.endsWith('.thepia.net');
+  const isDev =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.endsWith('.thepia.net');
 
   initializeErrorReporter({
     enabled: true,
     debug: isDev,
     // Use production API server as sensible default - localhost:3000 will never work
-    endpoint: isDev ? 'https://api.thepia.com/dev/error-reports' : undefined
+    endpoint: isDev ? 'https://api.thepia.com/dev/error-reports' : undefined,
   });
 }

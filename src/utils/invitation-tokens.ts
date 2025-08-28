@@ -52,7 +52,7 @@ export function decodeInvitationToken(token: string): InvitationTokenData {
       issuedAt: payload.iat ? new Date(payload.iat * 1000) : null,
       ...payload,
     };
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to decode invitation token');
   }
 }
@@ -63,7 +63,10 @@ export function decodeInvitationToken(token: string): InvitationTokenData {
  * @param tokenData - Pre-decoded token data (optional)
  * @returns boolean indicating if token is valid
  */
-export function validateInvitationToken(token: string, tokenData?: InvitationTokenData): TokenValidationResult {
+export function validateInvitationToken(
+  token: string,
+  tokenData?: InvitationTokenData
+): TokenValidationResult {
   if (!token) {
     return { isValid: false, reason: 'invalid_structure' };
   }
@@ -106,7 +109,7 @@ export function validateInvitationToken(token: string, tokenData?: InvitationTok
 
     // For production, you would verify the signature here using a public key
     // For now, we'll do basic validation
-    const [header, payload, signature] = parts;
+    const [_header, payload, signature] = parts;
 
     // Validate that the signature is not empty (basic check)
     if (!signature || signature.length < 10) {
@@ -121,7 +124,7 @@ export function validateInvitationToken(token: string, tokenData?: InvitationTok
         console.warn('Token payload mismatch detected');
         return { isValid: false, reason: 'invalid_structure', data };
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn('Failed to re-decode token payload for validation');
       return { isValid: false, reason: 'invalid_structure', data };
     }
@@ -176,6 +179,6 @@ export function extractRegistrationData(tokenData: InvitationTokenData): {
     lastName: tokenData.lastName || tokenData.name?.split(' ').slice(1).join(' ') || '',
     company: tokenData.company || tokenData.companyName || '',
     phone: tokenData.phone || '',
-    jobTitle: tokenData.jobTitle || ''
+    jobTitle: tokenData.jobTitle || '',
   };
 }

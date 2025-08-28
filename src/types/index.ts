@@ -21,15 +21,22 @@ export type AuthState = 'idle' | 'loading' | 'authenticated' | 'unauthenticated'
 // Enhanced authentication states with email verification
 export type EnhancedAuthState =
   | 'unauthenticated'
-  | 'authenticated-unconfirmed'  // Has passkey but email not verified
-  | 'authenticated-confirmed'    // Full access after email verification
+  | 'authenticated-unconfirmed' // Has passkey but email not verified
+  | 'authenticated-confirmed' // Full access after email verification
   | 'loading'
   | 'error';
 
 export type AuthMethod = 'passkey' | 'password' | 'magic-link' | 'social';
 
 // Sign-in flow states (legacy - kept for backward compatibility)
-export type SignInStep = 'email' | 'passkey' | 'password' | 'magic-link' | 'loading' | 'success' | 'error';
+export type SignInStep =
+  | 'email'
+  | 'passkey'
+  | 'password'
+  | 'magic-link'
+  | 'loading'
+  | 'success'
+  | 'error';
 
 // Registration flow states
 export type RegistrationStep =
@@ -54,9 +61,9 @@ export type AuthMachineState =
   | 'directWebAuthnAuth'
   | 'passkeyRegistration'
   | 'newUserRegistration'
-  | 'webauthnRegister'           // Registration with passkey
-  | 'authenticated-unconfirmed'  // Logged in but email not verified
-  | 'authenticated-confirmed'    // Full access after email verification
+  | 'webauthnRegister' // Registration with passkey
+  | 'authenticated-unconfirmed' // Logged in but email not verified
+  | 'authenticated-confirmed' // Full access after email verification
   | 'biometricPrompt'
   | 'auth0WebAuthnVerify'
   | 'passkeyError'
@@ -69,7 +76,7 @@ export type AuthMachineState =
   | 'loadingApp'
   | 'appLoaded';
 
-export type AuthMachineEvent = 
+export type AuthMachineEvent =
   | { type: 'CHECK_SESSION' }
   | { type: 'VALID_SESSION'; session: SessionData }
   | { type: 'INVALID_SESSION' }
@@ -114,13 +121,13 @@ export interface StorageConfig {
 export interface ApplicationContext {
   // Domain-based hints
   domain?: string; // e.g., 'internal.company.com' suggests all users are employees
-  
-  // URL-based hints  
+
+  // URL-based hints
   urlPath?: string; // e.g., '/admin/login' suggests admin users
-  
+
   // Application-level hints
   userType?: 'all_employees' | 'all_guests' | 'mixed'; // Corporate intranet vs public site
-  
+
   // Security override
   forceGuestMode?: boolean; // Always start with guest settings for security
 }
@@ -149,9 +156,9 @@ export type StorageType = 'sessionStorage' | 'localStorage';
 // This interface is kept for backward compatibility but is no longer used
 export interface RateLimitingConfig {
   minRequestInterval?: number; // DEPRECATED: Use 5 req/sec intelligent rate limiter
-  maxRetries?: number;         // DEPRECATED: Handled by server response
-  baseDelay?: number;          // DEPRECATED: Handled by server response  
-  maxDelay?: number;           // DEPRECATED: Handled by server response
+  maxRetries?: number; // DEPRECATED: Handled by server response
+  baseDelay?: number; // DEPRECATED: Handled by server response
+  maxDelay?: number; // DEPRECATED: Handled by server response
 }
 
 // Authentication configuration
@@ -344,7 +351,7 @@ export interface AuthError {
   details?: any;
 }
 
-export type AuthErrorCode = 
+export type AuthErrorCode =
   | 'invalid_credentials'
   | 'user_not_found'
   | 'email_not_verified'

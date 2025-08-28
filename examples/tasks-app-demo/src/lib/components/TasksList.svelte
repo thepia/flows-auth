@@ -1,72 +1,78 @@
 <script>
-	import { onMount } from 'svelte';
-	import { tasks, syncStatus, initTasks, addTask, updateTask, deleteTask, toggleTask } from '../stores/tasks.js';
-	import TaskItem from './TaskItem.svelte';
-	import AddTaskForm from './AddTaskForm.svelte';
-	
-	let taskList = [];
-	let currentSyncStatus = {};
-	let showCompleted = false;
-	let filter = 'all'; // 'all', 'active', 'completed'
-	
-	// Reactive filtering
-	$: filteredTasks = taskList.filter(task => {
-		if (filter === 'active') return !task.completed;
-		if (filter === 'completed') return task.completed;
-		return true;
-	});
-	
-	$: activeTasks = taskList.filter(task => !task.completed);
-	$: completedTasks = taskList.filter(task => task.completed);
+import { onMount } from 'svelte';
+import {
+  addTask,
+  deleteTask,
+  initTasks,
+  syncStatus,
+  tasks,
+  toggleTask,
+  updateTask,
+} from '../stores/tasks.js';
 
-	onMount(async () => {
-		await initTasks();
-		
-		// Subscribe to stores
-		tasks.subscribe(value => {
-			taskList = value;
-		});
-		
-		syncStatus.subscribe(value => {
-			currentSyncStatus = value;
-		});
-	});
+let taskList = [];
+let currentSyncStatus = {};
+let showCompleted = false;
+let filter = 'all'; // 'all', 'active', 'completed'
 
-	async function handleAddTask(event) {
-		const { title, description } = event.detail;
-		try {
-			await addTask(title, description);
-		} catch (error) {
-			console.error('Failed to add task:', error);
-			// Error is already reported in tasks store
-			// TODO: Show error to user via toast/notification
-		}
-	}
+// Reactive filtering
+$: filteredTasks = taskList.filter((task) => {
+  if (filter === 'active') return !task.completed;
+  if (filter === 'completed') return task.completed;
+  return true;
+});
 
-	async function handleToggleTask(uid) {
-		try {
-			await toggleTask(uid);
-		} catch (error) {
-			console.error('Failed to toggle task:', error);
-		}
-	}
+$: activeTasks = taskList.filter((task) => !task.completed);
+$: completedTasks = taskList.filter((task) => task.completed);
 
-	async function handleUpdateTask(event) {
-		const { uid, updates } = event.detail;
-		try {
-			await updateTask(uid, updates);
-		} catch (error) {
-			console.error('Failed to update task:', error);
-		}
-	}
+onMount(async () => {
+  await initTasks();
 
-	async function handleDeleteTask(uid) {
-		try {
-			await deleteTask(uid);
-		} catch (error) {
-			console.error('Failed to delete task:', error);
-		}
-	}
+  // Subscribe to stores
+  tasks.subscribe((value) => {
+    taskList = value;
+  });
+
+  syncStatus.subscribe((value) => {
+    currentSyncStatus = value;
+  });
+});
+
+async function handleAddTask(event) {
+  const { title, description } = event.detail;
+  try {
+    await addTask(title, description);
+  } catch (error) {
+    console.error('Failed to add task:', error);
+    // Error is already reported in tasks store
+    // TODO: Show error to user via toast/notification
+  }
+}
+
+async function handleToggleTask(uid) {
+  try {
+    await toggleTask(uid);
+  } catch (error) {
+    console.error('Failed to toggle task:', error);
+  }
+}
+
+async function handleUpdateTask(event) {
+  const { uid, updates } = event.detail;
+  try {
+    await updateTask(uid, updates);
+  } catch (error) {
+    console.error('Failed to update task:', error);
+  }
+}
+
+async function handleDeleteTask(uid) {
+  try {
+    await deleteTask(uid);
+  } catch (error) {
+    console.error('Failed to delete task:', error);
+  }
+}
 </script>
 
 <div class="tasks-list">

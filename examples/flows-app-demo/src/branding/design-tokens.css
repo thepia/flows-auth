@@ -98,7 +98,8 @@
   --color-palette-neutral-900: #111827;
 
   /* Typography */
-  --typography-fontFamily-brand-primary: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --typography-fontFamily-brand-primary:
+    -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --typography-fontWeight-normal: 400;
   --typography-fontWeight-medium: 500;
   --typography-fontWeight-semibold: 600;
@@ -177,7 +178,7 @@
   --primary: var(--color-brand-primary);
   --primary-hover: var(--color-brand-primaryHover);
   --primary-light: var(--color-brand-primarySubtle);
-  
+
   --gray-50: var(--color-palette-neutral-50);
   --gray-100: var(--color-palette-neutral-100);
   --gray-200: var(--color-palette-neutral-200);
@@ -188,16 +189,16 @@
   --gray-700: var(--color-palette-neutral-700);
   --gray-800: var(--color-palette-neutral-800);
   --gray-900: var(--color-palette-neutral-900);
-  
+
   --white: #ffffff;
   --black: #000000;
-  
+
   --shadow-sm: var(--size-shadow-sm);
   --shadow: var(--size-shadow-base);
   --shadow-md: var(--size-shadow-md);
   --shadow-lg: var(--size-shadow-lg);
   --shadow-xl: var(--size-shadow-xl);
-  
+
   --radius: var(--size-radius-md);
   --radius-md: var(--size-radius-lg);
   --radius-lg: var(--size-radius-xl);
@@ -210,7 +211,7 @@
   --brand-accent: var(--color-brand-accent);
   --brand-accent-hover: var(--color-brand-accentHover);
   --font-family-brand: var(--typography-fontFamily-brand-primary);
-  
+
   /* Legacy spacing variables */
   --spacing-1: var(--size-space-1);
   --spacing-2: var(--size-space-2);
@@ -224,7 +225,7 @@
   --spacing-16: var(--size-space-16);
   --spacing-20: var(--size-space-20);
   --spacing-24: var(--size-space-24);
-  
+
   /* Legacy font variables */
   --font-size-xs: var(--typography-fontSize-xs);
   --font-size-sm: var(--typography-fontSize-sm);
@@ -234,17 +235,17 @@
   --font-size-2xl: var(--typography-fontSize-2xl);
   --font-size-3xl: var(--typography-fontSize-3xl);
   --font-size-4xl: var(--typography-fontSize-4xl);
-  
+
   --font-weight-normal: var(--typography-fontWeight-normal);
   --font-weight-medium: var(--typography-fontWeight-medium);
   --font-weight-semibold: var(--typography-fontWeight-semibold);
   --font-weight-bold: var(--typography-fontWeight-bold);
-  
+
   --line-height-tight: var(--typography-lineHeight-tight);
   --line-height-snug: var(--typography-lineHeight-snug);
   --line-height-normal: var(--typography-lineHeight-normal);
   --line-height-relaxed: var(--typography-lineHeight-relaxed);
-  
+
   /* Legacy color variables */
   --color-white: var(--white);
   --color-black: var(--black);
@@ -258,13 +259,13 @@
   --color-gray-700: var(--gray-700);
   --color-gray-800: var(--gray-800);
   --color-gray-900: var(--gray-900);
-  
+
   /* Legacy border/transition variables */
   --border-width: 1px;
   --transition-fast: var(--size-transition-fast);
   --transition-normal: var(--size-transition-normal);
   --transition-slow: var(--size-transition-slow);
-  
+
   /* Legacy z-index variables */
   --z-dropdown: var(--size-zIndex-dropdown);
   --z-sticky: var(--size-zIndex-sticky);

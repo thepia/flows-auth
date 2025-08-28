@@ -1,41 +1,39 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
-  import { browser } from '$app/environment';
-  // Try importing the raw Svelte component from relative path
-  import SignInForm from '../../../../../src/components/SignInForm.svelte';
+import { browser } from '$app/environment';
+import { createEventDispatcher, onMount } from 'svelte';
 
-  export let config: any;
+export let config: any;
 
-  const dispatch = createEventDispatcher<{
-    success: { user: any; method: string };
-    error: { error: any };
-  }>();
+const dispatch = createEventDispatcher<{
+  success: { user: any; method: string };
+  error: { error: any };
+}>();
 
-  let mounted = false;
+let mounted = false;
 
-  onMount(async () => {
-    if (!browser) return;
+onMount(async () => {
+  if (!browser) return;
 
-    try {
-      mounted = true;
+  try {
+    mounted = true;
 
-      console.log('✅ Real flows-auth SignInForm loaded with config:', {
-        apiBaseUrl: config.apiBaseUrl,
-        domain: config.domain,
-        enablePasskeys: config.enablePasskeys
-      });
-    } catch (error) {
-      console.error('❌ Failed to initialize flows-auth:', error);
-    }
-  });
-
-  function handleSuccess(event: CustomEvent<{ user: any; method: string }>) {
-    dispatch('success', event.detail);
+    console.log('✅ Real flows-auth SignInForm loaded with config:', {
+      apiBaseUrl: config.apiBaseUrl,
+      domain: config.domain,
+      enablePasskeys: config.enablePasskeys,
+    });
+  } catch (error) {
+    console.error('❌ Failed to initialize flows-auth:', error);
   }
+});
 
-  function handleError(event: CustomEvent<{ error: any }>) {
-    dispatch('error', event.detail);
-  }
+function handleSuccess(event: CustomEvent<{ user: any; method: string }>) {
+  dispatch('success', event.detail);
+}
+
+function handleError(event: CustomEvent<{ error: any }>) {
+  dispatch('error', event.detail);
+}
 </script>
 
 {#if browser && mounted && config}

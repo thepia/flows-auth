@@ -1,61 +1,61 @@
 <script>
-	import { onMount } from 'svelte';
-	import { syncStatus, requestSync } from '../stores/tasks.js';
-	
-	let currentStatus = {};
-	let showDetails = false;
-	
-	onMount(() => {
-		// Subscribe to sync status updates
-		syncStatus.subscribe(value => {
-			currentStatus = value;
-		});
-	});
-	
-	async function handleManualSync() {
-		try {
-			await requestSync();
-		} catch (error) {
-			console.error('Manual sync failed:', error);
-		}
-	}
-	
-	function formatLastSync(timestamp) {
-		if (!timestamp) return 'Never';
-		
-		const date = new Date(timestamp);
-		const now = new Date();
-		const diffMs = now - date;
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
-		
-		if (diffMins < 1) return 'Just now';
-		if (diffMins < 60) return `${diffMins}m ago`;
-		if (diffHours < 24) return `${diffHours}h ago`;
-		
-		return date.toLocaleString();
-	}
-	
-	function getStatusColor() {
-		if (!currentStatus.isOnline) return 'offline';
-		if (currentStatus.syncing) return 'syncing';
-		if (currentStatus.pendingCount > 0) return 'pending';
-		return 'synced';
-	}
-	
-	function getStatusText() {
-		if (!currentStatus.isOnline) return 'Offline';
-		if (currentStatus.syncing) return 'Syncing...';
-		if (currentStatus.pendingCount > 0) return `${currentStatus.pendingCount} pending`;
-		return 'All synced';
-	}
-	
-	function getStatusIcon() {
-		if (!currentStatus.isOnline) return '📱';
-		if (currentStatus.syncing) return '🔄';
-		if (currentStatus.pendingCount > 0) return '⏳';
-		return '✅';
-	}
+import { onMount } from 'svelte';
+import { requestSync, syncStatus } from '../stores/tasks.js';
+
+let currentStatus = {};
+let showDetails = false;
+
+onMount(() => {
+  // Subscribe to sync status updates
+  syncStatus.subscribe((value) => {
+    currentStatus = value;
+  });
+});
+
+async function handleManualSync() {
+  try {
+    await requestSync();
+  } catch (error) {
+    console.error('Manual sync failed:', error);
+  }
+}
+
+function formatLastSync(timestamp) {
+  if (!timestamp) return 'Never';
+
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  return date.toLocaleString();
+}
+
+function getStatusColor() {
+  if (!currentStatus.isOnline) return 'offline';
+  if (currentStatus.syncing) return 'syncing';
+  if (currentStatus.pendingCount > 0) return 'pending';
+  return 'synced';
+}
+
+function getStatusText() {
+  if (!currentStatus.isOnline) return 'Offline';
+  if (currentStatus.syncing) return 'Syncing...';
+  if (currentStatus.pendingCount > 0) return `${currentStatus.pendingCount} pending`;
+  return 'All synced';
+}
+
+function getStatusIcon() {
+  if (!currentStatus.isOnline) return '📱';
+  if (currentStatus.syncing) return '🔄';
+  if (currentStatus.pendingCount > 0) return '⏳';
+  return '✅';
+}
 </script>
 
 <div class="sync-status">

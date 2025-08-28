@@ -3,9 +3,9 @@
  * Security-focused tests for dynamic role configuration and session migration
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types';
+import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({
@@ -15,8 +15,8 @@ vi.mock('../../src/api/auth-api', () => ({
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
-    signOut: vi.fn()
-  }))
+    signOut: vi.fn(),
+  })),
 }));
 
 const mockConfig: AuthConfig = {
@@ -29,8 +29,8 @@ const mockConfig: AuthConfig = {
   enableSocialLogin: false,
   branding: {
     companyName: 'Test Company',
-    showPoweredBy: true
-  }
+    showPoweredBy: true,
+  },
 };
 
 describe('Dynamic Role Security Tests', () => {
@@ -45,14 +45,14 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'all_employees',
-          domain: 'internal.company.com'
-        }
+          domain: 'internal.company.com',
+        },
       });
 
       // Even for all_employees context, should start with conservative defaults
       const context = authStore.getApplicationContext();
       expect(context?.userType).toBe('all_employees');
-      
+
       // Should not pre-assume employee roles for security
       // Implementation should start with sessionStorage regardless of context
     });
@@ -62,8 +62,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       const context = authStore.getApplicationContext();
@@ -71,8 +71,8 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should use secure session timeouts by default', () => {
-      const authStore = createAuthStore(mockConfig);
-      
+      const _authStore = createAuthStore(mockConfig);
+
       // Should default to 8 hours or less for security
       // Implementation should use sessionStorage with reasonable timeout
     });
@@ -84,8 +84,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock storage configuration update
@@ -99,7 +99,7 @@ describe('Dynamic Role Security Tests', () => {
           userRole: 'employee',
           sessionTimeout: 7 * 24 * 60 * 60 * 1000,
           migrateExistingSession: true,
-          preserveTokens: true
+          preserveTokens: true,
         });
       } catch (error) {
         expect(error).toBeDefined();
@@ -112,8 +112,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock authentication response with server-verified role
@@ -125,15 +125,15 @@ describe('Dynamic Role Security Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { 
+          metadata: {
             role: 'employee',
             serverVerified: true,
-            issuedAt: Date.now()
-          }
+            issuedAt: Date.now(),
+          },
         },
         accessToken: 'verified-access-token',
         refreshToken: 'verified-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -155,8 +155,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock authentication response
@@ -168,11 +168,11 @@ describe('Dynamic Role Security Tests', () => {
           name: 'Guest User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'guest' }
+          metadata: { role: 'guest' },
         },
         accessToken: 'guest-access-token',
         refreshToken: 'guest-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -198,11 +198,13 @@ describe('Dynamic Role Security Tests', () => {
           userRole: 'employee', // Attempting to upgrade beyond authenticated role
           sessionTimeout: 7 * 24 * 60 * 60 * 1000,
           migrateExistingSession: true,
-          preserveTokens: true
+          preserveTokens: true,
         });
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toBe('Role mismatch: Cannot upgrade beyond authenticated role');
+        expect((error as Error).message).toBe(
+          'Role mismatch: Cannot upgrade beyond authenticated role'
+        );
       }
     });
   });
@@ -213,16 +215,18 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock migration with token validation
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
         // Simulate token validation
-        const accessToken = localStorage.getItem('auth_access_token') || sessionStorage.getItem('auth_access_token');
-        const expiresAt = localStorage.getItem('auth_expires_at') || sessionStorage.getItem('auth_expires_at');
-        
+        const accessToken =
+          localStorage.getItem('auth_access_token') || sessionStorage.getItem('auth_access_token');
+        const expiresAt =
+          localStorage.getItem('auth_expires_at') || sessionStorage.getItem('auth_expires_at');
+
         if (!accessToken || !expiresAt) {
           return {
             success: false,
@@ -230,7 +234,7 @@ describe('Dynamic Role Security Tests', () => {
             toStorage: toType,
             dataPreserved: false,
             tokensPreserved: false,
-            error: 'No valid tokens found'
+            error: 'No valid tokens found',
           };
         }
 
@@ -242,7 +246,7 @@ describe('Dynamic Role Security Tests', () => {
             toStorage: toType,
             dataPreserved: false,
             tokensPreserved: false,
-            error: 'Expired tokens cannot be migrated'
+            error: 'Expired tokens cannot be migrated',
           };
         }
 
@@ -251,7 +255,7 @@ describe('Dynamic Role Security Tests', () => {
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
-          tokensPreserved: true
+          tokensPreserved: true,
         };
       });
 
@@ -272,8 +276,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock migration with downgrade protection
@@ -283,16 +287,20 @@ describe('Dynamic Role Security Tests', () => {
         if (userDataString) {
           const userData = JSON.parse(userDataString);
           const currentRole = userData.metadata?.role;
-          
+
           // Prevent admin from downgrading to localStorage->sessionStorage (less secure)
-          if (currentRole === 'admin' && fromType === 'localStorage' && toType === 'sessionStorage') {
+          if (
+            currentRole === 'admin' &&
+            fromType === 'localStorage' &&
+            toType === 'sessionStorage'
+          ) {
             return {
               success: false,
               fromStorage: fromType,
               toStorage: toType,
               dataPreserved: true,
               tokensPreserved: true,
-              error: 'Admin sessions cannot be downgraded to sessionStorage'
+              error: 'Admin sessions cannot be downgraded to sessionStorage',
             };
           }
         }
@@ -302,21 +310,24 @@ describe('Dynamic Role Security Tests', () => {
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: true,
-          tokensPreserved: true
+          tokensPreserved: true,
         };
       });
 
       (authStore as any).migrateSession = mockMigrateSession;
 
       // Set up admin user in localStorage
-      localStorage.setItem('auth_user', JSON.stringify({
-        id: '999',
-        email: 'admin@company.com',
-        name: 'Admin User',
-        emailVerified: true,
-        createdAt: '2023-01-01T00:00:00Z',
-        metadata: { role: 'admin' }
-      }));
+      localStorage.setItem(
+        'auth_user',
+        JSON.stringify({
+          id: '999',
+          email: 'admin@company.com',
+          name: 'Admin User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z',
+          metadata: { role: 'admin' },
+        })
+      );
 
       // Attempt to downgrade admin session
       const result = await authStore.migrateSession('localStorage', 'sessionStorage');
@@ -330,8 +341,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock migration with cleanup on failure
@@ -340,14 +351,14 @@ describe('Dynamic Role Security Tests', () => {
         sessionStorage.removeItem('auth_access_token');
         sessionStorage.removeItem('auth_refresh_token');
         sessionStorage.removeItem('auth_user');
-        
+
         return {
           success: false,
           fromStorage: fromType,
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'Migration failed, sensitive data cleared'
+          error: 'Migration failed, sensitive data cleared',
         };
       });
 
@@ -373,8 +384,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock console.log for audit capture
@@ -389,7 +400,7 @@ describe('Dynamic Role Security Tests', () => {
           toRole: update.userRole,
           fromStorage: 'sessionStorage',
           toStorage: update.type,
-          userId: '123'
+          userId: '123',
         });
       });
 
@@ -401,7 +412,7 @@ describe('Dynamic Role Security Tests', () => {
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000,
         migrateExistingSession: true,
-        preserveTokens: true
+        preserveTokens: true,
       });
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
@@ -411,7 +422,7 @@ describe('Dynamic Role Security Tests', () => {
           toRole: 'employee',
           fromStorage: 'sessionStorage',
           toStorage: 'localStorage',
-          userId: '123'
+          userId: '123',
         })
       );
 
@@ -423,8 +434,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock console.error for failure tracking
@@ -438,7 +449,7 @@ describe('Dynamic Role Security Tests', () => {
           fromStorage: fromType,
           toStorage: toType,
           error: 'Storage quota exceeded',
-          userId: '123'
+          userId: '123',
         });
 
         return {
@@ -447,7 +458,7 @@ describe('Dynamic Role Security Tests', () => {
           toStorage: toType,
           dataPreserved: false,
           tokensPreserved: false,
-          error: 'Storage quota exceeded'
+          error: 'Storage quota exceeded',
         };
       });
 
@@ -462,7 +473,7 @@ describe('Dynamic Role Security Tests', () => {
           fromStorage: 'sessionStorage',
           toStorage: 'localStorage',
           error: 'Storage quota exceeded',
-          userId: '123'
+          userId: '123',
         })
       );
 
@@ -476,17 +487,17 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock migration with performance tracking
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
         const startTime = Date.now();
-        
+
         // Simulate migration work
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms simulation
-        
+        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms simulation
+
         const endTime = Date.now();
         const duration = endTime - startTime;
 
@@ -496,7 +507,7 @@ describe('Dynamic Role Security Tests', () => {
           toStorage: toType,
           dataPreserved: true,
           tokensPreserved: true,
-          duration: duration
+          duration: duration,
         };
       });
 
@@ -513,8 +524,8 @@ describe('Dynamic Role Security Tests', () => {
         ...mockConfig,
         applicationContext: {
           userType: 'mixed',
-          forceGuestMode: true
-        }
+          forceGuestMode: true,
+        },
       });
 
       // Mock successful authentication
@@ -526,11 +537,11 @@ describe('Dynamic Role Security Tests', () => {
           name: 'Employee User',
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
+          metadata: { role: 'employee' },
         },
         accessToken: 'employee-access-token',
         refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        expiresIn: 3600,
       };
 
       const mockApi = authStore.api as any;
@@ -542,20 +553,20 @@ describe('Dynamic Role Security Tests', () => {
         fromStorage: 'sessionStorage',
         toStorage: 'localStorage',
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       });
 
       (authStore as any).migrateSession = mockMigrateSession;
 
       // Authenticate
       await authStore.signInWithPassword('employee@company.com', 'password');
-      
+
       // Verify authenticated before migration
       expect(authStore.isAuthenticated()).toBe(true);
-      
+
       // Perform migration
       const result = await authStore.migrateSession('sessionStorage', 'localStorage');
-      
+
       // Verify still authenticated after migration
       expect(result.success).toBe(true);
       expect(authStore.isAuthenticated()).toBe(true); // Should remain authenticated

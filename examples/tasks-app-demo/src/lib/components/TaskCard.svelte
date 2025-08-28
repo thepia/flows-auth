@@ -1,43 +1,46 @@
 <script>
-	import { formatDate } from '../stores/mockData.js';
-	
-	export let task;
-	export let onMarkComplete = null;
-	export let onViewDetails = null;
-	
-	// Get priority color
-	function getPriorityColor(priority) {
-		switch (priority) {
-			case 'high': return '#dc3545';    // Red
-			case 'medium': return '#fd7e14';  // Orange
-			case 'low': return '#6c757d';     // Gray
-			default: return '#6c757d';
-		}
-	}
-	
-	// Get status color and display
-	function getStatusInfo(status) {
-		switch (status) {
-			case 'assigned':
-				return { color: '#007bff', text: 'Assigned', bg: '#e7f3ff' };
-			case 'in_progress':
-				return { color: '#fd7e14', text: 'In Progress', bg: '#fff3e0' };
-			case 'completed_pending':
-				return { color: '#28a745', text: 'Completed (Pending Confirmation)', bg: '#e8f5e8' };
-			case 'confirmed':
-				return { color: '#6c757d', text: 'Confirmed Complete', bg: '#f8f9fa' };
-			case 'overdue':
-				return { color: '#dc3545', text: 'Overdue', bg: '#ffeaea' };
-			case 'requires_attention':
-				return { color: '#ffc107', text: 'Requires Attention', bg: '#fff8e1' };
-			default:
-				return { color: '#6c757d', text: 'Unknown', bg: '#f8f9fa' };
-		}
-	}
-	
-	const statusInfo = getStatusInfo(task.status);
-	const canMarkComplete = task.status === 'assigned' || task.status === 'in_progress';
-	const isOverdue = task.status === 'overdue' || (task.dueDate < new Date() && task.status !== 'confirmed');
+export let task;
+export let onMarkComplete = null;
+export let onViewDetails = null;
+
+// Get priority color
+function getPriorityColor(priority) {
+  switch (priority) {
+    case 'high':
+      return '#dc3545'; // Red
+    case 'medium':
+      return '#fd7e14'; // Orange
+    case 'low':
+      return '#6c757d'; // Gray
+    default:
+      return '#6c757d';
+  }
+}
+
+// Get status color and display
+function getStatusInfo(status) {
+  switch (status) {
+    case 'assigned':
+      return { color: '#007bff', text: 'Assigned', bg: '#e7f3ff' };
+    case 'in_progress':
+      return { color: '#fd7e14', text: 'In Progress', bg: '#fff3e0' };
+    case 'completed_pending':
+      return { color: '#28a745', text: 'Completed (Pending Confirmation)', bg: '#e8f5e8' };
+    case 'confirmed':
+      return { color: '#6c757d', text: 'Confirmed Complete', bg: '#f8f9fa' };
+    case 'overdue':
+      return { color: '#dc3545', text: 'Overdue', bg: '#ffeaea' };
+    case 'requires_attention':
+      return { color: '#ffc107', text: 'Requires Attention', bg: '#fff8e1' };
+    default:
+      return { color: '#6c757d', text: 'Unknown', bg: '#f8f9fa' };
+  }
+}
+
+const statusInfo = getStatusInfo(task.status);
+const canMarkComplete = task.status === 'assigned' || task.status === 'in_progress';
+const isOverdue =
+  task.status === 'overdue' || (task.dueDate < new Date() && task.status !== 'confirmed');
 </script>
 
 <div class="task-card" class:overdue={isOverdue}>

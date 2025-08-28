@@ -1,15 +1,14 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 /**
  * API CONTRACT TESTS
- * 
+ *
  * These tests define the exact API response formats that flows-auth MUST support.
  * Any changes to these contracts require careful consideration and migration planning.
- * 
+ *
  * BREAKING CHANGES to these contracts will break authentication flows.
  */
 describe('API Response Contracts - IMMUTABLE', () => {
-
   describe('signInWithPasskey Response Contract', () => {
     test('MUST support new response format: {success: true, tokens: {...}, user: {...}}', () => {
       // This is the EXACT format the API currently returns
@@ -17,14 +16,14 @@ describe('API Response Contracts - IMMUTABLE', () => {
         success: true,
         tokens: {
           accessToken: 'webauthn-verified',
-          refreshToken: 'webauthn-verified', 
-          expiresAt: 1752790702497 // Unix timestamp
+          refreshToken: 'webauthn-verified',
+          expiresAt: 1752790702497, // Unix timestamp
         },
         user: {
           id: 'auth0|6877d3ff7b15eabb845ccafa',
           email: 'thepia@pm.me',
-          name: 'Test User'
-        }
+          name: 'Test User',
+        },
       };
 
       // Contract validation
@@ -56,8 +55,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
         user: {
           id: 'user-123',
           email: 'test@example.com',
-          name: 'Test User'
-        }
+          name: 'Test User',
+        },
       };
 
       // Contract validation
@@ -84,24 +83,24 @@ describe('API Response Contracts - IMMUTABLE', () => {
         {
           success: false,
           error: 'Authentication failed',
-          message: 'Invalid credentials'
+          message: 'Invalid credentials',
         },
         // Legacy format failure
         {
           step: 'failed',
           error: 'Authentication failed',
-          message: 'Invalid credentials'
-        }
+          message: 'Invalid credentials',
+        },
       ];
 
       for (const failureResponse of failureResponses) {
         // All failure responses must have error information
         expect(failureResponse).toHaveProperty('error');
         expect(typeof failureResponse.error).toBe('string');
-        
+
         // Success indicator must be false or step must be 'failed'
-        const isFailure = failureResponse.success === false || 
-                         (failureResponse as any).step === 'failed';
+        const isFailure =
+          failureResponse.success === false || (failureResponse as any).step === 'failed';
         expect(isFailure).toBe(true);
       }
     });
@@ -115,11 +114,11 @@ describe('API Response Contracts - IMMUTABLE', () => {
         user: {
           id: 'user-123',
           email: 'test@example.com',
-          name: 'Test User'
+          name: 'Test User',
         },
         accessToken: 'normalized-access-token',
         refreshToken: 'normalized-refresh-token',
-        expiresIn: 3600 // Always in seconds
+        expiresIn: 3600, // Always in seconds
       };
 
       // Contract validation
@@ -136,7 +135,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
       expect(typeof normalizedSessionFormat.refreshToken).toBe('string');
       expect(typeof normalizedSessionFormat.user.id).toBe('string');
       expect(typeof normalizedSessionFormat.user.email).toBe('string');
-      
+
       // ExpiresIn must be a number (seconds) when present
       if (normalizedSessionFormat.expiresIn !== undefined) {
         expect(typeof normalizedSessionFormat.expiresIn).toBe('number');
@@ -149,13 +148,13 @@ describe('API Response Contracts - IMMUTABLE', () => {
     test('MUST use consistent storage key across all components', () => {
       // This is the EXACT key that must be used for session storage
       const REQUIRED_STORAGE_KEY = 'thepia_auth_session';
-      
+
       // This key is used by:
       // - sessionManager.saveSession()
-      // - sessionManager.getSession() 
+      // - sessionManager.getSession()
       // - auth-state-machine.ts
       // - Any other component accessing session data
-      
+
       expect(REQUIRED_STORAGE_KEY).toBe('thepia_auth_session');
       expect(typeof REQUIRED_STORAGE_KEY).toBe('string');
       expect(REQUIRED_STORAGE_KEY.length).toBeGreaterThan(0);
@@ -165,12 +164,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
   describe('Authentication State Contract', () => {
     test('MUST maintain consistent state transitions', () => {
       // These are the EXACT states that the auth store must support
-      const REQUIRED_AUTH_STATES = [
-        'unauthenticated',
-        'loading', 
-        'authenticated',
-        'error'
-      ];
+      const REQUIRED_AUTH_STATES = ['unauthenticated', 'loading', 'authenticated', 'error'];
 
       // Validate all required states exist
       for (const state of REQUIRED_AUTH_STATES) {
@@ -180,10 +174,10 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Validate state transition rules
       const validTransitions = {
-        'unauthenticated': ['loading', 'error'],
-        'loading': ['authenticated', 'error', 'unauthenticated'],
-        'authenticated': ['loading', 'unauthenticated', 'error'],
-        'error': ['loading', 'unauthenticated']
+        unauthenticated: ['loading', 'error'],
+        loading: ['authenticated', 'error', 'unauthenticated'],
+        authenticated: ['loading', 'unauthenticated', 'error'],
+        error: ['loading', 'unauthenticated'],
       };
 
       // Each state must have valid transition targets
@@ -201,7 +195,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
       // This is the EXACT format the sendMagicLinkEmail API returns
       const magicLinkResponse = {
         success: true,
-        message: 'Check your email for a verification link'
+        message: 'Check your email for a verification link',
       };
 
       // Contract validation
@@ -218,7 +212,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
       const failureResponse = {
         success: false,
         error: 'Invalid email address',
-        message: 'Please check your email address and try again'
+        message: 'Please check your email address and try again',
       };
 
       // Contract validation
@@ -242,8 +236,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
         message: 'Check your email for a verification link',
         user: {
           email: 'test@example.com',
-          id: 'user-123'
-        }
+          id: 'user-123',
+        },
       };
 
       // Contract validation
@@ -268,22 +262,22 @@ describe('API Response Contracts - IMMUTABLE', () => {
         // Pending status
         {
           status: 'pending',
-          user: undefined
+          user: undefined,
         },
         // Verified status
         {
-          status: 'verified', 
+          status: 'verified',
           user: {
             id: 'user-123',
             email: 'test@example.com',
-            email_verified: true
-          }
+            email_verified: true,
+          },
         },
         // Expired status
         {
           status: 'expired',
-          user: undefined
-        }
+          user: undefined,
+        },
       ];
 
       for (const statusResponse of statusResponses) {
@@ -293,7 +287,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
         // Type validation
         expect(typeof statusResponse.status).toBe('string');
-        
+
         if (statusResponse.user) {
           expect(statusResponse.user).toHaveProperty('id');
           expect(statusResponse.user).toHaveProperty('email');
@@ -313,7 +307,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
         'sign_in_error',
         'passkey_used',
         'session_updated',
-        'session_cleared'
+        'session_cleared',
       ];
 
       // Validate all required events
@@ -325,9 +319,9 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Event payload contracts
       const eventPayloads = {
-        'sign_in_success': { user: expect.any(Object), method: expect.any(String) },
-        'sign_in_error': { error: expect.any(String), method: expect.any(String) },
-        'passkey_used': { user: expect.any(Object) }
+        sign_in_success: { user: expect.any(Object), method: expect.any(String) },
+        sign_in_error: { error: expect.any(String), method: expect.any(String) },
+        passkey_used: { user: expect.any(Object) },
       };
 
       // Validate event payload structures
@@ -343,9 +337,9 @@ describe('API Response Contracts - IMMUTABLE', () => {
       // These are the EXACT UI states that AuthSection must support
       const REQUIRED_UI_STATES = [
         'unauthenticated', // Show sign-in form
-        'authenticated',   // Show "Open Demo" button
-        'loading',         // Show loading spinner
-        'error'           // Show error message
+        'authenticated', // Show "Open Demo" button
+        'loading', // Show loading spinner
+        'error', // Show error message
       ];
 
       // Validate all required UI states
@@ -356,30 +350,30 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // UI state behavior contracts
       const uiStateBehaviors = {
-        'unauthenticated': {
+        unauthenticated: {
           showSignInForm: true,
           showOpenDemoButton: false,
           showUserEmail: false,
-          allowAutoRedirect: false
+          allowAutoRedirect: false,
         },
-        'authenticated': {
+        authenticated: {
           showSignInForm: false,
           showOpenDemoButton: true,
           showUserEmail: true,
-          allowAutoRedirect: false // No automatic redirect from landing page
+          allowAutoRedirect: false, // No automatic redirect from landing page
         },
-        'loading': {
+        loading: {
           showSignInForm: false,
           showOpenDemoButton: false,
           showUserEmail: false,
-          allowAutoRedirect: false
+          allowAutoRedirect: false,
         },
-        'error': {
+        error: {
           showSignInForm: true, // Allow retry
           showOpenDemoButton: false,
           showUserEmail: false,
-          allowAutoRedirect: false
-        }
+          allowAutoRedirect: false,
+        },
       };
 
       // Validate UI behavior contracts
@@ -401,24 +395,24 @@ describe('API Response Contracts - IMMUTABLE', () => {
       const NAVIGATION_CONTRACTS = {
         'landing-page-open-button-authenticated': {
           action: 'navigate',
-          destination: '/app'
+          destination: '/app',
         },
         'landing-page-open-button-unauthenticated': {
           action: 'scroll',
-          destination: 'AuthSection'
+          destination: 'AuthSection',
         },
         'auth-section-open-demo-button': {
           action: 'navigate',
-          destination: '/app'
+          destination: '/app',
         },
         'invitation-flow-with-token': {
           action: 'navigate', // MAY redirect after auth
-          destination: '/app'
-        }
+          destination: '/app',
+        },
       };
 
       // Validate navigation contracts
-      for (const [scenario, contract] of Object.entries(NAVIGATION_CONTRACTS)) {
+      for (const [_scenario, contract] of Object.entries(NAVIGATION_CONTRACTS)) {
         expect(contract).toHaveProperty('action');
         expect(contract).toHaveProperty('destination');
         expect(typeof contract.action).toBe('string');
@@ -437,13 +431,13 @@ describe('API Response Contracts - IMMUTABLE', () => {
           id: 'user-123',
           email: 'test@example.com',
           emailVerified: true,
-          createdAt: '2024-01-01T00:00:00Z'
+          createdAt: '2024-01-01T00:00:00Z',
         },
         accessToken: 'invitation-access-token',
         refreshToken: 'invitation-refresh-token',
         emailVerifiedViaInvitation: true, // CRITICAL: Must be present for invitation flows
         welcomeEmailSent: false, // No welcome email for invitation users
-        emailVerificationRequired: false
+        emailVerificationRequired: false,
       };
 
       // This is the EXACT format for standard registration
@@ -453,13 +447,13 @@ describe('API Response Contracts - IMMUTABLE', () => {
           id: 'user-456',
           email: 'standard@example.com',
           emailVerified: false,
-          createdAt: '2024-01-01T00:00:00Z'
+          createdAt: '2024-01-01T00:00:00Z',
         },
         accessToken: 'standard-access-token',
         refreshToken: 'standard-refresh-token',
         emailVerifiedViaInvitation: false, // CRITICAL: Must be present for all registrations
         welcomeEmailSent: true, // Welcome email sent for standard registration
-        emailVerificationRequired: true
+        emailVerificationRequired: true,
       };
 
       // Contract validation for invitation registration
@@ -490,7 +484,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
         step: 'failed',
         error: 'Registration failed',
         message: 'Email already exists',
-        code: 'email_already_exists'
+        code: 'email_already_exists',
       };
 
       // Contract validation

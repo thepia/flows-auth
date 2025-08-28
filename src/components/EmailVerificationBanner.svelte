@@ -3,70 +3,69 @@
   Shows contextual verification prompts without blocking the user experience
 -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { EmailVerificationBannerProps } from '../types';
+import { createEventDispatcher } from 'svelte';
 
-  // Props
-  export let email: string;
-  export let onVerify: (() => void) | undefined = undefined;
-  export let onDismiss: (() => void) | undefined = undefined;
-  export let onResend: (() => void) | undefined = undefined;
-  export let className = '';
+// Props
+export let email: string;
+export let onVerify: (() => void) | undefined = undefined;
+export let onDismiss: (() => void) | undefined = undefined;
+export let onResend: (() => void) | undefined = undefined;
+export let className = '';
 
-  // Events
-  const dispatch = createEventDispatcher<{
-    verify: void;
-    dismiss: void;
-    resend: void;
-  }>();
+// Events
+const dispatch = createEventDispatcher<{
+  verify: undefined;
+  dismiss: undefined;
+  resend: undefined;
+}>();
 
-  // Component state
-  let isDismissed = false;
-  let isResending = false;
+// Component state
+let isDismissed = false;
+let isResending = false;
 
-  // Handle verify action
-  function handleVerify() {
-    if (onVerify) {
-      onVerify();
+// Handle verify action
+function handleVerify() {
+  if (onVerify) {
+    onVerify();
+  } else {
+    dispatch('verify');
+  }
+}
+
+// Handle dismiss action
+function handleDismiss() {
+  isDismissed = true;
+  if (onDismiss) {
+    onDismiss();
+  } else {
+    dispatch('dismiss');
+  }
+}
+
+// Handle resend action
+async function handleResend() {
+  if (isResending) return;
+
+  isResending = true;
+  try {
+    if (onResend) {
+      onResend();
     } else {
-      dispatch('verify');
+      dispatch('resend');
     }
+  } finally {
+    // Reset after 3 seconds
+    setTimeout(() => {
+      isResending = false;
+    }, 3000);
   }
+}
 
-  // Handle dismiss action
-  function handleDismiss() {
-    isDismissed = true;
-    if (onDismiss) {
-      onDismiss();
-    } else {
-      dispatch('dismiss');
-    }
-  }
-
-  // Handle resend action
-  async function handleResend() {
-    if (isResending) return;
-    
-    isResending = true;
-    try {
-      if (onResend) {
-        onResend();
-      } else {
-        dispatch('resend');
-      }
-    } finally {
-      // Reset after 3 seconds
-      setTimeout(() => {
-        isResending = false;
-      }, 3000);
-    }
-  }
-
-  // Open email app (best effort)
-  function openEmailApp() {
-    // Try to open default email client
-    window.location.href = 'mailto:';
-  }
+// Open email app (best effort)
+function openEmailApp() {
+  // Try to open default email client
+  window.location.href = 'mailto:';
+}
 </script>
 
 <div 

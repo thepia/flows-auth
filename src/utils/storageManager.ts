@@ -1,8 +1,8 @@
 /**
  * Configurable Storage Manager for flows-auth
- * 
+ *
  * Supports both sessionStorage and localStorage based on configuration.
- * Default is sessionStorage for security, but can be configured for 
+ * Default is sessionStorage for security, but can be configured for
  * long-running employee sessions.
  */
 
@@ -92,12 +92,12 @@ export class ConfigurableStorageManager {
   constructor(config?: StorageConfig) {
     this.config = this.getDefaultConfig(config);
     this.adapter = this.createAdapter();
-    
+
     console.log('🗄️ Storage manager initialized:', {
       type: this.config.type,
       sessionTimeout: this.config.sessionTimeout,
       persistentSessions: this.config.persistentSessions,
-      userRole: this.config.userRole
+      userRole: this.config.userRole,
     });
   }
 
@@ -106,7 +106,7 @@ export class ConfigurableStorageManager {
       type: 'sessionStorage',
       sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
       persistentSessions: false,
-      userRole: 'guest'
+      userRole: 'guest',
     };
 
     if (!config) return defaults;
@@ -118,7 +118,7 @@ export class ConfigurableStorageManager {
         ...config,
         type: 'localStorage', // Employees get persistent sessions by default
         persistentSessions: true,
-        sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days for employees
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days for employees
       };
     }
 
@@ -132,14 +132,13 @@ export class ConfigurableStorageManager {
         getItem: () => null,
         setItem: () => {},
         removeItem: () => {},
-        clear: () => {}
+        clear: () => {},
       };
     }
 
     switch (this.config.type) {
       case 'localStorage':
         return new LocalStorageAdapter();
-      case 'sessionStorage':
       default:
         return new SessionStorageAdapter();
     }
@@ -186,7 +185,7 @@ export class ConfigurableStorageManager {
   updateConfig(newConfig: Partial<StorageConfig>): void {
     const oldType = this.config.type;
     this.config = { ...this.config, ...newConfig };
-    
+
     // If storage type changed, create new adapter
     if (this.config.type !== oldType) {
       this.adapter = this.createAdapter();
@@ -233,14 +232,14 @@ export function getStorageManager(): ConfigurableStorageManager {
 /**
  * Helper function to determine optimal storage config based on user context
  */
-export function getOptimalStorageConfig(userRole?: string, domain?: string): StorageConfig {
+export function getOptimalStorageConfig(userRole?: string, _domain?: string): StorageConfig {
   // Employee users get persistent sessions
   if (userRole === 'employee' || userRole === 'staff' || userRole === 'admin') {
     return {
       type: 'localStorage',
       persistentSessions: true,
       sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
-      userRole: 'employee'
+      userRole: 'employee',
     };
   }
 
@@ -250,6 +249,6 @@ export function getOptimalStorageConfig(userRole?: string, domain?: string): Sto
     type: 'localStorage',
     persistentSessions: true,
     sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
-    userRole: 'guest'
+    userRole: 'guest',
   };
 }

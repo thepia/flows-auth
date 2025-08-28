@@ -1,7 +1,7 @@
 /**
  * Browser-to-Terminal Console Bridge for Flows App Demo
  * Based on nets-offboarding-flows console bridge implementation
- * 
+ *
  * Captures all console output, errors, and state changes from the browser
  * and sends them to the dev server for display in the terminal.
  */
@@ -58,13 +58,13 @@ class ConsoleBridge {
   private interceptConsole(): void {
     const consoleMethods: Array<keyof Console> = ['log', 'info', 'warn', 'error', 'debug'];
 
-    consoleMethods.forEach(method => {
+    consoleMethods.forEach((method) => {
       this.originalConsole[method] = console[method];
-      
+
       (console as any)[method] = (...args: any[]) => {
         // Call original console method
         this.originalConsole[method].apply(console, args);
-        
+
         // Capture for upload
         this.addLog(method as any, this.formatArgs(args), args, 'console');
       };
@@ -81,14 +81,14 @@ class ConsoleBridge {
         stack: event.error?.stack,
         url: event.filename,
         line: event.lineno,
-        column: event.colno
+        column: event.colno,
       });
     });
 
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       this.addLog('error', `Unhandled Promise Rejection: ${event.reason}`, [], 'error', {
-        stack: event.reason?.stack
+        stack: event.reason?.stack,
       });
     });
   }
@@ -97,17 +97,21 @@ class ConsoleBridge {
    * Setup resource error handling (failed loads)
    */
   private setupResourceErrorHandling(): void {
-    window.addEventListener('error', (event) => {
-      const target = event.target;
-      if (target && target !== window) {
-        const tagName = (target as Element).tagName?.toLowerCase();
-        const src = (target as any).src || (target as any).href;
-        
-        if (src && ['img', 'script', 'link', 'iframe'].includes(tagName)) {
-          this.addLog('error', `Failed to load ${tagName}: ${src}`, [], 'resource');
+    window.addEventListener(
+      'error',
+      (event) => {
+        const target = event.target;
+        if (target && target !== window) {
+          const tagName = (target as Element).tagName?.toLowerCase();
+          const src = (target as any).src || (target as any).href;
+
+          if (src && ['img', 'script', 'link', 'iframe'].includes(tagName)) {
+            this.addLog('error', `Failed to load ${tagName}: ${src}`, [], 'resource');
+          }
         }
-      }
-    }, true);
+      },
+      true
+    );
   }
 
   /**
@@ -115,7 +119,12 @@ class ConsoleBridge {
    */
   private setupSecurityViolationHandling(): void {
     document.addEventListener('securitypolicyviolation', (event) => {
-      this.addLog('warn', `CSP Violation: ${event.violatedDirective} - ${event.sourceFile}:${event.lineNumber}`, [], 'security');
+      this.addLog(
+        'warn',
+        `CSP Violation: ${event.violatedDirective} - ${event.sourceFile}:${event.lineNumber}`,
+        [],
+        'security'
+      );
     });
   }
 
@@ -123,9 +132,9 @@ class ConsoleBridge {
    * Add a log entry
    */
   private addLog(
-    level: LogEntry['level'], 
-    message: string, 
-    args: any[] = [], 
+    level: LogEntry['level'],
+    message: string,
+    args: any[] = [],
     source: LogEntry['source'],
     extra: Partial<LogEntry> = {}
   ): void {
@@ -136,7 +145,7 @@ class ConsoleBridge {
       message,
       args: this.serializeArgs(args),
       source,
-      ...extra
+      ...extra,
     };
 
     this.logs.push(log);
@@ -165,24 +174,26 @@ class ConsoleBridge {
    * Format console arguments into a readable string
    */
   private formatArgs(args: any[]): string {
-    return args.map(arg => {
-      if (typeof arg === 'string') return arg;
-      if (typeof arg === 'object') {
-        try {
-          return JSON.stringify(arg, null, 2);
-        } catch {
-          return '[Object]';
+    return args
+      .map((arg) => {
+        if (typeof arg === 'string') return arg;
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch {
+            return '[Object]';
+          }
         }
-      }
-      return String(arg);
-    }).join(' ');
+        return String(arg);
+      })
+      .join(' ');
   }
 
   /**
    * Serialize arguments for JSON transport
    */
   private serializeArgs(args: any[]): any[] {
-    return args.map(arg => {
+    return args.map((arg) => {
       if (typeof arg === 'object' && arg !== null) {
         try {
           return JSON.parse(JSON.stringify(arg));
@@ -221,13 +232,13 @@ class ConsoleBridge {
         body: JSON.stringify({
           sessionId: this.sessionId,
           logs: logsToUpload,
-          timestamp: Date.now()
-        })
+          timestamp: Date.now(),
+        }),
       });
     } catch (error) {
       // Restore logs if upload failed
       this.logs = [...logsToUpload, ...this.logs];
-      
+
       // Use original console to avoid recursion
       this.originalConsole.warn?.('Failed to upload console logs:', error);
     }
@@ -257,7 +268,7 @@ export const consoleBridge = new ConsoleBridge();
 // Auto-initialize in browser
 if (typeof window !== 'undefined') {
   consoleBridge.init();
-  
+
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
     consoleBridge.destroy();

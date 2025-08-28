@@ -1,6 +1,6 @@
 /**
  * Service Worker Registration and Communication Utilities
- * 
+ *
  * SPIKE: Experimental service worker integration
  */
 
@@ -36,9 +36,9 @@ export class ServiceWorkerManager {
 
     try {
       console.log('[SW Manager] Registering service worker');
-      
+
       this.registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/'
+        scope: '/',
       });
 
       console.log('[SW Manager] Service worker registered:', this.registration.scope);
@@ -142,7 +142,7 @@ export class ServiceWorkerManager {
    * Check if service worker is active
    */
   isActive(): boolean {
-    return !!(this.registration && this.registration.active);
+    return !!this.registration?.active;
   }
 
   /**
@@ -155,7 +155,7 @@ export class ServiceWorkerManager {
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
-      
+
       messageChannel.port1.onmessage = (event) => {
         resolve(event.data);
       };
@@ -171,10 +171,7 @@ export class ServiceWorkerManager {
       };
 
       if (this.registration?.active) {
-        this.registration.active.postMessage(
-          { type, payload },
-          [messageChannel.port2]
-        );
+        this.registration.active.postMessage({ type, payload }, [messageChannel.port2]);
       } else {
         reject(new Error('Service worker not active'));
       }
@@ -186,7 +183,7 @@ export class ServiceWorkerManager {
    */
   private handleUpdate(): void {
     const newWorker = this.registration?.installing;
-    
+
     if (newWorker) {
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
@@ -203,9 +200,9 @@ export class ServiceWorkerManager {
    */
   private handleServiceWorkerMessage(event: MessageEvent): void {
     const { type, payload } = event.data;
-    
+
     console.log('[SW Manager] Message from service worker:', type, payload);
-    
+
     switch (type) {
       case 'SYNC_COMPLETE':
         this.dispatchEvent('sync-complete', payload);

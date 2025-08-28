@@ -12,137 +12,139 @@
 -->
 
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
-  import type { User, AuthMethod } from '@thepia/flows-auth';
-  import { validateAuthConfig, isMockAuthConfig, type MockAuthConfig } from './types';
+import type { AuthMethod, User } from '@thepia/flows-auth';
+import { createEventDispatcher, onMount } from 'svelte';
+import { isMockAuthConfig, type MockAuthConfig, validateAuthConfig } from './types';
 
-  // 🚨 MOCK AUTHENTICATION - NOT REAL SECURITY 🚨
-  console.error('🚨 CRITICAL WARNING: MockAuthForm is FAKE authentication - DO NOT USE IN PRODUCTION');
-  console.error('🚨 This component will sign in ANY email without real authentication');
-  console.error('🚨 Use flows-auth SignInForm for real authentication');
+// 🚨 MOCK AUTHENTICATION - NOT REAL SECURITY 🚨
+console.error(
+  '🚨 CRITICAL WARNING: MockAuthForm is FAKE authentication - DO NOT USE IN PRODUCTION'
+);
+console.error('🚨 This component will sign in ANY email without real authentication');
+console.error('🚨 Use flows-auth SignInForm for real authentication');
 
-  const dispatch = createEventDispatcher<{
-    success: { user: User; method: AuthMethod };
-    error: { error: any };
-  }>();
+const dispatch = createEventDispatcher<{
+  success: { user: User; method: AuthMethod };
+  error: { error: any };
+}>();
 
-  export let config: MockAuthConfig;
+export let config: MockAuthConfig;
 
-  // Runtime validation to prevent production usage
-  onMount(() => {
-    try {
-      validateAuthConfig(config, import.meta.env.PROD ? 'production' : 'development');
+// Runtime validation to prevent production usage
+onMount(() => {
+  try {
+    validateAuthConfig(config, import.meta.env.PROD ? 'production' : 'development');
 
-      if (!isMockAuthConfig(config)) {
-        throw new Error('MockAuthForm requires MockAuthConfig - use createMockAuthConfig() helper');
-      }
-    } catch (error) {
-      console.error('🚨 MockAuthForm validation failed:', error);
-      throw error;
+    if (!isMockAuthConfig(config)) {
+      throw new Error('MockAuthForm requires MockAuthConfig - use createMockAuthConfig() helper');
     }
-  });
-
-  let email = '';
-  let loading = false;
-  let step: 'email' | 'success' = 'email';
-  let conditionalAuthActive = false;
-
-  // WebAuthn conditional authentication
-  async function startConditionalAuthentication() {
-    if (conditionalAuthActive || !window.PublicKeyCredential || !email.trim()) return;
-    
-    try {
-      conditionalAuthActive = true;
-      console.log('🔐 Starting conditional WebAuthn authentication for email:', email);
-      
-      // Mock conditional authentication - would normally call API for challenge
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array(32), // Mock challenge
-          allowCredentials: [], // Empty allows any credential
-          timeout: 60000,
-          userVerification: 'preferred'
-        },
-        mediation: 'conditional' // This is the key for autosuggest!
-      });
-      
-      if (credential) {
-        console.log('✅ Conditional authentication successful!');
-        // Mock successful auth
-        handleMockSuccess();
-      }
-    } catch (error: any) {
-      console.log('⚠️ Conditional authentication failed (normal if no passkeys):', error.name);
-      // This is normal - just means no passkeys available or user cancelled
-    } finally {
-      conditionalAuthActive = false;
-    }
+  } catch (error) {
+    console.error('🚨 MockAuthForm validation failed:', error);
+    throw error;
   }
+});
 
-  function handleMockSuccess() {
-    const mockUser = {
-      id: 'demo-user-' + Date.now(),
+let email = '';
+let loading = false;
+let step: 'email' | 'success' = 'email';
+let conditionalAuthActive = false;
+
+// WebAuthn conditional authentication
+async function startConditionalAuthentication() {
+  if (conditionalAuthActive || !window.PublicKeyCredential || !email.trim()) return;
+
+  try {
+    conditionalAuthActive = true;
+    console.log('🔐 Starting conditional WebAuthn authentication for email:', email);
+
+    // Mock conditional authentication - would normally call API for challenge
+    const credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: new Uint8Array(32), // Mock challenge
+        allowCredentials: [], // Empty allows any credential
+        timeout: 60000,
+        userVerification: 'preferred',
+      },
+      mediation: 'conditional', // This is the key for autosuggest!
+    });
+
+    if (credential) {
+      console.log('✅ Conditional authentication successful!');
+      // Mock successful auth
+      handleMockSuccess();
+    }
+  } catch (error: any) {
+    console.log('⚠️ Conditional authentication failed (normal if no passkeys):', error.name);
+    // This is normal - just means no passkeys available or user cancelled
+  } finally {
+    conditionalAuthActive = false;
+  }
+}
+
+function handleMockSuccess() {
+  const mockUser = {
+    id: `demo-user-${Date.now()}`,
+    email: email,
+    name: email.split('@')[0],
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  dispatch('success', {
+    user: mockUser,
+    method: 'passkey',
+  });
+}
+
+async function handleEmailSubmit() {
+  if (!email.trim()) return;
+
+  loading = true;
+
+  // Simulate authentication for demo purposes
+  setTimeout(() => {
+    const mockUser: User = {
+      id: `demo-user-${Date.now()}`,
       email: email,
       name: email.split('@')[0],
       emailVerified: true,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     dispatch('success', {
       user: mockUser,
-      method: 'passkey'
+      method: 'password' as AuthMethod,
     });
+
+    loading = false;
+    step = 'success';
+  }, 1000);
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    handleEmailSubmit();
+  }
+}
+
+// Handle email input changes with debounced conditional auth
+let emailTimeout: number | null = null;
+function handleEmailInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  email = target.value;
+
+  // Clear previous timeout
+  if (emailTimeout) {
+    clearTimeout(emailTimeout);
   }
 
-  async function handleEmailSubmit() {
-    if (!email.trim()) return;
-
-    loading = true;
-
-    // Simulate authentication for demo purposes
-    setTimeout(() => {
-      const mockUser: User = {
-        id: 'demo-user-' + Date.now(),
-        email: email,
-        name: email.split('@')[0],
-        emailVerified: true,
-        createdAt: new Date().toISOString()
-      };
-
-      dispatch('success', {
-        user: mockUser,
-        method: 'password' as AuthMethod
-      });
-
-      loading = false;
-      step = 'success';
+  // Start conditional auth after 1 second of no typing (like React implementation)
+  if (email.trim()) {
+    emailTimeout = setTimeout(() => {
+      startConditionalAuthentication();
     }, 1000);
   }
-
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      handleEmailSubmit();
-    }
-  }
-
-  // Handle email input changes with debounced conditional auth
-  let emailTimeout: number | null = null;
-  function handleEmailInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    email = target.value;
-    
-    // Clear previous timeout
-    if (emailTimeout) {
-      clearTimeout(emailTimeout);
-    }
-    
-    // Start conditional auth after 1 second of no typing (like React implementation)
-    if (email.trim()) {
-      emailTimeout = setTimeout(() => {
-        startConditionalAuthentication();
-      }, 1000);
-    }
-  }
+}
 </script>
 
 <div class="auth-form">

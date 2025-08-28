@@ -47,4 +47,4 @@
  * @property {string} [from] - Who sent the notification
  */
 
-export { };
+export {};

@@ -1,11 +1,11 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AuthConfig, User } from '../../src/types';
 
 // Set up global mocks before any imports
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn().mockReturnValue(true),
   authenticateWithPasskey: vi.fn(),
-  serializeCredential: vi.fn().mockReturnValue('serialized-credential')
+  serializeCredential: vi.fn().mockReturnValue('serialized-credential'),
 }));
 
 vi.mock('../../src/utils/sessionManager', () => ({
@@ -17,24 +17,24 @@ vi.mock('../../src/utils/sessionManager', () => ({
     type: 'sessionStorage',
     sessionTimeout: 28800000,
     persistentSessions: false,
-    userRole: 'guest'
+    userRole: 'guest',
   }),
   configureSessionStorage: vi.fn(),
   isAuthenticatedFromSession: vi.fn().mockReturnValue(false),
-  getCurrentUserFromSession: vi.fn().mockReturnValue(null)
+  getCurrentUserFromSession: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     checkEmail: vi.fn(),
     getPasskeyChallenge: vi.fn(),
-    signInWithPasskey: vi.fn()
+    signInWithPasskey: vi.fn(),
   })),
   createAuthApiClient: vi.fn().mockReturnValue({
     checkEmail: vi.fn(),
     getPasskeyChallenge: vi.fn(),
-    signInWithPasskey: vi.fn()
-  })
+    signInWithPasskey: vi.fn(),
+  }),
 }));
 
 vi.mock('../../src/stores/auth-state-machine', () => ({
@@ -45,8 +45,8 @@ vi.mock('../../src/stores/auth-state-machine', () => ({
     emit: vi.fn(),
     onTransition: vi.fn().mockReturnValue(() => {}), // Returns unsubscribe function
     start: vi.fn(),
-    signInWithPasskey: vi.fn()
-  }))
+    signInWithPasskey: vi.fn(),
+  })),
 }));
 
 // Import after mocks are set up
@@ -62,7 +62,6 @@ import { createAuthStore } from '../../src/stores/auth-store';
  * This test MUST PASS to prevent the sessionManager consistency bug from recurring.
  */
 describe('API Response Format Compatibility - CRITICAL', () => {
-
   let authStore: any;
   let mockWebAuthn: any;
   let mockSessionManager: any;
@@ -84,7 +83,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     mockApiClient = {
       checkEmail: vi.fn(),
       getPasskeyChallenge: vi.fn(),
-      signInWithPasskey: vi.fn()
+      signInWithPasskey: vi.fn(),
     };
 
     // Make the constructor return our mock instance
@@ -97,7 +96,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       enablePasskeys: true,
       enableMagicLinks: false,
       enableSocialLogin: false,
-      enablePasswordLogin: false
+      enablePasswordLogin: false,
     };
 
     authStore = createAuthStore(config);
@@ -111,7 +110,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const mockUser: User = {
       id: 'user-123',
       email: 'test@example.com',
-      name: 'Test User'
+      name: 'Test User',
     };
 
     const newFormatResponse = {
@@ -119,28 +118,28 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       tokens: {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        expiresAt: Date.now() + 3600000 // 1 hour from now
+        expiresAt: Date.now() + 3600000, // 1 hour from now
       },
-      user: mockUser
+      user: mockUser,
     };
 
     // Setup mocks for this test
     mockApiClient.checkEmail.mockResolvedValue({
       exists: true,
       hasPasskey: true,
-      userId: 'user-123'
+      userId: 'user-123',
     });
 
     mockApiClient.getPasskeyChallenge.mockResolvedValue({
       challenge: 'test-challenge',
-      rpId: 'test.example.com'
+      rpId: 'test.example.com',
     });
 
     mockApiClient.signInWithPasskey.mockResolvedValue(newFormatResponse);
 
     mockWebAuthn.authenticateWithPasskey.mockResolvedValue({
       id: 'credential-id',
-      response: { authenticatorData: 'test-data' }
+      response: { authenticatorData: 'test-data' },
     });
 
     // Execute signInWithPasskey
@@ -160,13 +159,15 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const authMethod = savedSessionCall[1];
 
     expect(authMethod).toBe('passkey');
-    expect(savedSession).toEqual(expect.objectContaining({
-      step: 'success',
-      user: mockUser,
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
-      expiresIn: expect.any(Number)
-    }));
+    expect(savedSession).toEqual(
+      expect.objectContaining({
+        step: 'success',
+        user: mockUser,
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+        expiresIn: expect.any(Number),
+      })
+    );
 
     // 4. CRITICAL: Verify store state was updated to authenticated
     const storeState = authStore.getState();
@@ -180,7 +181,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const mockUser: User = {
       id: 'user-123',
       email: 'test@example.com',
-      name: 'Test User'
+      name: 'Test User',
     };
 
     const legacyFormatResponse = {
@@ -188,26 +189,26 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       accessToken: 'legacy-access-token',
       refreshToken: 'legacy-refresh-token',
       expiresIn: 3600, // 1 hour in seconds
-      user: mockUser
+      user: mockUser,
     };
 
     // Setup mocks for this test
     mockApiClient.checkEmail.mockResolvedValue({
       exists: true,
       hasPasskey: true,
-      userId: 'user-123'
+      userId: 'user-123',
     });
 
     mockApiClient.getPasskeyChallenge.mockResolvedValue({
       challenge: 'test-challenge',
-      rpId: 'test.example.com'
+      rpId: 'test.example.com',
     });
 
     mockApiClient.signInWithPasskey.mockResolvedValue(legacyFormatResponse);
 
     mockWebAuthn.authenticateWithPasskey.mockResolvedValue({
       id: 'credential-id',
-      response: { authenticatorData: 'test-data' }
+      response: { authenticatorData: 'test-data' },
     });
 
     // Execute signInWithPasskey
@@ -242,7 +243,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       { success: true, tokens: { accessToken: 'token' } }, // Missing user
       { success: true, user: { id: '1', email: 'test@example.com' } }, // Missing tokens
       { success: false, error: 'Authentication failed' }, // Explicit failure
-      { step: 'failed', error: 'Authentication failed' } // Legacy failure
+      { step: 'failed', error: 'Authentication failed' }, // Legacy failure
     ];
 
     for (const invalidResponse of invalidResponses) {
@@ -253,19 +254,19 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       mockApiClient.checkEmail.mockResolvedValue({
         exists: true,
         hasPasskey: true,
-        userId: 'user-123'
+        userId: 'user-123',
       });
 
       mockApiClient.getPasskeyChallenge.mockResolvedValue({
         challenge: 'test-challenge',
-        rpId: 'test.example.com'
+        rpId: 'test.example.com',
       });
 
       mockApiClient.signInWithPasskey.mockResolvedValue(invalidResponse);
 
       mockWebAuthn.authenticateWithPasskey.mockResolvedValue({
         id: 'credential-id',
-        response: { authenticatorData: 'test-data' }
+        response: { authenticatorData: 'test-data' },
       });
 
       // Execute signInWithPasskey

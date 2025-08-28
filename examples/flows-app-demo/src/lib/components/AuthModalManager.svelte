@@ -1,163 +1,174 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { browser, dev } from '$app/environment';
-  import type { User, AuthMethod } from '@thepia/flows-auth';
-  import { devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
-  import AuthFormWrapper from './AuthFormWrapper.svelte';
-  
-  // Import console bridge helpers
-  let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
-  let logStateChange: ((component: string, state: any) => void) | null = null;
-  
-  if (browser && dev) {
-    import('$lib/dev/console-bridge').then(module => {
-      logAuthEvent = module.logAuthEvent;
-      logStateChange = module.logStateChange;
-    });
-  }
+import { browser, dev } from '$app/environment';
+import { type DevScenario, devScenarioManager } from '$lib/dev/scenarios.js';
+import type { AuthMethod, User } from '@thepia/flows-auth';
+import { onMount } from 'svelte';
 
-  let isModalOpen = false;
-  let isSwitchUser = false;
-  let currentScenario: DevScenario;
-  let authConfig: any = null;
-  let unsubscribe: (() => void) | null = null;
+// Import console bridge helpers
+let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
+let logStateChange: ((component: string, state: any) => void) | null = null;
 
-  onMount(() => {
-    if (!browser) return;
+if (browser && dev) {
+  import('$lib/dev/console-bridge').then((module) => {
+    logAuthEvent = module.logAuthEvent;
+    logStateChange = module.logStateChange;
+  });
+}
 
-    // Initialize with current scenario (async to resolve auto-detect)
-    (async () => {
-      currentScenario = await devScenarioManager.getCurrentScenario();
-      createConfigForScenario(currentScenario);
-    })();
+let isModalOpen = false;
+let isSwitchUser = false;
+let currentScenario: DevScenario;
+let authConfig: any = null;
+let unsubscribe: (() => void) | null = null;
 
-    // Subscribe to scenario changes
-    unsubscribe = devScenarioManager.subscribe(async (_scenario) => {
-      currentScenario = await devScenarioManager.getCurrentScenario();
-      createConfigForScenario(currentScenario);
-    });
+onMount(() => {
+  if (!browser) return;
 
-    // Listen for modal open events
-    const handleOpenAuthModal = (event: Event) => {
-      const customEvent = event as CustomEvent<{ switchUser?: boolean }>;
-      const switchUser = customEvent.detail?.switchUser || false;
-      
-      logAuthEvent?.('auth-modal-opened', { 
-        switchUser, 
-        scenario: currentScenario?.name,
-        authMethods: currentScenario?.config
-      });
-      
-      // If switching user, clear existing auth
-      if (switchUser && browser) {
-        localStorage.removeItem('auth_access_token');
-        localStorage.removeItem('auth_user');
-        window.dispatchEvent(new CustomEvent('auth:signout'));
-        logAuthEvent?.('auth-cleared-for-switch', {});
-      }
-      
-      isSwitchUser = switchUser;
-      isModalOpen = true;
-      logStateChange?.('AuthModalManager', { isModalOpen, isSwitchUser, currentScenario: currentScenario?.name });
-    };
+  // Initialize with current scenario (async to resolve auto-detect)
+  (async () => {
+    currentScenario = await devScenarioManager.getCurrentScenario();
+    createConfigForScenario(currentScenario);
+  })();
 
-    window.addEventListener('openAuthModal', handleOpenAuthModal as EventListener);
-
-    return () => {
-      window.removeEventListener('openAuthModal', handleOpenAuthModal as EventListener);
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+  // Subscribe to scenario changes
+  unsubscribe = devScenarioManager.subscribe(async (_scenario) => {
+    currentScenario = await devScenarioManager.getCurrentScenario();
+    createConfigForScenario(currentScenario);
   });
 
-  function createConfigForScenario(scenario: DevScenario) {
-    authConfig = {
-      apiBaseUrl: scenario.config.apiBaseUrl,
-      clientId: scenario.config.clientId,
-      domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
-      enablePasskeys: scenario.config.enablePasskeys,
-      enableMagicLinks: scenario.config.enableMagicLinks,
-      enablePasswordLogin: scenario.config.enablePasswordLogin,
-      enableSocialLogin: false, // Not used in demo
-      branding: {
-        companyName: scenario.branding.companyName,
-        logoUrl: '/thepia-logo.svg',
-        showPoweredBy: scenario.branding.name !== 'Thepia Default',
-        primaryColor: scenario.branding.colors.primary,
-        secondaryColor: scenario.branding.colors.accent
-      }
-    };
-  }
+  // Listen for modal open events
+  const handleOpenAuthModal = (event: Event) => {
+    const customEvent = event as CustomEvent<{ switchUser?: boolean }>;
+    const switchUser = customEvent.detail?.switchUser || false;
 
-  function handleCloseModal() {
-    logAuthEvent?.('auth-modal-closed', { 
-      wasAuthenticated: false,
-      isSwitchUser 
-    });
-    isModalOpen = false;
-    isSwitchUser = false;
-    logStateChange?.('AuthModalManager', { isModalOpen, isSwitchUser });
-  }
-
-  function handleAuthSuccess(event: CustomEvent<{ user: User; method: AuthMethod }>) {
-    console.log('✅ Authentication successful:', event.detail);
-    
-    logAuthEvent?.('authentication-successful', {
-      userId: event.detail.user.id,
-      email: event.detail.user.email,
-      method: event.detail.method,
+    logAuthEvent?.('auth-modal-opened', {
+      switchUser,
       scenario: currentScenario?.name,
-      isSwitchUser
+      authMethods: currentScenario?.config,
     });
-    
-    // Store user data
-    if (browser) {
-      localStorage.setItem('auth_user', JSON.stringify(event.detail.user));
-      // Simulate access token for demo
-      localStorage.setItem('auth_access_token', 'demo-token-' + Date.now());
-    }
-    
-    // Dispatch success event for other components
-    window.dispatchEvent(new CustomEvent('auth:success', { 
-      detail: { 
-        user: event.detail.user, 
-        method: event.detail.method 
-      } 
-    }));
-    
-    // Close modal
-    isModalOpen = false;
-    isSwitchUser = false;
-    logStateChange?.('AuthModalManager', { isModalOpen, isSwitchUser, authenticatedUser: event.detail.user.email });
-  }
 
-  function handleAuthError(event: CustomEvent<{ error: any }>) {
-    console.error('❌ Authentication failed:', event.detail.error);
-    
-    logAuthEvent?.('authentication-failed', {
-      error: event.detail.error?.message || 'Unknown error',
-      scenario: currentScenario?.name,
-      isSwitchUser
+    // If switching user, clear existing auth
+    if (switchUser && browser) {
+      localStorage.removeItem('auth_access_token');
+      localStorage.removeItem('auth_user');
+      window.dispatchEvent(new CustomEvent('auth:signout'));
+      logAuthEvent?.('auth-cleared-for-switch', {});
+    }
+
+    isSwitchUser = switchUser;
+    isModalOpen = true;
+    logStateChange?.('AuthModalManager', {
+      isModalOpen,
+      isSwitchUser,
+      currentScenario: currentScenario?.name,
     });
-    
-    // Dispatch error event
-    window.dispatchEvent(new CustomEvent('auth:error', { 
-      detail: { error: event.detail.error } 
-    }));
+  };
+
+  window.addEventListener('openAuthModal', handleOpenAuthModal as EventListener);
+
+  return () => {
+    window.removeEventListener('openAuthModal', handleOpenAuthModal as EventListener);
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  };
+});
+
+function createConfigForScenario(scenario: DevScenario) {
+  authConfig = {
+    apiBaseUrl: scenario.config.apiBaseUrl,
+    clientId: scenario.config.clientId,
+    domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
+    enablePasskeys: scenario.config.enablePasskeys,
+    enableMagicLinks: scenario.config.enableMagicLinks,
+    enablePasswordLogin: scenario.config.enablePasswordLogin,
+    enableSocialLogin: false, // Not used in demo
+    branding: {
+      companyName: scenario.branding.companyName,
+      logoUrl: '/thepia-logo.svg',
+      showPoweredBy: scenario.branding.name !== 'Thepia Default',
+      primaryColor: scenario.branding.colors.primary,
+      secondaryColor: scenario.branding.colors.accent,
+    },
+  };
+}
+
+function handleCloseModal() {
+  logAuthEvent?.('auth-modal-closed', {
+    wasAuthenticated: false,
+    isSwitchUser,
+  });
+  isModalOpen = false;
+  isSwitchUser = false;
+  logStateChange?.('AuthModalManager', { isModalOpen, isSwitchUser });
+}
+
+function handleAuthSuccess(event: CustomEvent<{ user: User; method: AuthMethod }>) {
+  console.log('✅ Authentication successful:', event.detail);
+
+  logAuthEvent?.('authentication-successful', {
+    userId: event.detail.user.id,
+    email: event.detail.user.email,
+    method: event.detail.method,
+    scenario: currentScenario?.name,
+    isSwitchUser,
+  });
+
+  // Store user data
+  if (browser) {
+    localStorage.setItem('auth_user', JSON.stringify(event.detail.user));
+    // Simulate access token for demo
+    localStorage.setItem('auth_access_token', `demo-token-${Date.now()}`);
   }
 
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      handleCloseModal();
-    }
-  }
+  // Dispatch success event for other components
+  window.dispatchEvent(
+    new CustomEvent('auth:success', {
+      detail: {
+        user: event.detail.user,
+        method: event.detail.method,
+      },
+    })
+  );
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      handleCloseModal();
-    }
+  // Close modal
+  isModalOpen = false;
+  isSwitchUser = false;
+  logStateChange?.('AuthModalManager', {
+    isModalOpen,
+    isSwitchUser,
+    authenticatedUser: event.detail.user.email,
+  });
+}
+
+function handleAuthError(event: CustomEvent<{ error: any }>) {
+  console.error('❌ Authentication failed:', event.detail.error);
+
+  logAuthEvent?.('authentication-failed', {
+    error: event.detail.error?.message || 'Unknown error',
+    scenario: currentScenario?.name,
+    isSwitchUser,
+  });
+
+  // Dispatch error event
+  window.dispatchEvent(
+    new CustomEvent('auth:error', {
+      detail: { error: event.detail.error },
+    })
+  );
+}
+
+function handleBackdropClick(event: MouseEvent) {
+  if (event.target === event.currentTarget) {
+    handleCloseModal();
   }
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    handleCloseModal();
+  }
+}
 </script>
 
 {#if isModalOpen && currentScenario && authConfig}

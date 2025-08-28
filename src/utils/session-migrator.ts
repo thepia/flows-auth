@@ -3,8 +3,14 @@
  * Provides secure migration of session data between storage types
  */
 
-import type { SessionMigrationResult, StorageType, StorageConfigurationUpdate } from '../types';
-import { getSession, saveSession, clearSession, isSessionValid, type FlowsSessionData } from './sessionManager';
+import type { SessionMigrationResult, StorageConfigurationUpdate, StorageType } from '../types';
+import {
+  clearSession,
+  type FlowsSessionData,
+  getSession,
+  isSessionValid,
+  saveSession,
+} from './sessionManager';
 
 /**
  * Session migration class for handling secure data transfers between storage types
@@ -30,18 +36,18 @@ export class SessionMigrator {
   /**
    * Migrate session data between storage types
    */
-  async migrate(fromType: StorageType, toType: StorageType, options: {
-    preserveTokens?: boolean;
-    validateTokens?: boolean;
-    performSecurityChecks?: boolean;
-  } = {}): Promise<SessionMigrationResult> {
+  async migrate(
+    fromType: StorageType,
+    toType: StorageType,
+    options: {
+      preserveTokens?: boolean;
+      validateTokens?: boolean;
+      performSecurityChecks?: boolean;
+    } = {}
+  ): Promise<SessionMigrationResult> {
     const startTime = Date.now();
-    
-    const {
-      preserveTokens = true,
-      validateTokens = true,
-      performSecurityChecks = true
-    } = options;
+
+    const { preserveTokens = true, validateTokens = true, performSecurityChecks = true } = options;
 
     if (!this.isInBrowser) {
       return this.createFailureResult(fromType, toType, 'Not in browser environment');
@@ -54,7 +60,7 @@ export class SessionMigrator {
         fromStorage: fromType,
         toStorage: toType,
         dataPreserved: true,
-        tokensPreserved: true
+        tokensPreserved: true,
       };
     }
 
@@ -74,13 +80,22 @@ export class SessionMigrator {
       if (performSecurityChecks) {
         const securityResult = this.performSecurityChecks(currentSession, fromType, toType);
         if (!securityResult.allowed) {
-          return this.createFailureResult(fromType, toType, securityResult.reason || 'Security check failed');
+          return this.createFailureResult(
+            fromType,
+            toType,
+            securityResult.reason || 'Security check failed'
+          );
         }
       }
 
       // Step 4: Perform migration
-      const migrationResult = await this.performMigration(currentSession, fromType, toType, preserveTokens);
-      
+      const _migrationResult = await this.performMigration(
+        currentSession,
+        fromType,
+        toType,
+        preserveTokens
+      );
+
       // Step 5: Performance check
       const duration = Date.now() - startTime;
       if (duration > 500) {
@@ -96,11 +111,11 @@ export class SessionMigrator {
         toStorage: toType,
         dataPreserved: true,
         tokensPreserved: preserveTokens,
-        duration
+        duration,
       };
     } catch (error) {
       console.error('❌ Session migration failed:', error);
-      
+
       // Cleanup on failure
       try {
         clearSession();
@@ -109,11 +124,17 @@ export class SessionMigrator {
       }
 
       const duration = Date.now() - startTime;
-      this.logMigration(fromType, toType, false, duration, error instanceof Error ? error.message : 'Unknown error');
+      this.logMigration(
+        fromType,
+        toType,
+        false,
+        duration,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
 
       return this.createFailureResult(
-        fromType, 
-        toType, 
+        fromType,
+        toType,
         error instanceof Error ? error.message : 'Migration failed, sensitive data cleared'
       );
     }
@@ -122,7 +143,11 @@ export class SessionMigrator {
   /**
    * Perform security checks before migration
    */
-  private performSecurityChecks(session: FlowsSessionData, fromType: StorageType, toType: StorageType): {
+  private performSecurityChecks(
+    session: FlowsSessionData,
+    fromType: StorageType,
+    toType: StorageType
+  ): {
     allowed: boolean;
     reason?: string;
   } {
@@ -132,7 +157,7 @@ export class SessionMigrator {
     if (userRole === 'admin' && fromType === 'localStorage' && toType === 'sessionStorage') {
       return {
         allowed: false,
-        reason: 'Admin sessions cannot be downgraded to sessionStorage'
+        reason: 'Admin sessions cannot be downgraded to sessionStorage',
       };
     }
 
@@ -141,7 +166,7 @@ export class SessionMigrator {
       // This is generally allowed for employee upgrades, but log for audit
       console.log('🔒 Security check: Upgrading from sessionStorage to localStorage', {
         userRole,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -152,15 +177,15 @@ export class SessionMigrator {
    * Perform the actual migration
    */
   private async performMigration(
-    session: FlowsSessionData, 
-    fromType: StorageType, 
+    session: FlowsSessionData,
+    _fromType: StorageType,
     toType: StorageType,
     preserveTokens: boolean
   ): Promise<void> {
     // Create migrated session data
     const migratedSession: FlowsSessionData = {
       ...session,
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
     };
 
     // Clear tokens if not preserving them
@@ -168,7 +193,7 @@ export class SessionMigrator {
       migratedSession.tokens = {
         accessToken: '',
         refreshToken: '',
-        expiresAt: 0
+        expiresAt: 0,
       };
     }
 
@@ -179,7 +204,7 @@ export class SessionMigrator {
       userRole: session.user.preferences?.role || 'guest',
       sessionTimeout: toType === 'localStorage' ? 7 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000,
       persistentSessions: toType === 'localStorage',
-      migrateExistingSession: false // Prevent recursion
+      migrateExistingSession: false, // Prevent recursion
     };
 
     configureSessionStorage(newStorageConfig);
@@ -192,8 +217,8 @@ export class SessionMigrator {
    * Create a failure result
    */
   private createFailureResult(
-    fromType: StorageType, 
-    toType: StorageType, 
+    fromType: StorageType,
+    toType: StorageType,
     error: string
   ): SessionMigrationResult {
     return {
@@ -202,7 +227,7 @@ export class SessionMigrator {
       toStorage: toType,
       dataPreserved: false,
       tokensPreserved: false,
-      error
+      error,
     };
   }
 
@@ -210,21 +235,21 @@ export class SessionMigrator {
    * Log migration attempt
    */
   private logMigration(
-    fromType: StorageType, 
-    toType: StorageType, 
-    success: boolean, 
+    fromType: StorageType,
+    toType: StorageType,
+    success: boolean,
     duration: number,
     error?: string
   ): void {
     const logLevel = success ? 'log' : 'error';
     const status = success ? 'SUCCESS' : 'FAILED';
-    
+
     console[logLevel](`AUDIT: Session migration ${status}`, {
       timestamp: new Date().toISOString(),
       fromStorage: fromType,
       toStorage: toType,
       duration: `${duration}ms`,
-      ...(error && { error })
+      ...(error && { error }),
     });
   }
 }
@@ -235,7 +260,7 @@ export class SessionMigrator {
 export function getRoleBasedStorageConfig(userRole: string): StorageConfigurationUpdate {
   const baseConfig = {
     migrateExistingSession: true,
-    preserveTokens: true
+    preserveTokens: true,
   };
 
   switch (userRole) {
@@ -244,24 +269,22 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
         ...baseConfig,
         type: 'localStorage',
         userRole: 'admin',
-        sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
       };
-    
+
     case 'employee':
       return {
         ...baseConfig,
         type: 'localStorage',
         userRole: 'employee',
-        sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
       };
-    
-    case 'guest':
     default:
       return {
         ...baseConfig,
         type: 'sessionStorage',
         userRole: 'guest',
-        sessionTimeout: 8 * 60 * 60 * 1000 // 8 hours
+        sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
       };
   }
 }
@@ -272,7 +295,7 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
 export function shouldMigrateSession(currentRole: string, targetRole: string): boolean {
   const currentConfig = getRoleBasedStorageConfig(currentRole);
   const targetConfig = getRoleBasedStorageConfig(targetRole);
-  
+
   return currentConfig.type !== targetConfig.type;
 }
 
@@ -280,7 +303,7 @@ export function shouldMigrateSession(currentRole: string, targetRole: string): b
  * Utility function to safely perform session migration
  */
 export async function migrateSessionSafely(
-  fromType: StorageType, 
+  fromType: StorageType,
   toType: StorageType,
   options?: {
     preserveTokens?: boolean;
@@ -310,13 +333,13 @@ export async function migrateForRole(
       fromStorage: 'sessionStorage',
       toStorage: 'sessionStorage',
       dataPreserved: true,
-      tokensPreserved: true
+      tokensPreserved: true,
     };
   }
 
   const currentConfig = getRoleBasedStorageConfig(currentRole);
   const targetConfig = getRoleBasedStorageConfig(targetRole);
-  
+
   return migrateSessionSafely(currentConfig.type, targetConfig.type, options);
 }
 

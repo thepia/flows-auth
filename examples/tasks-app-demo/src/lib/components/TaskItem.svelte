@@ -1,75 +1,75 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
-	
-	export let task;
-	
-	const dispatch = createEventDispatcher();
-	
-	let isEditing = false;
-	let editTitle = '';
-	let editDescription = '';
-	
-	function startEdit() {
-		isEditing = true;
-		editTitle = task.title;
-		editDescription = task.description || '';
-	}
-	
-	function cancelEdit() {
-		isEditing = false;
-		editTitle = '';
-		editDescription = '';
-	}
-	
-	function saveEdit() {
-		const title = editTitle.trim();
-		if (!title) return;
-		
-		dispatch('update', {
-			uid: task.uid,
-			updates: {
-				title: title,
-				description: editDescription.trim()
-			}
-		});
-		
-		isEditing = false;
-	}
-	
-	function handleToggle() {
-		dispatch('toggle');
-	}
-	
-	function handleDelete() {
-		if (confirm('Are you sure you want to delete this task?')) {
-			dispatch('delete');
-		}
-	}
-	
-	function handleKeydown(event) {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault();
-			saveEdit();
-		} else if (event.key === 'Escape') {
-			cancelEdit();
-		}
-	}
-	
-	function formatDate(timestamp) {
-		const date = new Date(timestamp);
-		const now = new Date();
-		const diffMs = now - date;
-		const diffMins = Math.floor(diffMs / 60000);
-		const diffHours = Math.floor(diffMs / 3600000);
-		const diffDays = Math.floor(diffMs / 86400000);
-		
-		if (diffMins < 1) return 'Just now';
-		if (diffMins < 60) return `${diffMins}m ago`;
-		if (diffHours < 24) return `${diffHours}h ago`;
-		if (diffDays < 7) return `${diffDays}d ago`;
-		
-		return date.toLocaleDateString();
-	}
+import { createEventDispatcher } from 'svelte';
+
+export let task;
+
+const dispatch = createEventDispatcher();
+
+let isEditing = false;
+let editTitle = '';
+let editDescription = '';
+
+function startEdit() {
+  isEditing = true;
+  editTitle = task.title;
+  editDescription = task.description || '';
+}
+
+function cancelEdit() {
+  isEditing = false;
+  editTitle = '';
+  editDescription = '';
+}
+
+function saveEdit() {
+  const title = editTitle.trim();
+  if (!title) return;
+
+  dispatch('update', {
+    uid: task.uid,
+    updates: {
+      title: title,
+      description: editDescription.trim(),
+    },
+  });
+
+  isEditing = false;
+}
+
+function handleToggle() {
+  dispatch('toggle');
+}
+
+function handleDelete() {
+  if (confirm('Are you sure you want to delete this task?')) {
+    dispatch('delete');
+  }
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    saveEdit();
+  } else if (event.key === 'Escape') {
+    cancelEdit();
+  }
+}
+
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString();
+}
 </script>
 
 <div class="task-item" class:completed={task.completed} class:editing={isEditing}>

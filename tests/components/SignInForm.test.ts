@@ -1,8 +1,9 @@
 /**
  * SignInForm Component Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import type { AuthConfig } from '../../src/types';
 
@@ -18,8 +19,8 @@ const mockConfig: AuthConfig = {
     companyName: 'Test Company',
     logoUrl: 'https://example.com/logo.svg',
     showPoweredBy: true,
-    primaryColor: '#0066cc'
-  }
+    primaryColor: '#0066cc',
+  },
 };
 
 describe('SignInForm Component', () => {
@@ -30,7 +31,7 @@ describe('SignInForm Component', () => {
   describe('Rendering', () => {
     it('should render with company branding', () => {
       const { container } = render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       expect(screen.getByText('Sign in')).toBeInTheDocument();
@@ -44,7 +45,7 @@ describe('SignInForm Component', () => {
 
     it('should show logo when provided', () => {
       render(SignInForm, {
-        props: { config: mockConfig, showLogo: true }
+        props: { config: mockConfig, showLogo: true },
       });
 
       const logo = screen.getByRole('img');
@@ -55,7 +56,7 @@ describe('SignInForm Component', () => {
 
     it('should hide logo when showLogo is false', () => {
       render(SignInForm, {
-        props: { config: mockConfig, showLogo: false }
+        props: { config: mockConfig, showLogo: false },
       });
 
       expect(screen.queryByRole('img')).not.toBeInTheDocument();
@@ -63,7 +64,7 @@ describe('SignInForm Component', () => {
 
     it('should show "Powered by Thepia" when enabled', () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       expect(screen.getByText(/Secured by/)).toBeInTheDocument();
@@ -73,11 +74,11 @@ describe('SignInForm Component', () => {
     it('should hide "Powered by Thepia" when disabled', () => {
       const configWithoutPoweredBy = {
         ...mockConfig,
-        branding: { ...mockConfig.branding, showPoweredBy: false }
+        branding: { ...mockConfig.branding, showPoweredBy: false },
       };
 
       render(SignInForm, {
-        props: { config: configWithoutPoweredBy }
+        props: { config: configWithoutPoweredBy },
       });
 
       expect(screen.queryByText(/Secured by/)).not.toBeInTheDocument();
@@ -85,7 +86,7 @@ describe('SignInForm Component', () => {
 
     it('should render in compact mode', () => {
       const { container } = render(SignInForm, {
-        props: { config: mockConfig, compact: true }
+        props: { config: mockConfig, compact: true },
       });
 
       const form = container.querySelector('.auth-form');
@@ -94,7 +95,7 @@ describe('SignInForm Component', () => {
 
     it('should apply custom className', () => {
       const { container } = render(SignInForm, {
-        props: { config: mockConfig, className: 'custom-class' }
+        props: { config: mockConfig, className: 'custom-class' },
       });
 
       const form = container.querySelector('.auth-form');
@@ -105,19 +106,19 @@ describe('SignInForm Component', () => {
   describe('Form Interaction', () => {
     it('should update email input', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com') as HTMLInputElement;
-      
+
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      
+
       expect(emailInput.value).toBe('test@example.com');
     });
 
     it('should set initial email value', () => {
       render(SignInForm, {
-        props: { config: mockConfig, initialEmail: 'initial@example.com' }
+        props: { config: mockConfig, initialEmail: 'initial@example.com' },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com') as HTMLInputElement;
@@ -126,7 +127,7 @@ describe('SignInForm Component', () => {
 
     it('should disable continue button when email is empty', () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const submitButton = screen.getByRole('button');
@@ -135,7 +136,7 @@ describe('SignInForm Component', () => {
 
     it('should enable continue button when email is entered', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
@@ -148,7 +149,7 @@ describe('SignInForm Component', () => {
 
     it('should show loading state during submission', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
@@ -163,13 +164,13 @@ describe('SignInForm Component', () => {
 
     it('should show error state', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
-      
+
       await fireEvent.input(emailInput, { target: { value: 'invalid-email' } });
-      
+
       // The form should show an error for invalid email format
       const form = emailInput.closest('form');
       expect(form).toBeInTheDocument();
@@ -179,9 +180,9 @@ describe('SignInForm Component', () => {
   describe('Form Submission', () => {
     it('should emit success event on successful authentication', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       component.$on('success', successHandler);
@@ -193,32 +194,35 @@ describe('SignInForm Component', () => {
       await fireEvent.click(continueButton);
 
       // Wait for the mock timeout to complete
-      await waitFor(() => {
-        expect(successHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: {
-              user: expect.objectContaining({
-                email: 'test@example.com',
-                name: 'Test User'
-              }),
-              method: expect.stringMatching(/passkey|magic-link/)
-            }
-          })
-        );
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(successHandler).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: {
+                user: expect.objectContaining({
+                  email: 'test@example.com',
+                  name: 'Test User',
+                }),
+                method: expect.stringMatching(/passkey|magic-link/),
+              },
+            })
+          );
+        },
+        { timeout: 2000 }
+      );
     });
 
     it('should not submit with empty email', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       component.$on('success', successHandler);
 
       const continueButton = screen.getByRole('button');
-      
+
       await fireEvent.click(continueButton);
 
       expect(successHandler).not.toHaveBeenCalled();
@@ -226,20 +230,20 @@ describe('SignInForm Component', () => {
 
     it('should prevent default form submission', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const form = document.querySelector('form');
       const submitHandler = vi.fn();
-      
+
       if (form) {
         form.addEventListener('submit', submitHandler);
-        
+
         const emailInput = screen.getByPlaceholderText('your.email@company.com');
         await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-        
+
         await fireEvent.submit(form);
-        
+
         expect(submitHandler).toHaveBeenCalled();
         expect(submitHandler.mock.calls[0][0].defaultPrevented).toBe(true);
       }
@@ -249,7 +253,7 @@ describe('SignInForm Component', () => {
   describe('Accessibility', () => {
     it('should have proper form labels', () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByLabelText('Email address');
@@ -261,19 +265,19 @@ describe('SignInForm Component', () => {
 
     it('should have proper ARIA attributes', () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
       expect(emailInput.getAttribute('id')).toBe('email');
-      
+
       const label = screen.getByText('Email address');
       expect(label.getAttribute('for')).toBe('email');
     });
 
     it('should show loading spinner with proper accessibility', async () => {
       render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
@@ -290,17 +294,17 @@ describe('SignInForm Component', () => {
   describe('Responsive Design', () => {
     it('should apply mobile styles', () => {
       const { container } = render(SignInForm, {
-        props: { config: mockConfig }
+        props: { config: mockConfig },
       });
 
       // Check if mobile responsive styles are present
       const form = container.querySelector('.auth-form');
       expect(form).toBeInTheDocument();
-      
+
       // The actual mobile styles are CSS-based, so we just verify the structure exists
       const logo = container.querySelector('.auth-logo');
       const formContainer = container.querySelector('.auth-container');
-      
+
       expect(logo).toBeInTheDocument();
       expect(formContainer).toBeInTheDocument();
     });

@@ -1,12 +1,12 @@
 /**
  * Auth0Service Real API Integration Tests - Following thepia.com patterns
- * 
+ *
  * Purpose: Test auth0Service with real API calls, NO MOCKING
  * Context: Integration tests using real API server and test accounts
  * Safe to remove: No - critical for preventing authentication regressions
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import type { AuthConfig } from '../../src/types';
 
@@ -26,8 +26,8 @@ const getTestConfig = (): AuthConfig => {
     enableSocialLogin: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
-      showPoweredBy: true
-    }
+      showPoweredBy: true,
+    },
   };
 };
 
@@ -38,7 +38,7 @@ describe('Auth0Service Real API Integration Tests', () => {
   beforeAll(async () => {
     // Following thepia.com pattern - detect API availability
     testEmail = process.env.TEST_AUTH_EMAIL || 'test@thepia.com';
-    
+
     try {
       const response = await fetch(`${API_BASE}/auth/check-user`, {
         method: 'POST',
@@ -47,7 +47,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       });
       apiAvailable = response.status !== undefined;
       console.log(`🔗 API Server at ${API_BASE}: ${apiAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'}`);
-    } catch (error) {
+    } catch (_error) {
       console.warn('Live API not available - skipping integration tests');
       apiAvailable = false;
     }
@@ -56,7 +56,7 @@ describe('Auth0Service Real API Integration Tests', () => {
   beforeEach(() => {
     testConfig = getTestConfig();
     vi.clearAllMocks();
-    
+
     if (apiAvailable) {
       authApiClient = new AuthApiClient(testConfig);
     }
@@ -93,7 +93,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       }
 
       expect(authApiClient.config.apiBaseUrl).toBe(API_BASE);
-      
+
       // Test that all expected endpoints would be constructed correctly
       const endpoints = [
         'check-user',
@@ -157,7 +157,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       }
 
       const invalidEmail = 'invalid-email-format';
-      
+
       try {
         await authApiClient.checkEmail(invalidEmail);
         expect(false).toBe(true); // Should not reach here
@@ -177,7 +177,7 @@ describe('Auth0Service Real API Integration Tests', () => {
 
       // First check if user exists
       const userCheck = await authApiClient.checkEmail(testEmail);
-      
+
       if (!userCheck.exists) {
         console.log(`Skipping WebAuthn test: User ${testEmail} does not exist`);
         return;
@@ -185,16 +185,16 @@ describe('Auth0Service Real API Integration Tests', () => {
 
       try {
         const challenge = await authApiClient.getPasskeyChallenge(testEmail);
-        
+
         expect(challenge).toHaveProperty('challenge');
         expect(challenge).toHaveProperty('rpId');
         expect(challenge.rpId).toBe('dev.thepia.net');
-        
+
         if (userCheck.hasPasskey) {
           expect(challenge).toHaveProperty('allowCredentials');
           expect(Array.isArray(challenge.allowCredentials)).toBe(true);
         }
-        
+
         console.log(`✅ WebAuthn challenge generated for ${testEmail}`);
       } catch (error: any) {
         console.log(`⚠️ WebAuthn challenge error (may be expected): ${error.message}`);
@@ -209,7 +209,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       }
 
       const nonExistentEmail = `non-existent-${Date.now()}@example.com`;
-      
+
       try {
         await authApiClient.getPasskeyChallenge(nonExistentEmail);
         expect(false).toBe(true); // Should not reach here
@@ -229,14 +229,14 @@ describe('Auth0Service Real API Integration Tests', () => {
 
       try {
         const result = await authApiClient.sendMagicLinkEmail(testEmail);
-        
+
         expect(result).toHaveProperty('step');
         expect(result.step).toBe('magic_link_sent');
-        
+
         if (result.message) {
           expect(typeof result.message).toBe('string');
         }
-        
+
         console.log(`✅ Magic link sent to ${testEmail}`);
       } catch (error: any) {
         console.log(`⚠️ Magic link error (may be expected): ${error.message}`);
@@ -251,10 +251,10 @@ describe('Auth0Service Real API Integration Tests', () => {
       }
 
       const nonExistentEmail = `non-existent-${Date.now()}@example.com`;
-      
+
       try {
         const result = await authApiClient.sendMagicLinkEmail(nonExistentEmail);
-        
+
         // Some APIs might still send magic link for non-existent users for security
         expect(result).toHaveProperty('step');
         console.log(`✅ Magic link handled for non-existent user: ${result.step}`);
@@ -275,7 +275,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       // This tests that our service handles network issues properly
       try {
         const result = await authApiClient.checkEmail('timeout-test@example.com');
-        
+
         // Even if the API is slow, we should get a proper response structure
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
@@ -295,11 +295,11 @@ describe('Auth0Service Real API Integration Tests', () => {
       // Create client with invalid API URL
       const invalidConfig = {
         ...testConfig,
-        apiBaseUrl: 'https://invalid-api-url.example.com'
+        apiBaseUrl: 'https://invalid-api-url.example.com',
       };
-      
+
       const invalidClient = new AuthApiClient(invalidConfig);
-      
+
       try {
         await invalidClient.checkEmail('test@example.com');
         expect(false).toBe(true); // Should not reach here
@@ -317,23 +317,26 @@ describe('Auth0Service Real API Integration Tests', () => {
 
       // Make multiple concurrent API calls with delays to avoid rate limiting
       const emails = ['test1@example.com', 'test2@example.com', 'test3@example.com'];
-      
-      const promises = emails.map((email, index) => 
-        new Promise(resolve => 
-          setTimeout(() => 
-            authApiClient.checkEmail(email)
-              .then(resolve)
-              .catch(e => resolve({ error: e.message })),
-            index * 1000 // 1 second delay between requests
+
+      const promises = emails.map(
+        (email, index) =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                authApiClient
+                  .checkEmail(email)
+                  .then(resolve)
+                  .catch((e) => resolve({ error: e.message })),
+              index * 1000 // 1 second delay between requests
+            )
           )
-        )
       );
-      
+
       const results = await Promise.all(promises);
-      
+
       expect(results).toHaveLength(3);
       console.log(`✅ Concurrent API calls completed: ${results.length} requests`);
-      
+
       // All results should have either valid response or error
       results.forEach((result, index) => {
         if ('error' in result) {

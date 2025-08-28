@@ -29,18 +29,15 @@ function arrayBufferToBase64url(buffer: ArrayBuffer): string {
   for (const byte of bytes) {
     str += String.fromCharCode(byte);
   }
-  return btoa(str)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function base64urlToArrayBuffer(base64url: string): ArrayBuffer {
   const base64 = base64url
     .replace(/-/g, '+')
     .replace(/_/g, '/')
-    .padEnd(base64url.length + (4 - base64url.length % 4) % 4, '=');
-  
+    .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), '=');
+
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
@@ -56,7 +53,7 @@ function stringToArrayBuffer(str: string): ArrayBuffer {
 function generateRandomUserId(): string {
   const timestamp = Date.now().toString(36);
   const random = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-    .map(b => b.toString(36))
+    .map((b) => b.toString(36))
     .join('');
   return `user_${timestamp}_${random}`;
 }
@@ -66,25 +63,28 @@ function generateChallenge(): ArrayBuffer {
 }
 
 function addTestResult(test: string, result: any) {
-  testResults = [{
-    timestamp: new Date().toISOString(),
-    test,
-    result: typeof result === 'object' ? JSON.stringify(result, null, 2) : result,
-    success: !result?.error
-  }, ...testResults];
+  testResults = [
+    {
+      timestamp: new Date().toISOString(),
+      test,
+      result: typeof result === 'object' ? JSON.stringify(result, null, 2) : result,
+      success: !result?.error,
+    },
+    ...testResults,
+  ];
 }
 
 // WebAuthn test functions
 async function testWebAuthnSupport() {
   currentTest = 'Testing WebAuthn Support';
   isLoading = true;
-  
+
   try {
     const result = {
       webAuthnSupported: !!window.PublicKeyCredential,
       conditionalUISupported: false,
       platformAuthenticatorSupported: false,
-      userVerifyingPlatformAuthenticatorSupported: false
+      userVerifyingPlatformAuthenticatorSupported: false,
     };
 
     if (window.PublicKeyCredential) {
@@ -92,10 +92,11 @@ async function testWebAuthnSupport() {
       if (PublicKeyCredential.isConditionalMediationAvailable) {
         result.conditionalUISupported = await PublicKeyCredential.isConditionalMediationAvailable();
       }
-      
+
       // Test platform authenticator
       if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-        result.platformAuthenticatorSupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        result.platformAuthenticatorSupported =
+          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         result.userVerifyingPlatformAuthenticatorSupported = result.platformAuthenticatorSupported;
       }
     }
@@ -126,42 +127,42 @@ async function createDiscoverableCredential() {
     const challengeBuffer = generateChallenge();
     challenge = arrayBufferToBase64url(challengeBuffer);
 
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: {
         challenge: challengeBuffer,
         rp: {
           id: rpId,
-          name: rpName
+          name: rpName,
         },
         user: {
           id: stringToArrayBuffer(userIdGenerated),
           name: userName || `${userIdGenerated}@example.com`,
-          displayName: userDisplayName || 'Test User'
+          displayName: userDisplayName || 'Test User',
         },
         pubKeyCredParams: [
-          { alg: -7, type: 'public-key' },   // ES256
-          { alg: -257, type: 'public-key' }  // RS256
+          { alg: -7, type: 'public-key' }, // ES256
+          { alg: -257, type: 'public-key' }, // RS256
         ],
         authenticatorSelection: {
           authenticatorAttachment: 'platform',
           requireResidentKey: true,
           residentKey: 'required',
-          userVerification: 'preferred'
+          userVerification: 'preferred',
         },
         timeout: 60000,
         attestation: 'direct',
         extensions: {
-          credProps: true
-        }
-      }
-    }) as PublicKeyCredential;
+          credProps: true,
+        },
+      },
+    })) as PublicKeyCredential;
 
     if (credential) {
       credentialId = arrayBufferToBase64url(credential.rawId);
-      
+
       const response = credential.response as AuthenticatorAttestationResponse;
       const extensions = credential.getClientExtensionResults();
-      
+
       const result = {
         credentialId: credential.id,
         credentialIdBase64url: credentialId,
@@ -174,7 +175,7 @@ async function createDiscoverableCredential() {
         extensions: extensions,
         isDiscoverable: extensions.credProps?.rk || 'unknown',
         userIdStored: userIdGenerated,
-        challenge: challenge
+        challenge: challenge,
       };
 
       // Store for authentication tests
@@ -185,10 +186,10 @@ async function createDiscoverableCredential() {
       addTestResult('Create Discoverable Credential', result);
     }
   } catch (error) {
-    addTestResult('Create Discoverable Credential', { 
+    addTestResult('Create Discoverable Credential', {
       error: error.message,
       name: error.name,
-      challenge: challenge
+      challenge: challenge,
     });
   } finally {
     isLoading = false;
@@ -210,35 +211,35 @@ async function createNonDiscoverableCredential() {
     const challengeBuffer = generateChallenge();
     challenge = arrayBufferToBase64url(challengeBuffer);
 
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: {
         challenge: challengeBuffer,
         rp: {
           id: rpId,
-          name: rpName
+          name: rpName,
         },
         user: {
           id: stringToArrayBuffer(userIdGenerated),
           name: userName || `${userIdGenerated}@example.com`,
-          displayName: userDisplayName || 'Test User'
+          displayName: userDisplayName || 'Test User',
         },
         pubKeyCredParams: [
           { alg: -7, type: 'public-key' },
-          { alg: -257, type: 'public-key' }
+          { alg: -257, type: 'public-key' },
         ],
         authenticatorSelection: {
           authenticatorAttachment: 'platform',
           requireResidentKey: false,
           residentKey: 'discouraged',
-          userVerification: 'preferred'
+          userVerification: 'preferred',
         },
         timeout: 60000,
         attestation: 'none',
         extensions: {
-          credProps: true
-        }
-      }
-    }) as PublicKeyCredential;
+          credProps: true,
+        },
+      },
+    })) as PublicKeyCredential;
 
     if (credential) {
       const tempCredentialId = arrayBufferToBase64url(credential.rawId);
@@ -255,15 +256,15 @@ async function createNonDiscoverableCredential() {
         extensions: extensions,
         isDiscoverable: extensions.credProps?.rk || 'unknown',
         userIdStored: userIdGenerated,
-        challenge: challenge
+        challenge: challenge,
       };
 
       addTestResult('Create Non-Discoverable Credential', result);
     }
   } catch (error) {
-    addTestResult('Create Non-Discoverable Credential', { 
+    addTestResult('Create Non-Discoverable Credential', {
       error: error.message,
-      name: error.name
+      name: error.name,
     });
   } finally {
     isLoading = false;
@@ -273,7 +274,9 @@ async function createNonDiscoverableCredential() {
 
 async function authenticateWithCredentialId() {
   if (!credentialId) {
-    addTestResult('Authenticate with Credential ID', { error: 'No credential ID available. Create a credential first.' });
+    addTestResult('Authenticate with Credential ID', {
+      error: 'No credential ID available. Create a credential first.',
+    });
     return;
   }
 
@@ -284,24 +287,26 @@ async function authenticateWithCredentialId() {
     const challengeBuffer = generateChallenge();
     const challengeBase64 = arrayBufferToBase64url(challengeBuffer);
 
-    const assertion = await navigator.credentials.get({
+    const assertion = (await navigator.credentials.get({
       publicKey: {
         challenge: challengeBuffer,
         rpId: rpId,
-        allowCredentials: [{
-          id: base64urlToArrayBuffer(credentialId),
-          type: 'public-key',
-          transports: ['internal']
-        }],
+        allowCredentials: [
+          {
+            id: base64urlToArrayBuffer(credentialId),
+            type: 'public-key',
+            transports: ['internal'],
+          },
+        ],
         userVerification: 'preferred',
-        timeout: 60000
-      }
-    }) as PublicKeyCredential;
+        timeout: 60000,
+      },
+    })) as PublicKeyCredential;
 
     if (assertion) {
       const response = assertion.response as AuthenticatorAssertionResponse;
       let extractedUserHandle = null;
-      
+
       if (response.userHandle) {
         extractedUserHandle = new TextDecoder().decode(response.userHandle);
       }
@@ -312,20 +317,24 @@ async function authenticateWithCredentialId() {
         originalUserId: userId,
         userHandleReturned: extractedUserHandle,
         userHandleMatches: extractedUserHandle === userId,
-        userHandleStatus: extractedUserHandle ? (extractedUserHandle === userId ? 'MATCH - user.id retrieved from passkey' : 'MISMATCH - different user.id returned') : 'NULL - credential does not store user.id',
+        userHandleStatus: extractedUserHandle
+          ? extractedUserHandle === userId
+            ? 'MATCH - user.id retrieved from passkey'
+            : 'MISMATCH - different user.id returned'
+          : 'NULL - credential does not store user.id',
         authenticatorDataLength: response.authenticatorData.byteLength,
         clientDataJSONLength: response.clientDataJSON.byteLength,
         signatureLength: response.signature.byteLength,
-        challenge: challengeBase64
+        challenge: challengeBase64,
       };
 
       userHandle = extractedUserHandle || 'null';
       addTestResult('Authenticate with Credential ID', result);
     }
   } catch (error) {
-    addTestResult('Authenticate with Credential ID', { 
+    addTestResult('Authenticate with Credential ID', {
       error: error.message,
-      name: error.name
+      name: error.name,
     });
   } finally {
     isLoading = false;
@@ -346,20 +355,20 @@ async function authenticateDiscoverable() {
     const challengeBuffer = generateChallenge();
     const challengeBase64 = arrayBufferToBase64url(challengeBuffer);
 
-    const assertion = await navigator.credentials.get({
+    const assertion = (await navigator.credentials.get({
       publicKey: {
         challenge: challengeBuffer,
         rpId: rpId,
         allowCredentials: [], // Empty for discoverable
         userVerification: 'preferred',
-        timeout: 60000
-      }
-    }) as PublicKeyCredential;
+        timeout: 60000,
+      },
+    })) as PublicKeyCredential;
 
     if (assertion) {
       const response = assertion.response as AuthenticatorAssertionResponse;
       let extractedUserHandle = null;
-      
+
       if (response.userHandle) {
         extractedUserHandle = new TextDecoder().decode(response.userHandle);
       }
@@ -369,23 +378,25 @@ async function authenticateDiscoverable() {
         credentialId: assertion.id,
         credentialIdBase64url: arrayBufferToBase64url(assertion.rawId),
         userHandleReturned: extractedUserHandle,
-        userHandleStatus: extractedUserHandle ? 'SUCCESS - user.id retrieved from passkey without credential ID' : 'FAILED - no user.id returned (may not be discoverable)',
+        userHandleStatus: extractedUserHandle
+          ? 'SUCCESS - user.id retrieved from passkey without credential ID'
+          : 'FAILED - no user.id returned (may not be discoverable)',
         originalUserIdStored: userId || 'Unknown (no credential created in this session)',
         userIdMatches: extractedUserHandle === userId,
         authenticatorDataLength: response.authenticatorData.byteLength,
         clientDataJSONLength: response.clientDataJSON.byteLength,
         signatureLength: response.signature.byteLength,
         challenge: challengeBase64,
-        note: 'This tests backup recovery - user.id should be returned from the passkey'
+        note: 'This tests backup recovery - user.id should be returned from the passkey',
       };
 
       userHandle = extractedUserHandle || 'null';
       addTestResult('Discoverable Authentication', result);
     }
   } catch (error) {
-    addTestResult('Discoverable Authentication', { 
+    addTestResult('Discoverable Authentication', {
       error: error.message,
-      name: error.name
+      name: error.name,
     });
   } finally {
     isLoading = false;
@@ -406,21 +417,21 @@ async function testConditionalUI() {
     const challengeBuffer = generateChallenge();
     const challengeBase64 = arrayBufferToBase64url(challengeBuffer);
 
-    const assertion = await navigator.credentials.get({
+    const assertion = (await navigator.credentials.get({
       publicKey: {
         challenge: challengeBuffer,
         rpId: rpId,
         allowCredentials: [],
         userVerification: 'preferred',
-        timeout: 60000
+        timeout: 60000,
       },
-      mediation: 'conditional'
-    }) as PublicKeyCredential;
+      mediation: 'conditional',
+    })) as PublicKeyCredential;
 
     if (assertion) {
       const response = assertion.response as AuthenticatorAssertionResponse;
       let extractedUserHandle = null;
-      
+
       if (response.userHandle) {
         extractedUserHandle = new TextDecoder().decode(response.userHandle);
       }
@@ -429,15 +440,15 @@ async function testConditionalUI() {
         mode: 'Conditional UI',
         credentialId: assertion.id,
         userHandle: extractedUserHandle,
-        challenge: challengeBase64
+        challenge: challengeBase64,
       };
 
       addTestResult('Conditional UI Test', result);
     }
   } catch (error) {
-    addTestResult('Conditional UI Test', { 
+    addTestResult('Conditional UI Test', {
       error: error.message,
-      name: error.name
+      name: error.name,
     });
   } finally {
     isLoading = false;
@@ -464,10 +475,10 @@ onMount(() => {
     // Initialize from localStorage
     credentialId = localStorage.getItem('webauthn-test-credential-id') || '';
     userId = localStorage.getItem('webauthn-test-user-id') || '';
-    
+
     // Auto-detect WebAuthn support
     testWebAuthnSupport();
-    
+
     // Set defaults
     if (!userId) {
       userId = generateRandomUserId();

@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,10 +28,10 @@
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "test": "vitest run --exclude tests/integration/ --exclude tests/critical/",
-    "test:watch": "vitest --exclude tests/integration/ --exclude tests/critical/",
-    "test:ui": "vitest --ui --exclude tests/integration/ --exclude tests/critical/",
-    "test:coverage": "vitest run --coverage --exclude tests/integration/ --exclude tests/critical/",
+    "test": "vitest run --exclude \"tests/{integration,critical}/**\"",
+    "test:watch": "vitest --exclude \"tests/{integration,critical}/**\"",
+    "test:ui": "vitest --ui --exclude \"tests/{integration,critical}/**\"",
+    "test:coverage": "vitest run --coverage --exclude \"tests/{integration,critical}/**\"",
     "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ --exclude tests/integration/ tests/critical/",
     "test:e2e": "vitest run tests/integration/ tests/critical/",
     "test:integration": "vitest run tests/integration/",

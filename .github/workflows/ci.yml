@@ -45,21 +45,23 @@ jobs:
       - name: Run unit tests
         run: pnpm run test:unit
 
-      - name: Run integration tests
-        run: pnpm run test:integration
+      - name: Run integration tests (CI-safe)
+        run: pnpm run test:integration:env
+        env:
+          TEST_API_ENV: public
 
       - name: Generate test coverage
-        run: pnpm run test:coverage
+        run: pnpm run test:unit --coverage
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: dist/

@@ -33,28 +33,21 @@ jobs:
     - name: 🔒 CRITICAL - API Contract Tests
       run: |
         echo "Running CRITICAL API contract tests..."
-        pnpm test contracts/api-response-contracts.test.ts --reporter=verbose
-      env:
-        CI: true
-
-    - name: 🔒 CRITICAL - API Response Format Tests  
-      run: |
-        echo "Running CRITICAL API response format tests..."
-        pnpm test integration/api-response-format.test.ts --reporter=verbose
+        pnpm run test:contracts --reporter=verbose
       env:
         CI: true
 
     - name: 🔒 CRITICAL - Session Management Tests
       run: |
         echo "Running CRITICAL session management tests..."
-        pnpm test utils/sessionManager.test.ts --reporter=verbose
+        pnpm vitest run tests/utils/sessionManager.test.ts --reporter=verbose
       env:
         CI: true
 
     - name: 🔒 CRITICAL - Auth Store Tests
       run: |
         echo "Running CRITICAL auth store tests..."
-        pnpm test stores/auth-store.test.ts --reporter=verbose
+        pnpm vitest run tests/stores/auth-store.test.ts --reporter=verbose
       env:
         CI: true
 

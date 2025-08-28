@@ -9,7 +9,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8.15.0'
+  PNPM_VERSION: '9.0.0'
 
 jobs:
   publish:

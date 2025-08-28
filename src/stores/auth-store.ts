@@ -814,11 +814,11 @@ function createAuthStore(config: AuthConfig) {
       console.log('✅ WebAuthn registration options received');
 
       // Step 3: Create WebAuthn credential using browser API
-      console.log('🔄 Step 3: Creating WebAuthn credential...');
+      console.log('🔄 Step 3: Creating WebAuthn authentication...');
       const webauthnUtils = await import('../utils/webauthn');
       const credential = await webauthnUtils.createCredential(registrationOptions);
 
-      console.log('✅ WebAuthn credential created');
+      console.log('✅ WebAuthn authentication created');
 
       // Step 4: Verify WebAuthn registration with server
       console.log('🔄 Step 4: Verifying WebAuthn registration...');

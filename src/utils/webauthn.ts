@@ -169,7 +169,7 @@ export async function createCredential(registrationOptions: any): Promise<any> {
       clientExtensionResults: credential.getClientExtensionResults(),
     };
 
-    console.log('✅ WebAuthn credential created and converted for server');
+    console.log('✅ WebAuthn authentication created and converted for server');
     return credentialForServer;
   } catch (error: any) {
     console.error('❌ WebAuthn credential creation failed:', error);

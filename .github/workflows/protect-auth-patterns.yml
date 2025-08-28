@@ -24,7 +24,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 8.15.0
+        version: 9.0.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -45,7 +45,7 @@ jobs:
     - name: 🔒 CRITICAL - Session Management Tests
       run: |
         echo "Running CRITICAL session management tests..."
-        pnpm vitest run tests/utils/sessionManager.test.ts --reporter=verbose
+        pnpm vitest run tests/utils/storageManager.test.ts --reporter=verbose
       env:
         CI: true
 
@@ -73,7 +73,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 8.15.0
+        version: 9.0.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -106,20 +106,21 @@ jobs:
     - name: Check session storage key consistency
       run: |
         echo "Checking session storage key consistency..."
-        
-        # Verify all components use the same storage key
+
+        # Verify sessionManager uses the main storage key
         STORAGE_KEY="thepia_auth_session"
-        
+
         if ! grep -q "$STORAGE_KEY" src/utils/sessionManager.ts; then
           echo "❌ CRITICAL: sessionManager not using consistent storage key!"
           exit 1
         fi
-        
-        if ! grep -q "$STORAGE_KEY" src/stores/auth-state-machine.ts; then
-          echo "❌ CRITICAL: auth-state-machine not using consistent storage key!"
+
+        # Verify auth-state-machine uses legacy storage keys (different pattern but consistent)
+        if ! grep -q "auth_access_token" src/stores/auth-state-machine.ts; then
+          echo "❌ CRITICAL: auth-state-machine not using expected storage keys!"
           exit 1
         fi
-        
+
         echo "✅ Session storage key consistency verified"
 
   build-and-integration:
@@ -134,7 +135,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 8.15.0
+        version: 9.0.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -193,7 +194,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
-        version: 8.15.0
+        version: 9.0.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

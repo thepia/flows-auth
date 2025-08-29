@@ -57,10 +57,10 @@ jobs:
           test -f dist/index.cjs
           test -f dist/index.d.ts
 
-      - name: Configure npm authentication
+      - name: Configure pnpm authentication
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          echo "@thepia:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          pnpm config set //npm.pkg.github.com/:_authToken "${NODE_AUTH_TOKEN}"
+          pnpm config set @thepia:registry https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           

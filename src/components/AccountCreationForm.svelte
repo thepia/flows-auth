@@ -32,7 +32,7 @@ const dispatch = createEventDispatcher<{
   success: { user: User };
   error: { error: AuthError };
   appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
-  switchToSignIn: {};
+  switchToSignIn: Record<string, never>;
 }>();
 
 // Auth store

@@ -74,7 +74,7 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);
 
-  const { type, payload } = event.data;
+  const { type } = event.data;
 
   switch (type) {
     case 'SYNC_NOW':

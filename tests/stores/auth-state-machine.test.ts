@@ -179,7 +179,7 @@ describe('AuthStateMachine', () => {
           'loadingApp',
         ])
       );
-      
+
       // Verify we have at least the core states
       expect(filteredTransitions.length).toBeGreaterThanOrEqual(7);
     });

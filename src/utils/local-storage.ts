@@ -98,8 +98,9 @@ export class LocalStorageDB {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readwrite');
-      const store = transaction.objectStore('workflows');
+      const transaction = this.db?.transaction(['workflows'], 'readwrite');
+      const store = transaction?.objectStore('workflows');
+      if (!store) throw new Error('Failed to access workflows store');
       const request = store.put(record);
 
       request.onerror = () => reject(new Error('Failed to store workflow'));
@@ -114,8 +115,9 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
-      const store = transaction.objectStore('workflows');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
+      const store = transaction?.objectStore('workflows');
+      if (!store) throw new Error('Failed to access workflows store');
       const request = store.get(uid);
 
       request.onerror = () => reject(new Error('Failed to get workflow'));
@@ -130,8 +132,9 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
-      const store = transaction.objectStore('workflows');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
+      const store = transaction?.objectStore('workflows');
+      if (!store) throw new Error('Failed to access workflows store');
       const index = store.index('syncStatus');
       const request = index.getAll(status);
 
@@ -147,8 +150,9 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readonly');
-      const store = transaction.objectStore('workflows');
+      const transaction = this.db?.transaction(['workflows'], 'readonly');
+      const store = transaction?.objectStore('workflows');
+      if (!store) throw new Error('Failed to access workflows store');
       const request = store.getAll();
 
       request.onerror = () => reject(new Error('Failed to get all workflows'));
@@ -181,8 +185,9 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows'], 'readwrite');
-      const store = transaction.objectStore('workflows');
+      const transaction = this.db?.transaction(['workflows'], 'readwrite');
+      const store = transaction?.objectStore('workflows');
+      if (!store) throw new Error('Failed to access workflows store');
       const request = store.delete(uid);
 
       request.onerror = () => reject(new Error('Failed to delete workflow'));
@@ -197,8 +202,9 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['sync_metadata'], 'readonly');
-      const store = transaction.objectStore('sync_metadata');
+      const transaction = this.db?.transaction(['sync_metadata'], 'readonly');
+      const store = transaction?.objectStore('sync_metadata');
+      if (!store) throw new Error('Failed to access sync_metadata store');
       const request = store.get('sync');
 
       request.onerror = () => reject(new Error('Failed to get sync metadata'));
@@ -223,8 +229,9 @@ export class LocalStorageDB {
     const updated = { ...current, ...metadata };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['sync_metadata'], 'readwrite');
-      const store = transaction.objectStore('sync_metadata');
+      const transaction = this.db?.transaction(['sync_metadata'], 'readwrite');
+      const store = transaction?.objectStore('sync_metadata');
+      if (!store) throw new Error('Failed to access sync_metadata store');
       const request = store.put({ id: 'sync', ...updated });
 
       request.onerror = () => reject(new Error('Failed to update sync metadata'));
@@ -247,11 +254,12 @@ export class LocalStorageDB {
     await this.ensureInitialized();
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['workflows', 'sync_metadata'], 'readwrite');
-      
-      const workflowStore = transaction.objectStore('workflows');
-      const metadataStore = transaction.objectStore('sync_metadata');
-      
+      const transaction = this.db?.transaction(['workflows', 'sync_metadata'], 'readwrite');
+
+      const workflowStore = transaction?.objectStore('workflows');
+      const metadataStore = transaction?.objectStore('sync_metadata');
+      if (!workflowStore || !metadataStore) throw new Error('Failed to access required stores');
+
       const clearWorkflows = workflowStore.clear();
       const clearMetadata = metadataStore.clear();
 

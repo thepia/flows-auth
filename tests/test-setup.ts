@@ -457,13 +457,13 @@ export class PerformanceTestUtils {
 
 // Memory leak detection
 export class MemoryTestUtils {
-  static trackObjects<T>(constructor: new (...args: any[]) => T): {
+  static trackObjects<T>(ctor: new (...args: any[]) => T): {
     count: () => number;
     cleanup: () => void;
   } {
     const instances = new WeakSet<T>();
-    const originalConstructor = constructor;
-    
+    const originalConstructor = ctor;
+
     // Replace constructor to track instances
     const TrackedConstructor = function(this: T, ...args: any[]) {
       const instance = new originalConstructor(...args);

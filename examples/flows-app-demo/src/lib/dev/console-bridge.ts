@@ -21,7 +21,7 @@ interface LogEntry {
 
 class ConsoleBridge {
   private logs: LogEntry[] = [];
-  private originalConsole: Record<string, Function> = {};
+  private originalConsole: Record<string, (...args: any[]) => void> = {};
   private sessionId: string;
   private isInitialized = false;
   private uploadInterval: number | null = null;

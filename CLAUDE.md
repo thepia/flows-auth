@@ -65,7 +65,31 @@ pnpm lint          # Biome linting (must pass)
 
 ## ⚠️ CRITICAL MISTAKES TO AVOID
 
-### 1. Dev Server Management
+### 1. GitHub Packages Publishing Authentication
+- **NEVER keep local `.npmrc` files with environment variable references for publishing**
+- **Local `.npmrc` with `//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN` breaks npm publish**
+- **npm doesn't expand environment variables during publish operations**
+- **Publishing fails with 401 Unauthorized despite valid token in .env file**
+
+**Root Cause**: npm publish process doesn't expand `$NODE_AUTH_TOKEN` environment variables in local `.npmrc` files during the publish workflow, even when the token exists in `.env`.
+
+**Solution**: Remove local `.npmrc` files and rely on global `~/.npmrc` with actual token values:
+```bash
+# In ~/.npmrc (WORKS)
+//npm.pkg.github.com/:_authToken=ghp_actualTokenHere
+@thepia:registry=https://npm.pkg.github.com
+
+# In local .npmrc (BREAKS PUBLISHING)
+//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN  # ❌ npm doesn't expand this
+```
+
+**Publishing Workflow**:
+1. Ensure `~/.npmrc` has actual token (not environment variable)
+2. Remove local `.npmrc` files from repository
+3. Use `package.json` publishConfig for registry settings
+4. Run `pnpm publish --no-git-checks` (delegates to npm internally)
+
+### 2. Dev Server Management
 - **NEVER run dev servers and continue with other tasks**
 - Dev servers are blocking operations that require user interaction
 - Always let the user start/stop dev servers

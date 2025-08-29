@@ -28,13 +28,13 @@
   export let readOnlyFields: string[] = [];
   export let onSwitchToSignIn: (() => void) | undefined = undefined;
 
-  // Events
-  const dispatch = createEventDispatcher<{
-    success: { user: User };
-    error: { error: AuthError };
-    appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
-    switchToSignIn: {};
-  }>();
+// Events
+const dispatch = createEventDispatcher<{
+  success: { user: User };
+  error: { error: AuthError };
+  appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean }; // User enters app
+  switchToSignIn: Record<string, never>;
+}>();
 
   // Auth store
   const authStore = createAuthStore(config);

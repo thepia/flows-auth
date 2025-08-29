@@ -171,8 +171,8 @@ export async function testWebAuthnBasicFlow(): Promise<{ success: boolean; error
     }
 
     // Try to create a test credential (this will prompt user)
-    console.log('🧪 Testing WebAuthn credential creation...');
-    
+    console.log('🧪 Testing WebAuthn authentication creation...');
+
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: new Uint8Array(32),

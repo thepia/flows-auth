@@ -58,7 +58,7 @@ jobs:
           test -f dist/index.d.ts
 
       - name: Publish to GitHub Packages
-        run: pnpm publish --access public --no-git-checks
+        run: pnpm publish --registry https://npm.pkg.github.com --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

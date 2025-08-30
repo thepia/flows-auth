@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import '../app.css';
 import type { User } from '@thepia/flows-auth';
-// import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte'; // Temporarily disabled
+import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
 
 let authStore: any = null;
 let isAuthenticated = false;
@@ -100,10 +100,7 @@ onMount(async () => {
 </div>
 
 <!-- Error reporting status indicator (dev/staging only) -->
-<!-- Temporarily disabled to debug page disappearing issue -->
-<!--{#if browser}
-	<ErrorReportingStatus />
-{/if}-->
+<ErrorReportingStatus />
 
 <style>
 	:global(body) {

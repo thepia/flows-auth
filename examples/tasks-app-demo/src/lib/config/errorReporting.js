@@ -40,7 +40,7 @@ async function isLocalDemoAvailable() {
     const healthEndpoint = endpoint.replace('/dev/error-reports', '/health');
     const response = await fetch(healthEndpoint, {
       method: 'GET',
-      timeout: 2000 // Quick timeout for availability check
+      signal: AbortSignal.timeout(2000) // Quick timeout for availability check
     });
     return response.ok;
   } catch (error) {
@@ -57,7 +57,7 @@ async function isLocalApiAvailable() {
   try {
     const response = await fetch('https://dev.thepia.com:8443/health', {
       method: 'GET',
-      timeout: 2000 // Quick timeout for availability check
+      signal: AbortSignal.timeout(2000) // Quick timeout for availability check
     });
     return response.ok;
   } catch (error) {

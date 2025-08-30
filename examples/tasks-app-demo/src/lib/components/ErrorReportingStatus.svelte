@@ -1,6 +1,8 @@
 <script>
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
+	import { onMount, getContext } from 'svelte';
+
+	console.log('[ErrorReportingStatus] Component script loading...');
 
 	let queueSize = 0;
 	let config = null;
@@ -24,9 +26,18 @@
 	onMount(async () => {
 		if (!browser) return;
 
+		console.log('[ErrorReportingStatus] Component mounting...');
+		console.log('[ErrorReportingStatus] Body data-env attribute:', document.body.getAttribute('data-env'));
+
 		try {
+			console.log('[ErrorReportingStatus] Importing error reporting config...');
 			const { getErrorReportingConfig } = await import('../config/errorReporting.js');
+			console.log('[ErrorReportingStatus] Config import successful, calling getErrorReportingConfig()...');
 			config = await getErrorReportingConfig();
+			console.log('[ErrorReportingStatus] Config loaded:', config);
+			
+			// Force reactivity update
+			config = config;
 
 			// Initialize service worker manager
 			try {
@@ -37,27 +48,33 @@
 				console.warn('Service worker manager not available:', swError);
 			}
 
-			// Initialize auth store debugging
+			// Get auth store from layout context (no duplicate creation)
 			try {
-				const { createAuthStore } = await import('@thepia/flows-auth');
-				authStore = createAuthStore({
-					apiBaseUrl: 'https://dev.thepia.com:8443',
-					clientId: 'flows-auth-demo',
-					domain: 'thepia.net',
-					enablePasskeys: true,
-					enableMagicLinks: true,
-					enablePasswordLogin: true,
-					enableSocialLogin: false
-				});
+				const authStoreContainer = getContext('authStore');
+				
+				if (authStoreContainer) {
+					// Wait for auth store to be available
+					authStoreContainer.subscribe((store) => {
+						if (store) {
+							authStore = store;
+							
+							// Subscribe to auth state changes for debugging
+							authStore.subscribe((state) => {
+								authState = state;
+								console.log('🔍 Auth State Debug:', state);
+							});
 
-				// Subscribe to auth state changes for debugging
-				authStore.subscribe((state) => {
-					authState = state;
-					console.log('🔍 Auth State Debug:', state);
-				});
-
-				// Get auth state machine for debugging
-				authStateMachine = authStore.stateMachine || null;
+							// Get auth state machine for debugging
+							authStateMachine = authStore.stateMachine || null;
+							
+							// Log actual config being used
+							const config = authStore.getConfig?.() || {};
+							console.log('🔐 ErrorReportingStatus using auth config from context:', config);
+						}
+					});
+				} else {
+					console.warn('🔍 Auth store container not available in context');
+				}
 			} catch (authError) {
 				console.warn('Auth store debugging not available:', authError);
 			}
@@ -71,7 +88,15 @@
 
 			return () => clearInterval(interval);
 		} catch (error) {
-			console.error('Failed to initialize error reporting status:', error);
+			console.error('[ErrorReportingStatus] Failed to initialize error reporting status:', error);
+			
+			// Set fallback config so component shows something
+			config = {
+				enabled: false,
+				serverType: 'Error loading config',
+				environment: 'unknown',
+				endpoint: null
+			};
 		}
 	});
 	
@@ -120,16 +145,19 @@
 	}
 	
 	function getStatusColor() {
-		if (!config?.enabled) return 'disabled';
+		if (!config) return 'disabled';  // Show disabled while loading
+		if (!config.enabled) return 'disabled';
 		if (queueSize > 0) return 'pending';
 		return 'active';
 	}
 	
-	function getStatusText() {
-		if (!config?.enabled) return 'Disabled';
+	$: statusText = (() => {
+		console.log('[ErrorReportingStatus] statusText reactive update, config:', config, 'queueSize:', queueSize);
+		if (!config) return 'Loading...';  // Show loading state
+		if (!config.enabled) return 'Disabled';
 		if (queueSize > 0) return `${queueSize} pending`;
 		return 'Active';
-	}
+	})();
 
 	function formatLastSync(timestamp) {
 		if (!timestamp) return 'Never';
@@ -148,8 +176,7 @@
 	}
 </script>
 
-{#if config}
-	<div class="error-reporting-status">
+<div class="error-reporting-status">
 		<div 
 			class="status-indicator {getStatusColor()}"
 			on:click={() => showDetails = !showDetails}
@@ -159,10 +186,10 @@
 			title="Error reporting status"
 		>
 			<span class="status-icon">📊</span>
-			<span class="status-text">{getStatusText()}</span>
+			<span class="status-text">{statusText}</span>
 		</div>
 		
-		{#if showDetails}
+		{#if showDetails && config}
 			<div class="status-details">
 				<div class="detail-row">
 					<span class="detail-label">Server:</span>
@@ -251,6 +278,16 @@
 					</div>
 
 					<div class="detail-row">
+						<span class="detail-label">Domain:</span>
+						<span class="detail-value success">{authStore?.getConfig?.()?.domain || 'Not available'}</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">Client ID:</span>
+						<span class="detail-value">{authStore?.getConfig?.()?.clientId || 'Not available'}</span>
+					</div>
+
+					<div class="detail-row">
 						<span class="detail-label">User:</span>
 						<span class="detail-value" class:success={authState.user} class:error={!authState.user}>
 							{authState.user ? authState.user.email || 'Authenticated' : 'None'}
@@ -307,7 +344,6 @@
 			</div>
 		{/if}
 	</div>
-{/if}
 
 <style>
 	.error-reporting-status {

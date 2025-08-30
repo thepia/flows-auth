@@ -1,6 +1,6 @@
 <script lang="ts">
 import { browser } from '$app/environment';
-import { onMount } from 'svelte';
+import { onMount, setContext } from 'svelte';
 import '../app.css';
 import type { User } from '@thepia/flows-auth';
 import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
@@ -9,61 +9,38 @@ let authStore: any = null;
 let isAuthenticated = false;
 let user: User | null = null;
 
+// Create a store that will hold the auth store once it's initialized
+import { writable } from 'svelte/store';
+const authStoreContainer = writable(null);
+
+// Set the context immediately with the container
+setContext('authStore', authStoreContainer);
+
 onMount(async () => {
   if (!browser) return;
   
   try {
     // Initialize error reporting first - TEMPORARILY DISABLED FOR DEBUGGING
     console.log('🔧 Skipping error reporting initialization for debugging');
-    // const { initializeTasksErrorReporting, enableGlobalErrorReporting } = await import(
-    //   '../lib/config/errorReporting.js'
-    // );
-    // await initializeTasksErrorReporting();
-    // enableGlobalErrorReporting();
 
     // Dynamic import to avoid SSR issues
     const { createAuthStore } = await import('@thepia/flows-auth');
+    const { getCachedAuthConfig } = await import('../lib/config/auth.js');
 
-    // Auto-detect API server with fallback
-    let apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL;
+    // Use central config
+    const authConfig = await getCachedAuthConfig();
+    authStore = createAuthStore(authConfig);
+    
+    console.log('🔧 Auth initialized with central config:', authConfig);
 
-    if (!apiBaseUrl) {
-      // Try local API server first
-      try {
-        const localResponse = await fetch('https://dev.thepia.com:8443/health', {
-          method: 'GET',
-          signal: AbortSignal.timeout(2000),
-        });
-        if (localResponse.ok) {
-          apiBaseUrl = 'https://dev.thepia.com:8443';
-          console.log('🔧 Using local API server');
-        } else {
-          throw new Error('Local API not responding');
-        }
-      } catch (error) {
-        // Local API not available, use production
-        apiBaseUrl = 'https://api.thepia.com';
-        console.log('🔧 Using production API server');
-        console.log('💡 Note: Some features may be limited due to CORS restrictions');
-      }
-    }
-    authStore = createAuthStore({
-      apiBaseUrl,
-      clientId: 'tasks-app-demo',
-      domain: 'thepia.net',
-      enablePasskeys: true,
-      enableMagicLinks: true,
-      enablePasswordLogin: true,
-      enableSocialLogin: false,
-    });
+    // Update the container with the actual auth store
+    authStoreContainer.set(authStore);
 
     // Subscribe to auth state
     authStore.subscribe((state) => {
       isAuthenticated = state.isAuthenticated;
       user = state.user;
     });
-
-    console.log('🔧 Auth initialized with:', { apiBaseUrl });
   } catch (error) {
     console.error('Failed to initialize auth:', error);
     // Report initialization error

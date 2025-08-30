@@ -1,7 +1,7 @@
 <script lang="ts">
 import { browser } from '$app/environment';
 import { type User, SignInForm } from '@thepia/flows-auth';
-import { onMount } from 'svelte';
+import { onMount, getContext } from 'svelte';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 import TaskCard from '../lib/components/TaskCard.svelte';
 
@@ -32,29 +32,10 @@ async function testErrorReporting() {
 }
 
 // Determine API base URL at runtime
-const getApiBaseUrl = () => {
-  // Production API URL (hardcoded as requested)
-  const prodApiBaseUrl = 'https://api.thepia.com';
+// Get the auth store container from context (set during component initialization)
+const authStoreContainer = getContext('authStore');
 
-  if (typeof window === 'undefined') return prodApiBaseUrl;
-
-  const hostname = window.location.hostname;
-  const isDev = hostname === 'localhost' ||
-             hostname === '127.0.0.1' ||
-             hostname.endsWith('.thepia.net');
-
-  // Development: Check for local API server, fallback to production
-  if (isDev) {
-    // TODO: Add health check for local API server (dev.thepia.com:8443)
-    // For now, always use production API for reliability
-    return prodApiBaseUrl;
-  }
-
-  // Production: Always use production API
-  return prodApiBaseUrl;
-};
-
-// Real authentication using flows-auth
+// Initialize auth by waiting for the auth store to be available
 async function initializeAuth() {
   if (!browser) return;
 
@@ -62,20 +43,19 @@ async function initializeAuth() {
     console.log('🔄 Starting auth initialization...');
     isLoading = true;
 
-    console.log('📦 Importing flows-auth...');
-    const { createAuthStore } = await import('@thepia/flows-auth');
-    console.log('✅ flows-auth imported successfully');
-
-    console.log('🏗️ Creating auth store...');
-    authStore = createAuthStore({
-      apiBaseUrl: getApiBaseUrl(),
-      clientId: 'flows-auth-demo',
-      domain: 'thepia.net',
-      enablePasskeys: true,
-      enableMagicLinks: true,
-      enablePasswordLogin: true,
-      enableSocialLogin: false,
+    console.log('📦 Waiting for auth store from context...');
+    
+    // Wait for the auth store to be set in the container
+    authStore = await new Promise((resolve) => {
+      const unsubscribe = authStoreContainer.subscribe((store) => {
+        if (store) {
+          unsubscribe();
+          resolve(store);
+        }
+      });
     });
+    
+    console.log('✅ Auth store received from context');
     console.log('✅ Auth store created successfully');
 
     console.log('📡 Setting up auth store subscription...');
@@ -232,20 +212,12 @@ onMount(async () => {
 				<!-- Granular Authentication Form using SignInForm -->
 				<div class="auth-form-container">
 					<SignInForm
-						config={{
-							apiBaseUrl: getApiBaseUrl(), // Use same runtime detection
-							clientId: 'flows-auth-demo',
-							domain: 'thepia.net',
-							enablePasskeys: true,
-							enableMagicLinks: true,
-							enablePasswordLogin: true,
-							enableSocialLogin: false,
-							branding: {
-								companyName: 'Assignment Management System',
-								showPoweredBy: true
-							}
-						}}
+						{authStore}
 						showLogo={false}
+						branding={{
+							companyName: 'Assignment Management System',
+							showPoweredBy: true
+						}}
 						compact={false}
 						on:success={handleAuthSuccess}
 						on:error={handleAuthError}

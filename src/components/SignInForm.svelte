@@ -9,8 +9,9 @@
   import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
   import type { AuthConfig, User, AuthError, AuthMethod } from '../types';
 
-  // Props - Mirror React component props
-  export let config: AuthConfig;
+  // Props - Support both patterns for backward compatibility
+  export let config: AuthConfig | undefined = undefined;
+  export let authStore: ReturnType<typeof createAuthStore> | undefined = undefined;
   export let showLogo = true;
   export let compact = false;
   export let className = '';
@@ -23,8 +24,10 @@
     stepChange: { step: string };
   }>();
 
-  // Auth store
-  const authStore = createAuthStore(config);
+  // Auth store - Use provided authStore or create from config for backward compatibility
+  const store = authStore || (config ? createAuthStore(config) : (() => {
+    throw new Error('SignInForm: Must provide either authStore or config prop');
+  })());
 
   // Component state - Mirror React component state
   let email = initialEmail;
@@ -111,16 +114,17 @@
     try {
       conditionalAuthActive = true;
       console.log('🔍 Starting conditional authentication for:', email);
+      console.log('🔐 WebAuthn domain configured for passkeys:', store.getConfig?.()?.domain || 'unknown');
 
       // Use the auth store's conditional authentication
-      const success = await authStore.startConditionalAuthentication(email);
+      const success = await store.startConditionalAuthentication(email);
 
       if (success) {
         // Authentication succeeded - dispatch success event to parent
         console.log('✅ Conditional authentication successful - user signed in');
         // The auth store will handle state updates, we just need to let parent know
         dispatch('success', {
-          user: $authStore.user,
+          user: $store.user,
           method: 'passkey'
         });
       }
@@ -141,7 +145,7 @@
 
     try {
       // Check what auth methods are available for this email
-      const userCheck = await authStore.checkUser(email);
+      const userCheck = await store.checkUser(email);
       userExists = userCheck.exists;
       hasPasskeys = userCheck.hasWebAuthn;
       
@@ -207,7 +211,7 @@
   // Handle passkey authentication with silent mode support
   async function handlePasskeyAuth(silent = false) {
     try {
-      const result = await authStore.signInWithPasskey(email);
+      const result = await store.signInWithPasskey(email);
 
       if (result.step === 'success' && result.user) {
         loading = false;
@@ -264,7 +268,7 @@
   // Handle magic link authentication
   async function handleMagicLinkAuth() {
     try {
-      const result = await authStore.signInWithMagicLink(email);
+      const result = await store.signInWithMagicLink(email);
 
       // Check for magic link sent response - the API returns 'magic-link' step
       if (result.step === 'magic-link' || result.magicLinkSent) {
@@ -314,7 +318,7 @@
       };
 
       // Register user with passkey
-      const result = await authStore.registerUser(registrationData);
+      const result = await store.registerUser(registrationData);
 
       if (result.step === 'success' && result.user) {
         // Registration successful - user enters app immediately

@@ -5,85 +5,104 @@
  * for whitelabel applications and Flow app projects.
  */
 
-// Main components
-export { default as SignInForm } from './components/SignInForm.svelte';
-export { default as AccountCreationForm } from './components/AccountCreationForm.svelte';
-export { default as EmailVerificationBanner } from './components/EmailVerificationBanner.svelte';
-export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
-
-// Stores
-export { 
-  createAuthDerivedStores, 
-  createAuthStore
-} from './stores/auth-store';
-
-// Enhanced auth store interface types
-export type { 
-  EnhancedUserCheck, 
-  InvitationAuthOptions,
-  AuthFlowResult
-} from './types/enhanced-auth';
-
-// State Machine
-export { AuthStateMachine, AuthGuards, AuthActions } from './stores/auth-state-machine';
-
 // API client
 export { AuthApiClient } from './api/auth-api';
 export { SyncApiClient } from './api/sync-api';
 
-// Utilities
-export * from './utils/webauthn';
-export * from './utils/local-storage';
-export * from './utils/service-worker';
-export * from './utils/errorReporter';
-export type { FlowsSessionData } from './utils/sessionManager';
-export type { StorageConfig } from './types';
-export {
-  getSession,
-  saveSession,
-  clearSession,
-  isSessionValid,
-  isAuthenticated as isAuthenticatedFromSession,
-  getCurrentUser as getCurrentUserFromSession,
-  getAccessToken as getAccessTokenFromSession,
-  configureSessionStorage,
-  getOptimalSessionConfig,
-  getStorageConfig,
-  supportsPersistentSessions
-} from './utils/sessionManager';
+// Main components
+export { default as AccountCreationForm } from './components/AccountCreationForm.svelte';
+export { default as EmailVerificationBanner } from './components/EmailVerificationBanner.svelte';
+export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
+export { default as SignInForm } from './components/SignInForm.svelte';
 
-// API Detection
-export { detectApiServer, DEFAULT_API_CONFIG } from './utils/api-detection';
-export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
+// Core granular components
+export { 
+  EmailInput,
+  AuthButton, 
+  AuthStateMessage,
+  SignInCore
+} from './components/core';
 
-// Invitation Token Utilities
-export {
-  decodeInvitationToken,
-  validateInvitationToken,
-  hashInvitationToken,
-  extractRegistrationData
-} from './utils/invitation-tokens';
-export type { InvitationTokenData, TokenValidationResult } from './utils/invitation-tokens';
+// State Machine
+export { AuthActions, AuthGuards, AuthStateMachine } from './stores/auth-state-machine';
 
-// Session Migration Utilities
+// Stores
 export {
-  SessionMigrator,
-  sessionMigrator,
-  getRoleBasedStorageConfig,
-  shouldMigrateSession,
-  migrateSessionSafely,
-  migrateForRole
-} from './utils/session-migrator';
-
-// Invitation Processing Utilities
-export {
-  processInvitationToken,
-  extractRegistrationDataFromToken
-} from './utils/invitation-processing';
-export type { InvitationProcessingResult } from './utils/invitation-processing';
+  createAuthDerivedStores,
+  createAuthStore,
+} from './stores/auth-store';
 
 // Types
 export type * from './types';
+export type { StorageConfig } from './types';
+
+// Enhanced auth store interface types
+export type {
+  AuthFlowResult,
+  EnhancedUserCheck,
+  InvitationAuthOptions,
+} from './types/enhanced-auth';
+
+export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
+// API Detection
+export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
+
+export * from './utils/errorReporter';
+
+export type { InvitationProcessingResult } from './utils/invitation-processing';
+// Invitation Processing Utilities
+export {
+  extractRegistrationDataFromToken,
+  processInvitationToken,
+} from './utils/invitation-processing';
+
+export type { InvitationTokenData, TokenValidationResult } from './utils/invitation-tokens';
+// Invitation Token Utilities
+export {
+  decodeInvitationToken,
+  extractRegistrationData,
+  hashInvitationToken,
+  validateInvitationToken,
+} from './utils/invitation-tokens';
+
+export * from './utils/local-storage';
+export * from './utils/service-worker';
+
+// Session Migration Utilities
+export {
+  getRoleBasedStorageConfig,
+  migrateForRole,
+  migrateSessionSafely,
+  SessionMigrator,
+  sessionMigrator,
+  shouldMigrateSession,
+} from './utils/session-migrator';
+
+export type { FlowsSessionData } from './utils/sessionManager';
+export {
+  clearSession,
+  configureSessionStorage,
+  getAccessToken as getAccessTokenFromSession,
+  getCurrentUser as getCurrentUserFromSession,
+  getOptimalSessionConfig,
+  getSession,
+  getStorageConfig,
+  isAuthenticated as isAuthenticatedFromSession,
+  isSessionValid,
+  saveSession,
+  supportsPersistentSessions,
+} from './utils/sessionManager';
+// WebAuthn utilities - exported individually to avoid static import issues
+export { 
+  isWebAuthnSupported,
+  isPlatformAuthenticatorAvailable,
+  createPasskey,
+  createCredential,
+  isConditionalMediationSupported,
+  authenticateWithPasskey,
+  serializeCredential,
+  generatePasskeyName
+} from './utils/webauthn';
 
 // Version
 export const VERSION = '1.0.4';

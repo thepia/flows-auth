@@ -650,11 +650,12 @@ function createAuthStore(config: AuthConfig) {
         exists: result.exists,
         hasWebAuthn: result.hasPasskey,
         userId: result.userId,
+        emailVerified: result.emailVerified,
         invitationTokenHash: result.invitationTokenHash
       };
     } catch (error) {
       console.error('Error checking user:', error);
-      return { exists: false, hasWebAuthn: false };
+      return { exists: false, hasWebAuthn: false, emailVerified: false };
     }
   }
 

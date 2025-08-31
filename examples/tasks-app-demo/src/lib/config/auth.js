@@ -45,6 +45,14 @@ async function getApiBaseUrl() {
 export async function getAuthConfig() {
   const apiBaseUrl = await getApiBaseUrl();
   
+  // Determine if we're in development
+  const isDev = browser && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('dev.thepia.net') ||
+    window.location.hostname.includes('dev.thepia.com')
+  );
+  
   return {
     apiBaseUrl,
     clientId: 'tasks-app-demo',
@@ -53,6 +61,19 @@ export async function getAuthConfig() {
     enableMagicLinks: true,
     enablePasswordLogin: true,
     enableSocialLogin: false,
+    branding: {
+      companyName: 'Assignment Management System',
+      showPoweredBy: true,
+      logoUrl: undefined,
+      primaryColor: undefined,
+      secondaryColor: undefined
+    },
+    errorReporting: {
+      enabled: isDev,
+      debug: isDev,
+      maxRetries: 3,
+      retryDelay: 1000,
+    },
   };
 }
 

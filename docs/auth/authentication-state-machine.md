@@ -1,311 +1,418 @@
-# Authentication State Machine - flows-auth
+# Authentication State Machine
 
-## Overview
+This document defines the complete authentication state machine for the flows-auth library, designed around the **two primary user scenarios**: Individual Registration (app.thepia.net + App Store) and App Invitation Access (specific thepia.net subdomains).
 
-This document defines the complete authentication state machine for the flows-auth library, including the critical email verification states required for secure user onboarding.
+## State Machine Overview
 
-**🚨 CRITICAL UPDATE**: Added email verification states to address security gap where users could register with any email without proving ownership.
-
-## State Machine Architecture
+The state machine supports both **email links** and **passkeys** as authentication methods across both scenarios, with clear branching logic based on user context and domain.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> checkingSession
+    [*] --> initializing
     
-    checkingSession --> sessionValid : Valid session found
-    checkingSession --> sessionInvalid : No/expired session
-    checkingSession --> error : Validation failed
+    initializing --> sessionCheck : App loads
     
-    sessionInvalid --> combinedAuth : User interaction
+    sessionCheck --> authenticated : Valid session found
+    sessionCheck --> emailEntry : No valid session
+    sessionCheck --> error : Session validation failed
     
-    combinedAuth --> conditionalMediation : Email typed
-    combinedAuth --> explicitAuth : Continue clicked
+    emailEntry --> userLookup : Email entered
     
-    conditionalMediation --> biometricPrompt : Passkey selected
-    conditionalMediation --> waitForExplicit : No passkeys
+    userLookup --> scenarioDetection : User status determined
     
-    waitForExplicit --> explicitAuth : Continue clicked
+    scenarioDetection --> individualRegistration : app.thepia.net/App Store new user
+    scenarioDetection --> appInvitationFlow : App invitation token present
+    scenarioDetection --> existingUserAuth : Existing user authentication
     
-    explicitAuth --> auth0UserLookup : Check user exists
+    %% Individual Registration Flow (app.thepia.net + App Store)
+    individualRegistration --> emailVerificationRequired : Account created
+    emailVerificationRequired --> emailVerificationSent : Verification email sent
+    emailVerificationSent --> emailVerified : User clicks verification link
+    emailVerified --> passkeyOptional : Email confirmed
+    passkeyOptional --> authenticated : Passkey setup completed/skipped
     
-    auth0UserLookup --> webauthnRegister : New user
-    auth0UserLookup --> webauthnAuth : Existing user
+    %% App Invitation Flow (existing or new user)
+    appInvitationFlow --> invitationValidation : Validate app invitation token
+    invitationValidation --> existingUserAppAccess : Existing user + valid token
+    invitationValidation --> preVerifiedAccount : New user + valid token
+    existingUserAppAccess --> appAccessGranted : App access added to account
+    preVerifiedAccount --> passkeyRecommended : Account created with app access
+    appAccessGranted --> authenticated : Access granted
+    passkeyRecommended --> authenticated : Setup completed
     
-    webauthnRegister --> authenticated-unconfirmed : Registration success
-    webauthnAuth --> authenticated-confirmed : Auth success (verified user)
-    webauthnAuth --> authenticated-unconfirmed : Auth success (unverified user)
+    %% Existing User Authentication
+    existingUserAuth --> authMethodSelection : Determine available methods
+    authMethodSelection --> passkeyAuth : User has passkeys
+    authMethodSelection --> emailLinkAuth : User chooses email link
     
-    authenticated-unconfirmed --> authenticated-confirmed : Email verified
-    authenticated-unconfirmed --> unauthenticated : Logout
+    passkeyAuth --> passkeyChallenge : WebAuthn challenge generated
+    passkeyChallenge --> passkeyVerification : User interacts with device
+    passkeyVerification --> authenticated : Authentication successful
+    passkeyVerification --> emailLinkAuth : Passkey failed, fallback
     
-    authenticated-confirmed --> unauthenticated : Logout
+    emailLinkAuth --> emailLinkSent : Magic link sent to email
+    emailLinkSent --> emailLinkVerification : User clicks link
+    emailLinkVerification --> authenticated : Link verified
     
-    biometricPrompt --> webauthnVerification : User interaction
-    webauthnVerification --> authenticated-confirmed : Success (verified)
-    webauthnVerification --> authenticated-unconfirmed : Success (unverified)
-    webauthnVerification --> error : Failed
+    %% Error and retry states
+    error --> emailEntry : User retry
+    passkeyVerification --> error : Authentication failed
+    emailLinkVerification --> error : Link invalid/expired
+    invitationValidation --> error : Invalid token
     
-    error --> combinedAuth : Retry
-    sessionValid --> authenticated-confirmed : Valid verified session
-    sessionValid --> authenticated-unconfirmed : Valid unverified session
+    %% Logout
+    authenticated --> emailEntry : User logout
 ```
 
 ## State Definitions
 
-### Core Authentication States
+### Core System States
 
-#### `checkingSession`
-- **Purpose**: Initial state when app loads, checking for existing session
-- **Entry Conditions**: App startup, page refresh
-- **Actions**: Validate stored tokens, check session expiry, check email verification status
+#### `initializing`
+- **Purpose**: App startup state, initial loading
+- **Entry Conditions**: App starts, page refresh
+- **Actions**: Initialize auth system, load configuration
+- **Transitions**: Always moves to `sessionCheck`
+
+#### `sessionCheck`
+- **Purpose**: Validate existing session tokens
+- **Entry Conditions**: After app initialization
+- **Actions**: 
+  - Check localStorage/sessionStorage for tokens
+  - Validate token expiration
+  - Verify token authenticity with server
+- **Transitions**:
+  - `authenticated` if valid session found
+  - `emailEntry` if no valid session
+  - `error` if session validation fails
+
+#### `emailEntry`
+- **Purpose**: Primary entry point for authentication
+- **Entry Conditions**: No valid session, user logout, or retry after error
+- **Actions**: 
+  - Show email input form
+  - Detect domain context (app.thepia.net vs flows.thepia.net)
+  - Handle invitation token if present in URL
+- **User Experience**: Simple email input with clear messaging about the process
+- **Transitions**: `userLookup` when user provides email
+
+### User Discovery States
+
+#### `userLookup`
+- **Purpose**: Determine user existence and verification status
+- **Entry Conditions**: User provides email address
+- **Actions**:
+  - Call `POST /auth/check-user` API
+  - Determine user's current status
+  - Check for pending invitations
+- **Transitions**: `scenarioDetection` with user status data
+
+#### `scenarioDetection`
+- **Purpose**: Route to appropriate registration/authentication flow
+- **Entry Conditions**: User status determined from lookup
+- **Actions**: 
+  - Analyze domain context
+  - Check for invitation tokens
+  - Determine appropriate flow path
+- **Decision Logic**:
+  ```typescript
+  if (!userExists && domain === 'app.thepia.net') {
+    return 'individualRegistration';
+  } else if (!userExists && hasInvitationToken) {
+    return 'invitationRegistration';
+  } else if (userExists) {
+    return 'existingUserAuth';
+  } else {
+    return 'error'; // No valid registration path
+  }
+  ```
+
+### Individual Registration Flow (app.thepia.net + App Store)
+
+#### `individualRegistration`
+- **Purpose**: Create new individual account for personal use
+- **Entry Conditions**: New user on app.thepia.net or App Store installation
+- **Actions**:
+  - Call `POST /auth/register` API  
+  - Create Auth0 account with `email_verified: false`
+  - Show terms of service acceptance
+- **User Experience**: Clear explanation of verification requirement for individual account
+- **Transitions**: `emailVerificationRequired` after successful account creation
+
+#### `emailVerificationRequired`
+- **Purpose**: Inform user that email verification is needed
+- **Entry Conditions**: New app.thepia.net account created
+- **Actions**:
+  - Display verification requirement message
+  - Provide "Send verification email" button
+  - Explain what user needs to do next
+- **User Experience**: Clear instructions with helpful UI
+- **Transitions**: `emailVerificationSent` when user requests verification
+
+#### `emailVerificationSent`
+- **Purpose**: Verification email has been sent
+- **Entry Conditions**: Verification email requested and sent
+- **Actions**:
+  - Show confirmation that email was sent
+  - Provide option to resend email
+  - Show "check your email" messaging
+- **User Experience**: Clear success message with next steps
+- **Transitions**: `emailVerified` when user clicks verification link
+
+#### `emailVerified`
+- **Purpose**: Email has been successfully verified
+- **Entry Conditions**: User clicked valid verification link
+- **Actions**:
+  - Update user account to `email_verified: true`
+  - Show verification success message
+  - Prepare for optional passkey setup
+- **Transitions**: `passkeyOptional` to offer enhanced security
+
+#### `passkeyOptional`
+- **Purpose**: Offer optional passkey setup for convenience
+- **Entry Conditions**: Email verification completed for app.thepia.net
+- **Actions**:
+  - Explain passkey benefits
+  - Provide "Set up passkey" and "Skip for now" options
+  - Handle passkey registration if chosen
+- **User Experience**: Optional enhancement, not required
+- **Transitions**: `authenticated` regardless of passkey choice
+
+### App Invitation Access Flow (specific thepia.net subdomains)
+
+#### `appInvitationFlow`
+- **Purpose**: Handle app-specific access invitations  
+- **Entry Conditions**: User accessed URL with app invitation token
+- **Actions**:
+  - Extract invitation token and App ID from URL
+  - Display app-specific invitation context (app name, inviting organization)
+  - Show appropriate flow based on user existence
+- **User Experience**: Clear messaging about specific app access being granted
+- **Transitions**: `invitationValidation` to validate token and determine user path
+
+#### `existingUserAppAccess`
+- **Purpose**: Grant app access to existing user account
+- **Entry Conditions**: Existing user with valid app invitation token
+- **Actions**:
+  - Validate user already has verified email
+  - Add App ID to user's accessible apps list
+  - Show confirmation of app access granted
+- **User Experience**: Quick confirmation that they now have access to the specific app
+- **Transitions**: `appAccessGranted` after access is granted
+
+#### `appAccessGranted`
+- **Purpose**: Confirm app access has been added to existing account
+- **Entry Conditions**: Existing user successfully granted app access
+- **Actions**:
+  - Update user session with new app access
+  - Redirect to specific app subdomain
+- **User Experience**: Seamless redirect to the newly accessible app
+- **Transitions**: `authenticated` with access to specific app
+
+#### `invitationValidation`
+- **Purpose**: Validate invitation token and create account
+- **Entry Conditions**: User accepts invitation
+- **Actions**:
+  - Validate token cryptographically
+  - Check token expiration
+  - Verify token matches current email/domain
+  - Create account with `email_verified: true` (pre-verified)
 - **Transitions**: 
-  - `sessionValid` if valid session found
-  - `sessionInvalid` if no session or expired
-  - `error` if validation fails
+  - `preVerifiedAccount` if token valid
+  - `error` if token invalid/expired
 
-#### `authenticated-unconfirmed` 🚨 NEW
-- **Purpose**: User has valid passkey authentication but email not verified
-- **Entry Conditions**: Successful registration + passkey setup, but email_verified: false
-- **Actions**: 
-  - Show limited dashboard with verification prompt
-  - Send welcome email with verification link
-  - Restrict access to sensitive functionality
-- **User Experience**: 
-  - Can see basic account information
-  - Can access help/support
-  - Cannot access full application features
-  - Prominent email verification banner
+#### `preVerifiedAccount`
+- **Purpose**: Account created with pre-verified email
+- **Entry Conditions**: Valid invitation token processed
+- **Actions**:
+  - Create Auth0 account with `email_verified: true`
+  - Store invitation metadata
+  - Show successful account creation
+- **User Experience**: Welcome message explaining verified status
+- **Transitions**: `passkeyRecommended` for security enhancement
+
+#### `passkeyRecommended`
+- **Purpose**: Recommend passkey setup for invited users
+- **Entry Conditions**: Invitation-based account created
+- **Actions**:
+  - Explain passkey benefits for flows access
+  - Highlight security advantages for business use
+  - Provide setup and skip options
+- **User Experience**: Stronger recommendation than app.thepia.net due to business context
+- **Transitions**: `authenticated` after choice made
+
+### Authentication States (Existing Users)
+
+#### `existingUserAuth`
+- **Purpose**: Handle authentication for existing users
+- **Entry Conditions**: User exists in system
+- **Actions**:
+  - Check user's available authentication methods
+  - Determine if email is verified
+  - Show appropriate authentication options
+- **Transitions**: `authMethodSelection` to choose auth method
+
+#### `authMethodSelection`
+- **Purpose**: Present available authentication methods
+- **Entry Conditions**: Existing user needs to authenticate
+- **Actions**:
+  - Show passkey option if user has registered passkeys
+  - Always show email link option
+  - Handle user's method choice
+- **User Experience**: Clear options with explanations
+- **Transitions**: 
+  - `passkeyAuth` if passkeys available and chosen
+  - `emailLinkAuth` if email link chosen
+
+#### `passkeyAuth`
+- **Purpose**: Handle passkey authentication
+- **Entry Conditions**: User chooses passkey authentication
+- **Actions**:
+  - Show passkey prompt
+  - Initiate WebAuthn flow
+  - Handle browser passkey interface
+- **User Experience**: Platform-native biometric prompt
+- **Transitions**: 
+  - `passkeyChallenge` when WebAuthn initiated
+  - `emailLinkAuth` if user cancels or passkey unavailable
+
+#### `passkeyChallenge`
+- **Purpose**: WebAuthn challenge in progress
+- **Entry Conditions**: Passkey authentication initiated
+- **Actions**:
+  - Generate and send WebAuthn challenge
+  - Wait for device response
+  - Handle platform-specific UI
+- **Transitions**: `passkeyVerification` when user interacts with device
+
+#### `passkeyVerification`
+- **Purpose**: Verify passkey response
+- **Entry Conditions**: User completed device interaction
+- **Actions**:
+  - Send WebAuthn response to server
+  - Validate cryptographic signature
+  - Create session tokens
 - **Transitions**:
-  - `authenticated-confirmed` after email verification
-  - `unauthenticated` on logout
-  - `error` on verification failure
+  - `authenticated` on successful verification
+  - `emailLinkAuth` on failure (fallback)
+  - `error` on critical failure
 
-#### `authenticated-confirmed` 🚨 NEW  
-- **Purpose**: User has both valid passkey authentication AND verified email
-- **Entry Conditions**: Email verification completed for authenticated user
-- **Actions**: Full application access granted
-- **User Experience**: Complete access to all features
+#### `emailLinkAuth`
+- **Purpose**: Handle email link authentication
+- **Entry Conditions**: User chooses email auth or passkey fallback
+- **Actions**:
+  - Generate magic link token
+  - Send email to user's verified address
+  - Show "check your email" message
+- **User Experience**: Clear instructions about checking email
+- **Transitions**: `emailLinkSent` after email sent
+
+#### `emailLinkSent`
+- **Purpose**: Magic link email has been sent
+- **Entry Conditions**: Authentication email sent
+- **Actions**:
+  - Show confirmation message
+  - Provide resend option with rate limiting
+  - Wait for user to click link
+- **Transitions**: `emailLinkVerification` when user clicks link
+
+#### `emailLinkVerification`
+- **Purpose**: Verify magic link token
+- **Entry Conditions**: User clicked email link
+- **Actions**:
+  - Validate magic link token
+  - Check token expiration and single-use status
+  - Create session tokens
 - **Transitions**:
-  - `unauthenticated` on logout
-  - `error` on session invalidation
+  - `authenticated` on successful verification
+  - `error` on invalid/expired token
 
-#### `sessionValid`
-- **Purpose**: Valid session detected, determine user's verification status
-- **Entry Conditions**: Valid tokens found in storage
-- **Actions**: Check email verification status from token claims
-- **Transitions**:
-  - `authenticated-confirmed` if email verified
-  - `authenticated-unconfirmed` if email not verified
+### Terminal States
 
-#### `sessionInvalid`
-- **Purpose**: No valid session, user needs to authenticate
-- **Entry Conditions**: No tokens, expired tokens, or invalid tokens
-- **Actions**: Clear any stored session data
-- **Transitions**: `combinedAuth` when user initiates sign-in
-
-### Authentication Flow States
-
-#### `combinedAuth`
-- **Purpose**: Email entry with conditional authentication
-- **Entry Conditions**: User needs to authenticate
-- **Actions**: 
-  - Show email input
-  - Start conditional mediation when valid email typed
-  - Check user existence on continue
-- **Transitions**:
-  - `conditionalMediation` when email typed
-  - `explicitAuth` when continue clicked
-
-#### `conditionalMediation`
-- **Purpose**: Non-intrusive passkey discovery
-- **Entry Conditions**: Valid email entered
-- **Actions**: Attempt conditional WebAuthn authentication
-- **Transitions**:
-  - `biometricPrompt` if passkey selected
-  - `waitForExplicit` if no passkeys available
-
-#### `explicitAuth`
-- **Purpose**: Explicit authentication attempt
-- **Entry Conditions**: User clicked continue or conditional auth unavailable
-- **Actions**: Check if user exists, determine next step
-- **Transitions**: `auth0UserLookup` to determine user status
-
-#### `auth0UserLookup`
-- **Purpose**: Determine if user exists and authentication method
-- **Entry Conditions**: User email provided
-- **Actions**: Call Auth0 to check user existence and WebAuthn status
-- **Transitions**:
-  - `webauthnRegister` if new user
-  - `webauthnAuth` if existing user with passkeys
-  - `emailLogin` if existing user without passkeys
-
-### Registration States
-
-#### `webauthnRegister`
-- **Purpose**: Register new user with passkey
-- **Entry Conditions**: New user confirmed, WebAuthn supported
-- **Actions**: 
-  - Show Terms of Service
-  - Create Auth0 user account with invitation token (if provided)
-  - Register WebAuthn credential
-  - Handle email verification based on registration method
-- **Transitions**:
-  - `authenticated-confirmed` on successful registration **with valid invitation token** (email pre-verified)
-  - `authenticated-unconfirmed` on successful registration **without invitation token** (email verification required)
-  - `error` on registration failure
-
-**🔑 Key Logic**: Invitation tokens serve as email verification proof since they were originally sent to the user's email address by the API server.
-
-### Authentication States
-
-#### `webauthnAuth`
-- **Purpose**: Authenticate existing user with passkey
-- **Entry Conditions**: Existing user with WebAuthn credentials
-- **Actions**: Perform WebAuthn authentication
-- **Transitions**:
-  - `authenticated-confirmed` if user email verified
-  - `authenticated-unconfirmed` if user email not verified
-  - `error` on authentication failure
-
-#### `biometricPrompt`
-- **Purpose**: Show biometric authentication prompt
-- **Entry Conditions**: Conditional mediation triggered
-- **Actions**: Display platform-specific biometric prompt
-- **Transitions**: `webauthnVerification` on user interaction
-
-#### `webauthnVerification`
-- **Purpose**: Verify WebAuthn response
-- **Entry Conditions**: User completed biometric authentication
-- **Actions**: Send WebAuthn response to server for verification
-- **Transitions**:
-  - `authenticated-confirmed` if verified user
-  - `authenticated-unconfirmed` if unverified user
-  - `error` on verification failure
-
-### Error and Recovery States
+#### `authenticated`
+- **Purpose**: User has valid session and full access
+- **Entry Conditions**: Successful authentication via any method
+- **Actions**:
+  - Store session tokens
+  - Redirect to intended destination
+  - Initialize authenticated user interface
+- **User Experience**: Seamless access to application features
+- **Transitions**: `emailEntry` on logout or session expiry
 
 #### `error`
 - **Purpose**: Handle authentication errors
 - **Entry Conditions**: Any authentication step fails
-- **Actions**: Display appropriate error message, log error details
+- **Actions**:
+  - Log error details for debugging
+  - Show user-friendly error message
+  - Provide retry or alternative options
+- **Error Types**:
+  - Network connectivity issues
+  - Invalid tokens/credentials
+  - Browser compatibility problems
+  - Server-side validation failures
 - **Transitions**: 
-  - `combinedAuth` on retry
-  - `unauthenticated` on cancel
+  - `emailEntry` on retry
+  - Various states based on error type and recovery options
 
-#### `unauthenticated`
-- **Purpose**: User not authenticated
-- **Entry Conditions**: Logout, session expiry, or authentication cancellation
-- **Actions**: Clear all session data
-- **Transitions**: `combinedAuth` when user initiates sign-in
+## State Context Data
 
-## Email Verification Flow
-
-### Primary Verification Methods
-
-#### 1. Invitation Token Verification (Preferred)
-When users register via invitation tokens:
-
-1. **Token Contains Email Verification**: Invitation token was originally sent to user's email by API server
-2. **Email Possession Proven**: By using the token, user demonstrates control of the email address
-3. **Immediate Verification**: User transitions directly to `authenticated-confirmed` upon successful registration
-4. **Token Validation**: API server validates token during registration, confirming email ownership
+Each state maintains relevant context information:
 
 ```typescript
-// Registration with invitation token
-const registrationResult = await authStore.registerUser({
-  email: "user@example.com",
-  invitationToken: "jwt_token_sent_to_email", // Proves email possession
-  acceptedTerms: true,
-  acceptedPrivacy: true,
-  profile: userProfile
-});
-// Result: User goes directly to authenticated-confirmed state
-```
-
-#### 2. Standard Email Verification (Fallback)
-For users registering without invitation tokens:
-
-1. **Registration Complete**: User in `authenticated-unconfirmed` state
-2. **Welcome Email Sent**: Contains verification link with token
-3. **User Clicks Link**: Opens verification page
-4. **Token Verification**: Server validates token and updates user
-5. **State Transition**: User moves to `authenticated-confirmed`
-
-### Verification Components
-
-#### `EmailVerificationPrompt`
-- Shows in `authenticated-unconfirmed` state
-- Displays verification status
-- Allows resending verification email
-- Links to help/support
-
-#### `UnconfirmedUserDashboard`
-- Limited functionality view
-- Shows what user can/cannot access
-- Prominent verification call-to-action
-- Access to basic account settings
-
-### API Integration
-
-#### Required Endpoints
-- `POST /auth/register` - User registration (with optional invitation token)
-- `POST /auth/send-verification-email`
-- `POST /auth/verify-email` 
-- `POST /auth/resend-verification`
-- `GET /auth/verification-status`
-
-#### Registration API Request
-```typescript
-interface RegistrationRequest {
-  email: string;
-  invitationToken?: string; // If provided, serves as email verification proof
-  acceptedTerms: boolean;
-  acceptedPrivacy: boolean;
-  profile?: UserProfile;
+interface AuthStateContext {
+  // User information
+  email?: string;
+  userId?: string;
+  userExists: boolean;
+  emailVerified: boolean;
+  
+  // Domain and scenario context
+  domain: 'app.thepia.net' | 'flows.thepia.net' | string; // subdomain
+  scenario: 'individual' | 'invitation';
+  
+  // Invitation context (for invitation flow)
+  invitationToken?: string;
+  invitationData?: {
+    invitedBy: string;
+    organization: string;
+    permissions: string[];
+  };
+  
+  // Authentication method context
+  availableMethods: ('email' | 'passkey')[];
+  hasPasskeys: boolean;
+  
+  // Error handling
+  lastError?: string;
+  retryCount: number;
+  
+  // Session information
+  sessionTokens?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: number;
+  };
 }
 ```
 
-#### Token Claims
-```typescript
-interface AuthTokenClaims {
-  sub: string;
-  email: string;
-  email_verified: boolean; // True if registered with invitation token
-  invitation_token_used?: string; // Reference to invitation token (if applicable)
-  exp: number;
-  iat: number;
-}
+## Integration with flows-auth Library
 
-interface InvitationToken {
-  email: string; // Email address this token was sent to
-  issued_to_email: boolean; // Always true - confirms email delivery
-  exp: number;
-  iat: number;
-  invitation_id?: string;
-}
-```
+The state machine integrates with the flows-auth library components:
 
-## Security Considerations
+### Auth Store Integration
+- State machine drives the auth store's reactive state
+- Store provides actions that trigger state transitions
+- Components subscribe to store state for UI updates
 
-### Email Verification Security
-- **Verification tokens** must be cryptographically secure
-- **Token expiry** should be reasonable (24-48 hours)
-- **Rate limiting** on verification email sending
-- **Audit logging** of all verification attempts
+### API Client Integration
+- State machine actions call appropriate API endpoints
+- API responses drive state transitions
+- Error handling maps API errors to appropriate states
 
-### State Transition Security
-- **Token validation** on every state transition
-- **Email verification check** before granting full access
-- **Session invalidation** if verification status changes
-- **Cross-tab synchronization** of verification state
+### Component Integration
+- `SignInForm` component reflects current state
+- `EmailVerificationBanner` shows during verification states
+- State-specific UI components for each major state
 
-## Implementation Priority
-
-1. **Phase 1**: Add `authenticated-unconfirmed` and `authenticated-confirmed` states
-2. **Phase 2**: Implement email verification API endpoints
-3. **Phase 3**: Create verification UI components
-4. **Phase 4**: Add welcome email system
-5. **Phase 5**: Implement state transition logic
-6. **Phase 6**: Add comprehensive testing
-
-This state machine ensures users cannot access full functionality without proving email ownership, closing the critical security gap identified in the current system.
+This revised state machine provides clear, scenario-driven authentication flows while maintaining support for both email and passkey authentication methods across all scenarios.

@@ -9,12 +9,14 @@ let authStore: any = null;
 let isAuthenticated = false;
 let user: User | null = null;
 
-// Create a store that will hold the auth store once it's initialized
+// Create stores that will hold the auth store and config once initialized
 import { writable } from 'svelte/store';
 const authStoreContainer = writable(null);
+const authConfigStore = writable(null);
 
-// Set the context immediately with the container
+// Set the context immediately with both stores
 setContext('authStore', authStoreContainer);
+setContext('authConfig', authConfigStore);
 
 onMount(async () => {
   if (!browser) return;
@@ -33,8 +35,9 @@ onMount(async () => {
     
     console.log('🔧 Auth initialized with central config:', authConfig);
 
-    // Update the container with the actual auth store
+    // Update both containers with the auth store and config
     authStoreContainer.set(authStore);
+    authConfigStore.set(authConfig);
 
     // Subscribe to auth state
     authStore.subscribe((state) => {

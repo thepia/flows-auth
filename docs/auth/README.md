@@ -1,249 +1,249 @@
-# Authentication System Overview
+# Authentication System Documentation
 
-This document provides a comprehensive overview of the Thepia authentication system as implemented in the `@thepia/flows-auth` library.
+This document provides the complete specification for the Thepia authentication system as implemented in the `@thepia/flows-auth` library.
 
-## System Architecture
+## Two Primary User Scenarios
 
-The Thepia authentication system is built on a **passwordless-only** foundation using WebAuthn/passkeys with a **provider-agnostic backend** that supports Auth0, Supabase, WorkOS, and other authentication providers. The system serves both `thepia.com` and `thepia.net` domains through a unified API backend.
+The Thepia authentication system is built around **two distinct user scenarios**, each with tailored flows and requirements:
 
-### **🚨 Critical Token Issue**
+### 1. Individual Registration (app.thepia.net + App Store)
 
-The current implementation uses **Machine-to-Machine (M2M) tokens** instead of proper user tokens. See [API Integration Status](./api-integration-status.md#solution-auth-provider-architecture) for details and solution.
+**Context:**
+- **Access Points**: 
+  - `app.thepia.net` - Web application
+  - App Store installations - Mobile/desktop apps
+- **Audience**: General public users (self-service)
+- **Purpose**: Individual Thepia account creation for personal workflow use
+- **Security Model**: Mandatory email verification required
 
-### Core Components
+**Registration Flow:**
+1. User visits `app.thepia.net` or installs app from App Store
+2. User enters email address for account creation
+3. System creates Auth0 account with `email_verified: false`
+4. System sends verification email with magic link
+5. User clicks link to verify email ownership
+6. User can optionally add passkey for convenience
+7. User gains full access to their individual Thepia account
 
-```mermaid
-graph TB
-    subgraph "Client Side"
-        A[SignInForm Component] --> B[Auth Store]
-        B --> C[State Machine]
-        B --> D[Auth API Client]
-        C --> E[Local Storage]
-    end
-    
-    subgraph "Server Side"
-        F[Auth API Server] --> G[Auth0 Backend]
-        F --> H[Database]
-    end
-    
-    subgraph "Browser APIs"
-        I[WebAuthn API]
-        J[Credential Management API]
-    end
-    
-    D --> F
-    A --> I
-    A --> J
+**Key Requirement**: Email verification is mandatory to prevent spam and ensure valid contact information.
+**Note**: This creates a standalone individual account, separate from any organization/workflow invitations.
+
+### 2. Invitation-Based App Access (specific thepia.net subdomains)
+
+**Context:**
+- **Domains**: Specific App ID subdomains (e.g., `onboarding.acme.thepia.net`, `workflows.beta.thepia.net`)
+- **Audience**: Users invited to specific workflow applications
+- **Purpose**: Grant access to a specific Thepia app/workflow instance
+- **Security Model**: Invitation token grants access to specific App ID
+
+**Access Flow:**
+1. Administrator/system sends invitation email for specific App ID with secure token (JWT)
+2. User clicks invitation link containing token + App ID + subdomain
+3. System validates token and checks user status:
+   - **New User**: Creates account with `email_verified: true` (token proves email ownership)
+   - **Existing User**: Adds App ID access to existing account
+4. User gains access to the specific workflow app at the subdomain
+5. User recommended to add passkey for enhanced security
+
+**Key Principles**: 
+- **App-Specific Access**: Each invitation grants access to one specific App ID
+- **Existing User Support**: Users with accounts can receive additional app invitations
+- **Token-Based Verification**: Invitation delivery proves email ownership for new users
+
+## Authentication Methods
+
+Both scenarios support the same authentication methods with different emphasis:
+
+### Email Links (Primary Method)
+- **Universal Compatibility**: Works on all devices and browsers
+- **Process**: Time-limited magic links sent to verified email
+- **Security**: Single-use tokens with expiration
+- **Always Available**: Fallback option regardless of device capability
+
+### Passkeys (Optional Enhancement)
+- **Benefits**: Faster authentication, phishing resistant, offline capable
+- **Individual Users**: Optional convenience feature
+- **Business Users**: Recommended for enhanced security
+- **Domain Isolation**: Separate passkeys per domain (app.thepia.net vs flows.thepia.net)
+
+## State Machine
+
+The authentication flow is managed by a comprehensive state machine. See **[Authentication State Machine](./authentication-state-machine.md)** for the complete specification.
+
+### Key State Flows
+
+#### Individual Registration Path (app.thepia.net + App Store)
+```
+emailEntry → userLookup → individualRegistration → 
+emailVerificationRequired → emailVerificationSent → 
+emailVerified → passkeyOptional → authenticated
 ```
 
-### Authentication Principles
-
-1. **Passwordless Only**: No traditional password authentication is supported
-2. **WebAuthn First**: Passkeys and biometric authentication are the primary method
-3. **Progressive Enhancement**: Magic links provide fallback for unsupported devices
-4. **Multi-Domain**: Single backend serves both thepia.com and thepia.net
-5. **Privacy by Design**: No biometric data leaves the device
-
-## Authentication Flow
-
-### 1. Initial State Check
-
-When a user visits a Thepia application, the system:
-
-1. Checks for existing session tokens in localStorage
-2. Validates token expiration
-3. Attempts automatic session restoration
-4. Falls back to unauthenticated state if no valid session
-
-### 2. Email-Based Discovery
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant C as SignInForm
-    participant A as Auth API
-    participant Auth0 as Auth0
-    
-    U->>C: Enters email
-    C->>A: checkEmail(email)
-    A->>Auth0: User lookup
-    Auth0-->>A: User exists + has passkeys
-    A-->>C: {exists: true, hasPasskey: true}
-    C->>C: Show passkey option
+#### App Invitation Path (existing user receiving app access)
+```
+emailEntry (with token) → userLookup → existingUserAuth → 
+invitationValidation → appAccessGranted → authenticated
 ```
 
-The system uses email addresses to:
-- Determine if a user exists in the system
-- Check what authentication methods are available
-- Decide whether to show passkey or magic link options
-
-### 3. WebAuthn/Passkey Authentication
-
-For users with registered passkeys:
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant C as SignInForm
-    participant W as WebAuthn API
-    participant A as Auth API
-    participant Auth0 as Auth0
-    
-    U->>C: Clicks "Sign in with Passkey"
-    C->>A: getPasskeyChallenge(email)
-    A->>Auth0: Generate challenge
-    Auth0-->>A: Challenge data
-    A-->>C: Challenge response
-    C->>W: navigator.credentials.get()
-    W->>U: Biometric prompt
-    U-->>W: Biometric verification
-    W-->>C: Credential assertion
-    C->>A: signInWithPasskey(assertion)
-    A->>Auth0: Verify assertion
-    Auth0-->>A: User + tokens
-    A-->>C: Authentication success
+#### New User Invitation Path (new user via app invitation)
+```
+emailEntry (with token) → invitationValidation → 
+preVerifiedAccount → passkeyRecommended → authenticated
 ```
 
-### 4. Magic Link Fallback
-
-For users without passkeys or on unsupported devices:
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant C as SignInForm
-    participant A as Auth API
-    participant E as Email Service
-    
-    U->>C: Clicks "Send Magic Link"
-    C->>A: signInWithMagicLink(email)
-    A->>E: Send magic link email
-    E-->>U: Email with link
-    U->>A: Clicks magic link
-    A-->>U: Redirect with tokens
+#### Existing User Path
 ```
-
-## State Management
-
-The authentication system uses a sophisticated state machine to manage the authentication flow:
-
-### Auth Store States
-
-- **`unauthenticated`** - No valid session
-- **`authenticating`** - Authentication in progress
-- **`authenticated`** - Valid session exists
-- **`error`** - Authentication failed
-
-### State Machine States
-
-The internal state machine has more granular states:
-
-- **`checkingSession`** - Initial session validation
-- **`sessionValid`** - Valid session found
-- **`sessionInvalid`** - No valid session
-- **`combinedAuth`** - Email input phase
-- **`conditionalMediation`** - WebAuthn conditional mediation
-- **`biometricPrompt`** - User biometric verification
-- **`authenticated`** - Successfully authenticated
-
-## Security Model
-
-### WebAuthn Security
-
-- **Phishing Resistant**: Credentials are bound to the origin
-- **Device Bound**: Private keys never leave the device
-- **Biometric Local**: Biometric data stays on device
-- **Replay Protection**: Each authentication uses unique challenges
-
-### Token Management
-
-- **Current State**: API returns placeholder tokens (`"webauthn-verified"`) which are stored and used
-- **Future State**: Will automatically handle real JWT tokens when thepia.com API is updated
-- **Storage**: Tokens stored in configurable storage (localStorage/sessionStorage) with expiration checks
-- **Refresh Logic**: Implemented and ready for real refresh tokens
-
-### Multi-Domain Security
-
-- **Unified Backend**: Single API serves both domains
-- **Domain Validation**: API validates request origins
-- **Cross-Domain Sessions**: Secure session sharing between domains
-- **Employer Isolation**: Complete data segregation
+emailEntry → userLookup → existingUserAuth → 
+authMethodSelection → [emailLinkAuth | passkeyAuth] → authenticated
+```
 
 ## API Integration
 
-### Auth API Endpoints
+### Available Endpoints (thepia.com/src/api)
 
-#### ✅ Currently Implemented and Working
-- **`POST /auth/check-user`** - Check if user exists and has passkey
-- **`POST /auth/webauthn/challenge`** - Get WebAuthn challenge
-- **`POST /auth/webauthn/verify`** - Verify WebAuthn response (returns placeholder tokens)
-- **`POST /auth/register`** - Create new user account
-- **`POST /auth/webauthn/register-options`** - Get passkey registration options
-- **`POST /auth/webauthn/register-verify`** - Verify passkey registration (returns placeholder tokens)
+#### Core Authentication
+- `POST /auth/check-user` - Check user existence, email verification status, and domain-specific WebAuthn credentials
+- `POST /auth/register` - Create user account (handles both individual and invitation scenarios)
+- `POST /auth/send-verification` - Send email verification link to existing users
 
-#### 📋 Implemented in flows-auth but API Not Ready
-- **`POST /auth/refresh`** - Refresh access token (ready for real tokens)
-- **`POST /auth/signin/magic-link`** - Request magic link (API endpoint not implemented)
-- **`POST /auth/verify-magic-link`** - Verify magic link token (API endpoint not implemented)
+#### Email Authentication
+- `POST /auth/start-passwordless` - **UNCLEAR PURPOSE** - Sends login email for existing verified users
+- `GET /auth/passwordless-status` - Check status of email authentication (polling endpoint)
+- `GET /auth/passwordless-callback` - OAuth callback for email link completion
 
-### Configuration
+#### WebAuthn/Passkey Management
+- `POST /auth/webauthn/register-options` - Get WebAuthn registration challenge options
+- `POST /auth/webauthn/register-verify` - Complete WebAuthn credential registration
+- `POST /auth/webauthn/challenge` - Get WebAuthn authentication challenge
+- `POST /auth/webauthn/verify` - Verify WebAuthn authentication response
+- `POST /auth/webauthn/cleanup-invalid` - Clean up invalid/corrupted WebAuthn credentials
+- `POST /auth/webauthn/authenticator` - Additional WebAuthn utilities
 
-The system requires these configuration options:
+#### Session Management
+- `POST /auth/refresh` - Refresh authentication tokens
+- `POST /auth/logout` - End user session
 
-```typescript
-interface AuthConfig {
-  apiBaseUrl: string;           // API server URL
-  enablePasskeys: boolean;      // Enable WebAuthn
-  enableMagicLinks: boolean;    // Enable magic link fallback
-  domain?: string;              // Domain for cookies/storage
-}
-```
+### Implementation Status
 
-## Error Handling
+✅ **Fully Implemented:**
+- User existence checking with email verification status and domain-specific WebAuthn credentials
+- User registration for both individual and invitation scenarios (single endpoint handles both)
+- Email verification flow via Auth0 Management API
+- Passwordless magic link authentication with cross-device polling
+- Complete WebAuthn/passkey registration and authentication
+- Domain-specific credential storage (thepia.com vs thepia.net isolation)
+- Session management with refresh and logout
 
-The system provides comprehensive error handling:
+⚠️ **Areas Requiring flows-auth Integration:**
+- Frontend integration of passwordless authentication polling
+- App invitation token validation logic (backend handles invitation tokens in registration)
+- Proper JWT token handling in client library
 
-### Error Types
+## Current API Problems & Planned Improvements
 
-- **Network Errors**: API connectivity issues
-- **WebAuthn Errors**: Browser API failures
-- **Authentication Errors**: Invalid credentials
-- **Session Errors**: Token expiration/validation
+### Email Authentication Confusion
 
-### Error Reporting
+**Current State (Problematic):**
+- **Two email endpoints** with unclear purposes:
+  - `/auth/send-verification` - Sends verification email to unverified users
+  - `/auth/start-passwordless` - **UNCLEAR WHEN TO USE** - Appears to send login emails
 
-- Automatic error reporting to monitoring systems
-- User-friendly error messages
-- Detailed logging for debugging
-- Graceful fallbacks for recoverable errors
+**What Should Happen (Planned):**
 
-## Browser Compatibility
+1. **`POST /auth/register`** - Should handle email resending
+   - New user → Create account + send verification email
+   - Existing unverified user → Resend verification email  
+   - Existing verified user → Error (they should use login flow)
 
-### WebAuthn Support
+2. **Email links should serve dual purpose:**
+   - **Unverified user clicks link** → Email gets verified AND user gets authenticated
+   - **Verified user uses email authentication** → User gets authenticated
 
-- **Chrome 67+**: Full support
-- **Firefox 60+**: Full support  
-- **Safari 14+**: Full support
-- **Edge 18+**: Full support
+3. **Single email authentication flow:**
+   - All email links go through same verification/authentication process
+   - Backend determines if it's verifying email or just authenticating
+   - Frontend gets same token response either way
 
-### Fallback Strategy
+### Planned API Redesign
 
-For unsupported browsers:
-1. Magic link authentication
-2. Clear messaging about browser requirements
-3. Guidance for browser upgrades
+**Enhanced/Keep:**
+- `POST /auth/register` (handles new users + resending verification emails)
+- `GET /auth/passwordless-status` (for polling email authentication)
+- `GET /auth/passwordless-callback` (for OAuth completion)
+
+**New Login Endpoints:**
+- `POST /auth/send-login-link` - Send magic link email to existing verified users for login
+- `POST /auth/send-login-code` - Send numeric code via email for existing verified users (alternative to magic link)
+
+**Remove/Deprecate:**
+- `POST /auth/send-verification` (merge functionality into register)
+- `POST /auth/start-passwordless` (remove - purpose unclear and confusing name)
+
+**Clear Endpoint Purposes:**
+- **`/auth/register`** - Account creation + verification email resending
+- **`/auth/send-login-link`** - Login via magic link for verified users
+- **`/auth/send-login-code`** - Login via numeric code for verified users  
+- **Authentication polling** - Same endpoints work for both verification and login flows
+
+**Result:** Crystal clear separation between account creation/verification vs login flows.
+
+**Note:** The API server handles both individual registration and app invitation scenarios through a unified registration endpoint that detects invitation tokens automatically.
+
+## Security Considerations
+
+### Email Verification
+- **app.thepia.net**: Mandatory verification prevents account takeover
+- **flows.thepia.net**: Invitation tokens provide cryptographic proof of email ownership
+- **Token Security**: All tokens must be time-limited and single-use
+- **Rate Limiting**: Prevent email bombing and brute force attacks
+
+### Domain Isolation
+- **Separate Passkeys**: flows.thepia.net passkeys ≠ app.thepia.net passkeys
+- **Session Isolation**: Sessions are domain-specific
+- **CORS Validation**: API must validate request origins
+
+### Access Control
+- **app.thepia.net**: Open registration with email verification
+- **flows.thepia.net**: Invitation-only with token validation
+- **Subdomain Isolation**: Client-specific access control
+
+## Component Integration
+
+The flows-auth library provides components that implement these scenarios:
+
+### SignInForm Component
+- Detects scenario based on domain and invitation token
+- Shows appropriate UI for each scenario
+- Handles both email and passkey authentication
+
+### EmailVerificationBanner Component
+- Shows for users with unverified emails
+- Provides resend functionality
+- Clear messaging about verification requirements
+
+### Auth Store
+- Manages authentication state machine
+- Provides actions for all auth operations
+- Reactive state updates for UI components
+
+## Testing Requirements
+
+### Scenario Testing
+1. **Individual Registration**: Full app.thepia.net flow with email verification
+2. **Invitation-Based**: Complete flows.thepia.net invitation acceptance
+3. **Cross-Scenario**: Ensure proper domain isolation
+4. **Fallback Testing**: Email links work when passkeys unavailable
+
+### Integration Testing
+- No mocking in integration tests (per testing policy)
+- Test against real Auth0 backend
+- Verify email delivery and token validation
+- Test passkey registration and authentication
 
 ## Related Documentation
 
-- **[Authentication Flow](./flow.md)** - Detailed flow diagrams
-- **[State Management](./state-management.md)** - State machine details
-- **[API Reference](./api-reference.md)** - Complete API documentation
-- **[Security Model](../flows/security.md)** - Security architecture
+- **[Authentication State Machine](./authentication-state-machine.md)** - Complete state flow specification
+- **[API Integration Status](./api-integration-status.md)** - Current implementation status
+- **[Testing Policy](../testing/API_CONTRACT_TESTING_POLICY.md)** - No-mocking integration test requirements
 
-## Related Documentation
-
-- **[API Integration Status](./api-integration-status.md)** - Current implementation state and token handling
-- **[Authentication Flow](./flow.md)** - Detailed flow diagrams
-- **[State Management](./authentication-state-machine.md)** - State machine details
-
-For backend implementation details, see the [thepia.com authentication documentation](https://github.com/thepia/thepia.com/tree/main/docs/auth) which provides the complete API architecture and Auth0 integration details.
+For implementation details, see the [thepia.com authentication documentation](https://github.com/thepia/thepia.com/tree/main/docs/auth).

@@ -320,6 +320,7 @@ export class AuthApiClient {
     hasPassword: boolean;
     socialProviders: string[];
     userId?: string;
+    emailVerified?: boolean;
     invitationTokenHash?: string;
   }> {
     // Check cache first
@@ -345,6 +346,7 @@ export class AuthApiClient {
       exists: boolean;
       hasWebAuthn: boolean;
       userId?: string;
+      emailVerified?: boolean;
       invitationTokenHash?: string;
     }>('/auth/check-user', {
       method: 'POST',
@@ -368,6 +370,7 @@ export class AuthApiClient {
       hasPassword: false, // API doesn't return this, passwordless only
       socialProviders: [], // API doesn't return this currently
       userId: response.userId,
+      emailVerified: response.emailVerified || false,
       invitationTokenHash: response.invitationTokenHash
     };
     
@@ -375,6 +378,24 @@ export class AuthApiClient {
     globalUserCache.set(email, result);
     
     return result;
+  }
+
+  /**
+   * Send verification email to an existing user
+   */
+  async sendVerificationEmail(email: string): Promise<{
+    success: boolean;
+    message: string;
+    alreadyVerified?: boolean;
+  }> {
+    return this.rateLimitedRequest<{
+      success: boolean;
+      message: string;
+      alreadyVerified?: boolean;
+    }>('/auth/send-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
   }
 
   /**

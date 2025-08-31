@@ -46,9 +46,9 @@ graph TB
 
 ## Authentication Flow for Flows
 
-### 1. Employee Access Pattern
+### 1. Invitation-Based Access Flow
 
-Thepia Flows applications are designed for employee access to workplace workflows:
+Thepia Flows applications use invitation-based authentication for workplace access:
 
 ```mermaid
 sequenceDiagram
@@ -64,10 +64,10 @@ sequenceDiagram
     
     alt Not Authenticated
         A-->>F: Show splash page
-        F->>E: "Employee-only access" message
+        F->>E: "Invitation-only access" message
         E->>F: Clicks sign in
         F->>A: Show SignInForm
-        A->>E: Email + passkey flow
+        A->>E: Invitation-based auth flow
     else Authenticated
         A-->>F: User session
         F->>E: Show workflow interface

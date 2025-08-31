@@ -12,6 +12,7 @@ let tasks: any[] = [];
 let pendingTasks: any[] = [];
 let unreadNotifications: any[] = [];
 let authStore: any = null;
+let authConfig: any = null;
 let authError: string | null = null;
 
 // Authentication UI state
@@ -34,6 +35,7 @@ async function testErrorReporting() {
 // Determine API base URL at runtime
 // Get the auth store container from context (set during component initialization)
 const authStoreContainer = getContext('authStore');
+const authConfigContainer = getContext('authConfig');
 
 // Initialize auth by waiting for the auth store to be available
 async function initializeAuth() {
@@ -57,6 +59,18 @@ async function initializeAuth() {
     
     console.log('✅ Auth store received from context');
     console.log('✅ Auth store created successfully');
+    
+    // Also get the auth config from context
+    authConfig = await new Promise((resolve) => {
+      const unsubscribe = authConfigContainer.subscribe((config) => {
+        if (config) {
+          unsubscribe();
+          resolve(config);
+        }
+      });
+    });
+    
+    console.log('✅ Auth config received from context');
 
     console.log('📡 Setting up auth store subscription...');
     // Subscribe to auth state changes
@@ -208,16 +222,13 @@ onMount(async () => {
 				</div>
 			{/if}
 
-			{#if authStore && showAuthForm}
+			{#if authStore && authConfig && showAuthForm}
 				<!-- Granular Authentication Form using SignInForm -->
 				<div class="auth-form-container">
 					<SignInForm
+						config={authConfig}
 						{authStore}
 						showLogo={false}
-						branding={{
-							companyName: 'Assignment Management System',
-							showPoweredBy: true
-						}}
 						compact={false}
 						on:success={handleAuthSuccess}
 						on:error={handleAuthError}

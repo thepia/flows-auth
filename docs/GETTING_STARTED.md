@@ -336,7 +336,7 @@ The library uses CSS custom properties for theming:
 See the [flows-app-demo](../examples/flows-app-demo) for a complete working example that demonstrates:
 
 - **Client-only architecture** - No server-side dependencies
-- **Employee-only access patterns** - Flows-specific authentication
+- **Invitation-based access** - Private flows authentication
 - **HTTPS development setup** - Required for WebAuthn
 - **Proper error handling** - Comprehensive error management
 - **Session management** - Browser-based session storage

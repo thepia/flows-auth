@@ -1,170 +1,174 @@
 # Thepia Flows Authentication Documentation
 
-**Comprehensive documentation for the @thepia/flows-auth library and authentication system**
+**Documentation for the @thepia/flows-auth library - Email-first authentication with optional passkey enhancement**
 
-## 📚 Documentation Overview
+## Overview
 
-The Thepia authentication system implements a **passwordless-only, 100% cookie-free** approach using WebAuthn/passkeys with a **backend-agnostic architecture** supporting Auth0, Supabase, WorkOS, and other providers. The unified API serves both `thepia.com` and `thepia.net` domains, providing complete authentication solutions for Thepia Flows applications with zero privacy compliance concerns.
+The Thepia authentication system is designed around **two primary user scenarios**:
 
-### **🚨 Critical Issue: Token Generation**
+1. **Individual Registration** (`app.thepia.net`) - Public self-service registration with mandatory email verification
+2. **Invitation-Based Registration** (`flows.thepia.net` + subdomains) - Private invitation-only access with pre-verified emails
 
-**Current Problem**: The API server generates Machine-to-Machine tokens instead of proper user tokens.  
-**Impact**: Tokens don't contain user claims, preventing proper authorization.  
-**Solution**: New auth provider architecture with passwordless token strategy.  
-**Status**: Documented solution maintains backward compatibility.
+Both scenarios use:
+- **Email Links** (magic links) as the primary authentication method
+- **Passkeys** (WebAuthn) as an optional enhancement for security and convenience
 
-See [Authentication System Overview](./auth/README.md#critical-token-issue) for details.
+## Quick Start
 
-### **🚀 Quick Start**
+### Essential Documentation
 
+- **[Authentication System](./auth/README.md)** - START HERE - Complete system specification and scenarios
+- **[Authentication State Machine](./auth/authentication-state-machine.md)** - State flow for both scenarios
 - **[Getting Started](./GETTING_STARTED.md)** - Installation and basic setup
-- **[Zero-Cookie Architecture](./privacy/zero-cookie-architecture.md)** - 🍪 **Cookie-free privacy advantage**
-- **[Authentication Overview](./auth/README.md)** - Complete system overview
-- **[Flows Integration](./flows/README.md)** - Flows-specific implementation guide
+- **[API Integration Status](./auth/api-integration-status.md)** - Current implementation status
 
-### **🔧 Core Documentation**
+### Core Documentation
 
-#### Authentication System
-- **[Authentication Overview](./auth/README.md)** - System design and components
-- **[Authentication Flow](./auth/flow.md)** - Step-by-step authentication process  
-- **[Cross-Device Authentication](./auth/cross-device-authentication.md)** - **NEW** - Email verification across devices
-- **[API Integration Status](./auth/api-integration-status.md)** - **UPDATED** - Current token issues and solutions
-
-#### Flows Integration
-- **[Multi-Domain Strategy](./flows/multi-domain.md)** - thepia.com and thepia.net integration
-- **[Deployment Guide](./flows/deployment.md)** - Production deployment for flows
-- **[Security Model](./flows/security.md)** - Security architecture for flows
-
-### **🛠️ Implementation Guides**
+#### Authentication
+- **[Authentication System](./auth/README.md)** - Two scenarios, methods, and requirements
+- **[State Machine](./auth/authentication-state-machine.md)** - Complete state flow specification
+- **[API Integration](./auth/api-integration-status.md)** - Implementation status and token handling
 
 #### Components
-- **[SignInForm Component](./components/signin-form.md)** - Main authentication component
-- **[Auth Store Usage](./components/auth-store.md)** - State management integration
-- **[Event Handling](./components/events.md)** - Authentication events and callbacks
+- **[SignInForm Component](./components/README.md)** - Main authentication UI component
+- **[AccountCreationForm](./components/AccountCreationForm.md)** - Registration component
+- **[Component Architecture](./components/ARCHITECTURE_PATTERNS.md)** - Design patterns
 
 #### Configuration
-- **[Configuration Guide](./configuration/README.md)** - Complete configuration options
-- **[Environment Setup](./configuration/environment.md)** - Environment variables and setup
-- **[Domain Configuration](./configuration/domains.md)** - Multi-domain setup
+- **[Storage Configuration](./STORAGE_CONFIGURATION.md)** - Session and token storage
+- **[Session Management](./SESSION_MANAGEMENT_REQUIREMENTS.md)** - Session handling requirements
 
-### **🧪 Testing & Development**
+#### Testing
+- **[Testing Strategy](./testing/README.md)** - Overall testing approach
+- **[API Contract Testing](./testing/API_CONTRACT_TESTING_POLICY.md)** - No-mocking integration test policy
+- **[API Contracts](./testing/thepia-com-api-contracts/)** - Backend API specifications
 
-- **[Testing Strategy](./testing/README.md)** - 🚨 **CRITICAL** - Testing policies and no-mocking requirements
-- **[API Contract Testing Policy](./testing/API_CONTRACT_TESTING_POLICY.md)** - 📋 **FORMAL POLICY** - Integration testing requirements
-- **[Implementation Checklist](./testing/IMPLEMENTATION_CHECKLIST.md)** - ✅ **TODO LIST** - Action items for API contract alignment
-- **[API Server Architecture](./development/api-server-architecture.md)** - Understanding the API server structure
+#### Development
 - **[Development Setup](./development/README.md)** - Local development environment
-- **[Troubleshooting](./troubleshooting/README.md)** - Common issues and solutions
+- **[API Server Architecture](./development/api-server-architecture.md)** - Backend structure
+- **[Error Reporting](./development/error-reporting-principles.md)** - Error handling patterns
 
 ## Key Features
 
-### **Passwordless Authentication**
-- ✅ **WebAuthn/Passkeys Only** - No traditional passwords supported
-- ✅ **Biometric Authentication** - TouchID, FaceID, Windows Hello
-- ✅ **Hardware Security Keys** - FIDO2 compatible devices
-- ✅ **Magic Link Fallback** - Email-based authentication for unsupported devices
+### Email-First Authentication
 
-### **Multi-Domain Support**
-- ✅ **Unified Backend** - Single API serves both thepia.com and thepia.net
-- ✅ **Cross-Domain Sessions** - Seamless authentication across domains
-- ✅ **Subdomain Support** - Works with all *.thepia.net subdomains
-- ✅ **Employer Isolation** - Complete data segregation between organizations
+- ✅ **Magic Links Primary** - Email-based authentication as foundation
+- ✅ **Universal Compatibility** - Works on all devices and browsers
+- ✅ **Passkey Enhancement** - Optional WebAuthn for convenience
+- ✅ **Scenario-Driven** - Tailored flows for each use case
 
-### **Developer Experience**
-- ✅ **Svelte Components** - Ready-to-use authentication UI
-- ✅ **TypeScript Support** - Full type safety and IntelliSense
-- ✅ **State Management** - Reactive stores with XState-inspired state machine
-- ✅ **Event System** - Comprehensive event handling for auth flows
+Since most devices support passkeys, but logins should be with passkeys ranther than e-mail.
 
-### **Security & Privacy**
-- ✅ **Cookie-Free by Default** - Zero cookies in standard implementation
-- ✅ **Enterprise Flexible** - Additional auth methods when required by customers
-- ✅ **GDPR Compliant** - Privacy-by-design architecture
-- ✅ **Zero-Knowledge** - No biometric data transmitted
-- ✅ **Phishing Resistant** - WebAuthn prevents credential theft
-- ✅ **Device-Bound** - Credentials tied to specific devices
-- ✅ **Browser Storage First** - Session data stays under user control
+### Multi-Domain Support
+- ✅ **app.thepia.net** - Individual registration with email verification
+- ✅ **flows.thepia.net** - Invitation-based access with pre-verified emails
+- ✅ **Client Subdomains** - Isolated instances for each client
+- ✅ **Domain Isolation** - Separate sessions and passkeys per domain
 
-## Architecture Overview
+### Security & Privacy
+- ✅ **Email Verification** - Mandatory for public registration
+- ✅ **Invitation Tokens** - Cryptographic proof of email ownership
+- ✅ **Cookie-Free** - Privacy-compliant session management
+- ✅ **Rate Limiting** - Protection against abuse
+
+## Architecture
 
 ```mermaid
 graph TB
-    A[Flows App] --> B[flows-auth Library]
+    A[User] --> B[flows-auth Library]
     B --> C[Auth API Server]
     C --> D[Auth0 Backend]
     
-    B --> E[Local Storage]
-    B --> F[State Machine]
-    B --> G[WebAuthn Browser API]
+    B --> E[State Machine]
+    B --> F[Session Storage]
     
-    H[thepia.com] --> C
-    I[*.thepia.net] --> C
+    G[app.thepia.net] --> B
+    H[flows.thepia.net] --> B
+    I[*.thepia.net] --> B
     
-    subgraph "Authentication Flow"
-        J[Email Input] --> K[Passkey Check]
-        K --> L[WebAuthn Challenge]
-        L --> M[Biometric Prompt]
-        M --> N[Authenticated]
+    subgraph "Authentication Methods"
+        J[Email Links] --> K[Primary Method]
+        L[Passkeys] --> M[Optional Enhancement]
     end
 ```
 
-## Current Implementation Status
+## Implementation Status
 
-### **✅ Implemented**
-- Complete passwordless authentication flow
-- WebAuthn/passkey support with conditional mediation
-- Magic link fallback for unsupported devices
-- Multi-domain authentication (thepia.com + thepia.net)
-- State machine-based auth flow management
-- Comprehensive error handling and reporting
-- TypeScript support with full type definitions
+### ✅ Implemented
+- Email verification flow for individual registration
+- WebAuthn/passkey registration and authentication
+- State machine for scenario routing
+- User existence checking with verification status
 
-### **🔄 In Progress**
-- Enhanced documentation and examples
-- Additional testing coverage
-- Performance optimizations
+### ⚠️ In Progress
+- Magic link email authentication endpoints
+- Invitation token validation and registration
+- Proper JWT token generation (currently placeholder)
 
-### **📋 Planned**
-- Additional authentication methods (if needed)
-- Enhanced developer tools
-- Advanced security features
+### 📋 Planned
+- Enhanced error recovery flows
+- Multi-device passkey management
+- Session synchronization across tabs
 
-## Quick Reference
+## Installation
 
-### Installation
 ```bash
 pnpm add @thepia/flows-auth
 ```
 
-### Basic Usage
+## Basic Usage
+
 ```svelte
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { createAuthStore, SignInForm } from '@thepia/flows-auth';
   
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
     enablePasskeys: true,
-    enableMagicLinks: true
+    enableMagicLinks: true,
+    domain: 'app.thepia.net' // or 'flows.thepia.net'
   });
 </script>
 
 <SignInForm 
-  config={authConfig}
+  {authStore}
   on:success={handleAuthSuccess}
   on:error={handleAuthError}
 />
 ```
 
-### Configuration
-```javascript
-const config = {
-  apiBaseUrl: 'https://api.thepia.com',
-  enablePasskeys: true,
-  enableMagicLinks: true,
-  domain: 'thepia.net' // or 'thepia.com'
-};
+## Testing
+
+The library follows a strict **no-mocking policy** for integration tests. All tests must run against real backend services.
+
+```bash
+# Run all tests
+pnpm test
+
+# Unit tests only (mocking allowed)
+pnpm test:unit
+
+# Integration tests (no mocking)
+pnpm test:integration
 ```
+
+## Contributing
+
+When updating the authentication system:
+
+1. **Start with Scenarios**: Ensure changes align with the two primary scenarios
+2. **Update State Machine**: Modify state flow if needed
+3. **Document API Changes**: Update API integration status
+4. **Test Both Scenarios**: Verify individual and invitation flows work
+5. **No Breaking Changes**: Maintain backward compatibility
+
+## Support
+
+For questions or issues:
+- Review the [Authentication System documentation](./auth/README.md)
+- Check the [API Integration Status](./auth/api-integration-status.md)
+- File issues in the GitHub repository
 
 ---
 
-For detailed implementation guides, see the specific documentation sections. For questions or issues, refer to the [Troubleshooting Guide](./troubleshooting/README.md) or check the [GitHub Issues](https://github.com/thepia/flows-auth/issues).
+This library implements email-first authentication with optional passkey enhancement, supporting both public registration and private invitation-based access patterns.

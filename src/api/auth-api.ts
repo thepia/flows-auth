@@ -11,7 +11,6 @@ import type {
   SignInRequest,
   SignInResponse,
   PasskeyRequest,
-  PasswordRequest,
   MagicLinkRequest,
   RefreshTokenRequest,
   LogoutRequest,
@@ -235,15 +234,6 @@ export class AuthApiClient {
     });
   }
 
-  /**
-   * Complete password authentication
-   */
-  async signInWithPassword(request: PasswordRequest): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/signin/password', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
 
   /**
    * Request magic link
@@ -317,8 +307,6 @@ export class AuthApiClient {
   async checkEmail(email: string): Promise<{
     exists: boolean;
     hasPasskey: boolean;
-    hasPassword: boolean;
-    socialProviders: string[];
     userId?: string;
     emailVerified?: boolean;
     invitationTokenHash?: string;
@@ -367,8 +355,6 @@ export class AuthApiClient {
     const result = {
       exists: response.exists,
       hasPasskey: response.hasWebAuthn || false,
-      hasPassword: false, // API doesn't return this, passwordless only
-      socialProviders: [], // API doesn't return this currently
       userId: response.userId,
       emailVerified: response.emailVerified || false,
       invitationTokenHash: response.invitationTokenHash

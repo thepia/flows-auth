@@ -71,8 +71,6 @@ export const TEST_CONFIG: AuthConfig = {
   domain: process.env.AUTH0_DOMAIN || 'thepia.eu.auth0.com',
   enablePasskeys: true,
   enableMagicLinks: true,
-  enablePasswordLogin: false, // As per requirements
-  enableSocialLogin: false,
   errorReporting: {
     enabled: false, // Disable error reporting in tests to avoid fetch issues
     debug: false,
@@ -90,7 +88,6 @@ export const TEST_ACCOUNTS = {
   existingWithPasskey: {
     email: process.env.TEST_AUTH_EMAIL || 'test-with-passkey@thepia.net',
     hasPasskey: true,
-    hasPassword: false,
     userId: 'auth0|passkey-test-with-passkey@thepia.net-1234567890',
     name: 'Test User (With Passkey)'
   },
@@ -99,7 +96,6 @@ export const TEST_ACCOUNTS = {
   existingWithoutPasskey: {
     email: process.env.TEST_AUTH_EMAIL_NO_PASSKEY || 'test-without-passkey@thepia.net',
     hasPasskey: false,
-    hasPassword: false,
     userId: 'auth0|test-without-passkey@thepia.net-1234567890',
     name: 'Test User (No Passkey)'
   },
@@ -108,22 +104,19 @@ export const TEST_ACCOUNTS = {
   newUser: {
     email: `test-new-${Date.now()}@thepia.net`,
     hasPasskey: false,
-    hasPassword: false,
     shouldCreate: true
   },
   
   // Non-existent user for negative testing
   invalidEmail: {
     email: 'definitely-nonexistent@thepia.net',
-    hasPasskey: false,
-    hasPassword: false
+    hasPasskey: false
   },
   
   // Rate limiting test account
   rateLimitTest: {
     email: 'test-rate-limit@thepia.net',
     hasPasskey: false,
-    hasPassword: false,
     maxRequests: 3 // Reduced for faster testing
   }
 } as const;
@@ -200,7 +193,7 @@ export class WebAuthnMocker {
 
 // API mock helpers
 export class APIMocker {
-  static mockEmailCheck(email: string, response: { exists: boolean; hasPasskey: boolean; hasPassword?: boolean }) {
+  static mockEmailCheck(email: string, response: { exists: boolean; hasPasskey: boolean }) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
       if (url.toString().includes('/auth/check-user')) {
         const body = JSON.parse(options?.body as string || '{}');
@@ -209,9 +202,7 @@ export class APIMocker {
             ok: true,
             json: () => Promise.resolve({
               exists: response.exists,
-              hasPasskey: response.hasPasskey,
-              hasPassword: response.hasPassword || false,
-              socialProviders: []
+              hasPasskey: response.hasPasskey
             })
           } as any);
         }

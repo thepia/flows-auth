@@ -357,8 +357,9 @@ function createAuthStore(config: AuthConfig) {
       });
       
       const response = await api.signInWithPasskey({
-        userId: userCheck.userId,
-        authResponse: serializedCredential
+        email: email,
+        credential: serializedCredential,
+        challengeId: challenge.challenge
       });
 
       console.log('🔍 DEBUG: API call completed, response received:', typeof response);
@@ -456,42 +457,6 @@ function createAuthStore(config: AuthConfig) {
     }
   }
 
-  /**
-   * Sign in with password
-   */
-  async function signInWithPassword(email: string, password: string): Promise<SignInResponse> {
-    updateState({ state: 'loading', error: null });
-    emit('sign_in_started', { method: 'password' });
-
-    try {
-      const response = await api.signInWithPassword({ email, password });
-
-      if (response.step === 'success' && response.user && response.accessToken) {
-        saveAuthSession(response, 'password');
-        updateState({
-          state: 'authenticated',
-          user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
-        });
-        scheduleTokenRefresh();
-        emit('sign_in_success', { user: response.user, method: 'password' });
-      }
-
-      return response;
-    } catch (error: any) {
-      const authError: AuthError = {
-        code: error.code || 'invalid_credentials',
-        message: error.message || 'Invalid email or password'
-      };
-      
-      updateState({ state: 'error', error: authError });
-      emit('sign_in_error', { error: authError, method: 'password' });
-      throw authError;
-    }
-  }
 
   /**
    * Sign in with magic link
@@ -1116,8 +1081,9 @@ function createAuthStore(config: AuthConfig) {
 
       // Complete authentication with server using userId
       const response = await api.signInWithPasskey({
-        userId: userCheck.userId,
-        authResponse: serializedCredential
+        email: email,
+        credential: serializedCredential,
+        challengeId: challenge.challenge
       });
 
       if (response.step === 'success' && response.user && response.accessToken) {
@@ -1424,7 +1390,6 @@ function createAuthStore(config: AuthConfig) {
     subscribe: store.subscribe,
     signIn,
     signInWithPasskey,
-    signInWithPassword,
     signInWithMagicLink,
     signOut,
     refreshTokens,

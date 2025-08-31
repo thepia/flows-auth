@@ -30,8 +30,7 @@ describe('Promise Handling', () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasskeys: true
     });
 
     // Mock API to reject
@@ -63,8 +62,7 @@ describe('Promise Handling', () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasskeys: true
     });
 
     // Mock successful email check with passkey
@@ -72,9 +70,7 @@ describe('Promise Handling', () => {
       ok: true,
       json: () => Promise.resolve({
         exists: true,
-        hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
+        hasPasskey: true
       })
     });
 
@@ -94,9 +90,9 @@ describe('Promise Handling', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Should fallback to password step after WebAuthn fails
+    // Should fallback to magic link step after WebAuthn fails
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Check your email')).toBeInTheDocument();
     });
 
     // Should log warning instead of throwing unhandled rejection
@@ -110,8 +106,7 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: true,
-      enablePasswordLogin: true
+      enableMagicLinks: true
     });
 
     // Mock successful email check, then reject magic link
@@ -120,9 +115,7 @@ describe('Promise Handling', () => {
         ok: true,
         json: () => Promise.resolve({
           exists: true,
-          hasPasskey: false,
-          hasPassword: true,
-          socialProviders: []
+          hasPasskey: false
         })
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
@@ -140,9 +133,9 @@ describe('Promise Handling', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Should fallback to password step after magic link fails
+    // Should show error message when magic link fails and no other auth methods available
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Unable to send magic link')).toBeInTheDocument();
     });
 
     // Should log warning instead of throwing unhandled rejection
@@ -156,8 +149,7 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enableMagicLinks: true,
-      enablePasswordLogin: true
+      enableMagicLinks: true
     });
 
     // Mock successful email check with passkey
@@ -166,9 +158,7 @@ describe('Promise Handling', () => {
         ok: true,
         json: () => Promise.resolve({
           exists: true,
-          hasPasskey: true,
-          hasPassword: true,
-          socialProviders: []
+          hasPasskey: true
         })
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
@@ -189,9 +179,9 @@ describe('Promise Handling', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Should eventually fallback to password step after both WebAuthn and magic link fail
+    // Should show error message when both WebAuthn and magic link fail
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Unable to send magic link')).toBeInTheDocument();
     });
 
     // Should log warnings for both failures

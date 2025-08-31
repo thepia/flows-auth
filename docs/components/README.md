@@ -28,23 +28,32 @@ This directory contains documentation for all user-facing components in the flow
   
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.example.com',
+    clientId: 'your-client-id',
     domain: 'example.com',
-    enablePasskeys: true
+    enablePasskeys: true,
+    enableMagicLinks: true,
   });
   
   let showRegistration = false;
+
+  // React to authentication state
+  $: isAuthenticated = $authStore.state === 'authenticated';
+  $: currentUser = $authStore.user;
 </script>
 
-{#if showRegistration}
+{#if isAuthenticated}
+  <h1>Welcome, {currentUser?.name || currentUser?.email}!</h1>
+  <button on:click={() => authStore.signOut()}>Sign Out</button>
+{:else if showRegistration}
   <AccountCreationForm 
-    config={authStore.config}
+    {authStore}
     on:success={(e) => console.log('Registration success:', e.detail)}
     on:appAccess={(e) => console.log('User enters app:', e.detail)}
     on:switchToSignIn={() => showRegistration = false}
   />
 {:else}
   <SignInForm 
-    config={authStore.config}
+    {authStore}
     on:success={(e) => console.log('Sign-in success:', e.detail)}
     on:switchToRegister={() => showRegistration = true}
   />

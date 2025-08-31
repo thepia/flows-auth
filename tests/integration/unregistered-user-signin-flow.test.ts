@@ -33,9 +33,7 @@ describe('Unregistered User Sign-In Flow', () => {
           clientId: 'test-client',
           domain: 'thepia.net',
           enablePasskeys: true,
-          enableMagicLinks: true,
-          enableSocialLogin: false,
-          enablePasswordLogin: false
+          enableMagicLinks: true
         });
         console.log('✅ Using local API server for testing');
       }
@@ -58,9 +56,7 @@ describe('Unregistered User Sign-In Flow', () => {
             clientId: 'test-client',
             domain: 'thepia.net',
             enablePasskeys: true,
-            enableMagicLinks: true,
-            enableSocialLogin: false,
-            enablePasswordLogin: false
+            enableMagicLinks: true
           });
           console.log('✅ Using production API server for testing');
         }
@@ -110,14 +106,10 @@ describe('Unregistered User Sign-In Flow', () => {
         // Verify the response structure
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
-        expect(result).toHaveProperty('hasPassword');
-        expect(result).toHaveProperty('socialProviders');
         
         // Verify unregistered user is correctly identified
         expect(result.exists).toBe(false);
         expect(result.hasPasskey).toBe(false);
-        expect(result.hasPassword).toBe(false);
-        expect(result.socialProviders).toEqual([]);
         
         console.log('✅ Unregistered user correctly identified');
       } catch (error) {
@@ -148,8 +140,6 @@ describe('Unregistered User Sign-In Flow', () => {
         // Verify the response structure
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
-        expect(result).toHaveProperty('hasPassword');
-        expect(result).toHaveProperty('socialProviders');
         
         // For existing user, exists should be true
         expect(result.exists).toBe(true);

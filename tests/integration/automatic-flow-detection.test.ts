@@ -56,8 +56,7 @@ describe('Automatic Flow Detection', () => {
       // Mock API response for existing user
       APIMocker.mockEmailCheck(existingEmail, {
         exists: true,
-        hasPasskey: true,
-        hasPassword: false
+        hasPasskey: true
       });
 
       const { container } = render(SignInForm, {
@@ -93,8 +92,7 @@ describe('Automatic Flow Detection', () => {
       // Mock API response for new user
       APIMocker.mockEmailCheck(newEmail, {
         exists: false,
-        hasPasskey: false,
-        hasPassword: false
+        hasPasskey: false
       });
 
       const { container } = render(SignInForm, {

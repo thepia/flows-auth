@@ -15,8 +15,6 @@ describe('Auth Library Core', () => {
         domain: '',
         enablePasskeys: true,
         enableMagicLinks: true,
-        enablePasswordLogin: true,
-        enableSocialLogin: false,
         branding: {
           companyName: 'Your Company',
           showPoweredBy: true
@@ -42,14 +40,11 @@ describe('Auth Library Core', () => {
     it('should support disabling features', () => {
       const config = createDefaultConfig({
         enablePasskeys: false,
-        enableMagicLinks: false,
-        enableSocialLogin: true
+        enableMagicLinks: false
       });
 
       expect(config.enablePasskeys).toBe(false);
       expect(config.enableMagicLinks).toBe(false);
-      expect(config.enableSocialLogin).toBe(true);
-      expect(config.enablePasswordLogin).toBe(true); // Should preserve default
     });
   });
 

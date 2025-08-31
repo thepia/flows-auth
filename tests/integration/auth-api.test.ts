@@ -14,8 +14,6 @@ const mockConfig: AuthConfig = {
   domain: 'test.com',
   enablePasskeys: true,
   enableMagicLinks: true,
-  enablePasswordLogin: true,
-  enableSocialLogin: false,
   branding: {
     companyName: 'Test Company'
   }
@@ -509,8 +507,6 @@ describe('AuthApiClient', () => {
       const expectedResult = {
         exists: true,
         hasPasskey: true,
-        hasPassword: false,
-        socialProviders: [],
         userId: '123',
         invitationTokenHash: undefined
       };

@@ -78,8 +78,6 @@
       domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
       enablePasskeys: scenario.config.enablePasskeys,
       enableMagicLinks: scenario.config.enableMagicLinks,
-      enablePasswordLogin: scenario.config.enablePasswordLogin,
-      enableSocialLogin: false, // Not used in demo
       branding: {
         companyName: scenario.branding.companyName,
         logoUrl: '/thepia-logo.svg',

@@ -98,7 +98,6 @@
             <div class="auth-methods">
               <span class="method-badge" class:enabled={currentScenario.config.enablePasskeys}>Passkeys</span>
               <span class="method-badge" class:enabled={currentScenario.config.enableMagicLinks}>Magic Link</span>
-              <span class="method-badge" class:enabled={currentScenario.config.enablePasswordLogin}>Password</span>
             </div>
           {/if}
           
@@ -217,13 +216,6 @@
                       <div class="feature-details">
                         <strong>Magic Link Authentication</strong>
                         <small>Passwordless login via secure email links</small>
-                      </div>
-                    </li>
-                    <li class="feature-item" class:enabled={currentScenario.config.enablePasswordLogin}>
-                      <span class="feature-icon">{currentScenario.config.enablePasswordLogin ? '✅' : '❌'}</span>
-                      <div class="feature-details">
-                        <strong>Password Authentication</strong>
-                        <small>Traditional email and password login</small>
                       </div>
                     </li>
                   </ul>

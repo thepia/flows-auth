@@ -6,8 +6,6 @@
 interface CacheEntry {
   exists: boolean;
   hasPasskey: boolean;
-  hasPassword: boolean;
-  socialProviders: string[];
   timestamp: number;
 }
 

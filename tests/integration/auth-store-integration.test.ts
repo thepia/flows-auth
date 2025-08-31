@@ -18,8 +18,6 @@ const LOCAL_TEST_CONFIG = {
   domain: 'dev.thepia.net',
   enablePasskeys: true,
   enableMagicLinks: true,
-  enablePasswordLogin: false, // As per requirements
-  enableSocialLogin: false,
   errorReporting: {
     enabled: true,
     debug: true
@@ -42,22 +40,18 @@ const TEST_ACCOUNTS = {
   existingWithPasskey: {
     email: 'test@thepia.com', // Real test account that exists in Auth0  
     hasPasskey: false, // Will be determined by API call
-    hasPassword: false
   },
   existingWithoutPasskey: {
     email: 'test@thepia.com', // Same account - passkey status determined by API
-    hasPasskey: false,
-    hasPassword: false
+    hasPasskey: false
   },
   newUser: {
     email: `test-new-${Date.now()}@example.com`, // Will definitely not exist
-    hasPasskey: false,
-    hasPassword: false
+    hasPasskey: false
   },
   invalidEmail: {
     email: `nonexistent-${Date.now()}@example.com`, // Will definitely not exist
-    hasPasskey: false,
-    hasPassword: false
+    hasPasskey: false
   }
 } as const;
 
@@ -328,10 +322,6 @@ describe('Auth Store Integration Tests', () => {
       expect(typeof response.exists).toBe('boolean');
       expect(typeof response.hasPasskey).toBe('boolean');
       
-      if (response.exists) {
-        expect(response).toHaveProperty('socialProviders');
-        expect(Array.isArray(response.socialProviders)).toBe(true);
-      }
     });
   });
 

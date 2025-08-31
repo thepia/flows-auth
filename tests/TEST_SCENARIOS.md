@@ -21,7 +21,6 @@ const TEST_ACCOUNTS = {
   existingWithPasskey: {
     email: 'test-with-passkey@thepia.net',
     hasPasskey: true,
-    hasPassword: false,
     passkeyDevices: ['Touch ID', 'Security Key']
   },
   
@@ -29,7 +28,6 @@ const TEST_ACCOUNTS = {
   existingWithoutPasskey: {
     email: 'test-without-passkey@thepia.net',
     hasPasskey: false,
-    hasPassword: false
   },
   
   // Account for testing passkey registration
@@ -146,8 +144,6 @@ const TEST_ACCOUNTS = {
   {
     "exists": true,
     "hasPasskey": true, 
-    "hasPassword": false,
-    "socialProviders": []
   }
   ```
 
@@ -162,8 +158,6 @@ const TEST_ACCOUNTS = {
   {
     "exists": false,
     "hasPasskey": false,
-    "hasPassword": false,
-    "socialProviders": []
   }
   ```
 

@@ -22,8 +22,7 @@ describe('SignInForm Registration Flow Regression', () => {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
     enablePasskeys: true,
-    enableMagicLinks: true,
-    enablePasswordLogin: true
+    enableMagicLinks: true
   };
 
   beforeAll(async () => {
@@ -105,8 +104,6 @@ describe('SignInForm Registration Flow Regression', () => {
         
         expect(result).toHaveProperty('exists');
         expect(result).toHaveProperty('hasPasskey');
-        expect(result).toHaveProperty('hasPassword');
-        expect(result).toHaveProperty('socialProviders');
         
         console.log(`📊 User exists: ${result.exists}, Has passkey: ${result.hasPasskey}`);
       } catch (error) {

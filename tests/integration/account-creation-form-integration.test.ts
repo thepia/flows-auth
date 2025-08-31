@@ -51,8 +51,6 @@ describe('AccountCreationForm Integration Tests', () => {
       domain: 'test.com',
       enablePasskeys: true,
       enableMagicLinks: false,
-      enableSocialLogin: false,
-      enablePasswordLogin: false,
       branding: {
         companyName: 'Test Company'
       }

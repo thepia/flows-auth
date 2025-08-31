@@ -42,8 +42,6 @@
         domain: 'dev.thepia.net',
         enablePasskeys: currentScenario.config.enablePasskeys,
         enableMagicLinks: currentScenario.config.enableMagicLinks,
-        enablePasswordLogin: currentScenario.config.enablePasswordLogin,
-        enableSocialLogin: false,
         branding: {
           companyName: currentScenario.branding.companyName,
           logoUrl: '/thepia-logo.svg',

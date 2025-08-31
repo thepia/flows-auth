@@ -117,8 +117,6 @@ export function createDefaultConfig(
     domain: '',
     enablePasskeys: true,
     enableMagicLinks: true,
-    enablePasswordLogin: true,
-    enableSocialLogin: false,
     branding: {
       companyName: 'Your Company',
       showPoweredBy: true,

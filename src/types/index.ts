@@ -15,21 +15,21 @@ export interface User {
   metadata?: Record<string, any>;
 }
 
-// Authentication states (legacy - kept for backward compatibility)
-export type AuthState = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
-
-// Enhanced authentication states with email verification
-export type EnhancedAuthState =
+// Authentication states - simplified with email verification support
+export type AuthState =
   | 'unauthenticated'
   | 'authenticated-unconfirmed'  // Has passkey but email not verified
   | 'authenticated-confirmed'    // Full access after email verification
+  | 'authenticated'              // Generic authenticated state for backward compatibility
   | 'loading'
   | 'error';
 
-export type AuthMethod = 'passkey' | 'password' | 'magic-link' | 'social';
+export type AuthMethod = 'passkey' | 'magic-link';
 
-// Sign-in flow states (legacy - kept for backward compatibility)
-export type SignInStep = 'email' | 'passkey' | 'password' | 'magic-link' | 'loading' | 'success' | 'error';
+
+
+// Sign-in flow states - passwordless only
+export type SignInStep = 'email' | 'passkey' | 'magic-link' | 'loading' | 'success' | 'error';
 
 // Registration flow states
 export type RegistrationStep =
@@ -145,14 +145,6 @@ export interface SessionMigrationResult {
 
 export type StorageType = 'sessionStorage' | 'localStorage';
 
-// Rate limiting configuration (DEPRECATED - now handled by intelligent client rate limiter)
-// This interface is kept for backward compatibility but is no longer used
-export interface RateLimitingConfig {
-  minRequestInterval?: number; // DEPRECATED: Use 5 req/sec intelligent rate limiter
-  maxRetries?: number;         // DEPRECATED: Handled by server response
-  baseDelay?: number;          // DEPRECATED: Handled by server response  
-  maxDelay?: number;           // DEPRECATED: Handled by server response
-}
 
 // Authentication configuration
 export interface AuthConfig {
@@ -161,16 +153,12 @@ export interface AuthConfig {
   domain: string;
   enablePasskeys: boolean;
   enableMagicLinks: boolean;
-  enableSocialLogin: boolean;
-  enablePasswordLogin: boolean;
   redirectUri?: string;
-  socialProviders?: SocialProvider[];
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
-  rateLimiting?: RateLimitingConfig; // DEPRECATED: Use intelligent 5 req/sec rate limiter
 }
 
 // Auth0 configuration
@@ -201,13 +189,6 @@ export interface AuthBranding {
   customCSS?: string;
 }
 
-// Social providers
-export interface SocialProvider {
-  id: string;
-  name: string;
-  iconUrl?: string;
-  enabled: boolean;
-}
 
 // API request/response types
 export interface SignInRequest {
@@ -222,7 +203,6 @@ export interface SignInResponse {
   refreshToken?: string;
   expiresIn?: number;
   requiresPasskey?: boolean;
-  requiresPassword?: boolean;
   magicLinkSent?: boolean;
   challengeId?: string;
   step: SignInStep;
@@ -230,15 +210,11 @@ export interface SignInResponse {
 }
 
 export interface PasskeyRequest {
-  userId: string;
-  authResponse: any; // WebAuthn credential
+  email: string; // Changed to email for consistency with other methods
+  credential: PasskeyCredential; // Properly typed WebAuthn credential
+  challengeId?: string; // Optional challenge ID for verification
 }
 
-export interface PasswordRequest {
-  email: string;
-  password: string;
-  challengeId?: string;
-}
 
 export interface MagicLinkRequest {
   email: string;
@@ -295,7 +271,7 @@ export interface InvitationTokenData {
 // Configuration for additional business fields in registration forms
 export type AdditionalField = 'company' | 'phone' | 'jobTitle';
 
-// RegistrationForm component props
+// RegistrationForm component props - consolidated
 export interface RegistrationFormProps {
   config: AuthConfig;
   showLogo?: boolean;
@@ -306,6 +282,9 @@ export interface RegistrationFormProps {
   invitationToken?: string | null; // Original JWT token string
   additionalFields?: AdditionalField[];
   readOnlyFields?: string[];
+  onSuccess?: (data: AuthEventData) => void;
+  onError?: (error: AuthError) => void;
+  onStateChange?: (state: RegistrationStep) => void;
   onSwitchToSignIn?: () => void;
 }
 
@@ -345,12 +324,14 @@ export interface AuthError {
 }
 
 export type AuthErrorCode = 
-  | 'invalid_credentials'
   | 'user_not_found'
   | 'email_not_verified'
   | 'passkey_not_supported'
   | 'passkey_failed'
+  | 'passkey_cancelled'
+  | 'passkey_timeout'
   | 'magic_link_expired'
+  | 'magic_link_failed'
   | 'rate_limited'
   | 'network_error'
   | 'unknown_error';
@@ -411,15 +392,6 @@ export interface PasskeyStepProps {
   branding?: AuthBranding;
 }
 
-export interface PasswordStepProps {
-  email: string;
-  onSubmit: (password: string) => void;
-  onBack: () => void;
-  onForgotPassword?: () => void;
-  loading?: boolean;
-  error?: string;
-  branding?: AuthBranding;
-}
 
 export interface MagicLinkStepProps {
   email: string;
@@ -430,17 +402,6 @@ export interface MagicLinkStepProps {
   branding?: AuthBranding;
 }
 
-// Registration component props
-export interface RegistrationFormProps {
-  config: AuthConfig;
-  onSuccess?: (data: AuthEventData) => void;
-  onError?: (error: AuthError) => void;
-  onStateChange?: (state: RegistrationStep) => void;
-  className?: string;
-  showLogo?: boolean;
-  compact?: boolean;
-  initialEmail?: string;
-}
 
 export interface TermsOfServiceProps {
   onAccept: (accepted: { terms: boolean; privacy: boolean; marketing?: boolean }) => void;
@@ -480,15 +441,17 @@ export interface AuthStore {
   error: AuthError | null;
 }
 
-// Utility types
+// Auth store methods - passwordless only with strict typing
 export type AuthStoreMethods = {
-  signIn: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
-  signInWithPasskey: (email: string, credential: PasskeyCredential) => Promise<SignInResponse>;
-  signInWithPassword: (email: string, password: string) => Promise<SignInResponse>;
-  signInWithMagicLink: (email: string) => Promise<SignInResponse>;
+  signIn: (request: SignInRequest) => Promise<SignInResponse>;
+  signInWithPasskey: (request: PasskeyRequest) => Promise<SignInResponse>;
+  signInWithMagicLink: (request: MagicLinkRequest) => Promise<SignInResponse>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   isAuthenticated: () => boolean;
   getAccessToken: () => string | null;
   reset: () => void;
+  
+  // Convenience methods for backward compatibility
+  signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
 };

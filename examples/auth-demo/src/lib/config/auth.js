@@ -62,8 +62,6 @@ export async function getAuthConfig() {
     // Authentication Methods
     enablePasskeys: true,
     enableMagicLinks: true,
-    enablePasswordLogin: true, // For demo purposes
-    enableSocialLogin: false,
     
     // Branding Configuration - This is key for white-labeling
     branding: {

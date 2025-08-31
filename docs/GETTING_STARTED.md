@@ -260,8 +260,22 @@ interface AuthStore {
 
 ```javascript
 // Available methods (passwordless only)
-await authStore.signInWithPasskey(email);     // WebAuthn authentication
-await authStore.signInWithMagicLink(email);   // Email-based authentication
+try {
+  await authStore.signInWithPasskey(email);     // WebAuthn authentication
+  // User is now authenticated
+} catch (error) {
+  console.error('Passkey auth failed:', error);
+  // Fallback to magic link
+}
+
+try {
+  await authStore.signInWithMagicLink(email);   // Email-based authentication
+  // User will receive email with login link
+} catch (error) {
+  console.error('Magic link failed:', error);
+}
+
+// Session management
 await authStore.refreshTokens();              // Refresh access token
 await authStore.signOut();                    // Sign out user
 
@@ -274,28 +288,79 @@ const token = authStore.getAccessToken();
 
 ```svelte
 <script>
-  function handleError({ detail }) {
-    const { error } = detail;
-    
+  import { createAuthStore, SignInForm } from '@thepia/flows-auth';
+  
+  const authStore = createAuthStore({
+    apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'your-client-id',
+    enablePasskeys: true,
+    enableMagicLinks: true,
+    domain: 'thepia.net'
+  });
+
+  // React to auth store errors
+  $: authError = $authStore.error;
+  $: if (authError) {
+    handleAuthStoreError(authError);
+  }
+
+  function handleAuthStoreError(error) {
     switch (error.code) {
-      case 'invalid_credentials':
-        // Show invalid login message
+      case 'passkey_failed':
+        console.error('Passkey authentication failed:', error.message);
+        // Could automatically fallback to magic link
         break;
-      case 'passkey_not_supported':
-        // Show passkey not supported message
+      case 'invalid_credentials':
+        console.error('Invalid credentials:', error.message);
         break;
       case 'network_error':
-        // Show network error message
+        console.error('Network error:', error.message);
         break;
       default:
-        // Show generic error message
+        console.error('Authentication error:', error.message);
+    }
+  }
+
+  function handleComponentError(event) {
+    const { error } = event.detail;
+    console.error('Component error:', error);
+    
+    // Handle specific component-level errors
+    if (error.code === 'passkey_not_supported') {
+      // Show message about passkey support
+      alert('Passkeys are not supported on this device. Please use email authentication.');
+    }
+  }
+
+  // Example of calling auth methods with proper error handling
+  async function tryPasskeyAuth() {
+    try {
+      await authStore.signInWithPasskey('user@example.com');
+      console.log('Passkey authentication successful');
+    } catch (error) {
+      console.error('Passkey auth failed:', error);
+      // Fallback to magic link
+      try {
+        await authStore.signInWithMagicLink('user@example.com');
+        console.log('Magic link sent as fallback');
+      } catch (fallbackError) {
+        console.error('Both auth methods failed:', fallbackError);
+      }
     }
   }
 </script>
 
+<!-- Display auth errors in UI -->
+{#if authError}
+  <div class="error-banner">
+    <p>Authentication Error: {authError.message}</p>
+    <button on:click={() => authStore.reset()}>Try Again</button>
+  </div>
+{/if}
+
 <SignInForm 
-  {config}
-  on:error={handleError}
+  {authStore}
+  on:error={handleComponentError}
 />
 ```
 

@@ -23,8 +23,6 @@ const getTestConfig = (): AuthConfig => {
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
     enableMagicLinks: true,
-    enablePasswordLogin: false,
-    enableSocialLogin: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true

@@ -132,17 +132,28 @@ For applications using the auth store pattern, passwordless authentication is ha
 ```typescript
 import { authStore } from '$lib/stores/auth';
 
-// Start passwordless authentication
-const result = await authStore.startPasswordlessAuthentication(email);
+// Option 1: Use high-level store method (recommended)
+try {
+  await authStore.signInWithMagicLink(email);
+  console.log('Magic link sent! User will receive email.');
+  // Auth store handles the complete flow including polling
+} catch (error) {
+  console.error('Magic link authentication failed:', error);
+}
 
-if (result.success && result.sessionId) {
-  // The auth store automatically handles polling and session management
-  // UI components can react to auth store state changes
-  console.log('Passwordless flow started, sessionId:', result.sessionId);
+// Option 2: Use low-level API client method
+try {
+  const result = await authStore.api.startPasswordlessAuthentication(email);
+  if (result.success && result.sessionId) {
+    console.log('Passwordless flow started, sessionId:', result.sessionId);
+    // You would need to handle polling manually with this approach
+  }
+} catch (error) {
+  console.error('API call failed:', error);
 }
 
 // React to authentication completion
-$: if ($isAuthenticated && $emailVerified) {
+$: if ($authStore.state === 'authenticated' && $authStore.user) {
   console.log('User successfully authenticated via magic link!');
   goto('/dashboard');
 }

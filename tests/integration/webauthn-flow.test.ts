@@ -51,9 +51,7 @@ describe('WebAuthn Integration Flow', () => {
         ok: true,
         json: () => Promise.resolve({
           exists: true,
-          hasPasskey: true,
-          hasPassword: false,
-          socialProviders: []
+          hasPasskey: true
         })
       })
       .mockResolvedValueOnce({
@@ -108,12 +106,11 @@ describe('WebAuthn Integration Flow', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/signin/passkey', expect.any(Object));
   });
 
-  it('should fallback to password when WebAuthn fails', async () => {
+  it('should fallback to magic link when WebAuthn fails', async () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasskeys: true
     });
 
     // Mock API responses
@@ -122,9 +119,7 @@ describe('WebAuthn Integration Flow', () => {
         ok: true,
         json: () => Promise.resolve({
           exists: true,
-          hasPasskey: true,
-          hasPassword: true,
-          socialProviders: []
+          hasPasskey: true
         })
       })
       .mockResolvedValueOnce({
@@ -150,9 +145,9 @@ describe('WebAuthn Integration Flow', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Wait for fallback to password step
+    // Wait for fallback to magic link step (since password is removed)
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Check your email')).toBeInTheDocument();
     });
 
     expect(mockNavigatorCredentials.get).toHaveBeenCalled();
@@ -162,8 +157,7 @@ describe('WebAuthn Integration Flow', () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: false,
-      enablePasswordLogin: true
+      enablePasskeys: false
     });
 
     // Mock API response
@@ -172,8 +166,6 @@ describe('WebAuthn Integration Flow', () => {
       json: () => Promise.resolve({
         exists: true,
         hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
       })
     });
 
@@ -188,9 +180,9 @@ describe('WebAuthn Integration Flow', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Should go directly to password step
+    // Should go directly to magic link step
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Check your email')).toBeInTheDocument();
     });
 
     // WebAuthn should not be called
@@ -205,8 +197,7 @@ describe('WebAuthn Integration Flow', () => {
     const config = createDefaultConfig({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
-      enablePasskeys: true,
-      enablePasswordLogin: true
+      enablePasskeys: true
     });
 
     mockFetch.mockResolvedValueOnce({
@@ -214,8 +205,6 @@ describe('WebAuthn Integration Flow', () => {
       json: () => Promise.resolve({
         exists: true,
         hasPasskey: true,
-        hasPassword: true,
-        socialProviders: []
       })
     });
 
@@ -230,9 +219,9 @@ describe('WebAuthn Integration Flow', () => {
     await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
     await fireEvent.click(continueButton);
 
-    // Should fallback to password since WebAuthn is not supported
+    // Should fallback to magic link since WebAuthn is not supported
     await waitFor(() => {
-      expect(queryByText('Enter your password')).toBeInTheDocument();
+      expect(queryByText('Check your email')).toBeInTheDocument();
     });
     
     // Restore WebAuthn support

@@ -6,7 +6,7 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 
 - 🔐 **WebAuthn/Passkey Support** - Secure, passwordless authentication
 - 🎨 **Whitelabel Ready** - Complete branding and theming system
-- 🔄 **Multi-step Flow** - Email → Passkey/Password/Magic Link
+- 🔄 **Multi-step Flow** - Email → Passkey/Magic Link
 - 📱 **Mobile Optimized** - Works seamlessly on all devices
 - 🧪 **Fully Tested** - Comprehensive test coverage
 - 📦 **Tree Shakeable** - Import only what you need
@@ -168,7 +168,6 @@ You can also use individual step components for custom flows:
 import { 
   EmailStep,
   PasskeyStep, 
-  PasswordStep,
   MagicLinkStep 
 } from '@thepia/flows-auth/components';
 ```
@@ -191,7 +190,6 @@ auth.subscribe($auth => {
 // Sign in methods
 await auth.signIn('user@example.com');
 await auth.signInWithPasskey('user@example.com');
-await auth.signInWithPassword('user@example.com', 'password');
 await auth.signInWithMagicLink('user@example.com');
 
 // Other methods
@@ -213,12 +211,9 @@ interface AuthConfig {
   // Feature flags
   enablePasskeys: boolean;
   enableMagicLinks: boolean;
-  enablePasswordLogin: boolean;
-  enableSocialLogin: boolean;
   
   // Optional
   redirectUri?: string;
-  socialProviders?: SocialProvider[];
   branding?: AuthBranding;
 }
 
@@ -362,7 +357,7 @@ The following documents are the **single source of truth** for their respective 
 A comprehensive demo application is included in `src/demo-app/` that showcases all features of the flows-auth library. The demo includes:
 
 - **Live Authentication Flow**: Complete sign-in/sign-out functionality
-- **Feature Showcase**: Demonstrates WebAuthn, magic links, and password authentication
+- **Feature Showcase**: Demonstrates WebAuthn and magic link authentication
 - **Configuration Examples**: Shows different branding and configuration options
 - **Responsive Design**: Works on desktop and mobile devices
 

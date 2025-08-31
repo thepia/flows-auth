@@ -75,8 +75,6 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       domain: 'test.com',
       enablePasskeys: true,
       enableMagicLinks: false,
-      enableSocialLogin: false,
-      enablePasswordLogin: false,
       branding: {
         companyName: 'Test Company'
       }

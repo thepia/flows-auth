@@ -59,8 +59,6 @@ export async function getAuthConfig() {
     domain: 'dev.thepia.net',
     enablePasskeys: true,
     enableMagicLinks: true,
-    enablePasswordLogin: true,
-    enableSocialLogin: false,
     branding: {
       companyName: 'Assignment Management System',
       showPoweredBy: true,

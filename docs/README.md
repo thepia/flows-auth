@@ -124,17 +124,35 @@ pnpm add @thepia/flows-auth
   
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'your-client-id',
     enablePasskeys: true,
     enableMagicLinks: true,
     domain: 'app.thepia.net' // or 'flows.thepia.net'
   });
+
+  // React to authentication state
+  $: isAuthenticated = $authStore.state === 'authenticated';
+  $: currentUser = $authStore.user;
+
+  function handleAuthSuccess(event) {
+    console.log('Authentication successful:', event.detail);
+  }
+
+  function handleAuthError(event) {
+    console.error('Authentication error:', event.detail);
+  }
 </script>
 
-<SignInForm 
-  {authStore}
-  on:success={handleAuthSuccess}
-  on:error={handleAuthError}
-/>
+{#if isAuthenticated}
+  <h1>Welcome, {currentUser?.name || currentUser?.email}!</h1>
+  <button on:click={() => authStore.signOut()}>Sign Out</button>
+{:else}
+  <SignInForm 
+    {authStore}
+    on:success={handleAuthSuccess}
+    on:error={handleAuthError}
+  />
+{/if}
 ```
 
 ## Testing

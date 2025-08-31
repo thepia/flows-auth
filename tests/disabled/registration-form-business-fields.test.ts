@@ -51,8 +51,6 @@ describe('RegistrationForm Business Fields Regression Test', () => {
       domain: 'test.com',
       enablePasskeys: true,
       enableMagicLinks: false,
-      enableSocialLogin: false,
-      enablePasswordLogin: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',

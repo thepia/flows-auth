@@ -15,7 +15,6 @@ export interface RealAuthConfig {
   clientId: string;
   enablePasskeys: boolean;
   enableMagicLinks?: boolean;
-  enablePasswordLogin?: boolean;
   branding?: {
     companyName: string;
     logoUrl?: string;

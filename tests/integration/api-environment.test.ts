@@ -222,10 +222,6 @@ describe('API Environment Integration', () => {
         expect(typeof response.exists).toBe('boolean');
         expect(typeof response.hasPasskey).toBe('boolean');
         
-        // Optional fields
-        if (response.socialProviders) {
-          expect(Array.isArray(response.socialProviders)).toBe(true);
-        }
         
         console.log(`✅ API contract validation successful`);
       } catch (error) {

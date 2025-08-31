@@ -14,8 +14,6 @@ const testConfig: AuthConfig = {
   domain: 'thepia.net',
   enablePasskeys: true,
   enableMagicLinks: false,
-  enablePasswordLogin: false,
-  enableSocialLogin: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: false

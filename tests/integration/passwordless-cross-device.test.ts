@@ -14,8 +14,6 @@ const TEST_CONFIG = {
   domain: 'test.thepia.net',
   enablePasskeys: false,
   enableMagicLinks: true,
-  enablePasswordLogin: false,
-  enableSocialLogin: false,
   branding: {
     companyName: 'Thepia Test',
     showPoweredBy: false,

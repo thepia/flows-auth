@@ -696,6 +696,69 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
+   * Register Individual User (Simple Same-Device Flow)
+   * Creates user account and sends magic link email for verification.
+   * User clicks email link on same device to authenticate, then can optionally set up passkey.
+   */
+  async function registerIndividualUser(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+  }): Promise<{
+    success: boolean;
+    user: any;
+    verificationRequired: boolean;
+    message: string;
+  }> {
+    updateState({ state: 'loading', error: null });
+    emit('registration_started', { email: userData.email });
+
+    try {
+      console.log('🔄 Creating user account...');
+      const registrationResponse = await api.registerUser(userData);
+
+      if (registrationResponse.step !== 'success' || !registrationResponse.user) {
+        throw new Error('Failed to create user account');
+      }
+
+      console.log('✅ User account created:', registrationResponse.user.id);
+
+      console.log('🔄 Sending verification email...');
+      const magicLinkResponse = await api.startPasswordlessAuthentication(userData.email);
+      
+      if (!magicLinkResponse.success) {
+        throw new Error('Failed to send verification email');
+      }
+      
+      console.log('✅ Verification email sent');
+
+      updateState({
+        state: 'loading', // Use valid AuthState
+        user: null, // Not authenticated until email clicked
+        error: null
+      });
+
+      return {
+        success: true,
+        user: registrationResponse.user,
+        verificationRequired: true,
+        message: "Registration successful! Check your email and click the verification link to complete setup."
+      };
+
+    } catch (error) {
+      console.error('❌ Individual user registration failed:', error);
+      const authError = error instanceof Error ? error.message : 'Registration failed';
+      updateState({ 
+        state: 'error', 
+        error: authError as any // Fix type issue
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Create account with passkey - Enhanced registration flow
    * For now, this is an enhanced version of registerUser with better error handling
    * TODO: Implement full WebAuthn integration when API endpoints are confirmed
@@ -1401,6 +1464,7 @@ function createAuthStore(config: AuthConfig) {
     checkUser,
     registerUser,
     createAccount,
+    registerIndividualUser,
     checkUserWithInvitation,
     determineAuthFlow,
     on,

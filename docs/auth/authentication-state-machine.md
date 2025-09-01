@@ -133,14 +133,16 @@ stateDiagram-v2
 - **Purpose**: Create new individual account for personal use
 - **Entry Conditions**: New user on app.thepia.net or App Store installation
 - **Actions**:
-  - Call `POST /auth/register` API  
-  - Create Auth0 account with `email_verified: false`
+  - Call `authStore.registerIndividualUser()` method
+  - Creates Auth0 account with `email_verified: false`
+  - Automatically calls `api.startPasswordlessAuthentication()` to send verification email
   - Show terms of service acceptance
 - **User Experience**: Clear explanation of verification requirement for individual account
-- **Transitions**: `emailVerificationRequired` after successful account creation
+- **Transitions**: `emailVerificationSent` after successful account creation and email sent
+- **⚠️ CRITICAL**: Uses `registerIndividualUser()`, NOT `registerUser()` - different flows!
 
 #### `emailVerificationRequired`
-- **Purpose**: Inform user that email verification is needed
+- **Purpose**: Inform user that email verification is needed (legacy state)
 - **Entry Conditions**: New app.thepia.net account created
 - **Actions**:
   - Display verification requirement message
@@ -148,6 +150,7 @@ stateDiagram-v2
   - Explain what user needs to do next
 - **User Experience**: Clear instructions with helpful UI
 - **Transitions**: `emailVerificationSent` when user requests verification
+- **⚠️ NOTE**: With `registerIndividualUser()`, this state may be bypassed since verification email is sent automatically
 
 #### `emailVerificationSent`
 - **Purpose**: Verification email has been sent
@@ -160,16 +163,19 @@ stateDiagram-v2
 - **Transitions**: `emailVerified` when user clicks verification link
 
 #### `emailVerified`
-- **Purpose**: Email has been successfully verified
-- **Entry Conditions**: User clicked valid verification link
+- **Purpose**: Email has been successfully verified AND user is authenticated
+- **Entry Conditions**: User clicked valid verification link from email
 - **Actions**:
-  - Update user account to `email_verified: true`
+  - Auth0 automatically sets `email_verified: true`
+  - **Issues authentication tokens** (access + refresh tokens)
+  - Updates auth store with authenticated session
   - Show verification success message
-  - Prepare for optional passkey setup
-- **Transitions**: `passkeyOptional` to offer enhanced security
+- **⚠️ CRITICAL SIDE EFFECT**: Email verification = full authentication, not just email confirmation
+- **Transitions**: `authenticated` - user is fully authenticated after email verification
+- **Previous Behavior**: Used to transition to `passkeyOptional`, but email verification now provides full auth
 
 #### `passkeyOptional`
-- **Purpose**: Offer optional passkey setup for convenience
+- **Purpose**: Offer optional passkey setup for convenience (legacy state)
 - **Entry Conditions**: Email verification completed for app.thepia.net
 - **Actions**:
   - Explain passkey benefits
@@ -177,6 +183,8 @@ stateDiagram-v2
   - Handle passkey registration if chosen
 - **User Experience**: Optional enhancement, not required
 - **Transitions**: `authenticated` regardless of passkey choice
+- **⚠️ CURRENT STATUS**: This state may not be reached in current implementation since `emailVerified` now transitions directly to `authenticated`
+- **Future Consideration**: Could be reintroduced as post-authentication passkey setup flow
 
 ### App Invitation Access Flow (specific thepia.net subdomains)
 
@@ -210,19 +218,22 @@ stateDiagram-v2
 - **Transitions**: `authenticated` with access to specific app
 
 #### `invitationValidation`
-- **Purpose**: Validate invitation token and create account
+- **Purpose**: Validate invitation token and create account with immediate authentication
 - **Entry Conditions**: User accepts invitation
 - **Actions**:
-  - Validate token cryptographically
+  - Call `authStore.registerUser()` with invitation token
+  - Validate token cryptographically  
   - Check token expiration
   - Verify token matches current email/domain
   - Create account with `email_verified: true` (pre-verified)
+  - **Immediately authenticate user** and provide access tokens
+- **⚠️ CRITICAL**: Uses `registerUser()` method which provides immediate authentication
 - **Transitions**: 
-  - `preVerifiedAccount` if token valid
+  - `authenticated` if token valid (immediate authentication)
   - `error` if token invalid/expired
 
 #### `preVerifiedAccount`
-- **Purpose**: Account created with pre-verified email
+- **Purpose**: Account created with pre-verified email (legacy state)
 - **Entry Conditions**: Valid invitation token processed
 - **Actions**:
   - Create Auth0 account with `email_verified: true`
@@ -230,6 +241,8 @@ stateDiagram-v2
   - Show successful account creation
 - **User Experience**: Welcome message explaining verified status
 - **Transitions**: `passkeyRecommended` for security enhancement
+- **⚠️ CURRENT STATUS**: This state may be bypassed since `invitationValidation` now transitions directly to `authenticated`
+- **Legacy Flow**: Previously account creation and authentication were separate steps
 
 #### `passkeyRecommended`
 - **Purpose**: Recommend passkey setup for invited users

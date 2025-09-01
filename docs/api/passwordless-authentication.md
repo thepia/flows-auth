@@ -6,7 +6,17 @@ The flows-auth library provides client-side methods for passwordless magic link 
 
 ## API Methods
 
+### Unified Passwordless Endpoint
+
+**⚠️ IMPORTANT**: The `/auth/send-verification` endpoint has been removed and consolidated into `/auth/start-passwordless` for consistency. Both registration and verification use the same unified endpoint.
+
 ### AuthApiClient.startPasswordlessAuthentication()
+
+**⚠️ CRITICAL**: This method serves **DUAL PURPOSE** - both user registration AND login authentication.
+
+- **For non-existent users**: Creates user account and sends verification email
+- **For existing users**: Sends authentication magic link
+- **Side Effect**: When user clicks magic link, Auth0 automatically sets `email_verified: true`
 
 Initiates passwordless magic link authentication flow.
 
@@ -31,6 +41,27 @@ async startPasswordlessAuthentication(email: string): Promise<{
 - `timestamp: number` - Request timestamp for polling Auth0 state
 - `message?: string` - User-friendly message (e.g., "Check your email for a verification link")
 - `user?: object` - User information if available
+
+**Authentication Side Effects:**
+- Creates user account if user doesn't exist
+- Sets `email_verified: true` when user clicks magic link
+- Provides full authentication tokens (not just verification)
+- Works for both initial registration and subsequent logins
+
+### ⚠️ BREAKING CHANGE: sendVerificationEmail() Removed
+
+The `sendVerificationEmail()` method has been **completely removed** in favor of the unified `startPasswordlessAuthentication()` endpoint.
+
+**Migration Required:**
+```typescript
+// ❌ OLD - No longer available
+await client.sendVerificationEmail(email);
+
+// ✅ NEW - Use this instead
+await client.startPasswordlessAuthentication(email);
+```
+
+**Why this change:** Both methods called the same `/auth/start-passwordless` endpoint, creating unnecessary API surface area. The unified method is clearer about its dual purpose (registration + verification).
 
 **Example Usage:**
 ```typescript
@@ -127,31 +158,84 @@ function startPolling(email: string, timestamp: number) {
 
 ## Auth Store Integration
 
-For applications using the auth store pattern, passwordless authentication is handled automatically:
+### Three Store Methods for Different Scenarios
 
+The auth store provides three distinct methods for different registration/authentication needs:
+
+#### 1. registerUser() - Invitation Flow (Immediate Authentication)
 ```typescript
 import { authStore } from '$lib/stores/auth';
 
-// Option 1: Use high-level store method (recommended)
+// For invitation-based registration (e.g., flows apps)
+// User gets authenticated immediately after account creation
 try {
-  await authStore.signInWithMagicLink(email);
+  const response = await authStore.registerUser({
+    email: 'user@company.com',
+    firstName: 'John',
+    lastName: 'Doe',
+    acceptedTerms: true,
+    acceptedPrivacy: true,
+    invitationToken: 'optional-token' // Pre-verifies email if present
+  });
+  
+  // User is immediately authenticated
+  console.log('User created and authenticated:', response.user);
+} catch (error) {
+  console.error('Registration failed:', error);
+}
+```
+
+#### 2. registerIndividualUser() - Individual Registration Flow
+```typescript
+// For app.thepia.net individual registration
+// Requires email verification before authentication
+try {
+  const result = await authStore.registerIndividualUser({
+    email: 'user@personal.com',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    acceptedTerms: true,
+    acceptedPrivacy: true
+  });
+  
+  if (result.success && result.verificationRequired) {
+    console.log('Account created! Please check email for verification.');
+    console.log('Verification message:', result.message);
+    // User must click email link to complete authentication
+  }
+} catch (error) {
+  console.error('Individual registration failed:', error);
+}
+```
+
+#### 3. signInWithMagicLink() - Existing User Login
+```typescript
+// For existing user authentication
+try {
+  await authStore.signInWithMagicLink('existing@user.com');
   console.log('Magic link sent! User will receive email.');
   // Auth store handles the complete flow including polling
 } catch (error) {
   console.error('Magic link authentication failed:', error);
 }
+```
 
-// Option 2: Use low-level API client method
+#### Low-Level API Access
+```typescript
+// Direct API access (manual polling required)
 try {
   const result = await authStore.api.startPasswordlessAuthentication(email);
-  if (result.success && result.sessionId) {
-    console.log('Passwordless flow started, sessionId:', result.sessionId);
+  if (result.success && result.timestamp) {
+    console.log('Passwordless flow started, timestamp:', result.timestamp);
     // You would need to handle polling manually with this approach
   }
 } catch (error) {
   console.error('API call failed:', error);
 }
+```
 
+#### React to Authentication Completion
+```typescript
 // React to authentication completion
 $: if ($authStore.state === 'authenticated' && $authStore.user) {
   console.log('User successfully authenticated via magic link!');

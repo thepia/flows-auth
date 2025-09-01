@@ -2,7 +2,6 @@
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
-import RegistrationTestDebug from '../lib/components/RegistrationTestDebug.svelte';
 
 // Use singleton auth store pattern
 let authStoreFromContext = null;
@@ -25,6 +24,15 @@ let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
 let userStateResult = null;
 let invitationToken = '';
+
+// Enhanced check user state options
+let checkMethod = 'store'; // 'store' or 'api'
+let resultFormat = 'formatted'; // 'formatted' or 'json'
+
+// Registration action feedback
+let registrationError = null;
+let registrationSuccess = null;
+let registrationLoading = false;
 
 // Available demo sections
 const demoSections = [
@@ -131,7 +139,7 @@ async function testRegister() {
       
       if (userCheck.emailVerified === false) {
         console.log('📧 Email not verified - sending verification email');
-        await sendVerificationEmail();
+        await startPasswordlessAuth();
         return;
       } else if (!userCheck.hasWebAuthn) {
         console.log('🔑 Email verified but no passkey - proceeding to passkey registration');
@@ -169,26 +177,22 @@ async function testRegister() {
   }
 }
 
-async function sendVerificationEmail() {
+// Uses the unified /auth/start-passwordless endpoint for all magic link flows
+async function startPasswordlessAuth() {
   if (!authStore || !emailInput.trim()) return;
   
   try {
-    console.log('📧 Sending verification email to:', emailInput);
-    const result = await authStore.api.sendVerificationEmail(emailInput);
+    console.log('📧 Starting passwordless authentication for:', emailInput);
+    const result = await authStore.api.startPasswordlessAuthentication(emailInput);
     
     if (result.success) {
-      console.log('✅ Verification email sent:', result.message);
-      if (result.alreadyVerified) {
-        console.log('✅ Email was already verified, proceeding to passkey setup');
-        await registerPasskey();
-      } else {
-        console.log('📬 Please check your email and click the verification link, then try registering again.');
-      }
+      console.log('✅ Passwordless email sent:', result.message);
+      console.log('📬 Please check your email and click the verification link to continue.');
     } else {
-      console.error('❌ Failed to send verification email:', result.message);
+      console.error('❌ Failed to start passwordless authentication:', result.message);
     }
   } catch (error) {
-    console.error('❌ Error sending verification email:', error);
+    console.error('❌ Error starting passwordless authentication:', error);
   }
 }
 
@@ -249,11 +253,13 @@ async function updateDomain() {
   }
 }
 
-// State-based registration functions
-async function checkUserState() {
-  console.log('🔍 Starting checkUserState function');
+// Enhanced state-based registration function
+async function checkUserStateEnhanced() {
+  console.log('🔍 Starting enhanced checkUserState function');
   console.log('Auth store available:', !!authStore);
   console.log('Email input:', emailInput);
+  console.log('Check method:', checkMethod);
+  console.log('Result format:', resultFormat);
   
   if (!authStore) {
     console.error('❌ No auth store available');
@@ -263,6 +269,8 @@ async function checkUserState() {
       emailVerified: false,
       hasWebAuthn: false,
       error: 'Auth store not available',
+      method: checkMethod,
+      rawResult: null
     };
     return;
   }
@@ -273,22 +281,40 @@ async function checkUserState() {
   }
   
   try {
-    console.log('🔍 Checking user state for:', emailInput);
-    console.log('Auth store methods available:', Object.keys(authStore));
-    console.log('checkUser method type:', typeof authStore.checkUser);
+    let rawResult;
     
-    const userCheck = await authStore.checkUser(emailInput);
-    console.log('✅ User check result:', userCheck);
+    if (checkMethod === 'api') {
+      // Direct API call (like the debug panel)
+      console.log('🔍 Calling API directly for:', emailInput);
+      console.log('API client available:', !!authStore.api);
+      
+      if (!authStore.api) {
+        throw new Error('No API client available on auth store');
+      }
+      
+      rawResult = await authStore.api.checkEmail(emailInput);
+      console.log('✅ Direct API result:', rawResult);
+    } else {
+      // Use auth store method (default)
+      console.log('🔍 Using authStore.checkUser for:', emailInput);
+      console.log('Auth store methods available:', Object.keys(authStore));
+      console.log('checkUser method type:', typeof authStore.checkUser);
+      
+      rawResult = await authStore.checkUser(emailInput);
+      console.log('✅ Auth store result:', rawResult);
+    }
     
     userStateResult = {
       email: emailInput,
-      exists: userCheck.exists || false,
-      emailVerified: userCheck.emailVerified || false,
-      hasWebAuthn: userCheck.hasWebAuthn || userCheck.hasPasskey || false,
-      userId: userCheck.userId,
+      exists: rawResult.exists || false,
+      emailVerified: rawResult.emailVerified || false,
+      hasWebAuthn: rawResult.hasWebAuthn || rawResult.hasPasskey || false,
+      userId: rawResult.userId,
+      method: checkMethod,
+      rawResult: rawResult
     };
     
-    console.log('📊 User state determined:', userStateResult);
+    console.log('📊 Enhanced user state determined:', userStateResult);
   } catch (error) {
     console.error('❌ Failed to check user state:', error);
     console.error('Error details:', {
@@ -303,8 +329,18 @@ async function checkUserState() {
       emailVerified: false,
       hasWebAuthn: false,
       error: error.message || 'Unknown error',
+      method: checkMethod,
+      rawResult: null
     };
   }
+}
+
+// Keep original function for backward compatibility where referenced
+async function checkUserState() {
+  // Just call the enhanced version with default settings
+  checkMethod = 'store';
+  resultFormat = 'formatted';
+  await checkUserStateEnhanced();
 }
 
 function getRegistrationStatus(state) {
@@ -331,10 +367,15 @@ function getRecommendedAction(state) {
 async function executeNewUserRegistration() {
   if (!authStore || !userStateResult?.email) return;
   
+  // Clear previous messages
+  registrationError = null;
+  registrationSuccess = null;
+  registrationLoading = true;
+  
   try {
-    console.log('🆕 Executing new user registration for:', userStateResult.email);
+    console.log('🆕 Executing individual user registration for:', userStateResult.email);
     
-    const result = await authStore.createAccount({
+    const result = await authStore.registerIndividualUser({
       email: userStateResult.email,
       firstName: 'Demo',
       lastName: 'User',
@@ -342,12 +383,29 @@ async function executeNewUserRegistration() {
       acceptedPrivacy: true,
     });
     
-    console.log('✅ New user registration complete:', result);
+    console.log('✅ Individual user registration complete:', result);
+    registrationSuccess = result.message;
     
-    // Refresh user state
-    await checkUserState();
+    // Refresh user state after a short delay
+    setTimeout(async () => {
+      await checkUserState();
+    }, 1000);
+    
   } catch (error) {
     console.error('❌ New user registration failed:', error);
+    
+    // Parse error message
+    if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+      registrationError = 'Rate limit exceeded (max 3 registration attempts per 15 minutes). Please wait before trying again.';
+    } else if (error.message?.includes('already exists')) {
+      registrationError = 'This email is already registered. Try signing in instead.';
+    } else if (error.message?.includes('invalid email')) {
+      registrationError = 'Please enter a valid email address.';
+    } else {
+      registrationError = error.message || 'Registration failed. Please try again.';
+    }
+  } finally {
+    registrationLoading = false;
   }
 }
 
@@ -357,7 +415,7 @@ async function executeResendVerification() {
   try {
     console.log('📧 Resending verification email for:', userStateResult.email);
     
-    const result = await authStore.api.sendVerificationEmail(userStateResult.email);
+    const result = await authStore.api.startPasswordlessAuthentication(userStateResult.email);
     console.log('✅ Verification email sent:', result);
     
     if (result.alreadyVerified) {
@@ -595,7 +653,6 @@ async function runQuickTest() {
         <p>Test registration by first checking actual user state, then following the appropriate flow:</p>
         
         <!-- Debug Panel -->
-        <RegistrationTestDebug {authStore} />
         
         <!-- Quick Test Button -->
         <div class="quick-test card">
@@ -622,9 +679,40 @@ async function runQuickTest() {
                 class="form-input"
               />
             </div>
+
+            <!-- Enhanced options section -->
+            <div class="check-options">
+              <div class="option-group">
+                <label class="option-label">Call Method:</label>
+                <div class="radio-group">
+                  <label class="radio-option">
+                    <input type="radio" bind:group={checkMethod} value="store" />
+                    <span>authStore.checkUser() <em>(recommended)</em></span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" bind:group={checkMethod} value="api" />
+                    <span>Direct API call</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="option-group">
+                <label class="option-label">Result Format:</label>
+                <div class="radio-group">
+                  <label class="radio-option">
+                    <input type="radio" bind:group={resultFormat} value="formatted" />
+                    <span>Formatted display <em>(default)</em></span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" bind:group={resultFormat} value="json" />
+                    <span>Raw JSON</span>
+                  </label>
+                </div>
+              </div>
+            </div>
             
             <div class="action-buttons">
-              <button class="btn btn-primary" on:click={checkUserState} disabled={!emailInput.trim()}>
+              <button class="btn btn-primary" on:click={checkUserStateEnhanced} disabled={!emailInput.trim()}>
                 <User size={16} />
                 Check User State
               </button>
@@ -636,40 +724,75 @@ async function runQuickTest() {
             {#if userStateResult}
               <div class="user-state-result">
                 <h4>User State for: {userStateResult.email}</h4>
-                <div class="state-grid">
-                  <div class="state-item">
-                    <span class="label">Exists:</span>
-                    <span class="value" class:exists={userStateResult.exists} class:not-exists={!userStateResult.exists}>
-                      {userStateResult.exists ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  <div class="state-item">
-                    <span class="label">Email Verified:</span>
-                    <span class="value" class:verified={userStateResult.emailVerified} class:unverified={!userStateResult.emailVerified}>
-                      {userStateResult.emailVerified ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  <div class="state-item">
-                    <span class="label">Has Passkey:</span>
-                    <span class="value" class:has-passkey={userStateResult.hasWebAuthn} class:no-passkey={!userStateResult.hasWebAuthn}>
-                      {userStateResult.hasWebAuthn ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                  <div class="state-item">
-                    <span class="label">Registration Status:</span>
-                    <span class="status-badge {getStatusClass(userStateResult)}">
-                      {getRegistrationStatus(userStateResult)}
-                    </span>
-                  </div>
+                <div class="result-meta">
+                  <small>Method: <strong>{userStateResult.method === 'api' ? 'Direct API' : 'Auth Store'}</strong> | Format: <strong>{resultFormat}</strong></small>
                 </div>
+
+                {#if resultFormat === 'json'}
+                  <!-- Raw JSON display -->
+                  <div class="json-result">
+                    <h5>Raw Result:</h5>
+                    <pre class="json-output">{JSON.stringify(userStateResult.rawResult, null, 2)}</pre>
+                    {#if userStateResult.error}
+                      <div class="error-section">
+                        <strong>Error:</strong> {userStateResult.error}
+                      </div>
+                    {/if}
+                  </div>
+                {:else}
+                  <!-- Formatted display -->
+                  <div class="state-grid">
+                    <div class="state-item">
+                      <span class="label">Exists:</span>
+                      <span class="value" class:exists={userStateResult.exists} class:not-exists={!userStateResult.exists}>
+                        {userStateResult.exists ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div class="state-item">
+                      <span class="label">Email Verified:</span>
+                      <span class="value" class:verified={userStateResult.emailVerified} class:unverified={!userStateResult.emailVerified}>
+                        {userStateResult.emailVerified ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div class="state-item">
+                      <span class="label">Has Passkey:</span>
+                      <span class="value" class:has-passkey={userStateResult.hasWebAuthn} class:no-passkey={!userStateResult.hasWebAuthn}>
+                        {userStateResult.hasWebAuthn ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div class="state-item">
+                      <span class="label">Registration Status:</span>
+                      <span class="status-badge {getStatusClass(userStateResult)}">
+                        {getRegistrationStatus(userStateResult)}
+                      </span>
+                    </div>
+                  </div>
+                {/if}
                 
                 <!-- Show appropriate registration action -->
                 <div class="recommended-action">
                   <h4>Recommended Action:</h4>
+                  
+                  {#if registrationError}
+                    <div class="alert alert-error">
+                      <strong>Error:</strong> {registrationError}
+                    </div>
+                  {/if}
+                  
+                  {#if registrationSuccess}
+                    <div class="alert alert-success">
+                      <strong>Success:</strong> {registrationSuccess}
+                    </div>
+                  {/if}
+                  
                   {#if getRecommendedAction(userStateResult) === 'new-registration'}
-                    <button class="btn btn-success" on:click={executeNewUserRegistration} disabled={isAuthenticated}>
+                    <button 
+                      class="btn btn-success" 
+                      on:click={executeNewUserRegistration} 
+                      disabled={isAuthenticated || registrationLoading}
+                    >
                       <User size={16} />
-                      Complete New User Registration
+                      {registrationLoading ? 'Registering...' : 'Complete New User Registration'}
                     </button>
                     <p class="action-note">This will create a new account, send verification email, and set up passkey.</p>
                   {:else if getRecommendedAction(userStateResult) === 'resend-verification'}
@@ -1260,6 +1383,56 @@ async function runQuickTest() {
     margin-bottom: 0.25rem;
   }
   
+  /* Check Options Styles */
+  .check-options {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  .option-group {
+    margin-bottom: 1rem;
+  }
+
+  .option-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .option-label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+
+  .radio-option input[type="radio"] {
+    margin: 0;
+  }
+
+  .radio-option span em {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.8rem;
+  }
+
   /* User State Display Styles */
   .user-state-result {
     margin-top: 1.5rem;
@@ -1267,6 +1440,62 @@ async function runQuickTest() {
     background: var(--background-muted);
     border-radius: var(--radius);
     border: 1px solid var(--border-color);
+  }
+
+  .result-meta {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+  }
+
+  .json-result {
+    margin-top: 1rem;
+  }
+
+  .json-output {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+    color: #495057;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .error-section {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+  }
+
+  .alert {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+  }
+
+  .alert strong {
+    font-weight: 600;
   }
   
   .user-state-result h4 {

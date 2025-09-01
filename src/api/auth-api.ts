@@ -366,23 +366,6 @@ export class AuthApiClient {
     return result;
   }
 
-  /**
-   * Send verification email to an existing user
-   */
-  async sendVerificationEmail(email: string): Promise<{
-    success: boolean;
-    message: string;
-    alreadyVerified?: boolean;
-  }> {
-    return this.rateLimitedRequest<{
-      success: boolean;
-      message: string;
-      alreadyVerified?: boolean;
-    }>('/auth/send-verification', {
-      method: 'POST',
-      body: JSON.stringify({ email })
-    });
-  }
 
   /**
    * Request password reset

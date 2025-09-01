@@ -70,33 +70,35 @@ The flows-auth library is designed as a **client-only** solution that works in t
 ```svelte
 <!-- Your Svelte component -->
 <script>
-  import { createAuthStore } from '@thepia/flows-auth';
-  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
+  import { setAuthContext } from '@thepia/flows-auth';
 
-  const authConfig = {
-    apiBaseUrl: 'https://api.thepia.com',
-    enablePasskeys: true,
-    enableMagicLinks: true,
-    domain: 'thepia.net'
-  };
+  // ✅ CRITICAL: Use setAuthContext during component initialization, NOT createAuthStore in every component
+  // This creates a singleton auth store that can be accessed anywhere with useAuth()
+  if (browser) {
+    (async () => {
+      const authConfig = {
+        apiBaseUrl: 'https://api.thepia.com',
+        enablePasskeys: true,
+        enableMagicLinks: true,
+        domain: 'thepia.net'
+      };
 
-  const authStore = createAuthStore(authConfig);
+      const authStore = setAuthContext(authConfig);
+      
+      // Initialize auth state on client
+      authStore.initialize();
+    })();
+  }
 
-  onMount(() => {
-    // Initialize auth state on client
-    authStore.checkSession();
-  });
-
-  $: isAuthenticated = !!$authStore.user;
+  // For components that need auth state, import useAuth instead:
+  // import { useAuth } from '@thepia/flows-auth';
+  // const auth = useAuth();
+  // $: isAuthenticated = !!$auth.user;
 </script>
 
-{#if isAuthenticated}
-  <!-- Authenticated content -->
-  <slot />
-{:else}
-  <!-- Show sign-in form -->
-  <SignInForm config={authConfig} />
-{/if}
+<!-- This component should be split - initialization goes in layout, UI goes in pages -->
+<!-- See examples/auth-demo for proper implementation pattern -->
 ```
 
 **Important**: This library is client-only and designed for CDN deployment.

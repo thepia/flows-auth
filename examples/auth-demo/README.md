@@ -125,6 +125,33 @@ Modify `src/lib/config/auth.js` to customize:
 - "Powered by" footer
 - Theme colors
 
+## Testing
+
+### Smoke Tests
+
+Smoke tests validate that the page loads correctly and key functions are available:
+
+```bash
+# Run smoke tests (USER MUST RUN THIS - not automated)
+pnpm test:smoke
+
+# Run with UI (recommended for development)  
+pnpm test:ui
+```
+
+**Important**: Tests must be run manually by the user. They validate:
+
+1. **Page loading** - No critical JavaScript errors
+2. **Function imports** - `useAuth` and `quickAuthSetup` available  
+3. **Component rendering** - Tabs and forms render correctly
+4. **API configuration** - Error reporting properly configured
+
+### Known Issues & Fixes
+
+1. **Domain undefined error**: ✅ Fixed - `quickAuthSetup()` now properly defaults domain
+2. **SSL certificate issues**: ⚠️ Local API detection fails gracefully, uses production  
+3. **Function import errors**: ✅ Fixed - All exports properly available
+
 ## Development
 
 ### Cache Management
@@ -132,10 +159,15 @@ Modify `src/lib/config/auth.js` to customize:
 - No-cache headers for fresh builds
 - HMR disabled to prevent reload loops
 
-### SSL Requirements
+### SSL Requirements & Local API Server
 - HTTPS required for WebAuthn/passkey testing
 - Uses certificates from `../tasks-app-demo/certs/`
 - Port 5177 configured in SSL certificates
+
+**Local API Server Detection:**
+- Tries `https://dev.thepia.com:8443/health` first
+- If SSL certificate invalid → Falls back to production gracefully
+- All functionality works with production API fallback
 
 ### Debugging
 - Comprehensive console logging

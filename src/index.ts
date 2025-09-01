@@ -32,6 +32,34 @@ export {
   createAuthStore,
 } from './stores/auth-store';
 
+// Global Auth Store Singleton (recommended approach)
+export {
+  initializeAuth,
+  getGlobalAuthStore,
+  isAuthStoreInitialized,
+  getGlobalAuthConfig,
+  resetGlobalAuthStore,
+  updateGlobalAuthConfig,
+  getOrInitializeAuth,
+  isGlobalAuthStore,
+  assertAuthConfig,
+  type GlobalAuthStore,
+  type AuthStoreInitializer,
+  type AuthStoreGetter
+} from './stores/global-auth-store';
+
+// Auth Context Utilities (Svelte-specific helpers)
+export {
+  setAuthContext,
+  getAuthContext,
+  tryGetAuthContext,
+  hasAuthContext,
+  useAuth,
+  useAuthSafe,
+  createAuthStateStore,
+  useOptionalAuth
+} from './utils/auth-context';
+
 // Types
 export type * from './types';
 export type { StorageConfig } from './types';

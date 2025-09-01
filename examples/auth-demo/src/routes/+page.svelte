@@ -2,10 +2,11 @@
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
+import RegistrationTestDebug from '../lib/components/RegistrationTestDebug.svelte';
 
-// Get auth store and config from context
-const authStoreContainer = getContext('authStore');
-const authConfigContainer = getContext('authConfig');
+// Use singleton auth store pattern
+let authStoreFromContext = null;
+let authConfigFromSingleton = null;
 
 // Component state
 let authStore = null;
@@ -19,7 +20,11 @@ let stateMachineContext = null;
 // Demo controls
 let selectedDemo = 'overview';
 let emailInput = '';
-let testEmail = 'demo@acme.corp';
+let testEmail = 'demo@example.com';
+let currentDomain = 'dev.thepia.net';
+let domainOptions = ['dev.thepia.net', 'thepia.net'];
+let userStateResult = null;
+let invitationToken = '';
 
 // Available demo sections
 const demoSections = [
@@ -35,41 +40,55 @@ onMount(async () => {
   
   console.log('🎯 Demo page initializing...');
   
-  // Wait for auth store to be available from context
-  const unsubscribeStore = authStoreContainer.subscribe((store) => {
-    if (store) {
-      authStore = store;
-      console.log('🔐 Auth store received in demo page');
-      
-      // Subscribe to auth state changes
-      authStore.subscribe((state) => {
-        isAuthenticated = state.state === 'authenticated';
-        currentUser = state.user;
-        authState = state.state;
-        console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
-      });
-      
-      // Subscribe to state machine updates if available
-      if (authStore.stateMachine) {
-        authStore.stateMachine.subscribe((sm) => {
-          stateMachineState = sm.state;
-          stateMachineContext = sm.context;
-          console.log('🔧 State machine update:', { state: sm.state });
-        });
+  try {
+    // Use the global auth store (not context-based)
+    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
+    
+    // Wait for layout to initialize the global auth store
+    let attempts = 0;
+    while (!authStore && attempts < 20) {
+      try {
+        authStore = getGlobalAuthStore();
+        break; // Success - exit loop
+      } catch (error) {
+        // Auth store not yet initialized, wait and try again
+        await new Promise(resolve => setTimeout(resolve, 50));
+        attempts++;
       }
-      
-      unsubscribeStore();
     }
-  });
-  
-  // Wait for auth config
-  const unsubscribeConfig = authConfigContainer.subscribe((config) => {
-    if (config) {
-      authConfig = config;
-      console.log('⚙️ Auth config received in demo page');
-      unsubscribeConfig();
+    
+    if (!authStore) {
+      throw new Error('Auth store not available after waiting');
     }
-  });
+    
+    console.log('🔐 Auth store retrieved using proper pattern');
+    
+    // Get config from global singleton
+    authConfig = getGlobalAuthConfig();
+    console.log('⚙️ Auth config retrieved from singleton');
+    
+    // Subscribe to auth state changes
+    authStore.subscribe((state) => {
+      isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+      currentUser = state.user;
+      authState = state.state;
+      console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
+    });
+    
+    // Subscribe to state machine updates if available
+    if (authStore.stateMachine) {
+      authStore.stateMachine.subscribe((sm) => {
+        stateMachineState = sm.state;
+        stateMachineContext = sm.context;
+        console.log('🔧 State machine update:', { state: sm.state });
+      });
+    }
+    
+    console.log('✅ Demo page initialization complete');
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize demo page:', error);
+  }
 });
 
 // Demo actions
@@ -215,6 +234,194 @@ function setTestEmail(email) {
 function selectDemo(sectionId) {
   selectedDemo = sectionId;
 }
+
+async function updateDomain() {
+  if (!authConfig) return;
+  
+  // Update the auth config with new domain
+  authConfig.domain = currentDomain;
+  console.log('🌐 Updated domain to:', currentDomain);
+  
+  // If auth store exists, we might need to reinitialize with new domain
+  // This is important for passkey registration to work with correct domain
+  if (authStore) {
+    console.log('⚠️ Domain change requires re-initialization for passkeys to work correctly');
+  }
+}
+
+// State-based registration functions
+async function checkUserState() {
+  console.log('🔍 Starting checkUserState function');
+  console.log('Auth store available:', !!authStore);
+  console.log('Email input:', emailInput);
+  
+  if (!authStore) {
+    console.error('❌ No auth store available');
+    userStateResult = {
+      email: emailInput,
+      exists: false,
+      emailVerified: false,
+      hasWebAuthn: false,
+      error: 'Auth store not available',
+    };
+    return;
+  }
+  
+  if (!emailInput.trim()) {
+    console.error('❌ No email input provided');
+    return;
+  }
+  
+  try {
+    console.log('🔍 Checking user state for:', emailInput);
+    console.log('Auth store methods available:', Object.keys(authStore));
+    console.log('checkUser method type:', typeof authStore.checkUser);
+    
+    const userCheck = await authStore.checkUser(emailInput);
+    console.log('✅ User check result:', userCheck);
+    
+    userStateResult = {
+      email: emailInput,
+      exists: userCheck.exists || false,
+      emailVerified: userCheck.emailVerified || false,
+      hasWebAuthn: userCheck.hasWebAuthn || userCheck.hasPasskey || false,
+      userId: userCheck.userId,
+    };
+    
+    console.log('📊 User state determined:', userStateResult);
+  } catch (error) {
+    console.error('❌ Failed to check user state:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    userStateResult = {
+      email: emailInput,
+      exists: false,
+      emailVerified: false,
+      hasWebAuthn: false,
+      error: error.message || 'Unknown error',
+    };
+  }
+}
+
+function getRegistrationStatus(state) {
+  if (!state.exists) return 'New User';
+  if (!state.emailVerified) return 'Unverified Email';
+  if (!state.hasWebAuthn) return 'Missing Passkey';
+  return 'Fully Registered';
+}
+
+function getStatusClass(state) {
+  if (!state.exists) return 'new';
+  if (!state.emailVerified) return 'unverified';
+  if (!state.hasWebAuthn) return 'partial';
+  return 'complete';
+}
+
+function getRecommendedAction(state) {
+  if (!state.exists) return 'new-registration';
+  if (!state.emailVerified) return 'resend-verification';
+  if (!state.hasWebAuthn) return 'passkey-setup';
+  return 'use-signin';
+}
+
+async function executeNewUserRegistration() {
+  if (!authStore || !userStateResult?.email) return;
+  
+  try {
+    console.log('🆕 Executing new user registration for:', userStateResult.email);
+    
+    const result = await authStore.createAccount({
+      email: userStateResult.email,
+      firstName: 'Demo',
+      lastName: 'User',
+      acceptedTerms: true,
+      acceptedPrivacy: true,
+    });
+    
+    console.log('✅ New user registration complete:', result);
+    
+    // Refresh user state
+    await checkUserState();
+  } catch (error) {
+    console.error('❌ New user registration failed:', error);
+  }
+}
+
+async function executeResendVerification() {
+  if (!authStore || !userStateResult?.email) return;
+  
+  try {
+    console.log('📧 Resending verification email for:', userStateResult.email);
+    
+    const result = await authStore.api.sendVerificationEmail(userStateResult.email);
+    console.log('✅ Verification email sent:', result);
+    
+    if (result.alreadyVerified) {
+      console.log('🎉 Email was already verified!');
+      await checkUserState();
+    }
+  } catch (error) {
+    console.error('❌ Failed to send verification email:', error);
+  }
+}
+
+async function executePasskeySetup() {
+  if (!authStore || !userStateResult?.email) return;
+  
+  try {
+    console.log('🔑 Setting up passkey for verified user:', userStateResult.email);
+    
+    // For verified users, we complete the registration with passkey
+    const result = await authStore.createAccount({
+      email: userStateResult.email,
+      firstName: 'Demo',
+      lastName: 'User',
+      acceptedTerms: true,
+      acceptedPrivacy: true,
+    });
+    
+    console.log('✅ Passkey setup complete:', result);
+    
+    // Refresh user state
+    await checkUserState();
+  } catch (error) {
+    console.error('❌ Passkey setup failed:', error);
+  }
+}
+
+async function executeInvitationRegistration() {
+  if (!authStore || !invitationToken.trim()) return;
+  
+  try {
+    console.log('🎫 Executing invitation registration with token');
+    
+    const result = await authStore.createAccount({
+      invitationToken: invitationToken,
+      acceptedTerms: true,
+      acceptedPrivacy: true,
+    });
+    
+    console.log('✅ Invitation registration complete:', result);
+    
+    // Clear token and refresh state if email was extracted
+    invitationToken = '';
+    if (result.user?.email) {
+      emailInput = result.user.email;
+      await checkUserState();
+    }
+  } catch (error) {
+    console.error('❌ Invitation registration failed:', error);
+  }
+}
+
+async function runQuickTest() {
+  const { runTestAndDisplay } = await import('../lib/test/checkUserTest.js');
+  return runTestAndDisplay();
+}
 </script>
 
 <div class="demo-container">
@@ -246,8 +453,12 @@ function selectDemo(sectionId) {
             </div>
             {#if authConfig}
               <div class="config-info">
-                <span class="brand-badge">{authConfig.branding?.companyName || 'Default'}</span>
                 <span class="domain-badge">{authConfig.domain}</span>
+                <select class="domain-select" bind:value={currentDomain} on:change={updateDomain}>
+                  {#each domainOptions as domain}
+                    <option value={domain}>{domain}</option>
+                  {/each}
+                </select>
               </div>
             {/if}
           </div>
@@ -340,11 +551,11 @@ function selectDemo(sectionId) {
           
           <div class="quick-emails">
             <span>Quick test emails:</span>
-            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('demo@acme.corp')}>
-              demo@acme.corp
+            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('demo@example.com')}>
+              demo@example.com
             </button>
-            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('test@example.com')}>
-              test@example.com
+            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('test@thepia.net')}>
+              test@thepia.net
             </button>
           </div>
           
@@ -381,50 +592,195 @@ function selectDemo(sectionId) {
     {:else if selectedDemo === 'register'}
       <div class="content-section">
         <h2>Registration Flow Demo</h2>
-        <p>Test the complete email verification and registration flow:</p>
+        <p>Test registration by first checking actual user state, then following the appropriate flow:</p>
         
-        <div class="demo-controls">
-          <div class="input-group">
-            <label for="reg-email">Email Address for New Account</label>
-            <input 
-              id="reg-email" 
-              type="email" 
-              bind:value={emailInput}
-              placeholder="Enter new email for registration..." 
-              class="form-input"
-            />
+        <!-- Debug Panel -->
+        <RegistrationTestDebug {authStore} />
+        
+        <!-- Quick Test Button -->
+        <div class="quick-test card">
+          <div class="card-body">
+            <button class="btn btn-info" on:click={runQuickTest}>
+              🧪 Run Quick checkUser Test
+            </button>
           </div>
-          
-          <div class="action-buttons">
-            <button class="btn btn-primary" on:click={testRegister} disabled={!emailInput.trim() || isAuthenticated}>
-              <User size={16} />
-              Register with Email Verification
-            </button>
-            <button class="btn btn-secondary" on:click={sendVerificationEmail} disabled={!emailInput.trim()}>
+        </div>
+        
+        <!-- User State Checker -->
+        <div class="user-checker card">
+          <div class="card-header">
+            <h3>1. Check User State</h3>
+          </div>
+          <div class="card-body">
+            <div class="input-group">
+              <label for="check-email">Email Address</label>
+              <input 
+                id="check-email" 
+                type="email" 
+                bind:value={emailInput}
+                placeholder="Enter email to check registration status" 
+                class="form-input"
+              />
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-primary" on:click={checkUserState} disabled={!emailInput.trim()}>
+                <User size={16} />
+                Check User State
+              </button>
+              <button class="btn btn-outline" on:click={() => userStateResult = null}>
+                Clear Results
+              </button>
+            </div>
+            
+            {#if userStateResult}
+              <div class="user-state-result">
+                <h4>User State for: {userStateResult.email}</h4>
+                <div class="state-grid">
+                  <div class="state-item">
+                    <span class="label">Exists:</span>
+                    <span class="value" class:exists={userStateResult.exists} class:not-exists={!userStateResult.exists}>
+                      {userStateResult.exists ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div class="state-item">
+                    <span class="label">Email Verified:</span>
+                    <span class="value" class:verified={userStateResult.emailVerified} class:unverified={!userStateResult.emailVerified}>
+                      {userStateResult.emailVerified ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div class="state-item">
+                    <span class="label">Has Passkey:</span>
+                    <span class="value" class:has-passkey={userStateResult.hasWebAuthn} class:no-passkey={!userStateResult.hasWebAuthn}>
+                      {userStateResult.hasWebAuthn ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div class="state-item">
+                    <span class="label">Registration Status:</span>
+                    <span class="status-badge {getStatusClass(userStateResult)}">
+                      {getRegistrationStatus(userStateResult)}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Show appropriate registration action -->
+                <div class="recommended-action">
+                  <h4>Recommended Action:</h4>
+                  {#if getRecommendedAction(userStateResult) === 'new-registration'}
+                    <button class="btn btn-success" on:click={executeNewUserRegistration} disabled={isAuthenticated}>
+                      <User size={16} />
+                      Complete New User Registration
+                    </button>
+                    <p class="action-note">This will create a new account, send verification email, and set up passkey.</p>
+                  {:else if getRecommendedAction(userStateResult) === 'resend-verification'}
+                    <button class="btn btn-warning" on:click={executeResendVerification}>
+                      <Mail size={16} />
+                      Resend Email Verification
+                    </button>
+                    <p class="action-note">Email exists but not verified. Send verification email again.</p>
+                  {:else if getRecommendedAction(userStateResult) === 'passkey-setup'}
+                    <button class="btn btn-info" on:click={executePasskeySetup}>
+                      <Key size={16} />
+                      Add Passkey to Verified Account
+                    </button>
+                    <p class="action-note">Email is verified but no passkey. Complete registration with passkey.</p>
+                  {:else if getRecommendedAction(userStateResult) === 'use-signin'}
+                    <button class="btn btn-secondary" on:click={() => selectedDemo = 'signin'}>
+                      <Shield size={16} />
+                      Go to Sign In
+                    </button>
+                    <p class="action-note">User is fully registered. Use sign-in flow instead of registration.</p>
+                  {/if}
+                </div>
+              </div>
+            {/if}
+          </div>
+        </div>
+        
+        <!-- Registration Scenarios Documentation -->
+        <div class="scenarios-info card">
+          <div class="card-header">
+            <h3>2. Registration Flow Scenarios</h3>
+          </div>
+          <div class="card-body">
+            <p>The registration system handles these different user states automatically:</p>
+            
+            <div class="scenario-grid">
+              <div class="scenario-doc">
+                <div class="scenario-header">
+                  <span class="scenario-badge new">NEW USER</span>
+                  <h4>New User Registration</h4>
+                </div>
+                <p><strong>When:</strong> Email doesn't exist in system</p>
+                <p><strong>Flow:</strong> Create account → Send verification email → Email verification → Passkey setup → Complete</p>
+              </div>
+              
+              <div class="scenario-doc">
+                <div class="scenario-header">
+                  <span class="scenario-badge unverified">UNVERIFIED</span>
+                  <h4>Email Verification Needed</h4>
+                </div>
+                <p><strong>When:</strong> User exists but email not verified</p>
+                <p><strong>Flow:</strong> Resend verification email → Email verification → Passkey setup → Complete</p>
+              </div>
+              
+              <div class="scenario-doc">
+                <div class="scenario-header">
+                  <span class="scenario-badge partial">NO PASSKEY</span>
+                  <h4>Passkey Setup Required</h4>
+                </div>
+                <p><strong>When:</strong> Email verified but no passkey registered</p>
+                <p><strong>Flow:</strong> Skip email verification → Passkey setup → Complete</p>
+              </div>
+              
+              <div class="scenario-doc">
+                <div class="scenario-header">
+                  <span class="scenario-badge complete">COMPLETE</span>
+                  <h4>Already Registered</h4>
+                </div>
+                <p><strong>When:</strong> Email verified AND has passkey</p>
+                <p><strong>Flow:</strong> Reject registration → Redirect to sign-in</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Invitation Registration -->
+        <div class="invitation-card card">
+          <div class="card-header">
+            <h3>3. Invitation Token Registration</h3>
+          </div>
+          <div class="card-body">
+            <p>Register using an invitation token (bypasses some verification steps):</p>
+            
+            <div class="input-group">
+              <label for="invitation-token">Invitation Token</label>
+              <input 
+                id="invitation-token" 
+                type="text" 
+                bind:value={invitationToken}
+                placeholder="Paste invitation token here" 
+                class="form-input"
+              />
+            </div>
+            
+            <button class="btn btn-primary" on:click={executeInvitationRegistration} disabled={!invitationToken.trim() || isAuthenticated}>
               <Mail size={16} />
-              Send Verification Email
+              Register with Invitation
             </button>
+            
+            <p class="action-note">Invitation tokens pre-fill user data and may skip email verification.</p>
           </div>
         </div>
         
         <div class="info-card card">
           <div class="card-body">
-            <h4>What This Button Does (Email Verification Flow):</h4>
-            <ol>
-              <li><strong>Checks if email exists</strong> and its verification status</li>
-              <li><strong>New users:</strong> Creates account and proceeds to passkey setup</li>
-              <li><strong>Existing users with unverified email:</strong> Sends verification email</li>
-              <li><strong>Existing users with verified email but no passkey:</strong> Registers passkey</li>
-              <li><strong>Existing users with passkey:</strong> Prompts to use Sign In instead</li>
-            </ol>
-            
-            <div class="alert alert-info" style="margin-top: 1rem;">
-              <strong>Note:</strong> This demonstrates the proper registration flow that handles email verification requirements and prevents duplicate accounts.
-            </div>
+            <h4>Domain Configuration: {currentDomain}</h4>
+            <p>Passkeys will be registered for this domain. Make sure it matches your testing environment.</p>
             
             {#if !window?.PublicKeyCredential}
               <div class="alert alert-warning" style="margin-top: 1rem;">
-                <strong>Warning:</strong> Your browser doesn't support WebAuthn/Passkeys. Registration may fail.
+                <strong>Warning:</strong> Your browser doesn't support WebAuthn/Passkeys. Registration will fail.
               </div>
             {/if}
           </div>
@@ -631,6 +987,17 @@ function selectDemo(sectionId) {
     color: var(--text-secondary);
   }
   
+  .domain-select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: white;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+  
   .demo-nav {
     display: flex;
     gap: 1rem;
@@ -811,6 +1178,206 @@ function selectDemo(sectionId) {
     border-radius: var(--radius-sm);
   }
   
+  /* Registration Scenario Styles */
+  .registration-scenarios {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .scenario-card {
+    border-left: 4px solid var(--primary-color);
+  }
+  
+  .scenario-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .scenario-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  
+  .scenario-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .scenario-badge.new {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .scenario-badge.unverified {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .scenario-badge.partial {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+  
+  .scenario-badge.complete {
+    background: #f3e8ff;
+    color: #7c2d12;
+  }
+  
+  .scenario-badge.invitation {
+    background: #fce7f3;
+    color: #be185d;
+  }
+  
+  .scenario-flow {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+  }
+  
+  .scenario-flow h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+  
+  .scenario-flow ol {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  
+  .scenario-flow li {
+    margin-bottom: 0.25rem;
+  }
+  
+  /* User State Display Styles */
+  .user-state-result {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--background-muted);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+  }
+  
+  .user-state-result h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
+  
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .state-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--background-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+  
+  .state-item .label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  
+  .state-item .value {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .value.exists, .value.verified, .value.has-passkey {
+    background: #dcfce7;
+    color: #166534;
+  }
+  
+  .value.not-exists, .value.unverified, .value.no-passkey {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .recommended-action {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--background-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+  
+  .recommended-action h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+  }
+  
+  .action-note {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+  
+  /* Scenario Documentation Styles */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .scenario-doc {
+    padding: 1rem;
+    background: var(--background-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+  
+  .scenario-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .scenario-doc h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+  
+  .scenario-doc p {
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
   @media (max-width: 768px) {
     .hero-title {
       font-size: 2rem;
@@ -828,6 +1395,12 @@ function selectDemo(sectionId) {
     
     .action-buttons {
       flex-direction: column;
+    }
+    
+    .scenario-card .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
     }
   }
 </style>

@@ -1,61 +1,54 @@
 <script>
 import { browser } from '$app/environment';
-import { onMount, setContext } from 'svelte';
-import { writable } from 'svelte/store';
+import { onMount } from 'svelte';
 import '../app.css';
 
-// Single source of truth for auth state
-let authStore = null;
-let authConfig = null;
+// Auth state for reactivity
 let isAuthenticated = false;
 let user = null;
+let authStore = null;
+let authConfig = null;
 
-// Create writable stores for context
-const authStoreContainer = writable(null);
-const authConfigContainer = writable(null);
-
-// Set context immediately (before onMount)
-setContext('authStore', authStoreContainer);
-setContext('authConfig', authConfigContainer);
-
-onMount(async () => {
-  if (!browser) return;
-  
-  try {
-    console.log('🚀 Initializing auth demo...');
-    
-    // Dynamic import to avoid SSR issues
-    const { createAuthStore } = await import('@thepia/flows-auth');
-    const { getCachedAuthConfig } = await import('../lib/config/auth.js');
-    
-    // Get the central config (single source of truth)
-    authConfig = await getCachedAuthConfig();
-    console.log('⚙️ Auth config loaded:', authConfig);
-    
-    // Create the single auth store
-    authStore = createAuthStore(authConfig);
-    console.log('🔐 Auth store created');
-    
-    // Update context containers
-    authStoreContainer.set(authStore);
-    authConfigContainer.set(authConfig);
-    
-    // Subscribe to auth state changes
-    authStore.subscribe((state) => {
-      isAuthenticated = state.state === 'authenticated';
-      user = state.user;
-      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
-    });
-    
-    // Initialize the auth store (check for existing session)
-    authStore.initialize();
-    
-    console.log('✅ Auth demo initialization complete');
-    
-  } catch (error) {
-    console.error('❌ Failed to initialize auth demo:', error);
-  }
-});
+// ✅ PROPER SOLUTION: Use global auth store instead of Svelte context
+// Svelte context requires synchronous initialization, but we need async imports
+// The global singleton pattern works better for this use case
+if (browser) {
+  (async () => {
+    try {
+      console.log('🚀 Initializing auth demo with global singleton pattern...');
+      
+      // Dynamic import to avoid SSR issues
+      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
+      
+      // Create auth config asynchronously
+      authConfig = await quickAuthSetup({
+        companyName: 'Auth Demo',
+        clientId: 'auth-demo',
+        enableErrorReporting: true,
+      });
+      console.log('⚙️ Auth config created with library utilities:', authConfig);
+      
+      // Initialize global auth store (not Svelte context)
+      authStore = initializeAuth(authConfig);
+      console.log('🔐 Global auth store initialized');
+      
+      // Subscribe to auth state changes
+      authStore.subscribe((state) => {
+        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+        user = state.user;
+        console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+      });
+      
+      // Initialize the auth store (check for existing session)
+      authStore.initialize();
+      
+      console.log('✅ Auth demo initialization complete');
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize auth demo:', error);
+    }
+  })();
+}
 </script>
 
 <div class="app" class:authenticated={isAuthenticated}>

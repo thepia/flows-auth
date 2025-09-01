@@ -43,3 +43,4 @@ pnpm-debug.log*
 
 
 vite.config.ts.timestamp*
+/examples/auth-demo/test-results

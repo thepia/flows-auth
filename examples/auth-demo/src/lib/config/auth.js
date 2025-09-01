@@ -63,9 +63,9 @@ export async function getAuthConfig() {
     enablePasskeys: true,
     enableMagicLinks: true,
     
-    // Branding Configuration - This is key for white-labeling
+    // Branding Configuration - Simple for demo purposes
     branding: {
-      companyName: 'Acme Corporation',
+      companyName: 'Demo App',
       logoUrl: undefined, // Could be a URL to company logo
       primaryColor: '#2563eb', // Blue theme
       secondaryColor: '#1e40af',

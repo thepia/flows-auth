@@ -9,7 +9,7 @@
   let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
   let logStateChange: ((component: string, state: any) => void) | null = null;
   
-  // Auth store for proper sign out
+  // Get the global auth store (don't create a new one!)
   let authStore: any = null;
   
   if (browser && dev) {
@@ -31,12 +31,13 @@
   onMount(async () => {
     if (!browser) return;
 
-    // Initialize auth store
+    // Use the global auth store instead of creating a new one
     try {
-      const { createAuthStore } = await import('@thepia/flows-auth');
+      const { getOrInitializeAuth } = await import('@thepia/flows-auth');
       const currentScenario = await devScenarioManager.getCurrentScenario();
       
-      authStore = createAuthStore({
+      // Try to get existing auth store, or initialize if not available
+      authStore = await getOrInitializeAuth({
         apiBaseUrl: currentScenario.config.apiBaseUrl,
         clientId: currentScenario.config.clientId,
         domain: 'dev.thepia.net',
@@ -51,9 +52,9 @@
         }
       });
       
-      console.log('✅ Auth store initialized for AccountIcon');
+      console.log('✅ Global auth store accessed from AccountIcon');
     } catch (error) {
-      console.error('❌ Failed to initialize auth store:', error);
+      console.error('❌ Failed to access auth store:', error);
     }
 
     // Check for existing session in localStorage

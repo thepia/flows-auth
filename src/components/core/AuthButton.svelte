@@ -48,9 +48,9 @@ function getDisplayText(): string {
   }
   
   switch (method) {
-    case 'passkey': return supportsWebAuthn ? '🔑 Sign in with Passkey' : '🔑 Sign in';
-    case 'email': return '✉️ Send Magic Link';
-    case 'magic-link': return '✉️ Send Magic Link';
+    case 'passkey': return supportsWebAuthn ? 'Sign in with Passkey' : 'Sign in';
+    case 'email': return 'Send Magic Link';
+    case 'magic-link': return 'Send Magic Link';
     default: return 'Continue';
   }
 }

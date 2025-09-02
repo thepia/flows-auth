@@ -563,6 +563,13 @@ export class AuthApiClient {
       id: string;
     };
   }> {
+    console.log('🔗 Starting passwordless authentication:', {
+      email,
+      clientId: this.config.clientId,
+      apiBaseUrl: this.config.apiBaseUrl,
+      requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
+    });
+    
     return this.request<{
       success: boolean;
       timestamp: number;
@@ -576,6 +583,7 @@ export class AuthApiClient {
       body: JSON.stringify({
         email: email,
         clientId: this.config.clientId
+        // Server should determine redirectUri based on clientId and origin
       })
     });
   }

@@ -55,16 +55,22 @@ let platformAuthenticatorAvailable = false;
 
 // Initialize component
 onMount(async () => {
-  supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
+  // Determine what authentication methods are available
+  const browserSupportsWebAuthn = isWebAuthnSupported();
+  
+  supportsWebAuthn = browserSupportsWebAuthn && config.enablePasskeys;
   platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
 
-  console.log('🔐 SignInCore WebAuthn Status:', {
+  console.log('🔐 SignInCore Authentication Methods:', {
+    browserSupportsWebAuthn,
     supportsWebAuthn,
     platformAuthenticatorAvailable,
     enablePasskeys: config.enablePasskeys,
+    enableMagicLinks: config.enableMagicLinks,
+    signInMode: config.signInMode,
   });
 
-  // If initial email is provided, trigger conditional auth
+  // If initial email is provided, trigger conditional auth (only if passkeys enabled)
   if (initialEmail && supportsWebAuthn) {
     await startConditionalAuthentication();
   }
@@ -74,6 +80,14 @@ onMount(async () => {
 async function handleEmailChange(event: CustomEvent<{value: string}>) {
   email = event.detail.value;
   error = null; // Clear errors when user types
+  
+  console.log('📝 Email changed:', {
+    newEmail: email,
+    emailLength: email.length,
+    emailTrim: email.trim(),
+    emailTrimLength: email.trim().length,
+    buttonShouldBeEnabled: !loading && !!email.trim()
+  });
 }
 
 async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
@@ -123,57 +137,76 @@ async function handleSignIn() {
     userExists = userCheck.exists;
     hasPasskeys = userCheck.hasWebAuthn;
 
-    if (userCheck.hasWebAuthn && supportsWebAuthn) {
-      // Try passkey authentication first
-      try {
-        await handlePasskeyAuth();
-      } catch (passkeyError) {
-        console.warn('Passkey authentication failed:', passkeyError);
-        // Fall back to magic link if enabled
-        if (config.enableMagicLinks) {
-          try {
-            await handleMagicLinkAuth();
-          } catch (magicLinkError) {
-            console.warn('Magic link failed:', magicLinkError);
-            error = getUserFriendlyErrorMessage(magicLinkError);
-            loading = false;
-          }
-        } else {
-          error = getUserFriendlyErrorMessage(passkeyError);
-          loading = false;
-        }
-      }
-    } else if (userExists && config.enableMagicLinks) {
-      // User exists but no passkey - send magic link
-      try {
-        await handleMagicLinkAuth();
-      } catch (magicLinkError) {
-        console.warn('Magic link failed:', magicLinkError);
-        error = 'Failed to send magic link. Please try again.';
+    console.log('🔍 User check result:', { userExists, hasPasskeys, email });
+
+    // Handle non-existing users based on config
+    if (!userExists) {
+      if (config.signInMode === 'login-only') {
+        error = 'No account found for this email address. Please check your email or create an account.';
         loading = false;
+        return;
+      } else {
+        // Transition to registration
+        console.log('🔄 User not found - transitioning to registration');
+        step = 'registration-terms';
+        loading = false;
+        dispatch('stepChange', { step });
+        return;
       }
-    } else if (!userExists) {
-      // User doesn't exist - switch to registration flow
-      step = 'registration-terms';
-      loading = false;
-      dispatch('stepChange', { step });
-    } else {
-      // No authentication methods available
-      error = 'No authentication methods available for this email.';
-      loading = false;
     }
+
+    // User exists - determine authentication method based on config and user capabilities
+    const authMethod = determineAuthMethod(userCheck);
+    console.log('🔐 Determined auth method:', authMethod);
+
+    switch (authMethod) {
+      case 'passkey-only':
+        await handlePasskeyAuth();
+        break;
+      
+      case 'passkey-with-fallback':
+        try {
+          await handlePasskeyAuth();
+        } catch (passkeyError) {
+          console.warn('Passkey authentication failed:', passkeyError);
+          // Fall back to email if enabled
+          await handleMagicLinkAuth();
+        }
+        break;
+      
+      case 'email-only':
+        await handleMagicLinkAuth();
+        break;
+      
+      default:
+        error = 'No authentication methods available for this email.';
+        loading = false;
+    }
+
   } catch (err: any) {
     loading = false;
     error = getUserFriendlyErrorMessage(err);
-    
-    if (err.message?.includes('not found') || err.status === 404) {
-      // User doesn't exist - transition to registration
-      console.log('🔄 User not found - transitioning to registration');
-      step = 'registration-terms';
-      error = null;
-      dispatch('stepChange', { step });
-    }
+    console.error('Authentication error:', err);
   }
+}
+
+// Determine the best authentication method based on config and user state
+function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fallback' | 'email-only' | 'none' {
+  const hasPasskeys = userCheck.hasWebAuthn;
+
+  // If user has passkeys and we support them
+  if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
+    // Use passkey with fallback to email if magic links are enabled
+    return config.enableMagicLinks ? 'passkey-with-fallback' : 'passkey-only';
+  }
+  
+  // If user doesn't have passkeys but we have magic links enabled
+  if (config.enableMagicLinks) {
+    return 'email-only';
+  }
+
+  // No authentication methods available
+  return 'none';
 }
 
 // Handle passkey authentication
@@ -217,11 +250,11 @@ function getUserFriendlyErrorMessage(err: any): string {
   const message = err.message || '';
   const status = err.status || 0;
 
-  if (message.includes('/auth/signin/magic-link') || message.includes('not found')) {
+  if (message.includes('not found') || message.includes('404') || message.includes('endpoint')) {
     return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
   }
 
-  if (message.includes('/auth/webauthn/challenge') || status === 404) {
+  if (message.includes('/auth/webauthn/authenticate') || message.includes('/auth/webauthn/challenge') || status === 404) {
     return 'Authentication service temporarily unavailable. Please try again in a moment.';
   }
 
@@ -251,23 +284,57 @@ function resetForm() {
 }
 
 // Determine authentication method and button configuration
-$: authMethod = getAuthMethod();
-$: buttonConfig = getButtonConfig();
+$: authMethodForUI = getAuthMethodForUI(config, supportsWebAuthn);
+$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, supportsWebAuthn);
+$: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebAuthn);
 
-function getAuthMethod(): 'passkey' | 'email' | 'generic' {
-  if (supportsWebAuthn && config.enablePasskeys) return 'passkey';
-  if (config.enableMagicLinks) return 'email';
-  return 'generic';
+function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' | 'generic' {
+  const result = (() => {
+    // Show passkey UI if passkeys are enabled and supported
+    if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
+    
+    // Show email UI if magic links are enabled
+    if (authConfig.enableMagicLinks) return 'email';
+    
+    return 'generic';
+  })();
+  
+  console.log('🎯 getAuthMethodForUI():', {
+    enablePasskeys: authConfig.enablePasskeys,
+    enableMagicLinks: authConfig.enableMagicLinks,
+    supportsWebAuthn: webAuthnSupported,
+    result
+  });
+  
+  return result;
 }
 
-function getButtonConfig() {
-  return {
-    method: authMethod,
-    supportsWebAuthn,
+function getEmailInputWebAuthnEnabled(authConfig, webAuthnSupported): boolean {
+  // Enable WebAuthn autocomplete if passkeys are supported and enabled in config
+  return webAuthnSupported && authConfig.enablePasskeys;
+}
+
+function getButtonConfig(method, isLoading, emailValue, webAuthnSupported) {
+  const buttonConfig = {
+    method: method,
+    supportsWebAuthn: webAuthnSupported,
     text: texts.signInButton,
     loadingText: texts.loadingButton,
-    disabled: loading || !email.trim()
+    disabled: isLoading || !emailValue.trim()
   };
+  
+  console.log('🎯 getButtonConfig():', {
+    authMethodForUI: method,
+    supportsWebAuthn: webAuthnSupported,
+    loading: isLoading,
+    email: emailValue ? `"${emailValue}"` : 'empty',
+    emailTrim: emailValue.trim(),
+    emailTrimLength: emailValue.trim().length,
+    disabled: buttonConfig.disabled,
+    config: buttonConfig
+  });
+  
+  return buttonConfig;
 }
 </script>
 
@@ -281,7 +348,7 @@ function getButtonConfig() {
         placeholder={texts.emailPlaceholder}
         {error}
         disabled={loading}
-        enableWebAuthn={supportsWebAuthn}
+        enableWebAuthn={emailInputWebAuthnEnabled}
         on:change={handleEmailChange}
         on:conditionalAuth={handleConditionalAuth}
       />

@@ -159,6 +159,9 @@ export interface AuthConfig {
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
+  
+  // Authentication flow configuration
+  signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
 }
 
 // Auth0 configuration

@@ -29,6 +29,11 @@ let invitationToken = '';
 let checkMethod = 'store'; // 'store' or 'api'
 let resultFormat = 'formatted'; // 'formatted' or 'json'
 
+// SignIn form configuration options
+let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
+let enablePasskeys = true;
+let enableMagicLinks = true;
+
 // Registration action feedback
 let registrationError = null;
 let registrationSuccess = null;
@@ -480,6 +485,41 @@ async function runQuickTest() {
   const { runTestAndDisplay } = await import('../lib/test/checkUserTest.js');
   return runTestAndDisplay();
 }
+
+// SignInForm event handlers
+function handleSignInSuccess(detail) {
+  console.log('✅ SignInForm Success:', detail);
+  console.log(`🎉 User ${detail.user.email} successfully authenticated via ${detail.method}`);
+}
+
+function handleSignInError(detail) {
+  console.error('❌ SignInForm Error:', detail);
+  console.log(`⚠️ Authentication error: ${detail.error.message || detail.error.code}`);
+}
+
+function handleStepChange(detail) {
+  console.log('🔄 SignInForm Step Change:', detail);
+  console.log(`📍 Authentication flow step: ${detail.step}`);
+}
+
+// Update authConfig when signin configuration changes
+function updateSignInConfig() {
+  if (authConfig) {
+    authConfig.enablePasskeys = enablePasskeys;
+    authConfig.enableMagicLinks = enableMagicLinks;
+    authConfig.signInMode = signInMode;
+    console.log('⚙️ Updated SignInCore config:', {
+      signInMode,
+      enablePasskeys,
+      enableMagicLinks
+    });
+  }
+}
+
+// Reactive update when configuration changes
+$: if (typeof enablePasskeys !== 'undefined' && typeof enableMagicLinks !== 'undefined') {
+  updateSignInConfig();
+}
 </script>
 
 <div class="demo-container">
@@ -593,55 +633,101 @@ async function runQuickTest() {
     {:else if selectedDemo === 'signin'}
       <div class="content-section">
         <h2>Sign In Flow Demo</h2>
-        <p>Test different sign-in methods with the branded SignInForm component:</p>
+        <p>Test different sign-in methods with the core authentication components:</p>
         
         <div class="demo-controls">
-          <div class="input-group">
-            <label for="email">Email Address</label>
-            <input 
-              id="email" 
-              type="email" 
-              bind:value={emailInput}
-              placeholder="Enter email to test..." 
-              class="form-input"
-            />
-          </div>
-          
           <div class="quick-emails">
             <span>Quick test emails:</span>
-            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('demo@example.com')}>
+            <button class="btn btn-outline btn-sm" on:click={() => emailInput = 'demo@example.com'}>
               demo@example.com
             </button>
-            <button class="btn btn-outline btn-sm" on:click={() => setTestEmail('test@thepia.net')}>
+            <button class="btn btn-outline btn-sm" on:click={() => emailInput = 'test@thepia.net'}>
               test@thepia.net
             </button>
-          </div>
-          
-          <div class="action-buttons">
-            <button class="btn btn-primary" on:click={testSignIn} disabled={!emailInput.trim()}>
-              <Mail size={16} />
-              Test Sign In
-            </button>
-            <button class="btn btn-secondary" on:click={testPasskeySignIn} disabled={!emailInput.trim()}>
-              <Key size={16} />
-              Test Passkey
+            <button class="btn btn-outline btn-sm" on:click={() => emailInput = ''}>
+              Clear
             </button>
           </div>
         </div>
         
-        <!-- Embedded SignInForm Component -->
+        <!-- Configuration Controls -->
+        <div class="signin-config card">
+          <div class="card-header">
+            <h3>Authentication Configuration</h3>
+            <p class="text-secondary">Configure the SignInCore component behavior:</p>
+          </div>
+          <div class="card-body">
+            <div class="config-grid">
+              <div class="config-group">
+                <label class="config-label">User Handling:</label>
+                <div class="radio-group">
+                  <label class="radio-option">
+                    <input type="radio" bind:group={signInMode} value="login-only" />
+                    <span>Login Only (error for new users)</span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" bind:group={signInMode} value="login-or-register" />
+                    <span>Login or Register as Needed</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="config-group">
+                <label class="config-label">Authentication Methods:</label>
+                <div class="checkbox-group">
+                  <label class="checkbox-option">
+                    <input type="checkbox" bind:checked={enablePasskeys} />
+                    <span>Enable Passkeys</span>
+                  </label>
+                  <label class="checkbox-option">
+                    <input type="checkbox" bind:checked={enableMagicLinks} />
+                    <span>Enable Magic Links</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="config-info">
+              <p><strong>Current Configuration:</strong></p>
+              <ul>
+                <li>User Handling: {signInMode === 'login-only' ? 'Login Only' : 'Login or Register as Needed'}</li>
+                <li>Passkeys: {enablePasskeys ? 'Enabled' : 'Disabled'}</li>
+                <li>Magic Links: {enableMagicLinks ? 'Enabled' : 'Disabled'}</li>
+                <li>Autocomplete: {enablePasskeys ? 'email webauthn' : 'email'}</li>
+                <li>Auth Flow: {enablePasskeys && enableMagicLinks ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicLinks ? 'Email only' : 'No auth methods'}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live SignInCore Component -->
         {#if authStore && authConfig && !isAuthenticated}
           <div class="signin-demo card">
             <div class="card-header">
-              <h3>Live SignInForm Component</h3>
-              <p class="text-secondary">This is the actual branded component:</p>
+              <h3>Live Sign-In Component</h3>
+              <p class="text-secondary">
+                {#if signInMode === 'login-only'}
+                  Login-only mode - will show error if user doesn't exist
+                {:else}
+                  Login-or-register mode - will automatically handle new users
+                {/if}
+              </p>
             </div>
             <div class="card-body">
-              <!-- We'll add the SignInForm component here -->
-              <div class="signin-placeholder">
-                <p>SignInForm component will be rendered here</p>
-                <p class="text-muted">Using config: {authConfig.branding?.companyName}</p>
-              </div>
+              {#await import('@thepia/flows-auth') then { SignInCore }}
+                <SignInCore 
+                  config={authConfig}
+                  initialEmail={emailInput}
+                  className="demo-signin-form"
+                  on:success={(e) => handleSignInSuccess(e.detail)}
+                  on:error={(e) => handleSignInError(e.detail)}
+                  on:stepChange={(e) => handleStepChange(e.detail)}
+                />
+              {:catch error}
+                <div class="signin-error">
+                  <p>Failed to load SignInCore: {error.message}</p>
+                </div>
+              {/await}
             </div>
           </div>
         {/if}
@@ -1274,6 +1360,16 @@ async function runQuickTest() {
     flex-wrap: wrap;
   }
   
+  .info-note {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    color: #3b82f6;
+    font-size: 0.875rem;
+  }
+  
   .signin-demo, .signin-placeholder {
     margin-bottom: 2rem;
   }
@@ -1605,6 +1701,92 @@ async function runQuickTest() {
     font-size: 0.85rem;
     color: var(--text-secondary);
     line-height: 1.4;
+  }
+
+  /* SignIn Configuration Styles */
+  .signin-config {
+    margin-bottom: 2rem;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .config-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .checkbox-option input[type="checkbox"] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+  }
+
+  .config-info {
+    padding: 1rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .config-info p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .config-info ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .config-info li {
+    margin: 0.25rem 0;
+  }
+
+  /* Demo SignInForm styles */
+  .demo-signin-form {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .signin-error {
+    padding: 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    color: #dc2626;
+    text-align: center;
   }
 
   @media (max-width: 768px) {

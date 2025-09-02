@@ -35,7 +35,6 @@ Our comprehensive review of documentation across `thepia.com/docs` and `flows-au
 - ✅ **Removed inappropriate mocking** - Integration tests now use real API calls
 - ❌ **Tests expect undocumented API behaviors** - No reference to API contracts
 - ❌ **Missing test accounts in API server** - Required test data doesn't exist
-- ❌ **Some API endpoints not implemented** - `/auth/signin/magic-link` returns 404
 
 #### **Impact**:
 - 15/37 integration tests currently failing due to misaligned expectations

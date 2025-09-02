@@ -34,7 +34,7 @@ describe('Error Handling Regression Tests', () => {
   describe('Bug Fix: Technical Error Exposure', () => {
     it('should NOT expose technical API endpoint errors to users', async () => {
       // Simulate the original bug: API returns technical error
-      const technicalError = new Error('Endpoint /auth/signin/magic-link not found');
+      const technicalError = new Error('Endpoint not found');
       mockCheckUser.mockRejectedValue(technicalError);
 
       const { getByText, queryByText } = render(SignInForm, {
@@ -56,8 +56,8 @@ describe('Error Handling Regression Tests', () => {
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Technical error should NOT be visible
-        expect(queryByText('Endpoint /auth/signin/magic-link not found')).toBeNull();
-        expect(queryByText('/auth/signin/magic-link')).toBeNull();
+        expect(queryByText('Endpoint not found')).toBeNull();
+        expect(queryByText('404')).toBeNull();
         expect(queryByText('not found')).toBeNull();
         
         // ✅ Should show user-friendly message OR auto-transition to registration
@@ -71,7 +71,7 @@ describe('Error Handling Regression Tests', () => {
     it('should show user-friendly messages for common API errors', async () => {
       const testCases = [
         {
-          error: new Error('Endpoint /auth/signin/magic-link not found'),
+          error: new Error('Endpoint not found'),
           expectedPattern: /no passkey found|register.*passkey|try again/i
         },
         {

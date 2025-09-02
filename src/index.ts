@@ -135,10 +135,22 @@ export {
 // Version
 export const VERSION = '1.0.4';
 
-// Default configuration factory
+// Default Configuration Utilities (NEW - eliminates app-level duplication)
+export {
+  detectDefaultApiServer,
+  isDevelopmentEnvironment, 
+  createDefaultAuthConfig,
+  quickAuthSetup,
+  getCachedDefaultConfig,
+  resetConfigCache
+} from './utils/default-config';
+
+// Legacy default configuration factory (DEPRECATED)
 export function createDefaultConfig(
   overrides: Partial<import('./types').AuthConfig> = {}
 ): import('./types').AuthConfig {
+  console.warn('createDefaultConfig is deprecated. Use createDefaultAuthConfig instead.');
+  
   const defaults = {
     apiBaseUrl: '',
     clientId: '',

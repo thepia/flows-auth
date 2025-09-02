@@ -201,27 +201,11 @@ describe('AuthApiClient', () => {
   });
 
   describe('Authentication Methods', () => {
-    it('should handle basic sign in', async () => {
-      const mockResponse: SignInResponse = {
-        step: 'password_required'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
-
-      const result = await apiClient.signIn({ email: 'test@example.com' });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/auth/signin',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ email: 'test@example.com' })
-        })
-      );
-
-      expect(result).toEqual(mockResponse);
+    it('should reject basic sign in with deprecated endpoint error', async () => {
+      // The signIn method now throws an error since the endpoint doesn't exist
+      await expect(
+        apiClient.signIn({ email: 'test@example.com' })
+      ).rejects.toThrow('The /auth/signin endpoint is not available. Please use passwordless authentication methods.');
     });
 
     it('should handle password sign in', async () => {

@@ -67,7 +67,7 @@ The following information must be provided by the thepia.com backend team:
 - [ ] **POST /auth/check-user** - ✅ Implemented (based on integration tests)
 - [ ] **POST /auth/webauthn/challenge** - ✅ Implemented (based on integration tests)
 - [ ] **POST /auth/webauthn/verify** - ✅ Implemented (based on integration tests)
-- [ ] **POST /auth/signin/magic-link** - ❌ Not implemented (returns 404 in tests)
+- [x] **POST /auth/start-passwordless** - ✅ Implemented and working
 - [ ] **POST /auth/refresh** - Status unknown
 - [ ] **POST /auth/signout** - Status unknown
 - [ ] **GET /auth/profile** - Status unknown

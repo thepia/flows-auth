@@ -87,7 +87,7 @@ describe('Integration Regression Tests (Safe)', () => {
 
     it('should handle API errors gracefully without exposing internals', async () => {
       // Mock API error response
-      mockFetch.mockRejectedValueOnce(new Error('Endpoint /auth/signin/magic-link not found'));
+      mockFetch.mockRejectedValueOnce(new Error('Endpoint not found'));
 
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
@@ -114,8 +114,8 @@ describe('Integration Regression Tests (Safe)', () => {
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Technical error should be hidden
-        expect(queryByText('Endpoint /auth/signin/magic-link not found')).toBeNull();
-        expect(queryByText('/auth/signin/magic-link')).toBeNull();
+        expect(queryByText('Endpoint not found')).toBeNull();
+        expect(queryByText('404')).toBeNull();
 
         // ✅ Should show user-friendly message OR auto-transition
         const hasUserFriendlyResponse = queryByText(/terms of service/i) ||
@@ -229,7 +229,7 @@ describe('Integration Regression Tests (Safe)', () => {
     it('should never show raw error objects to users', async () => {
       // Mock various error types
       const errorTypes = [
-        new Error('Endpoint /auth/signin/magic-link not found'),
+        new Error('Endpoint not found'),
         new Error('404: Not Found'),
         { status: 404, message: 'API endpoint not available' },
         new Error('Network request failed'),

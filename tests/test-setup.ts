@@ -236,7 +236,7 @@ export class APIMocker {
 
   static mockSuccessfulAuthentication(email: string, user = TEST_ACCOUNTS.existingWithPasskey) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
-      if (url.toString().includes('/auth/signin/passkey')) {
+      if (url.toString().includes('/auth/webauthn/verify')) {
         const body = JSON.parse(options?.body as string || '{}');
         if (body.email === email) {
           return Promise.resolve({
@@ -263,15 +263,19 @@ export class APIMocker {
 
   static mockMagicLinkSent(email: string) {
     vi.spyOn(global, 'fetch').mockImplementation((url, options) => {
-      if (url.toString().includes('/auth/signin/magic-link')) {
+      if (url.toString().includes('/auth/start-passwordless')) {
         const body = JSON.parse(options?.body as string || '{}');
         if (body.email === email) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({
-              step: 'magic_link_sent',
-              magicLinkSent: true,
-              message: 'Check your email for the sign-in link'
+              success: true,
+              timestamp: Date.now(),
+              message: 'Check your email for the sign-in link',
+              user: {
+                email: body.email,
+                id: 'user-id-123'
+              }
             })
           } as any);
         }

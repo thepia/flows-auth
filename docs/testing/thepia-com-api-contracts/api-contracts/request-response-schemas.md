@@ -336,7 +336,7 @@ All API endpoints return errors in this format:
 
 ---
 
-## POST /auth/signin/magic-link
+## POST /auth/start-passwordless
 
 ### Request Schema
 ```json

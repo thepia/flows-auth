@@ -81,7 +81,7 @@ sequenceDiagram
 
 | flows-auth Method | API Endpoint | Status | Notes |
 |------------------|--------------|--------|-------|
-| `signInWithMagicLink()` | `POST /auth/signin/magic-link` | 📋 API not implemented | Fallback authentication method |
+| `signInWithMagicLink()` | `POST /auth/start-passwordless` | ✅ Working (via startPasswordlessAuthentication) | Passwordless authentication method |
 | `verifyMagicLink()` | `POST /auth/verify-magic-link` | 📋 API not implemented | Magic link verification |
 
 ### ❌ Not Supported (By Design)
@@ -121,9 +121,9 @@ export const CLIENT_CONFIGS = {
 
 ### New Endpoints for Cross-Device Auth
 
-- `POST /auth/start-passwordless` - Start email verification flow
-- `POST /auth/verify-passwordless` - Verify code from email  
-- `GET /auth/passwordless-status` - Poll for verification completion
+- `POST /auth/start-passwordless` - Start passwordless email authentication (magic links)
+- `GET /auth/passwordless-status` - Poll for authentication completion
+- `GET /auth/passwordless-callback` - OAuth callback for email link completion
 
 ### flows-auth Compatibility
 

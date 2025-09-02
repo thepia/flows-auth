@@ -43,7 +43,7 @@ sequenceDiagram
 - `POST /auth/check-user` - Check if user exists and has passkey
 - `POST /auth/webauthn/challenge` - Get WebAuthn challenge
 - `POST /auth/webauthn/verify` - Verify WebAuthn response
-- `POST /auth/signin/magic-link` - Send magic link email
+- `POST /auth/start-passwordless` - Start passwordless authentication (magic links)
 - `POST /auth/verify-magic-link` - Verify magic link token
 
 ### **Session Management**

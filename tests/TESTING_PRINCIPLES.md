@@ -39,8 +39,8 @@ beforeAll(async () => {
 Tests must validate against actual Auth0 API endpoints:
 - `/auth/check-user` - User existence checking
 - `/auth/webauthn/challenge` - WebAuthn challenge generation
-- `/auth/signin/passkey` - Passkey authentication
-- `/auth/signin/magic-link` - Magic link generation
+- `/auth/webauthn/verify` - Passkey authentication
+- `/auth/start-passwordless` - Passwordless authentication (magic links)
 
 ### 4. **Required API Availability for Integration Tests**
 

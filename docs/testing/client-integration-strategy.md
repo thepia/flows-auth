@@ -51,7 +51,7 @@ describe('User Authentication Integration', () => {
 | New user registration | T003 | POST /auth/check-user → userExists: false |
 | WebAuthn challenge flow | T011 | POST /auth/webauthn/challenge |
 | WebAuthn verification | T021 | POST /auth/webauthn/verify |
-| Magic link flow | T031 | POST /auth/signin/magic-link |
+| Passwordless auth flow | T031 | POST /auth/start-passwordless |
 
 ---
 

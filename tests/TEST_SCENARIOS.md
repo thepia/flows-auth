@@ -193,31 +193,39 @@ const TEST_ACCOUNTS = {
   Expected Response: 404 or appropriate error
   ```
 
-#### 3.3 Magic Link Endpoint
-- [ ] **Magic Link Generation**
+#### 3.3 Passwordless Authentication Endpoint
+- [ ] **Passwordless Authentication (Magic Link)**
   ```http
-  POST /auth/signin/magic-link
+  POST /auth/start-passwordless
   Content-Type: application/json
   
-  { "email": "test-without-passkey@thepia.net" }
+  {
+    "email": "test-without-passkey@thepia.net",
+    "clientId": "your-client-id"
+  }
   
   Expected Response:
   {
-    "step": "magic_link_sent",
-    "magicLinkSent": true,
-    "message": "Check your email for the sign-in link"
+    "success": true,
+    "timestamp": 1234567890,
+    "message": "Check your email for the sign-in link",
+    "user": {
+      "email": "test-without-passkey@thepia.net",
+      "id": "user-id"
+    }
   }
   ```
 
 #### 3.4 Authentication Completion
 - [ ] **Passkey Authentication**
   ```http
-  POST /auth/signin/passkey
+  POST /auth/webauthn/verify
   Content-Type: application/json
   
   {
     "email": "test-with-passkey@thepia.net",
     "challengeId": "challenge-id",
+    "clientId": "your-client-id",
     "credential": {
       "id": "credential-id",
       "rawId": "base64-raw-id",

@@ -19,7 +19,7 @@
   - [ ] `POST /auth/check-user` - Add domain-specific credential counting
   - [ ] `POST /auth/webauthn/challenge` - Filter credentials by domain
   - [ ] `POST /auth/webauthn/verify` - Update credential usage tracking
-  - [ ] `POST /auth/signin/magic-link` - Implement missing endpoint
+  - [x] `POST /auth/start-passwordless` - Implemented and working
   - [ ] `GET /auth/devices` - NEW: Device management endpoint
   - [ ] `POST /auth/devices/:id/revoke` - NEW: Device revocation endpoint
 

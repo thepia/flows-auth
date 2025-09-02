@@ -277,9 +277,9 @@
 
 ---
 
-## POST /auth/signin/magic-link
+## POST /auth/start-passwordless
 
-**Purpose**: Send magic link authentication email
+**Purpose**: Start passwordless authentication flow (sends magic link email)
 
 ### Request Schema
 ```json

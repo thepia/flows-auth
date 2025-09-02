@@ -232,7 +232,7 @@ describe('ClientRateLimiter', () => {
         headers: { 'Retry-After': '5' }
       }));
       
-      await rateLimiter.executeRequest(() => mockFetch('/auth/signin'), '/auth/signin');
+      await rateLimiter.executeRequest(() => mockFetch('/auth/start-passwordless'), '/auth/start-passwordless');
       
       // Different endpoint should not be affected
       mockFetch.mockResolvedValueOnce(new Response('OK', { status: 200 }));

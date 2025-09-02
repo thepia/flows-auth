@@ -192,9 +192,9 @@
 
       // Check if this is a "user not found" or "no passkey" error
       const message = err.message || '';
-      if (message.includes('/auth/signin/magic-link') ||
-          message.includes('not found') ||
-          message.includes('404')) {
+      if (message.includes('not found') ||
+          message.includes('404') ||
+          message.includes('endpoint')) {
         // User doesn't exist or has no passkey - transition to registration
         console.log('🔄 User not found or no passkey available - transitioning to registration');
         step = 'registration-terms';
@@ -236,11 +236,11 @@
     const status = err.status || 0;
 
     // Handle specific API endpoint errors
-    if (message.includes('/auth/signin/magic-link') || message.includes('not found')) {
+    if (message.includes('not found') || message.includes('404') || message.includes('endpoint')) {
       return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
     }
 
-    if (message.includes('/auth/webauthn/challenge') || status === 404) {
+    if (message.includes('/auth/webauthn/authenticate') || message.includes('/auth/webauthn/challenge') || status === 404) {
       return 'Authentication service temporarily unavailable. Please try again in a moment.';
     }
 

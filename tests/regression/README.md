@@ -17,7 +17,7 @@ These tests implement the **5-step error analysis framework**:
 ### `error-handling.test.ts`
 **Guards against**: Technical error exposure and incorrect user flows
 
-- ✅ **Technical Error Exposure**: Users should never see `"Endpoint /auth/signin/magic-link not found"`
+- ✅ **Technical Error Exposure**: Users should never see technical error messages like `"Endpoint not found"`
 - ✅ **Automatic Registration Flow**: Unregistered users should auto-transition to registration
 - ✅ **Correct API Architecture**: Components should use `authStore.checkUser()` not direct API calls
 - ✅ **Component Compilation**: Components should render without undefined property errors
@@ -65,7 +65,7 @@ These tests are designed to be **completely safe**:
 ### Technical Error Exposure
 ```typescript
 // ❌ BAD: Technical error shown to user
-"Endpoint /auth/signin/magic-link not found"
+"Endpoint not found" or "404 Error"
 
 // ✅ GOOD: User-friendly message or auto-transition
 "Terms of Service" // (registration flow)

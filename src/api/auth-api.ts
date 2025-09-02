@@ -203,12 +203,13 @@ export class AuthApiClient {
 
   /**
    * Initiate sign-in flow
+   * Note: This endpoint doesn't exist on the server - use startPasswordlessAuthentication instead
+   * @deprecated Use startPasswordlessAuthentication for magic links
    */
   async signIn(request: SignInRequest): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/signin', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
+    // The /auth/signin endpoint doesn't exist - redirect to passwordless
+    console.warn('⚠️ signIn() method called but /auth/signin endpoint does not exist. Use startPasswordlessAuthentication() instead.');
+    throw new Error('The /auth/signin endpoint is not available. Please use passwordless authentication methods.');
   }
 
   /**
@@ -237,19 +238,29 @@ export class AuthApiClient {
 
   /**
    * Request magic link
+   * Note: Uses the unified passwordless endpoint
    */
   async signInWithMagicLink(request: MagicLinkRequest): Promise<SignInResponse> {
-    return this.rateLimitedRequest<SignInResponse>('/auth/signin/magic-link', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
+    // The /auth/signin/magic-link endpoint doesn't exist - use startPasswordlessAuthentication
+    console.warn('⚠️ signInWithMagicLink() called - redirecting to startPasswordlessAuthentication()');
+    
+    // Use the unified passwordless endpoint instead
+    const result = await this.startPasswordlessAuthentication(request.email);
+    
+    // Convert the passwordless response to SignInResponse format
+    return {
+      step: result.success ? 'email-sent' : 'error',
+      message: result.message,
+      needsPasskey: false,
+      needsVerification: true // Passwordless always requires verification
+    } as SignInResponse;
   }
 
   /**
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/challenge', {
+    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/authenticate', {
       method: 'POST',
       body: JSON.stringify({ email })
     });

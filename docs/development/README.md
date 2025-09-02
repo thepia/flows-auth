@@ -267,11 +267,11 @@ authStore.on('session_expired', () => {
 Your API server must implement these endpoints:
 
 ```http
-POST /auth/signin                 # Email/password authentication
-POST /auth/signin/passkey        # WebAuthn authentication
+POST /auth/start-passwordless    # Passwordless email authentication (magic links)
+POST /auth/webauthn/verify       # WebAuthn/passkey authentication
 POST /auth/register              # User registration
 POST /auth/webauthn/challenge    # WebAuthn challenge generation
-POST /auth/webauthn/verify       # WebAuthn response verification
+POST /auth/webauthn/register     # WebAuthn credential registration
 POST /auth/refresh               # Token refresh
 POST /auth/signout               # Session termination
 GET  /auth/profile               # User profile data

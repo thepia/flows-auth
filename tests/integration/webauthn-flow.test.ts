@@ -103,7 +103,7 @@ describe('WebAuthn Integration Flow', () => {
     // Verify API calls were made
     expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/check-user', expect.any(Object));
     expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/webauthn/challenge', expect.any(Object));
-    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/signin/passkey', expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith('https://api.test.com/auth/webauthn/verify', expect.any(Object));
   });
 
   it('should fallback to magic link when WebAuthn fails', async () => {

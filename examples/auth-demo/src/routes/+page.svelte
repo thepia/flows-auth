@@ -2,6 +2,7 @@
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
+import { ErrorReportingStatus } from '@thepia/flows-auth';
 
 // Use singleton auth store pattern
 let authStoreFromContext = null;
@@ -38,6 +39,7 @@ let enableMagicLinks = true;
 let registrationError = null;
 let registrationSuccess = null;
 let registrationLoading = false;
+
 
 // Available demo sections
 const demoSections = [
@@ -486,6 +488,7 @@ async function runQuickTest() {
   return runTestAndDisplay();
 }
 
+
 // SignInForm event handlers
 function handleSignInSuccess(detail) {
   console.log('✅ SignInForm Success:', detail);
@@ -746,6 +749,8 @@ $: if (typeof enablePasskeys !== 'undefined' && typeof enableMagicLinks !== 'und
             <button class="btn btn-info" on:click={runQuickTest}>
               🧪 Run Quick checkUser Test
             </button>
+            
+            <ErrorReportingStatus />
           </div>
         </div>
         

@@ -1,62 +1,57 @@
 <script lang="ts">
 import { browser } from '$app/environment';
-import { onMount, setContext } from 'svelte';
+import { onMount } from 'svelte';
 import '../app.css';
 import type { User } from '@thepia/flows-auth';
 import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
 
-let authStore: any = null;
+// Auth state for reactivity
 let isAuthenticated = false;
 let user: User | null = null;
+let authStore: any = null;
+let authConfig: any = null;
 
-// Create stores that will hold the auth store and config once initialized
-import { writable } from 'svelte/store';
-const authStoreContainer = writable(null);
-const authConfigStore = writable(null);
-
-// Set the context immediately with both stores
-setContext('authStore', authStoreContainer);
-setContext('authConfig', authConfigStore);
-
-onMount(async () => {
-  if (!browser) return;
-  
-  try {
-    // Initialize error reporting first - TEMPORARILY DISABLED FOR DEBUGGING
-    console.log('🔧 Skipping error reporting initialization for debugging');
-
-    // Dynamic import to avoid SSR issues
-    const { createAuthStore } = await import('@thepia/flows-auth');
-    const { getCachedAuthConfig } = await import('../lib/config/auth.js');
-
-    // Use central config
-    const authConfig = await getCachedAuthConfig();
-    authStore = createAuthStore(authConfig);
-    
-    console.log('🔧 Auth initialized with central config:', authConfig);
-
-    // Update both containers with the auth store and config
-    authStoreContainer.set(authStore);
-    authConfigStore.set(authConfig);
-
-    // Subscribe to auth state
-    authStore.subscribe((state) => {
-      isAuthenticated = state.isAuthenticated;
-      user = state.user;
-    });
-  } catch (error) {
-    console.error('Failed to initialize auth:', error);
-    // Report initialization error
+// ✅ PROPER SOLUTION: Use global auth store instead of Svelte context
+// Svelte context requires synchronous initialization, but we need async imports
+// The global singleton pattern works better for this use case
+if (browser) {
+  (async () => {
     try {
-      const { reportTaskError } = await import('../lib/config/errorReporting.js');
-      await reportTaskError('app.init', error, {
-        context: 'Layout.onMount',
+      console.log('🚀 Initializing tasks app with global singleton pattern...');
+      
+      // Dynamic import to avoid SSR issues
+      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
+      
+      // Create auth config asynchronously
+      authConfig = await quickAuthSetup({
+        companyName: 'Assignment Management System',
+        clientId: 'tasks-app-demo',
+        domain: 'dev.thepia.net',
+        enableErrorReporting: true,
       });
-    } catch (reportError) {
-      console.error('Failed to report initialization error:', reportError);
+      console.log('⚙️ Auth config created with library utilities:', authConfig);
+      
+      // Initialize global auth store (not Svelte context)
+      authStore = initializeAuth(authConfig);
+      console.log('🔐 Global auth store initialized');
+      
+      // Subscribe to auth state changes
+      authStore.subscribe((state) => {
+        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+        user = state.user;
+        console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+      });
+      
+      // Initialize the auth store (check for existing session)
+      authStore.initialize();
+      
+      console.log('✅ Tasks app initialization complete');
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize tasks app:', error);
     }
-  }
-});
+  })();
+}
 </script>
 
 <div class="app">

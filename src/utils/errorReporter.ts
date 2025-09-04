@@ -241,6 +241,7 @@ export function getErrorReportQueueSize() {
 }
 
 // Auto-initialize with basic config if running in browser
+// NOTE: The endpoint will be properly set when auth store is initialized with config
 if (typeof window !== 'undefined') {
   // Check for development environment
   const isDev = window.location.hostname === 'localhost' ||
@@ -250,7 +251,7 @@ if (typeof window !== 'undefined') {
   initializeErrorReporter({
     enabled: true,
     debug: isDev,
-    // Use production API server as sensible default - localhost:3000 will never work
-    endpoint: isDev ? 'https://api.thepia.com/dev/error-reports' : undefined
+    // Don't set endpoint here - it will be set from auth config
+    endpoint: undefined
   });
 }

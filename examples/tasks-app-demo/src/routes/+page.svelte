@@ -1,7 +1,7 @@
 <script lang="ts">
 import { browser } from '$app/environment';
 import { type User, SignInForm } from '@thepia/flows-auth';
-import { onMount, getContext } from 'svelte';
+import { onMount } from 'svelte';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 import TaskCard from '../lib/components/TaskCard.svelte';
 
@@ -33,11 +33,7 @@ async function testErrorReporting() {
 }
 
 // Determine API base URL at runtime
-// Get the auth store container from context (set during component initialization)
-const authStoreContainer = getContext('authStore');
-const authConfigContainer = getContext('authConfig');
-
-// Initialize auth by waiting for the auth store to be available
+// Initialize auth by using the global store pattern
 async function initializeAuth() {
   if (!browser) return;
 
@@ -45,32 +41,33 @@ async function initializeAuth() {
     console.log('🔄 Starting auth initialization...');
     isLoading = true;
 
-    console.log('📦 Waiting for auth store from context...');
+    console.log('📦 Getting global auth store...');
     
-    // Wait for the auth store to be set in the container
-    authStore = await new Promise((resolve) => {
-      const unsubscribe = authStoreContainer.subscribe((store) => {
-        if (store) {
-          unsubscribe();
-          resolve(store);
-        }
-      });
-    });
+    // Use the global auth store pattern (not context-based)
+    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
     
-    console.log('✅ Auth store received from context');
-    console.log('✅ Auth store created successfully');
+    // Wait for layout to initialize the global auth store
+    let attempts = 0;
+    while (!authStore && attempts < 20) {
+      try {
+        authStore = getGlobalAuthStore();
+        break; // Success - exit loop
+      } catch (error) {
+        // Auth store not yet initialized, wait and try again
+        await new Promise(resolve => setTimeout(resolve, 50));
+        attempts++;
+      }
+    }
     
-    // Also get the auth config from context
-    authConfig = await new Promise((resolve) => {
-      const unsubscribe = authConfigContainer.subscribe((config) => {
-        if (config) {
-          unsubscribe();
-          resolve(config);
-        }
-      });
-    });
+    if (!authStore) {
+      throw new Error('Auth store not available after waiting');
+    }
     
-    console.log('✅ Auth config received from context');
+    console.log('🔐 Auth store retrieved using proper pattern');
+    
+    // Get config from global singleton
+    authConfig = getGlobalAuthConfig();
+    console.log('⚙️ Auth config retrieved from singleton');
 
     console.log('📡 Setting up auth store subscription...');
     // Subscribe to auth state changes
@@ -98,11 +95,8 @@ async function initializeAuth() {
       });
     });
     console.log('✅ Auth store subscription setup complete');
-
-    console.log('🔑 Initializing auth store...');
-    // Check for existing session
-    await authStore.initialize();
-    console.log('✅ Auth store initialized successfully');
+    
+    console.log('✅ Auth initialization complete');
     
   } catch (error) {
     console.error('❌ Failed to initialize authentication:', error);
@@ -110,8 +104,6 @@ async function initializeAuth() {
     isLoading = false;
     // Set a basic error state instead of crashing
     authError = 'Failed to initialize authentication system';
-    // Error reporting disabled for debugging
-    console.log('🔧 Skipping error reporting for debugging');
   }
 }
 

@@ -1,6 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
-	import { onMount, getContext } from 'svelte';
+	import { onMount } from 'svelte';
 
 	console.log('[ErrorReportingStatus] Component script loading...');
 
@@ -48,32 +48,27 @@
 				console.warn('Service worker manager not available:', swError);
 			}
 
-			// Get auth store from layout context (no duplicate creation)
+			// Get auth store from global singleton (no duplicate creation)
 			try {
-				const authStoreContainer = getContext('authStore');
+				const { getGlobalAuthStore } = await import('@thepia/flows-auth');
 				
-				if (authStoreContainer) {
-					// Wait for auth store to be available
-					authStoreContainer.subscribe((store) => {
-						if (store) {
-							authStore = store;
-							
-							// Subscribe to auth state changes for debugging
-							authStore.subscribe((state) => {
-								authState = state;
-								console.log('🔍 Auth State Debug:', state);
-							});
-
-							// Get auth state machine for debugging
-							authStateMachine = authStore.stateMachine || null;
-							
-							// Log actual config being used
-							const config = authStore.getConfig?.() || {};
-							console.log('🔐 ErrorReportingStatus using auth config from context:', config);
-						}
+				try {
+					authStore = getGlobalAuthStore();
+					
+					// Subscribe to auth state changes for debugging
+					authStore.subscribe((state) => {
+						authState = state;
+						console.log('🔍 Auth State Debug:', state);
 					});
-				} else {
-					console.warn('🔍 Auth store container not available in context');
+
+					// Get auth state machine for debugging
+					authStateMachine = authStore.stateMachine || null;
+					
+					// Log actual config being used
+					const config = authStore.getConfig?.() || {};
+					console.log('🔐 ErrorReportingStatus using auth config from global store:', config);
+				} catch (authError) {
+					console.warn('🔍 Global auth store not yet initialized:', authError);
 				}
 			} catch (authError) {
 				console.warn('Auth store debugging not available:', authError);

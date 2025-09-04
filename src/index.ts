@@ -15,6 +15,9 @@ export { default as EmailVerificationBanner } from './components/EmailVerificati
 export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
 export { default as SignInForm } from './components/SignInForm.svelte';
 
+// Development components
+export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
+
 // Core granular components
 export { 
   EmailInput,

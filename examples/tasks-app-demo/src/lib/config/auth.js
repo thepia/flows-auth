@@ -46,7 +46,7 @@ export async function getAuthConfig() {
   const apiBaseUrl = await getApiBaseUrl();
   
   // Determine if we're in development
-  const isDev = browser && (
+  const isDev = browser && typeof window !== 'undefined' && (
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname.includes('dev.thepia.net') ||

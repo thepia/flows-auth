@@ -24,12 +24,12 @@ export type AuthState =
   | 'loading'
   | 'error';
 
-export type AuthMethod = 'passkey' | 'magic-link';
+export type AuthMethod = 'passkey' | 'magic-link' | 'email-code';
 
 
 
 // Sign-in flow states - passwordless only
-export type SignInStep = 'email' | 'passkey' | 'magic-link' | 'loading' | 'success' | 'error';
+export type SignInStep = 'email' | 'passkey' | 'magic-link' | 'email-code' | 'loading' | 'success' | 'error';
 
 // Registration flow states
 export type RegistrationStep =
@@ -159,6 +159,7 @@ export interface AuthConfig {
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
+  appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
   
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
@@ -324,6 +325,7 @@ export interface AuthError {
   code: string;
   message: string;
   details?: any;
+  timestamp?: string;
 }
 
 export type AuthErrorCode = 
@@ -346,6 +348,9 @@ export interface AuthEventData {
   method?: AuthMethod;
   step?: SignInStep;
   email?: string;
+  appCode?: string;
+  success?: boolean;
+  timestamp?: number;
 }
 
 export type AuthEventType =
@@ -363,7 +368,13 @@ export type AuthEventType =
   | 'email_verification_success'
   | 'email_verification_error'
   | 'terms_accepted'
-  | 'welcome_email_sent';
+  | 'welcome_email_sent'
+  | 'app_email_started'
+  | 'app_email_sent'
+  | 'app_email_error'
+  | 'app_email_verify_started'
+  | 'app_email_verify_success'
+  | 'app_email_verify_error';
 
 // Component props
 export interface SignInFormProps {

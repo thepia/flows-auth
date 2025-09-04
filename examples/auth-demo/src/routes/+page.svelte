@@ -32,7 +32,9 @@ let resultFormat = 'formatted'; // 'formatted' or 'json'
 
 // SignIn form configuration options
 let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
-let enablePasskeys = true;
+// TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
+// Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
+let enablePasskeys = false;
 let enableMagicLinks = true;
 
 // Registration action feedback
@@ -505,23 +507,21 @@ function handleStepChange(detail) {
   console.log(`📍 Authentication flow step: ${detail.step}`);
 }
 
-// Update authConfig when signin configuration changes
-function updateSignInConfig() {
-  if (authConfig) {
-    authConfig.enablePasskeys = enablePasskeys;
-    authConfig.enableMagicLinks = enableMagicLinks;
-    authConfig.signInMode = signInMode;
-    console.log('⚙️ Updated SignInCore config:', {
-      signInMode,
-      enablePasskeys,
-      enableMagicLinks
-    });
-  }
-}
+// Create reactive config that updates when controls change
+$: dynamicAuthConfig = authConfig ? {
+  ...authConfig,
+  enablePasskeys,
+  enableMagicLinks, 
+  signInMode
+} : null;
 
-// Reactive update when configuration changes
-$: if (typeof enablePasskeys !== 'undefined' && typeof enableMagicLinks !== 'undefined') {
-  updateSignInConfig();
+// Log changes for debugging
+$: if (dynamicAuthConfig) {
+  console.log('⚙️ SignInCore config updated:', {
+    signInMode: dynamicAuthConfig.signInMode,
+    enablePasskeys: dynamicAuthConfig.enablePasskeys,
+    enableMagicLinks: dynamicAuthConfig.enableMagicLinks
+  });
 }
 </script>
 
@@ -704,7 +704,7 @@ $: if (typeof enablePasskeys !== 'undefined' && typeof enableMagicLinks !== 'und
         </div>
 
         <!-- Live SignInCore Component -->
-        {#if authStore && authConfig && !isAuthenticated}
+        {#if authStore && dynamicAuthConfig && !isAuthenticated}
           <div class="signin-demo card">
             <div class="card-header">
               <h3>Live Sign-In Component</h3>
@@ -719,7 +719,7 @@ $: if (typeof enablePasskeys !== 'undefined' && typeof enableMagicLinks !== 'und
             <div class="card-body">
               {#await import('@thepia/flows-auth') then { SignInCore }}
                 <SignInCore 
-                  config={authConfig}
+                  config={dynamicAuthConfig}
                   initialEmail={emailInput}
                   className="demo-signin-form"
                   on:success={(e) => handleSignInSuccess(e.detail)}

@@ -2,6 +2,7 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import '../app.css';
+import '@thepia/flows-auth/dist/style.css';
 
 // Auth state for reactivity
 let isAuthenticated = false;
@@ -23,8 +24,9 @@ if (browser) {
       // Create auth config asynchronously
       authConfig = await quickAuthSetup({
         companyName: 'Auth Demo',
-        clientId: 'auth-demo',
+        clientId: 'demo',
         enableErrorReporting: true,
+        appCode: 'demo', // Use demo app code for example endpoints
       });
       console.log('⚙️ Auth config created with library utilities:', authConfig);
       

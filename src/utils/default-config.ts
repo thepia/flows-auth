@@ -146,6 +146,7 @@ export async function quickAuthSetup(options: {
   clientId?: string;
   domain?: string;
   enableErrorReporting?: boolean;
+  appCode?: string | boolean;
 } = {}) {
   // Get the API base URL first
   const apiBaseUrl = await detectDefaultApiServer();
@@ -153,6 +154,7 @@ export async function quickAuthSetup(options: {
   const config = await createDefaultAuthConfig({
     clientId: options.clientId,
     ...(options.domain && { domain: options.domain }),
+    ...(options.appCode !== undefined && { appCode: options.appCode }),
     branding: {
       companyName: options.companyName || 'Your App',
       showPoweredBy: true,

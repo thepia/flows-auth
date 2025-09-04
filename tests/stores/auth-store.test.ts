@@ -16,7 +16,9 @@ vi.mock('../../src/api/auth-api', () => ({
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
     signOut: vi.fn(),
-    checkEmail: vi.fn()
+    checkEmail: vi.fn(),
+    sendOrgEmailCode: vi.fn(),
+    verifyOrgEmailCode: vi.fn()
   }))
 }));
 
@@ -55,11 +57,14 @@ describe('Auth Store', () => {
     localStorage.clear();
     sessionStorage.clear();
     
+    // Get the mocked API client constructor
+    const { AuthApiClient } = await import('../../src/api/auth-api');
+    const MockedAuthApiClient = AuthApiClient as any;
+    
     authStore = createAuthStore(mockConfig);
     
     // Get the mocked API client instance
-    const { AuthApiClient } = await import('../../src/api/auth-api');
-    mockApiClient = (AuthApiClient as any).mock.results[0].value;
+    mockApiClient = MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
   });
 
   describe('Initial State', () => {
@@ -480,6 +485,139 @@ describe('Auth Store', () => {
       expect(result.success).toBe(true);
       expect(result.dataPreserved).toBe(true);
       expect(result.tokensPreserved).toBe(true);
+    });
+  });
+
+  describe('Email Authentication (Transparent Org Support)', () => {
+    it('should use org endpoints when org is configured', async () => {
+      const configWithOrg: AuthConfig = {
+        ...mockConfig,
+        org: 'test-org'
+      };
+      
+      const authStore = createAuthStore(configWithOrg);
+      
+      const mockEmailCodeResponse = {
+        success: true,
+        message: 'Email code sent',
+        timestamp: Date.now()
+      };
+
+      mockApiClient.sendOrgEmailCode.mockResolvedValue(mockEmailCodeResponse);
+
+      const result = await authStore.sendEmailCode('test@example.com');
+
+      expect(mockApiClient.sendOrgEmailCode).toHaveBeenCalledWith('test@example.com');
+      expect(result).toEqual(mockEmailCodeResponse);
+    });
+
+    it('should fall back to magic link when org is not configured', async () => {
+      const configWithoutOrg: AuthConfig = {
+        ...mockConfig,
+        enableMagicLinks: true
+      };
+      delete (configWithoutOrg as any).org;
+      
+      const authStore = createAuthStore(configWithoutOrg);
+      
+      const mockMagicLinkResponse: SignInResponse = {
+        step: 'magic-link',
+        magicLinkSent: true
+      };
+
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockMagicLinkResponse);
+
+      const result = await authStore.sendEmailCode('test@example.com');
+
+      expect(mockApiClient.signInWithMagicLink).toHaveBeenCalledWith('test@example.com');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Magic link sent to your email');
+    });
+
+    it('should verify email code with org endpoints when org is configured', async () => {
+      const configWithOrg: AuthConfig = {
+        ...mockConfig,
+        org: 'test-org'
+      };
+      
+      const authStore = createAuthStore(configWithOrg);
+      
+      const mockVerifyResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z'
+        },
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresIn: 3600
+      };
+
+      mockApiClient.verifyOrgEmailCode.mockResolvedValue(mockVerifyResponse);
+
+      const result = await authStore.verifyEmailCode('test@example.com', '123456');
+
+      expect(mockApiClient.verifyOrgEmailCode).toHaveBeenCalledWith('test@example.com', '123456');
+      expect(result).toEqual(mockVerifyResponse);
+      
+      // Check that user is authenticated
+      const state = get(authStore);
+      expect(state.state).toBe('authenticated');
+      expect(state.user).toEqual(mockVerifyResponse.user);
+    });
+
+    it('should throw error when trying to verify code without org configuration', async () => {
+      const configWithoutOrg: AuthConfig = {
+        ...mockConfig
+      };
+      delete (configWithoutOrg as any).org;
+      
+      const authStore = createAuthStore(configWithoutOrg);
+
+      await expect(
+        authStore.verifyEmailCode('test@example.com', '123456')
+      ).rejects.toThrow('Email code verification is only available with organization configuration');
+    });
+
+    it('should handle email code send errors gracefully', async () => {
+      const configWithOrg: AuthConfig = {
+        ...mockConfig,
+        org: 'test-org'
+      };
+      
+      const authStore = createAuthStore(configWithOrg);
+      
+      const mockError = new Error('Network error');
+      mockApiClient.sendOrgEmailCode.mockRejectedValue(mockError);
+
+      await expect(
+        authStore.sendEmailCode('test@example.com')
+      ).rejects.toThrow('Network error');
+
+      const state = get(authStore);
+      expect(state.state).toBe('error');
+    });
+
+    it('should handle email code verification errors gracefully', async () => {
+      const configWithOrg: AuthConfig = {
+        ...mockConfig,
+        org: 'test-org'
+      };
+      
+      const authStore = createAuthStore(configWithOrg);
+      
+      const mockError = new Error('Invalid code');
+      mockApiClient.verifyOrgEmailCode.mockRejectedValue(mockError);
+
+      await expect(
+        authStore.verifyEmailCode('test@example.com', '123456')
+      ).rejects.toThrow('Invalid code');
+
+      const state = get(authStore);
+      expect(state.state).toBe('error');
     });
   });
 });

@@ -25,6 +25,7 @@ export type DevScenario = {
     enableMagicLinks: boolean;
     apiBaseUrl: string;
     clientId: string;
+    appCode?: string;
     errorReporting?: {
       enabled: boolean;
       endpoint?: string;
@@ -108,7 +109,8 @@ export const DEV_SCENARIOS: DevScenario[] = [
       enablePasskeys: true,
       enableMagicLinks: true,
       apiBaseUrl: 'auto-detect', // Will be replaced by detectApiServer()
-      clientId: 'flows-app-demo',
+      clientId: 'demo',
+      appCode: 'demo',
       errorReporting: {
         enabled: true,
         endpoint: 'auto-detect', // Will be replaced by detectApiServer()
@@ -125,7 +127,8 @@ export const DEV_SCENARIOS: DevScenario[] = [
       enablePasskeys: true,
       enableMagicLinks: false,
       apiBaseUrl: 'auto-detect',
-      clientId: 'flows-app-demo',
+      clientId: 'demo',
+      appCode: 'demo',
       errorReporting: {
         enabled: true,
         endpoint: 'auto-detect',
@@ -142,7 +145,8 @@ export const DEV_SCENARIOS: DevScenario[] = [
       enablePasskeys: false,
       enableMagicLinks: true,
       apiBaseUrl: 'auto-detect',
-      clientId: 'flows-app-demo',
+      clientId: 'demo',
+      appCode: 'demo',
       errorReporting: {
         enabled: true,
         endpoint: 'auto-detect',
@@ -159,7 +163,8 @@ export const DEV_SCENARIOS: DevScenario[] = [
       enablePasskeys: true,
       enableMagicLinks: true,
       apiBaseUrl: 'auto-detect',
-      clientId: 'flows-app-demo-enterprise',
+      clientId: 'demo-enterprise',
+      appCode: 'demo',
       errorReporting: {
         enabled: true,
         endpoint: 'auto-detect',

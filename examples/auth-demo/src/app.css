@@ -1,25 +1,60 @@
+@import "tailwindcss";
+@import "@thepia/branding/tailwind/variables";
+@import "@thepia/branding/css/components";
+
 /* Global styles for the auth demo */
 
-/* Custom properties for theming */
+/* Tailwind v4 @theme configuration using @thepia/branding tokens */
+@theme {
+  /* Primary Colors - From @thepia/branding package */
+  --color-primary: var(--color-brand-primary);
+  
+  /* Primary Color Scale */
+  --color-primary-50: var(--color-palette-thepia-50);
+  --color-primary-100: var(--color-palette-thepia-100);
+  --color-primary-200: var(--color-palette-thepia-200);
+  --color-primary-300: var(--color-palette-thepia-300);
+  --color-primary-400: var(--color-palette-thepia-400);
+  --color-primary-500: var(--color-palette-thepia-500);
+  --color-primary-600: var(--color-palette-thepia-600);
+  --color-primary-700: var(--color-palette-thepia-700);
+  --color-primary-800: var(--color-palette-thepia-800);
+  --color-primary-900: var(--color-palette-thepia-900);
+  --color-primary-950: var(--color-palette-thepia-950);
+
+  /* Gray scale */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Font families */
+  --font-serif: var(--typography-font-family-brand-primary);
+  --font-sans: var(--typography-font-family-brand-body);
+  --font-mono: var(--typography-font-family-brand-secondary);
+}
+
+/* Additional custom properties for demo-specific styling */
 :root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary-color: #1e40af;
+  --primary-color: var(--color-primary);
+  --primary-hover: var(--color-primary-600);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --border-color: var(--color-gray-200);
+  --background-primary: #ffffff;
+  --background-secondary: var(--color-gray-50);
+  --background-muted: var(--color-gray-100);
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
   --success-color: #10b981;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --background-primary: #ffffff;
-  --background-secondary: #f8fafc;
-  --background-muted: #f1f5f9;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --radius: 0.5rem;
-  --radius-sm: 0.375rem;
 }
 
 /* Reset and base styles */
@@ -304,6 +339,9 @@ input, textarea, select {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Note: @thepia/flows-auth component styles are imported from the library's dist/style.css */
+/* Component classes (.btn-brand, .input-brand, etc.) are now imported from @thepia/branding/css/components */
 
 /* Responsive */
 @media (max-width: 768px) {

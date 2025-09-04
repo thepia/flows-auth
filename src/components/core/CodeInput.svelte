@@ -1,60 +1,38 @@
 <!--
-  EmailInput - Granular email input component for authentication
-  Features: validation, WebAuthn autocomplete, conditional authentication trigger
+  CodeInput - Dedicated input component for verification codes
+  Features: numeric input optimization, proper formatting, validation
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 
 // Props
 export let value = '';
-export let placeholder = 'your.email@company.com';
+export let placeholder = 'Enter 6-digit code';
 export let disabled = false;
 export let required = true;
 export let error: string | null = null;
-export let label = 'Email address';
+export let label = 'Verification Code';
 export let showLabel = true;
-export let enableWebAuthn = true;
-export let debounceMs = 1000;
+export let maxlength = 6;
 export let className = '';
 
 // Events
 const dispatch = createEventDispatcher<{
   change: { value: string };
-  conditionalAuth: { email: string };
   focus: { value: string };
   blur: { value: string };
 }>();
 
-// Internal state
-let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
-
-// Email validation
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
 // Handle input changes
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
-  value = target.value;
+  // Only allow numeric input
+  const numericValue = target.value.replace(/[^0-9]/g, '');
+  value = numericValue;
+  target.value = numericValue;
   
   // Dispatch immediate change
   dispatch('change', { value });
-
-  // Clear previous timeout
-  if (emailChangeTimeout) {
-    clearTimeout(emailChangeTimeout);
-  }
-
-  // Debounce conditional auth trigger
-  if (enableWebAuthn && value.trim() && !disabled) {
-    emailChangeTimeout = setTimeout(() => {
-      if (isValidEmail(value)) {
-        dispatch('conditionalAuth', { email: value });
-      }
-    }, debounceMs);
-  }
 }
 
 function handleFocus(event: Event) {
@@ -68,23 +46,24 @@ function handleBlur(event: Event) {
 }
 
 function getInputClasses(): string {
+  const baseClasses = "input-brand text-center text-lg font-mono tracking-widest";
   if (error) {
-    return "input-brand error";
+    return `${baseClasses} error`;
   }
-  return "input-brand";
+  return baseClasses;
 }
 </script>
 
 <div class="space-y-2 {className}">
   {#if showLabel}
-    <label for="email-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <label for="code-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
       {label}
     </label>
   {/if}
   
   <input
-    id="email-input"
-    type="email"
+    id="code-input"
+    type="text"
     class="w-full {getInputClasses()}"
     bind:value
     on:input={handleInput}
@@ -93,7 +72,10 @@ function getInputClasses(): string {
     {placeholder}
     {disabled}
     {required}
-    autocomplete={enableWebAuthn ? "email webauthn" : "email"}
+    {maxlength}
+    autocomplete="one-time-code"
+    inputmode="numeric"
+    pattern="[0-9]*"
   />
   
   {#if error}
@@ -108,4 +90,3 @@ function getInputClasses(): string {
     color: var(--color-text-secondary);
   }
 </style>
-

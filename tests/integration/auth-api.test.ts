@@ -502,7 +502,90 @@ describe('AuthApiClient', () => {
 
       const result = await apiClient.checkEmail('test@example.com');
 
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/auth/check-user',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ email: 'test@example.com' })
+        })
+      );
+
       expect(result).toEqual(expectedResult);
+    });
+
+    it('should use org-specific endpoint when org is configured', async () => {
+      // Create API client with org configuration
+      const orgConfig = {
+        ...mockConfig,
+        org: 'wos'
+      };
+      const orgApiClient = new AuthApiClient(orgConfig);
+
+      // Clear cache to ensure fresh API call
+      orgApiClient.clearUserCache();
+
+      const mockApiResponse = {
+        exists: true,
+        hasWebAuthn: true,
+        userId: '123'
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockApiResponse)
+      });
+
+      const result = await orgApiClient.checkEmail('org-test@example.com');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/wos/check-user',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ email: 'org-test@example.com' })
+        })
+      );
+
+      expect(result).toEqual({
+        exists: true,
+        hasPasskey: true,
+        userId: '123',
+        emailVerified: false,
+        invitationTokenHash: undefined
+      });
+    });
+
+    it('should use default endpoint when no org is configured', async () => {
+      // Clear cache to ensure fresh API call
+      apiClient.clearUserCache();
+
+      // Use the default mockConfig which has no org field
+      const mockApiResponse = {
+        exists: false,
+        hasWebAuthn: false
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockApiResponse)
+      });
+
+      const result = await apiClient.checkEmail('no-org-test@example.com');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/auth/check-user',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ email: 'no-org-test@example.com' })
+        })
+      );
+
+      expect(result).toEqual({
+        exists: false,
+        hasPasskey: false,
+        userId: undefined,
+        emailVerified: false,
+        invitationTokenHash: undefined
+      });
     });
 
     it('should request password reset', async () => {

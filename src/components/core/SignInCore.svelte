@@ -12,6 +12,7 @@ import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../uti
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import EmailInput from './EmailInput.svelte';
+import CodeInput from './CodeInput.svelte';
 
 // Props
 export let config: AuthConfig;
@@ -44,11 +45,15 @@ const authStore = createAuthStore(config);
 let email = initialEmail;
 let loading = false;
 let error: string | null = null;
-let step: 'email-input' | 'magic-link-sent' | 'registration-terms' = 'email-input';
+let step: 'email-input' | 'email-code-input' | 'magic-link-sent' | 'registration-terms' = 'email-input';
 let supportsWebAuthn = false;
 let conditionalAuthActive = false;
 let userExists = false;
 let hasPasskeys = false;
+
+// Email code state
+let emailCode = '';
+let emailCodeSent = false;
 
 // WebAuthn state
 let platformAuthenticatorAvailable = false;
@@ -169,9 +174,17 @@ async function handleSignIn() {
           await handlePasskeyAuth();
         } catch (passkeyError) {
           console.warn('Passkey authentication failed:', passkeyError);
-          // Fall back to email if enabled
-          await handleMagicLinkAuth();
+          // Fall back to appropriate email method
+          if (config.appCode) {
+            await handleEmailCodeAuth();
+          } else {
+            await handleMagicLinkAuth();
+          }
         }
+        break;
+      
+      case 'email-code':
+        await handleEmailCodeAuth();
         break;
       
       case 'email-only':
@@ -191,13 +204,19 @@ async function handleSignIn() {
 }
 
 // Determine the best authentication method based on config and user state
-function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fallback' | 'email-only' | 'none' {
+function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fallback' | 'email-code' | 'email-only' | 'none' {
   const hasPasskeys = userCheck.hasWebAuthn;
 
   // If user has passkeys and we support them
   if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
-    // Use passkey with fallback to email if magic links are enabled
-    return config.enableMagicLinks ? 'passkey-with-fallback' : 'passkey-only';
+    // Use passkey with fallback to email if other email methods are enabled
+    const hasEmailFallback = config.appCode || config.enableMagicLinks;
+    return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
+  }
+  
+  // If app-based email authentication is available
+  if (config.appCode) {
+    return 'email-code';
   }
   
   // If user doesn't have passkeys but we have magic links enabled
@@ -242,6 +261,54 @@ async function handleMagicLinkAuth() {
     loading = false;
     error = err.message || 'Failed to send magic link';
     throw err;
+  }
+}
+
+// Handle email code authentication (transparently uses app endpoints if configured)
+async function handleEmailCodeAuth() {
+  try {
+    const result = await authStore.sendEmailCode(email);
+    
+    if (result.success) {
+      emailCodeSent = true;
+      step = 'email-code-input';
+      loading = false;
+      dispatch('stepChange', { step });
+    } else {
+      throw new Error(result.message || 'Failed to send email code');
+    }
+  } catch (err: any) {
+    loading = false;
+    error = err.message || 'Failed to send email verification code';
+    throw err;
+  }
+}
+
+// Handle email code verification
+async function handleEmailCodeVerification() {
+  if (!emailCode.trim()) {
+    error = 'Please enter the verification code';
+    return;
+  }
+
+  loading = true;
+  error = null;
+
+  try {
+    const result = await authStore.verifyEmailCode(email, emailCode);
+    
+    if (result.step === 'success' && result.user) {
+      loading = false;
+      dispatch('success', {
+        user: result.user,
+        method: 'email-code' as AuthMethod
+      });
+    } else {
+      throw new Error('Email code verification failed');
+    }
+  } catch (err: any) {
+    loading = false;
+    error = getUserFriendlyErrorMessage(err);
   }
 }
 
@@ -293,8 +360,8 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
     // Show passkey UI if passkeys are enabled and supported
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
     
-    // Show email UI if magic links are enabled
-    if (authConfig.enableMagicLinks) return 'email';
+    // Show email UI if organization-based or magic links are enabled
+    if (authConfig.org || authConfig.enableMagicLinks) return 'email';
     
     return 'generic';
   })();
@@ -302,6 +369,7 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
   console.log('🎯 getAuthMethodForUI():', {
     enablePasskeys: authConfig.enablePasskeys,
     enableMagicLinks: authConfig.enableMagicLinks,
+    hasOrg: !!authConfig.org,
     supportsWebAuthn: webAuthnSupported,
     result
   });
@@ -376,6 +444,51 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported) {
       {/if}
     </form>
 
+  {:else if step === 'email-code-input'}
+    <!-- Email Code Input Step -->
+    <div class="email-code-input">
+      <AuthStateMessage
+        type="success"
+        message="Check your email"
+        showIcon={true}
+      />
+      
+      <p class="email-code-message">
+        We sent a verification code to<br>
+        <strong>{email}</strong>
+      </p>
+
+      <form on:submit|preventDefault={handleEmailCodeVerification}>
+        <CodeInput
+          bind:value={emailCode}
+          label="Verification Code"
+          placeholder="Enter 6-digit code"
+          {error}
+          disabled={loading}
+          maxlength={6}
+        />
+        
+        <div class="button-section">
+          <AuthButton
+            type="submit"
+            method="email-code"
+            text="Verify Code"
+            loadingText="Verifying..."
+            disabled={loading || !emailCode.trim()}
+            {loading}
+            supportsWebAuthn={false}
+          />
+        </div>
+      </form>
+
+      <AuthButton
+        type="button"
+        variant="secondary"
+        text={texts.useDifferentEmail}
+        on:click={resetForm}
+      />
+    </div>
+
   {:else if step === 'magic-link-sent'}
     <!-- Magic Link Sent Step -->
     <div class="magic-link-sent">
@@ -417,16 +530,19 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported) {
     margin-top: 24px;
   }
 
+  .email-code-input,
   .magic-link-sent {
     text-align: center;
   }
 
+  .email-code-message,
   .magic-link-message {
     color: var(--auth-text-secondary, #6b7280);
     margin: 16px 0 24px 0;
     line-height: 1.5;
   }
 
+  .email-code-message strong,
   .magic-link-message strong {
     color: var(--auth-text-primary, #111827);
   }
@@ -436,4 +552,5 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported) {
     text-align: center;
     margin-top: 16px;
   }
+
 </style>

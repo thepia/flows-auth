@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import { browser } from '$app/environment';
 import { page } from '$app/stores';
 import { onMount } from 'svelte';
@@ -51,7 +51,7 @@ function determineRedirectUrl(urlParams, verificationResult) {
     
     // Map clientId to production domain, then to local equivalent
     const clientToProductionDomain = {
-      'auth-demo': 'app.thepia.net',
+      'demo': 'app.thepia.net',
       'admin-demo': 'admin.thepia.net', 
       'flows-demo': 'flows.thepia.net',
       'thepia-com': 'thepia.com'

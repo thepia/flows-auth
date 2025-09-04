@@ -10,8 +10,9 @@ import { AuthApiClient } from '../../src/api/auth-api';
 const TEST_CONFIG = {
   // Use local API server if available, fall back to production
   apiBaseUrl: process.env.TEST_API_URL || 'https://api.thepia.com',
-  clientId: 'thepia-app-test',
+  clientId: 'app-test',
   domain: 'test.thepia.net',
+  appCode: 'demo', // Use demo appCode for examples
   enablePasskeys: false,
   enableMagicLinks: true,
   branding: {

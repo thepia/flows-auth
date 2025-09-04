@@ -15,7 +15,8 @@ import type {
   RefreshTokenRequest,
   LogoutRequest,
   PasskeyChallenge,
-  AuthError
+  AuthError,
+  User
 } from '../types';
 
 export class AuthApiClient {
@@ -28,6 +29,29 @@ export class AuthApiClient {
     
     // Rate limiting is now handled by the intelligent client rate limiter
     // No configuration needed - uses 5 req/sec default with server backoff
+  }
+
+  /**
+   * Get the effective app code - uses 'app' as default when appCode support is enabled
+   */
+  private getEffectiveAppCode(): string | null {
+    // If appCode is explicitly set to false/null/undefined, use legacy endpoints
+    if (this.config.appCode === false || this.config.appCode === null || this.config.appCode === undefined) {
+      return null;
+    }
+    
+    // If appCode is explicitly set to a string, use that
+    if (typeof this.config.appCode === 'string') {
+      return this.config.appCode;
+    }
+    
+    // If appCode is set to true, use default 'app' appCode
+    if (this.config.appCode === true) {
+      return 'app';
+    }
+    
+    // Default to null for backward compatibility
+    return null;
   }
 
   /**
@@ -330,24 +354,31 @@ export class AuthApiClient {
     
     // Enhanced logging for debugging
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
-    const requestUrl = `${this.baseUrl}/auth/check-user`;
+    
+    // Use app-specific endpoint if appCode is configured, otherwise use default
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/check-user` : '/auth/check-user';
+    const requestUrl = `${this.baseUrl}${endpoint}`;
     
     console.log(`[AuthApiClient] Making check-user request:`, {
       email,
       requestUrl,
       baseUrl: this.baseUrl,
+      endpoint,
+      appCode: this.config.appCode,
       origin,
       timestamp: new Date().toISOString()
     });
 
     // Use rate-limited request with Origin header for RPID determination
+    // TODO: Change to GET method once API server supports it  
     const response = await this.rateLimitedRequest<{
       exists: boolean;
       hasWebAuthn: boolean;
       userId?: string;
       emailVerified?: boolean;
       invitationTokenHash?: string;
-    }>('/auth/check-user', {
+    }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email }),
       headers: {
@@ -437,7 +468,10 @@ export class AuthApiClient {
     acceptedPrivacy: boolean;
     invitationToken?: string; // NEW: Optional invitation token for email verification
   }): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/register', {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/create-user` : '/auth/register';
+    
+    return this.request<SignInResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify(userData),
       headers: {
@@ -451,7 +485,7 @@ export class AuthApiClient {
    * This creates a new user if they don't exist, or signs them in if they do
    * Used for simple email confirmation flows without passkeys
    */
-  async registerOrSignIn(email: string, clientId: string = 'thepia-app'): Promise<{
+  async registerOrSignIn(email: string, clientId: string = 'app'): Promise<{
     success: boolean;
     user?: {
       id: string;
@@ -461,6 +495,9 @@ export class AuthApiClient {
     token?: string;
     message?: string;
   }> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    
     return this.request<{
       success: boolean;
       user?: {
@@ -470,7 +507,7 @@ export class AuthApiClient {
       };
       token?: string;
       message?: string;
-    }>('/auth/register', {
+    }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ 
         email: email.trim(),
@@ -570,6 +607,9 @@ export class AuthApiClient {
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
     
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/start-passwordless';
+    
     return this.request<{
       success: boolean;
       timestamp: number;
@@ -578,13 +618,71 @@ export class AuthApiClient {
         email: string;
         id: string;
       };
-    }>('/auth/start-passwordless', {
+    }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
         email: email,
         clientId: this.config.clientId
         // Server should determine redirectUri based on clientId and origin
       })
+    });
+  }
+
+  /**
+   * Send email signin (unified login/registration flow)
+   * This replaces registerUser, registerOrSignIn, and startPasswordlessAuthentication
+   * with a single, clear function that handles both new user registration and existing user signin
+   */
+  async sendEmailSignin(email: string, options?: {
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms?: boolean;
+    acceptedPrivacy?: boolean;
+    invitationToken?: string;
+  }): Promise<{
+    success: boolean;
+    step: 'email-sent' | 'user-created' | 'error';
+    message?: string;
+    user?: {
+      id: string;
+      email: string;
+      emailVerified: boolean;
+    };
+    isNewUser?: boolean;
+  }> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    
+    console.log('📧 Sending email signin:', {
+      email,
+      endpoint,
+      appCode: effectiveAppCode,
+      clientId: this.config.clientId,
+      hasOptions: !!options
+    });
+
+    const requestBody = {
+      email: email.trim(),
+      clientId: this.config.clientId,
+      ...options
+    };
+
+    return this.request<{
+      success: boolean;
+      step: 'email-sent' | 'user-created' | 'error';
+      message?: string;
+      user?: {
+        id: string;
+        email: string;
+        emailVerified: boolean;
+      };
+      isNewUser?: boolean;
+    }>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+      headers: {
+        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+      }
     });
   }
 
@@ -608,6 +706,125 @@ export class AuthApiClient {
       };
     }>(`/auth/passwordless-status?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
       method: 'GET'
+    });
+  }
+
+  /**
+   * Send email authentication code using app-based endpoints
+   * Uses /{appCode}/send-email endpoint for unified registration/login
+   */
+  async sendAppEmailCode(email: string): Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    if (!effectiveAppCode) {
+      throw new Error('App code is required for app-based email authentication. Set appCode in config.');
+    }
+
+    console.log('📧 Sending app email code:', {
+      email,
+      appCode: effectiveAppCode,
+      apiBaseUrl: this.config.apiBaseUrl
+    });
+
+    return this.request<{
+      success: boolean;
+      message: string;
+      timestamp: number;
+    }>(`/${effectiveAppCode}/send-email`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email
+      })
+    });
+  }
+
+  /**
+   * Verify email authentication code using app-based endpoints
+   * Uses /{appCode}/verify-email endpoint for unified registration/login
+   */
+  async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    if (!effectiveAppCode) {
+      throw new Error('App code is required for app-based email authentication. Set appCode in config.');
+    }
+
+    console.log('🔍 Verifying app email code:', {
+      email,
+      appCode: effectiveAppCode,
+      hasCode: !!code,
+      apiBaseUrl: this.config.apiBaseUrl
+    });
+
+    const response = await this.request<{
+      success?: boolean;
+      user?: User;
+      accessToken?: string;
+      refreshToken?: string;
+      idToken?: string;
+      expiresIn?: number;
+      step?: string;
+      error?: string;
+      message?: string;
+    }>(`/${effectiveAppCode}/verify-email`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email,
+        code: code
+      })
+    });
+
+    // Transform organization API response to match SignInResponse interface
+    // The API returns tokens directly in the response, not nested
+    if (response.success && response.user && response.accessToken) {
+      return {
+        step: 'success',
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn || 3600
+      };
+    }
+
+    // Handle error response
+    throw new Error(response.error || response.message || 'Email code verification failed');
+  }
+
+  /**
+   * Create user using app-based endpoints
+   * Uses /{appCode}/create-user endpoint for unified user creation
+   */
+  async createAppUser(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    invitationToken?: string;
+  }): Promise<{
+    success: boolean;
+    user?: User;
+    message?: string;
+  }> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    if (!effectiveAppCode) {
+      throw new Error('App code is required for app-based user creation. Set appCode in config.');
+    }
+
+    console.log('👤 Creating app user:', {
+      email: userData.email,
+      appCode: effectiveAppCode,
+      hasInvitation: !!userData.invitationToken,
+      apiBaseUrl: this.config.apiBaseUrl
+    });
+
+    return this.request<{
+      success: boolean;
+      user?: User;
+      message?: string;
+    }>(`/${effectiveAppCode}/create-user`, {
+      method: 'POST',
+      body: JSON.stringify(userData)
     });
   }
 }

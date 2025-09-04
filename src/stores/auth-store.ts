@@ -59,6 +59,27 @@ function createAuthStore(config: AuthConfig) {
     configureSessionStorage(storageConfig);
   }
 
+  // Helper function to get effective app code
+  const getEffectiveAppCode = (): string | undefined => {
+    // If appCode is explicitly set to false/null/undefined, use legacy endpoints
+    if (config.appCode === false || config.appCode === null || config.appCode === undefined) {
+      return undefined;
+    }
+    
+    // If appCode is explicitly set to a string, use that
+    if (typeof config.appCode === 'string') {
+      return config.appCode;
+    }
+    
+    // If appCode is set to true, use default 'app' appCode
+    if (config.appCode === true) {
+      return 'app';
+    }
+    
+    // Default to undefined for backward compatibility
+    return undefined;
+  };
+
   // Initialize API client and state machine
   const api = new AuthApiClient(config);
   const stateMachine = new AuthStateMachine(api, config);
@@ -150,7 +171,7 @@ function createAuthStore(config: AuthConfig) {
   /**
    * Save authentication session to sessionStorage
    */
-  function saveAuthSession(response: SignInResponse, authMethod: 'passkey' | 'password' = 'passkey') {
+  function saveAuthSession(response: SignInResponse, authMethod: 'passkey' | 'password' | 'email-code' = 'passkey') {
     if (!browser || !response.user || !response.accessToken) return;
 
     const sessionData: FlowsSessionData = {
@@ -1443,6 +1464,115 @@ function createAuthStore(config: AuthConfig) {
     }
   }
 
+  /**
+   * Send email code using organization-based authentication
+   * Uses /{appCode}/send-email endpoint for unified registration/login
+   */
+  async function signInWithAppEmail(email: string): Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }> {
+    // If appCode is configured, use app endpoints, otherwise fall back to magic link
+    if (!getEffectiveAppCode()) {
+      // Fall back to magic link authentication for backwards compatibility
+      const result = await signInWithMagicLink(email);
+      return {
+        success: result.step === 'magic-link' || !!result.magicLinkSent,
+        message: 'Magic link sent to your email',
+        timestamp: Date.now()
+      };
+    }
+
+    updateState({ state: 'loading', error: null });
+    emit('app_email_started', { email, appCode: getEffectiveAppCode() });
+
+    try {
+      console.log('📧 Starting app email sign-in:', {
+        email,
+        appCode: getEffectiveAppCode(),
+        apiBaseUrl: config.apiBaseUrl
+      });
+
+      const response = await api.sendAppEmailCode(email);
+      
+      emit('app_email_sent', { 
+        email, 
+        success: response.success,
+        timestamp: response.timestamp 
+      });
+      
+      updateState({ state: 'unauthenticated', error: null });
+      
+      return response;
+    } catch (error) {
+      console.error('App email sign-in failed:', error);
+      
+      const authError: AuthError = {
+        code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to send email code',
+        timestamp: new Date().toISOString()
+      };
+      
+      updateState({ state: 'error', error: authError });
+      emit('app_email_error', { error: authError, email });
+      reportApiError(`/${getEffectiveAppCode()}/send-email`, 'POST', 0, authError.message, { email, appCode: getEffectiveAppCode() });
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Verify email code using organization-based authentication
+   * Uses /{appCode}/verify-email endpoint for unified registration/login
+   */
+  async function verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
+    // If appCode is not configured, this shouldn't be called since sendEmailCode would use magic link
+    if (!getEffectiveAppCode()) {
+      throw new Error('Email code verification is only available with organization configuration. This email uses magic link authentication instead.');
+    }
+
+    updateState({ state: 'loading', error: null });
+    emit('app_email_verify_started', { email, appCode: getEffectiveAppCode() });
+
+    try {
+      console.log('🔍 Verifying app email code:', {
+        email,
+        appCode: getEffectiveAppCode(),
+        hasCode: !!code
+      });
+
+      const response = await api.verifyAppEmailCode(email, code);
+      
+      if (response.step === 'success' && response.user && response.accessToken) {
+        saveAuthSession(response, 'email-code');
+        emit('app_email_verify_success', { 
+          user: response.user, 
+          method: 'email-code',
+          appCode: getEffectiveAppCode() 
+        });
+        
+        return response;
+      } else {
+        throw new Error('Invalid response from email code verification');
+      }
+    } catch (error) {
+      console.error('Organization email code verification failed:', error);
+      
+      const authError: AuthError = {
+        code: error instanceof Error && 'code' in error ? (error as any).code : 'VERIFICATION_FAILED',
+        message: error instanceof Error ? error.message : 'Failed to verify email code',
+        timestamp: new Date().toISOString()
+      };
+      
+      updateState({ state: 'error', error: authError });
+      emit('app_email_verify_error', { error: authError, email });
+      reportApiError(`/${getEffectiveAppCode()}/verify-email`, 'POST', 0, authError.message, { email, appCode: getEffectiveAppCode(), code: '***' });
+      
+      throw error;
+    }
+  }
+
   // Auto-initialize when store is created
   if (browser) {
     initialize();
@@ -1469,6 +1599,10 @@ function createAuthStore(config: AuthConfig) {
     determineAuthFlow,
     on,
     api,
+    
+    // Email-based authentication methods (transparently uses app endpoints if configured)
+    sendEmailCode: signInWithAppEmail,
+    verifyEmailCode: verifyAppEmailCode,
     
     // Dynamic role configuration methods
     getApplicationContext,

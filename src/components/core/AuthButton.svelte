@@ -41,7 +41,8 @@ function getDisplayText(): string {
   if (loading) {
     switch (method) {
       case 'passkey': return 'Signing in...';
-      case 'email': return 'Sending...';
+      case 'email': return 'Sending pin...';
+      case 'email-code': return 'Sending pin...';
       case 'magic-link': return 'Sending magic link...';
       default: return 'Loading...';
     }
@@ -49,7 +50,8 @@ function getDisplayText(): string {
   
   switch (method) {
     case 'passkey': return supportsWebAuthn ? 'Sign in with Passkey' : 'Sign in';
-    case 'email': return 'Send Magic Link';
+    case 'email': return 'Send pin by email';
+    case 'email-code': return 'Send pin by email';
     case 'magic-link': return 'Send Magic Link';
     default: return 'Continue';
   }
@@ -75,140 +77,51 @@ function handleClick(event: MouseEvent) {
   
   dispatch('click', { method });
 }
+
+function getButtonClasses(): string {
+  // Use @thepia/branding Tailwind classes
+  const baseClasses = "flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]";
+  
+  let variantClasses = "";
+  if (variant === 'primary') {
+    variantClasses = "btn-brand"; // Use the branding preset class
+  } else if (variant === 'secondary') {
+    variantClasses = "bg-white border-2 border-brand-primary text-brand-primary hover:bg-brand-primarySubtle";
+  } else {
+    variantClasses = "bg-transparent border-transparent text-text-secondary hover:bg-neutral-100";
+  }
+  
+  let sizeClasses = "";
+  if (size === 'sm') {
+    sizeClasses = "px-3 py-1.5 text-sm";
+  } else if (size === 'lg') {
+    sizeClasses = "px-5 py-3 text-lg";
+  } else {
+    sizeClasses = "px-4 py-2 text-base";
+  }
+  
+  const widthClass = fullWidth ? "w-full" : "";
+  const disabledClass = (disabled || loading) ? "cursor-not-allowed opacity-50" : "cursor-pointer";
+  
+  return `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${disabledClass}`;
+}
 </script>
 
 <button
   {type}
-  class="auth-button variant-{variant} size-{size} {className}"
-  class:full-width={fullWidth}
-  class:loading
-  class:disabled
+  class="{getButtonClasses()} {className}"
   {disabled}
   on:click={handleClick}
+  aria-label={text || displayText}
 >
   {#if loading}
-    <span class="loading-spinner" aria-hidden="true"></span>
+    <div class="w-4 h-4 border-2 border-transparent border-t-current rounded-full animate-spin" aria-hidden="true"></div>
   {:else if showIcon && displayIcon}
-    <span class="button-icon" aria-hidden="true">{displayIcon}</span>
+    <span aria-hidden="true">{displayIcon}</span>
   {/if}
   
-  <span class="button-text">{displayText}</span>
+  <span>{displayText}</span>
 </button>
 
-<style>
-  .auth-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-family: inherit;
-    font-weight: 500;
-    border: none;
-    border-radius: var(--auth-border-radius, 8px);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    box-sizing: border-box;
-  }
+<!-- Using @thepia/branding Tailwind classes - no custom CSS needed -->
 
-  .auth-button:disabled,
-  .auth-button.disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .full-width {
-    width: 100%;
-  }
-
-  /* Variants */
-  .variant-primary {
-    background: var(--auth-primary, var(--brand-primary, #0066cc));
-    color: var(--auth-primary-text, #ffffff);
-    border: 2px solid var(--auth-primary, var(--brand-primary, #0066cc));
-  }
-
-  .variant-primary:hover:not(:disabled):not(.disabled):not(.loading) {
-    background: var(--auth-primary-hover, var(--brand-primary-hover, #0052a3));
-    border-color: var(--auth-primary-hover, var(--brand-primary-hover, #0052a3));
-    transform: translateY(-1px);
-  }
-
-  .variant-secondary {
-    background: transparent;
-    color: var(--auth-primary, var(--brand-primary, #0066cc));
-    border: 2px solid var(--auth-primary, var(--brand-primary, #0066cc));
-  }
-
-  .variant-secondary:hover:not(:disabled):not(.disabled):not(.loading) {
-    background: var(--auth-primary-light, rgba(0, 102, 204, 0.1));
-  }
-
-  .variant-ghost {
-    background: transparent;
-    color: var(--auth-text-secondary, #6b7280);
-    border: 2px solid transparent;
-  }
-
-  .variant-ghost:hover:not(:disabled):not(.disabled):not(.loading) {
-    background: var(--auth-surface-hover, #f3f4f6);
-    color: var(--auth-text-primary, #374151);
-  }
-
-  /* Sizes */
-  .size-sm {
-    padding: 8px 16px;
-    font-size: 14px;
-    min-height: 36px;
-  }
-
-  .size-md {
-    padding: 12px 16px;
-    font-size: 16px;
-    min-height: 48px;
-  }
-
-  .size-lg {
-    padding: 14px 20px;
-    font-size: 18px;
-    min-height: 56px;
-  }
-
-  /* Loading state */
-  .loading {
-    position: relative;
-  }
-
-  .loading-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .button-icon {
-    display: flex;
-    align-items: center;
-    font-size: 1.1em;
-  }
-
-  .button-text {
-    flex: 1;
-    text-align: center;
-  }
-
-  /* Disabled state styling */
-  .auth-button:disabled,
-  .auth-button.disabled {
-    background: var(--auth-disabled-bg, #d1d5db) !important;
-    color: var(--auth-disabled-text, #6b7280) !important;
-    border-color: var(--auth-disabled-bg, #d1d5db) !important;
-    transform: none !important;
-  }
-</style>

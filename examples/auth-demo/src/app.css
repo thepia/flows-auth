@@ -130,6 +130,17 @@ input, textarea, select {
   overflow: hidden;
 }
 
+/* Ensure buttons don't inherit any unwanted styles */
+.btn, .btn:focus, .btn:active {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Force hover styles to override any inherited styles */
+.btn:hover {
+  text-decoration: none;
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -181,6 +192,30 @@ input, textarea, select {
 .btn-success:hover:not(:disabled) {
   background: #059669;
   border-color: #059669;
+}
+
+/* Info button */
+.btn-info {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.btn-info:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Warning button */
+.btn-warning {
+  background: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #d97706;
+  border-color: #d97706;
 }
 
 /* Danger button */
@@ -342,6 +377,7 @@ input, textarea, select {
 
 /* Note: @thepia/flows-auth component styles are imported from the library's dist/style.css */
 /* Component classes (.btn-brand, .input-brand, etc.) are now imported from @thepia/branding/css/components */
+/* AuthButton component now has complete self-contained styling and doesn't need external CSS */
 
 /* Responsive */
 @media (max-width: 768px) {

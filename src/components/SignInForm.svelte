@@ -16,6 +16,11 @@
   export let compact = false;
   export let className = '';
   export let initialEmail = '';
+  
+  // Size and display variants
+  export let size: 'small' | 'medium' | 'large' | 'full' = 'medium';
+  export let variant: 'inline' | 'popup' = 'inline';
+  export let popupPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right';
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -362,7 +367,7 @@
   }
 </script>
 
-<div class="auth-form {className}" class:compact>
+<div class="auth-form {className}" class:compact class:popup={variant === 'popup'} class:size-small={size === 'small'} class:size-medium={size === 'medium'} class:size-large={size === 'large'} class:size-full={size === 'full'} class:pos-top-right={variant === 'popup' && popupPosition === 'top-right'} class:pos-top-left={variant === 'popup' && popupPosition === 'top-left'} class:pos-bottom-right={variant === 'popup' && popupPosition === 'bottom-right'} class:pos-bottom-left={variant === 'popup' && popupPosition === 'bottom-left'}>
   {#if showLogo && config.branding?.logoUrl}
     <div class="auth-logo">
       <img src={config.branding.logoUrl} alt={config.branding.companyName || 'Logo'} />
@@ -563,14 +568,65 @@
 
 <style>
   .auth-form {
-    max-width: 400px;
     width: 100%;
     margin: 0 auto;
     font-family: var(--font-family-brand, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   }
 
+  /* Size variants - replaces old compact prop */
+  .auth-form.size-small {
+    max-width: 280px;
+  }
+
+  .auth-form.size-medium {
+    max-width: 360px;
+  }
+
+  .auth-form.size-large {
+    max-width: 480px;
+  }
+
+  .auth-form.size-full {
+    max-width: none;
+  }
+
+  /* Legacy compact support */
   .auth-form.compact {
+    max-width: 280px;
+  }
+
+  /* Popup variant styling */
+  .auth-form.popup {
+    position: fixed;
+    z-index: 9999;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e5e7eb;
+    padding: 20px;
     max-width: 320px;
+    margin: 0;
+  }
+
+  /* Popup positioning */
+  .auth-form.popup.pos-top-right {
+    top: 20px;
+    right: 20px;
+  }
+
+  .auth-form.popup.pos-top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  .auth-form.popup.pos-bottom-right {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .auth-form.popup.pos-bottom-left {
+    bottom: 20px;
+    left: 20px;
   }
 
   .auth-logo {
@@ -958,9 +1014,30 @@
 
   /* Mobile responsive */
   @media (max-width: 480px) {
-    .auth-form {
+    .auth-form:not(.popup) {
       max-width: none;
       margin: 0 16px;
+    }
+
+    .auth-form.popup {
+      max-width: calc(100vw - 40px);
+      left: 20px !important;
+      right: 20px !important;
+      padding: 16px;
+    }
+
+    .auth-form.popup.pos-bottom-right,
+    .auth-form.popup.pos-bottom-left {
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+    }
+
+    .auth-form.popup.pos-top-right,
+    .auth-form.popup.pos-top-left {
+      top: 20px;
+      left: 20px;
+      right: 20px;
     }
 
     .auth-logo img {

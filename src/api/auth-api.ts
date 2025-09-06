@@ -345,6 +345,7 @@ export class AuthApiClient {
     userId?: string;
     emailVerified?: boolean;
     invitationTokenHash?: string;
+    lastPinExpiry?: string;
   }> {
     // Check cache first
     const cachedResult = globalUserCache.get(email);
@@ -378,6 +379,7 @@ export class AuthApiClient {
       userId?: string;
       emailVerified?: boolean;
       invitationTokenHash?: string;
+      lastPinExpiry?: string;
     }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email }),
@@ -399,7 +401,8 @@ export class AuthApiClient {
       hasPasskey: response.hasWebAuthn || false,
       userId: response.userId,
       emailVerified: response.emailVerified || false,
-      invitationTokenHash: response.invitationTokenHash
+      invitationTokenHash: response.invitationTokenHash,
+      lastPinExpiry: response.lastPinExpiry
     };
     
     // Cache the result

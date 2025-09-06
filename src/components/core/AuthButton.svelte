@@ -79,16 +79,16 @@ function handleClick(event: MouseEvent) {
 }
 
 function getButtonClasses(): string {
-  // Use @thepia/branding Tailwind classes
+  // Base Tailwind utility classes for layout, custom CSS classes for styling
   const baseClasses = "flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]";
   
   let variantClasses = "";
   if (variant === 'primary') {
-    variantClasses = "btn-brand"; // Use the branding preset class
+    variantClasses = "auth-btn-primary";
   } else if (variant === 'secondary') {
-    variantClasses = "bg-white border-2 border-brand-primary text-brand-primary hover:bg-brand-primarySubtle";
+    variantClasses = "auth-btn-secondary";
   } else {
-    variantClasses = "bg-transparent border-transparent text-text-secondary hover:bg-neutral-100";
+    variantClasses = "auth-btn-ghost";
   }
   
   let sizeClasses = "";
@@ -115,7 +115,7 @@ function getButtonClasses(): string {
   aria-label={text || displayText}
 >
   {#if loading}
-    <div class="w-4 h-4 border-2 border-transparent border-t-current rounded-full animate-spin" aria-hidden="true"></div>
+    <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
   {:else if showIcon && displayIcon}
     <span aria-hidden="true">{displayIcon}</span>
   {/if}
@@ -123,5 +123,83 @@ function getButtonClasses(): string {
   <span>{displayText}</span>
 </button>
 
-<!-- Using @thepia/branding Tailwind classes - no custom CSS needed -->
+<style>
+  /* Button base styles */
+  button {
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 0.5rem; /* rounded-lg equivalent */
+  }
+
+  /* Primary button variant */
+  :global(.auth-btn-primary) {
+    background: var(--color-brand-primary, #988ACA);
+    color: white;
+    border: 2px solid transparent;
+  }
+
+  :global(.auth-btn-primary:hover:not(:disabled)) {
+    background: var(--color-brand-primary-hover, #7B6BB7);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(152, 138, 202, 0.5), 0 3px 12px rgba(152, 138, 202, 0.3);
+  }
+
+  :global(.auth-btn-primary:active:not(:disabled)) {
+    transform: translateY(0);
+    background: var(--color-brand-primary-active, #654CA3);
+    box-shadow: 0 3px 12px rgba(152, 138, 202, 0.4);
+  }
+
+  /* Secondary button variant */
+  :global(.auth-btn-secondary) {
+    background: transparent;
+    color: var(--color-brand-primary, #988ACA);
+    border: 2px solid var(--color-brand-primary, #988ACA);
+  }
+
+  :global(.auth-btn-secondary:hover:not(:disabled)) {
+    background: var(--color-brand-primary, #988ACA);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 18px rgba(152, 138, 202, 0.4), 0 2px 10px rgba(152, 138, 202, 0.2);
+  }
+
+  :global(.auth-btn-secondary:active:not(:disabled)) {
+    transform: translateY(0);
+    background: var(--color-brand-primary-hover, #7B6BB7);
+    box-shadow: 0 3px 10px rgba(152, 138, 202, 0.3);
+  }
+
+  /* Ghost button variant */
+  :global(.auth-btn-ghost) {
+    background: transparent;
+    color: var(--auth-text-secondary, #6b7280);
+    border: 2px solid transparent;
+  }
+
+  :global(.auth-btn-ghost:hover:not(:disabled)) {
+    background: var(--auth-background-muted, #f3f4f6);
+    color: var(--auth-text-primary, #111827);
+  }
+
+  /* Disabled state for all variants */
+  button:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>
 

@@ -637,7 +637,8 @@ function createAuthStore(config: AuthConfig) {
         hasWebAuthn: result.hasPasskey,
         userId: result.userId,
         emailVerified: result.emailVerified,
-        invitationTokenHash: result.invitationTokenHash
+        invitationTokenHash: result.invitationTokenHash,
+        lastPinExpiry: result.lastPinExpiry
       };
     } catch (error) {
       console.error('Error checking user:', error);
@@ -1546,6 +1547,15 @@ function createAuthStore(config: AuthConfig) {
       
       if (response.step === 'success' && response.user && response.accessToken) {
         saveAuthSession(response, 'email-code');
+        updateState({
+          state: 'authenticated',
+          user: response.user,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          error: null
+        });
+        scheduleTokenRefresh();
         emit('app_email_verify_success', { 
           user: response.user, 
           method: 'email-code',

@@ -26,6 +26,12 @@ let domainOptions = ['dev.thepia.net', 'thepia.net'];
 let userStateResult = null;
 let invitationToken = '';
 
+// Pin verification controls
+let pinCode = '';
+let pinVerificationLoading = false;
+let pinVerificationError = null;
+let pinVerificationSuccess = null;
+
 // Enhanced check user state options
 let checkMethod = 'store'; // 'store' or 'api'
 let resultFormat = 'formatted'; // 'formatted' or 'json'
@@ -36,6 +42,13 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
 let enableMagicLinks = true;
+
+// New size and variant options
+let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
+let formVariant = 'inline'; // 'inline', 'popup'
+let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
+let useSignInForm = false; // Toggle between SignInCore and SignInForm
+let signInCoreLayout = 'full-width'; // 'full-width', 'hero-centered'
 
 // Registration action feedback
 let registrationError = null;
@@ -319,6 +332,8 @@ async function checkUserStateEnhanced() {
       emailVerified: rawResult.emailVerified || false,
       hasWebAuthn: rawResult.hasWebAuthn || rawResult.hasPasskey || false,
       userId: rawResult.userId,
+      lastPinExpiry: rawResult.lastPinExpiry,
+      lastPinSentAt: rawResult.lastPinSentAt,
       method: checkMethod,
       rawResult: rawResult
     };
@@ -371,6 +386,34 @@ function getRecommendedAction(state) {
   if (!state.emailVerified) return 'resend-verification';
   if (!state.hasWebAuthn) return 'passkey-setup';
   return 'use-signin';
+}
+
+function hasValidPin(state) {
+  if (!state || !state.lastPinExpiry) return false;
+  
+  try {
+    const expiryTime = new Date(state.lastPinExpiry);
+    const now = new Date();
+    return expiryTime > now; // Pin is still valid if expiry is in the future
+  } catch (error) {
+    console.error('Error parsing pin expiry time:', error);
+    return false;
+  }
+}
+
+function getPinTimeRemaining(state) {
+  if (!hasValidPin(state)) return null;
+  
+  try {
+    const expiryTime = new Date(state.lastPinExpiry);
+    const now = new Date();
+    const remainingMs = expiryTime.getTime() - now.getTime();
+    const remainingMinutes = Math.ceil(remainingMs / (1000 * 60));
+    return remainingMinutes;
+  } catch (error) {
+    console.error('Error calculating pin time remaining:', error);
+    return null;
+  }
 }
 
 async function executeNewUserRegistration() {
@@ -488,6 +531,47 @@ async function executeInvitationRegistration() {
 async function runQuickTest() {
   const { runTestAndDisplay } = await import('../lib/test/checkUserTest.js');
   return runTestAndDisplay();
+}
+
+async function verifyAuthPin() {
+  if (!authStore || !emailInput.trim() || !pinCode.trim()) return;
+  
+  // Clear previous messages
+  pinVerificationError = null;
+  pinVerificationSuccess = null;
+  pinVerificationLoading = true;
+  
+  try {
+    console.log('🔢 Verifying auth pin for:', emailInput);
+    
+    // Use the WorkOS verifyEmailAuth function
+    const result = await authStore.api.verifyEmailAuth(emailInput, pinCode);
+    console.log('✅ Pin verification result:', result);
+    
+    pinVerificationSuccess = `Successfully authenticated! Welcome, ${result.user?.email}`;
+    
+    // Clear pin code after successful verification
+    pinCode = '';
+    
+    // The auth store should automatically update with the authenticated user
+    // so we don't need to manually update the UI
+    
+  } catch (error) {
+    console.error('❌ Pin verification failed:', error);
+    
+    // Parse error message for user-friendly display
+    if (error.message?.includes('invalid code') || error.message?.includes('401')) {
+      pinVerificationError = 'Invalid or expired pin code. Please try again or request a new pin.';
+    } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+      pinVerificationError = 'Too many verification attempts. Please wait before trying again.';
+    } else if (error.message?.includes('user not found')) {
+      pinVerificationError = 'User not found. Please check the email address.';
+    } else {
+      pinVerificationError = error.message || 'Pin verification failed. Please try again.';
+    }
+  } finally {
+    pinVerificationLoading = false;
+  }
 }
 
 
@@ -674,6 +758,98 @@ $: if (dynamicAuthConfig) {
                   </label>
                 </div>
               </div>
+
+              <div class="config-group">
+                <label class="config-label">Component Type:</label>
+                <div class="radio-group">
+                  <label class="radio-option">
+                    <input type="radio" bind:group={useSignInForm} value={false} />
+                    <span>SignInCore (basic, no size options)</span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" bind:group={useSignInForm} value={true} />
+                    <span>SignInForm (full-featured, with sizing)</span>
+                  </label>
+                </div>
+              </div>
+
+              {#if !useSignInForm}
+                <div class="config-group">
+                  <label class="config-label">SignInCore Layout:</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input type="radio" bind:group={signInCoreLayout} value="full-width" />
+                      <span>Full Width (current style)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={signInCoreLayout} value="hero-centered" />
+                      <span>Hero Centered (card style, ~square)</span>
+                    </label>
+                  </div>
+                </div>
+              {/if}
+
+              {#if useSignInForm}
+                <div class="config-group">
+                  <label class="config-label">Form Size:</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formSize} value="small" />
+                      <span>Small (280px)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formSize} value="medium" />
+                      <span>Medium (360px)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formSize} value="large" />
+                      <span>Large (480px)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formSize} value="full" />
+                      <span>Full Width</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="config-group">
+                  <label class="config-label">Display Variant:</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formVariant} value="inline" />
+                      <span>Inline (normal flow)</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={formVariant} value="popup" />
+                      <span>Popup (fixed position)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {#if formVariant === 'popup'}
+                  <div class="config-group">
+                    <label class="config-label">Popup Position:</label>
+                    <div class="radio-group">
+                      <label class="radio-option">
+                        <input type="radio" bind:group={popupPosition} value="top-right" />
+                        <span>Top Right</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" bind:group={popupPosition} value="top-left" />
+                        <span>Top Left</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" bind:group={popupPosition} value="bottom-right" />
+                        <span>Bottom Right</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" bind:group={popupPosition} value="bottom-left" />
+                        <span>Bottom Left</span>
+                      </label>
+                    </div>
+                  </div>
+                {/if}
+              {/if}
               
               <div class="config-group">
                 <label class="config-label">Authentication Methods:</label>
@@ -717,23 +893,66 @@ $: if (dynamicAuthConfig) {
               </p>
             </div>
             <div class="card-body">
-              {#await import('@thepia/flows-auth') then { SignInCore }}
-                <SignInCore 
-                  config={dynamicAuthConfig}
-                  initialEmail={emailInput}
-                  className="demo-signin-form"
-                  on:success={(e) => handleSignInSuccess(e.detail)}
-                  on:error={(e) => handleSignInError(e.detail)}
-                  on:stepChange={(e) => handleStepChange(e.detail)}
-                />
-              {:catch error}
-                <div class="signin-error">
-                  <p>Failed to load SignInCore: {error.message}</p>
-                </div>
-              {/await}
+              {#if useSignInForm}
+                {#await import('@thepia/flows-auth') then { SignInForm }}
+                  <SignInForm 
+                    config={dynamicAuthConfig}
+                    initialEmail={emailInput}
+                    size={formSize}
+                    variant={formVariant}
+                    popupPosition={popupPosition}
+                    className="demo-signin-form"
+                    on:success={(e) => handleSignInSuccess(e.detail)}
+                    on:error={(e) => handleSignInError(e.detail)}
+                    on:stepChange={(e) => handleStepChange(e.detail)}
+                  />
+                {:catch error}
+                  <div class="signin-error">
+                    <p>Failed to load SignInForm: {error.message}</p>
+                  </div>
+                {/await}
+              {:else}
+                {#await import('@thepia/flows-auth') then { SignInCore }}
+                  <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
+                    <SignInCore 
+                      config={dynamicAuthConfig}
+                      initialEmail={emailInput}
+                      className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
+                      on:success={(e) => handleSignInSuccess(e.detail)}
+                      on:error={(e) => handleSignInError(e.detail)}
+                      on:stepChange={(e) => handleStepChange(e.detail)}
+                    />
+                  </div>
+                {:catch error}
+                  <div class="signin-error">
+                    <p>Failed to load SignInCore: {error.message}</p>
+                  </div>
+                {/await}
+              {/if}
             </div>
           </div>
         {/if}
+        
+        <!-- Pin Integration Info -->
+        <div class="pin-integration-info card">
+          <div class="card-header">
+            <h4>🔢 Smart Pin Detection</h4>
+          </div>
+          <div class="card-body">
+            <p>The Live Sign-In component now includes intelligent pin detection:</p>
+            <ul>
+              <li><strong>Automatic Detection:</strong> When you enter an email, the system checks for existing valid pins</li>
+              <li><strong>Skip Redundant Sends:</strong> If a valid pin exists, it skips sending a new one and goes directly to verification</li>
+              <li><strong>Smart Messaging:</strong> Shows different messages for new codes vs. existing valid pins</li>
+              <li><strong>Seamless Experience:</strong> Users don't need to re-request pins after page reloads</li>
+            </ul>
+            
+            <div class="integration-note">
+              <p><strong>💡 Try it:</strong> Use the registration flow to send yourself a pin, then come back to this Sign-In form. 
+              Enter the same email and you'll see it detects the existing pin instead of sending a new one!</p>
+            </div>
+          </div>
+        </div>
       </div>
     
     {:else if selectedDemo === 'register'}
@@ -1785,6 +2004,23 @@ $: if (dynamicAuthConfig) {
     padding: 0 !important;
   }
 
+  /* SignInCore container styles */
+  .signin-core-container {
+    width: 100%;
+  }
+
+  .signin-core-container.hero-centered {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+
+  /* Hero-style SignInCore */
+  .demo-signin-form.hero-style {
+    max-width: 360px;
+    width: 100%;
+  }
+
   .signin-error {
     padding: 1rem;
     background: #fef2f2;
@@ -1792,6 +2028,38 @@ $: if (dynamicAuthConfig) {
     border-radius: var(--radius-sm);
     color: #dc2626;
     text-align: center;
+  }
+
+  /* Pin Integration Info Styles */
+  .pin-integration-info {
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pin-integration-info ul {
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .pin-integration-info li {
+    margin: 0.5rem 0;
+  }
+
+  .integration-note {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: var(--radius-sm);
+  }
+
+  .integration-note p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
   }
 
   @media (max-width: 768px) {

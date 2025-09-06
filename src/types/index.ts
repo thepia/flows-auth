@@ -163,6 +163,11 @@ export interface AuthConfig {
   
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
+  
+  // Internationalization configuration
+  language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
+  translations?: import('../utils/i18n').CustomTranslations; // Custom translation overrides
+  fallbackLanguage?: string; // Fallback language (defaults to 'en')
 }
 
 // Auth0 configuration
@@ -469,3 +474,10 @@ export type AuthStoreMethods = {
   // Convenience methods for backward compatibility
   signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
 };
+
+// Re-export i18n types for convenience
+export type { 
+  CustomTranslations,
+  TranslationKey,
+  SupportedLanguage 
+} from '../utils/i18n';

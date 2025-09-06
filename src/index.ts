@@ -78,6 +78,21 @@ export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
 // API Detection
 export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
 
+// Internationalization
+export { 
+  createI18n, 
+  detectUserLanguage, 
+  getSupportedLanguages,
+  isLanguageSupported,
+  defaultTranslations 
+} from './utils/i18n';
+
+export type {
+  SupportedLanguage,
+  TranslationKey,
+  CustomTranslations
+} from './utils/i18n';
+
 export * from './utils/errorReporter';
 
 export type { InvitationProcessingResult } from './utils/invitation-processing';

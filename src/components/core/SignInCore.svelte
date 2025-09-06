@@ -8,6 +8,7 @@ import { createEventDispatcher, onMount } from 'svelte';
 import { createAuthStore } from '../../stores/auth-store';
 import type { AuthConfig, AuthError, AuthMethod, User } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
+import { createI18n, detectUserLanguage } from '../../utils/i18n';
 
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
@@ -19,17 +20,58 @@ export let config: AuthConfig;
 export let initialEmail = '';
 export let className = '';
 
-// Customizable texts
+// DEPRECATED: Customizable texts (maintained for backward compatibility)
+// Use config.translations instead for new implementations
 export let texts = {
-  emailLabel: 'Email address',
-  emailPlaceholder: 'your.email@company.com',
-  signInButton: '',  // Will use AuthButton's smart defaults
+  emailLabel: '',
+  emailPlaceholder: '',
+  signInButton: '',
   loadingButton: '',
-  webAuthnReady: '🔐 WebAuthn ready - Touch ID/Face ID will appear automatically',
-  checkEmail: 'Check your email',
-  magicLinkSent: 'We sent a secure login link to',
-  useDifferentEmail: 'Use a different email'
+  webAuthnReady: '',
+  checkEmail: '',
+  magicLinkSent: '',
+  useDifferentEmail: ''
 };
+
+// Create i18n instance
+const i18nInstance = createI18n(
+  config.language || detectUserLanguage(['en'], 'en'),
+  config.translations || {},
+  config.fallbackLanguage || 'en'
+);
+
+// Extract the translation function store
+const i18n = i18nInstance.t;
+
+// React to config changes and update i18n
+$: {
+  // Update language if it changes
+  if (config.language) {
+    i18nInstance.setLanguage(config.language);
+  }
+  
+  // Apply legacy texts as translation overrides if provided
+  const legacyOverrides: Record<string, string> = {};
+  if (texts.emailLabel) legacyOverrides['email.label'] = texts.emailLabel;
+  if (texts.emailPlaceholder) legacyOverrides['email.placeholder'] = texts.emailPlaceholder;
+  if (texts.signInButton) legacyOverrides['auth.signIn'] = texts.signInButton;
+  if (texts.loadingButton) legacyOverrides['auth.loading'] = texts.loadingButton;
+  if (texts.webAuthnReady) legacyOverrides['webauthn.ready'] = texts.webAuthnReady;
+  if (texts.checkEmail) legacyOverrides['status.checkEmail'] = texts.checkEmail;
+  if (texts.magicLinkSent) legacyOverrides['status.magicLinkSent'] = texts.magicLinkSent;
+  if (texts.useDifferentEmail) legacyOverrides['action.useDifferentEmail'] = texts.useDifferentEmail;
+
+  // Combine all translations (config translations + legacy overrides)
+  const allTranslations = {
+    ...(config.translations || {}),
+    ...legacyOverrides
+  };
+  
+  // Update translations if there are any
+  if (Object.keys(allTranslations).length > 0) {
+    i18nInstance.setTranslations(allTranslations);
+  }
+}
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -576,8 +618,8 @@ function getEmailInputWebAuthnEnabled(authConfig, webAuthnSupported): boolean {
 function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userExists, hasPasskeys, hasValidPin) {
   // Smart button configuration based on discovered user state
   let primaryMethod = method;
-  let primaryText = texts.signInButton;
-  let primaryLoadingText = texts.loadingButton;
+  let primaryText = $i18n('auth.signIn');
+  let primaryLoadingText = $i18n('auth.loading');
   let secondaryAction = null;
 
   // If we have user information and email is entered, make smart decisions
@@ -585,32 +627,32 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     if (webAuthnSupported && config.enablePasskeys && hasPasskeys) {
       // User has passkeys - prioritize passkey authentication
       primaryMethod = 'passkey';
-      primaryText = 'Sign in with Passkey';
-      primaryLoadingText = 'Signing in with Passkey...';
+      primaryText = $i18n('auth.signInWithPasskey');
+      primaryLoadingText = $i18n('auth.signingIn');
       
       // Add secondary action for pin fallback if available
       if (config.appCode) {
         secondaryAction = {
           method: 'email-code',
-          text: hasValidPin ? 'Enter existing pin' : 'Send pin by email',
-          loadingText: hasValidPin ? 'Verifying pin...' : 'Sending pin...'
+          text: hasValidPin ? $i18n('auth.enterExistingPin') : $i18n('auth.sendPinByEmail'),
+          loadingText: hasValidPin ? $i18n('auth.verifyingPin') : $i18n('auth.sendingPin')
         };
       }
     } else if (config.appCode) {
       // User doesn't have passkeys, use pin authentication
       primaryMethod = 'email-code';
       if (hasValidPin) {
-        primaryText = 'Enter existing pin';
-        primaryLoadingText = 'Verifying pin...';
+        primaryText = $i18n('auth.enterExistingPin');
+        primaryLoadingText = $i18n('auth.verifyingPin');
       } else {
-        primaryText = 'Send pin by email';
-        primaryLoadingText = 'Sending pin...';
+        primaryText = $i18n('auth.sendPinByEmail');
+        primaryLoadingText = $i18n('auth.sendingPin');
       }
     } else if (config.enableMagicLinks) {
       // Fallback to magic links
       primaryMethod = 'magic-link';
-      primaryText = 'Send Magic Link';
-      primaryLoadingText = 'Sending magic link...';
+      primaryText = $i18n('auth.sendMagicLink');
+      primaryLoadingText = $i18n('auth.sendingMagicLink');
     }
   }
 
@@ -647,8 +689,8 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput
         bind:value={email}
-        label={texts.emailLabel}
-        placeholder={texts.emailPlaceholder}
+        label={$i18n('email.label')}
+        placeholder={$i18n('email.placeholder')}
         {error}
         disabled={loading}
         enableWebAuthn={emailInputWebAuthnEnabled}
@@ -662,14 +704,17 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
         <div class="pin-status-message">
           <span class="pin-status-icon">📧</span>
           <span class="pin-status-text">
-            A valid pin was already sent to you, good for {pinRemainingMinutes} minute{pinRemainingMinutes !== 1 ? 's' : ''}.
+            {$i18n('status.pinValid', { 
+              minutes: pinRemainingMinutes, 
+              s: pinRemainingMinutes !== 1 ? 's' : '' 
+            })}
             <button
               type="button"
               class="pin-direct-link"
               on:click={goToPinInput}
               disabled={loading}
             >
-              Enter pin here
+              {$i18n('status.pinDirectAction')}
             </button>
           </span>
         </div>
@@ -705,7 +750,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       {#if supportsWebAuthn && config.enablePasskeys}
         <AuthStateMessage
           type="info"
-          message={texts.webAuthnReady}
+          message={$i18n('webauthn.ready')}
           showIcon={true}
           className="webauthn-indicator"
         />
@@ -718,18 +763,18 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       {#if emailCodeSent && !hasValidPin}
         <AuthStateMessage
           type="success"
-          message="Check your email"
+          message={$i18n('status.checkEmail')}
           showIcon={true}
         />
         
         <p class="email-code-message">
-          We sent a verification code to<br>
+          {$i18n('status.emailSent')}<br>
           <strong>{email}</strong>
         </p>
       {:else}
         <AuthStateMessage
           type="info"
-          message="🔢 Valid pin detected"
+          message={$i18n('status.pinDetected')}
           showIcon={true}
         />
         
@@ -775,7 +820,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     <div class="magic-link-sent">
       <AuthStateMessage
         type="success"
-        message="{texts.checkEmail}"
+        message={$i18n('status.checkEmail')}
         showIcon={true}
       />
       
@@ -796,7 +841,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     <!-- Registration flow would be handled by parent or separate component -->
     <AuthStateMessage
       type="info"
-      message="Registration is required. Please complete the registration process."
+      message={$i18n('registration.required')}
       showIcon={true}
     />
   {/if}

@@ -48,6 +48,63 @@ let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
 let formVariant = 'inline'; // 'inline', 'popup'
 let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
+
+// i18n Configuration options
+let selectedLanguage = 'en'; // 'en', 'es'
+let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'custom'
+let customTranslationOverrides = {}; // User-defined translation overrides
+let customTranslationsJson = '{}'; // JSON string for custom translations
+let customTranslationError = null; // Error message for invalid JSON
+
+// Predefined client variants for demonstration
+const clientVariants = {
+  default: {
+    name: 'Default Thepia',
+    companyName: 'Thepia',
+    translations: {}
+  },
+  acme: {
+    name: 'ACME Corporation',  
+    companyName: 'ACME Corporation',
+    translations: {
+      'auth.signIn': 'Access ACME Portal',
+      'email.placeholder': 'your.email@acme.com',
+      'status.emailSent': 'Check your ACME corporate email for verification',
+      'webauthn.ready': '🏢 ACME SecureAuth ready - Corporate Touch ID/Face ID available',
+      'status.signInSuccess': 'Welcome to ACME Portal!',
+      'auth.sendPinByEmail': 'Send ACME security pin'
+    }
+  },
+  techcorp: {
+    name: 'TechCorp Solutions',
+    companyName: 'TechCorp Solutions', 
+    translations: {
+      'auth.signIn': 'Login to TechCorp',
+      'email.placeholder': 'developer@techcorp.io',
+      'status.emailSent': 'Verification code sent to your TechCorp account',
+      'webauthn.ready': '🚀 TechCorp Secure Login - Biometric auth enabled',
+      'status.signInSuccess': 'Welcome to TechCorp Dashboard!',
+      'auth.signInWithPasskey': 'TechCorp Secure Login'
+    }
+  },
+  healthcare: {
+    name: 'MedSecure Health',
+    companyName: 'MedSecure Health',
+    translations: {
+      'auth.signIn': 'Secure Medical Portal Access',
+      'email.placeholder': 'provider@medsecure.health',
+      'status.emailSent': 'Secure verification sent to your healthcare email',
+      'webauthn.ready': '🏥 HIPAA-compliant biometric authentication ready',
+      'status.signInSuccess': 'Welcome to MedSecure Portal!',
+      'auth.sendPinByEmail': 'Send secure medical verification'
+    }
+  },
+  custom: {
+    name: 'Custom Configuration',
+    companyName: 'Your Company',
+    translations: {} // Will be populated from textarea
+  }
+};
 let signInCoreLayout = 'full-width'; // 'full-width', 'hero-centered'
 
 // Registration action feedback
@@ -591,12 +648,48 @@ function handleStepChange(detail) {
   console.log(`📍 Authentication flow step: ${detail.step}`);
 }
 
+// Handle custom translation updates
+function updateCustomTranslations() {
+  try {
+    // Parse the JSON and validate it
+    const parsed = JSON.parse(customTranslationsJson);
+    if (typeof parsed === 'object' && parsed !== null) {
+      customTranslationOverrides = parsed;
+      customTranslationError = null;
+      // Update the custom variant's translations
+      clientVariants.custom.translations = parsed;
+    } else {
+      customTranslationError = 'Invalid JSON: must be an object';
+    }
+  } catch (error) {
+    customTranslationError = `Invalid JSON: ${error.message}`;
+  }
+}
+
+// Get current client variant and build translation overrides
+$: currentClientVariant = clientVariants[selectedClientVariant] || clientVariants.default;
+$: combinedTranslations = selectedClientVariant === 'custom' 
+  ? customTranslationOverrides 
+  : {
+      ...currentClientVariant.translations,
+      ...customTranslationOverrides
+    };
+
 // Create reactive config that updates when controls change
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
   enableMagicLinks, 
-  signInMode
+  signInMode,
+  // i18n configuration
+  language: selectedLanguage,
+  translations: combinedTranslations,
+  fallbackLanguage: 'en',
+  // Update branding with client variant
+  branding: {
+    ...authConfig.branding,
+    companyName: currentClientVariant.companyName
+  }
 } : null;
 
 // Log changes for debugging
@@ -604,7 +697,10 @@ $: if (dynamicAuthConfig) {
   console.log('⚙️ SignInCore config updated:', {
     signInMode: dynamicAuthConfig.signInMode,
     enablePasskeys: dynamicAuthConfig.enablePasskeys,
-    enableMagicLinks: dynamicAuthConfig.enableMagicLinks
+    enableMagicLinks: dynamicAuthConfig.enableMagicLinks,
+    language: dynamicAuthConfig.language,
+    clientVariant: selectedClientVariant,
+    translationCount: Object.keys(combinedTranslations).length
   });
 }
 </script>
@@ -850,6 +946,62 @@ $: if (dynamicAuthConfig) {
                   </div>
                 {/if}
               {/if}
+
+              <!-- i18n Configuration Controls -->
+              <div class="config-section">
+                <h4 class="config-section-title">🌍 Internationalization (i18n)</h4>
+                
+                <div class="config-group">
+                  <label class="config-label">Language:</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedLanguage} value="en" />
+                      <span>English</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedLanguage} value="es" />
+                      <span>Español (Spanish)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="config-group">
+                  <label class="config-label">Client Variant:</label>
+                  <div class="radio-group">
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="default" />
+                      <span>Default Thepia</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="acme" />
+                      <span>🏢 ACME Corporation</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="techcorp" />
+                      <span>🚀 TechCorp Solutions</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="healthcare" />
+                      <span>🏥 MedSecure Health</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="config-group">
+                  <label class="config-label">Current Configuration:</label>
+                  <div class="config-info">
+                    <div class="info-line">
+                      <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Español'}
+                    </div>
+                    <div class="info-line">
+                      <strong>Client:</strong> {currentClientVariant.name}
+                    </div>
+                    <div class="info-line">
+                      <strong>Custom Translations:</strong> {Object.keys(combinedTranslations).length} keys
+                    </div>
+                  </div>
+                </div>
+              </div>
               
               <div class="config-group">
                 <label class="config-label">Authentication Methods:</label>
@@ -2086,5 +2238,41 @@ $: if (dynamicAuthConfig) {
       align-items: flex-start;
       gap: 0.5rem;
     }
+  }
+
+  /* i18n Configuration Styles */
+  .config-section {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background: var(--surface-variant);
+  }
+
+  .config-section-title {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .config-info {
+    background: var(--surface-secondary);
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+  }
+
+  .info-line {
+    margin: 0.25rem 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .info-line strong {
+    color: var(--text-primary);
+    font-weight: 600;
   }
 </style>

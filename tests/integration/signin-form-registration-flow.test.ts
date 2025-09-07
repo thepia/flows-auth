@@ -22,7 +22,7 @@ describe('SignInForm Registration Flow Regression', () => {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
     enablePasskeys: true,
-    enableMagicLinks: true
+    enableMagicPins: true
   };
 
   beforeAll(async () => {
@@ -228,7 +228,7 @@ describe('SignInForm Registration Flow Regression', () => {
         if (hasPasskeys) {
           expectedStep = 'passkey-auth';
           console.log('🔐 Expected flow: Passkey authentication');
-        } else if (userExists && TEST_CONFIG.enableMagicLinks) {
+        } else if (userExists && TEST_CONFIG.enableMagicPins) {
           expectedStep = 'magic-link';
           console.log('📧 Expected flow: Magic link authentication');
         } else if (!userExists) {

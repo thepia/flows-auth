@@ -41,7 +41,7 @@ describe('RegistrationForm Step Progression Debug', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
+      enableMagicPins: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',

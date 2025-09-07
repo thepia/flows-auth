@@ -152,7 +152,7 @@ export interface AuthConfig {
   clientId: string;
   domain: string;
   enablePasskeys: boolean;
-  enableMagicLinks: boolean;
+  enableMagicPins: boolean;
   redirectUri?: string;
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;

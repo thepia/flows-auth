@@ -41,7 +41,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -514,7 +514,7 @@ describe('Auth Store', () => {
     it('should fall back to magic link when org is not configured', async () => {
       const configWithoutOrg: AuthConfig = {
         ...mockConfig,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
       delete (configWithoutOrg as any).org;
       

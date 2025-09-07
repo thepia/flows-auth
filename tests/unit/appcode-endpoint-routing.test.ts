@@ -29,7 +29,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       it('THEN checkEmail should call /demo/check-user endpoint', async () => {
@@ -102,7 +102,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'app',
         domain: 'app.thepia.net',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       it('THEN endpoints should use /app/ prefix', async () => {
@@ -126,7 +126,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: false,
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       it('THEN checkEmail should call legacy /auth/check-user endpoint', async () => {
@@ -169,7 +169,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: true,
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       it('THEN endpoints should default to /app/ prefix', async () => {
@@ -193,7 +193,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       it('THEN checkEmail should use GET method (not POST)', async () => {

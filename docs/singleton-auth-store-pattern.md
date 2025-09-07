@@ -108,7 +108,7 @@ The flows-auth library provides a **singleton auth store pattern** that ensures 
         clientId: 'your-client-id',
         domain: 'yourapp.com',
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
       
       // Initialize the global singleton auth store
@@ -165,7 +165,7 @@ const authStore = initializeAuth({
   clientId: 'your-client-id',
   domain: 'yourapp.com',
   enablePasskeys: true,
-  enableMagicLinks: true
+  enableMagicPins: true
 });
 ```
 
@@ -329,7 +329,7 @@ For components that might load before auth is initialized:
     clientId: 'your-client-id',
     domain: 'yourapp.com',
     enablePasskeys: true,
-    enableMagicLinks: true
+    enableMagicPins: true
   };
   
   const auth = getOrInitializeAuth(fallbackConfig);

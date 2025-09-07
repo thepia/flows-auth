@@ -126,7 +126,7 @@ pnpm add @thepia/flows-auth
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
     domain: 'app.thepia.net' // or 'flows.thepia.net'
   });
 

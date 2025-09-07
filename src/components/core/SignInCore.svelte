@@ -8,7 +8,7 @@ import { createEventDispatcher, onMount } from 'svelte';
 import { createAuthStore } from '../../stores/auth-store';
 import type { AuthConfig, AuthError, AuthMethod, User } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
-import { createI18n, detectUserLanguage } from '../../utils/i18n';
+import { getI18n } from '../../utils/i18n';
 
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
@@ -20,56 +20,25 @@ export let config: AuthConfig;
 export let initialEmail = '';
 export let className = '';
 
-// DEPRECATED: Customizable texts (maintained for backward compatibility)
-// Use config.translations instead for new implementations
-export let texts = {
-  emailLabel: '',
-  emailPlaceholder: '',
-  signInButton: '',
-  loadingButton: '',
-  webAuthnReady: '',
-  checkEmail: '',
-  magicLinkSent: '',
-  useDifferentEmail: ''
-};
+// NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
-// Create i18n instance
-const i18nInstance = createI18n(
-  config.language || detectUserLanguage(['en'], 'en'),
-  config.translations || {},
-  config.fallbackLanguage || 'en'
-);
+// Get i18n instance - will use context if available, or create from config
+const i18nInstance = getI18n({
+  language: config?.language,
+  translations: config?.translations,
+  fallbackLanguage: config?.fallbackLanguage
+});
 
 // Extract the translation function store
 const i18n = i18nInstance.t;
 
-// React to config changes and update i18n
+// Update i18n when config changes
 $: {
-  // Update language if it changes
-  if (config.language) {
+  if (config?.language) {
     i18nInstance.setLanguage(config.language);
   }
-  
-  // Apply legacy texts as translation overrides if provided
-  const legacyOverrides: Record<string, string> = {};
-  if (texts.emailLabel) legacyOverrides['email.label'] = texts.emailLabel;
-  if (texts.emailPlaceholder) legacyOverrides['email.placeholder'] = texts.emailPlaceholder;
-  if (texts.signInButton) legacyOverrides['auth.signIn'] = texts.signInButton;
-  if (texts.loadingButton) legacyOverrides['auth.loading'] = texts.loadingButton;
-  if (texts.webAuthnReady) legacyOverrides['webauthn.ready'] = texts.webAuthnReady;
-  if (texts.checkEmail) legacyOverrides['status.checkEmail'] = texts.checkEmail;
-  if (texts.magicLinkSent) legacyOverrides['status.magicLinkSent'] = texts.magicLinkSent;
-  if (texts.useDifferentEmail) legacyOverrides['action.useDifferentEmail'] = texts.useDifferentEmail;
-
-  // Combine all translations (config translations + legacy overrides)
-  const allTranslations = {
-    ...(config.translations || {}),
-    ...legacyOverrides
-  };
-  
-  // Update translations if there are any
-  if (Object.keys(allTranslations).length > 0) {
-    i18nInstance.setTranslations(allTranslations);
+  if (config?.translations) {
+    i18nInstance.setTranslations(config.translations);
   }
 }
 
@@ -188,7 +157,7 @@ onMount(async () => {
     supportsWebAuthn,
     platformAuthenticatorAvailable,
     enablePasskeys: config.enablePasskeys,
-    enableMagicLinks: config.enableMagicLinks,
+    enableMagicPins: config.enableMagicPins,
     signInMode: config.signInMode,
   });
 
@@ -422,7 +391,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   // If user has passkeys and we support them
   if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
     // Use passkey with fallback to email if other email methods are enabled
-    const hasEmailFallback = config.appCode || config.enableMagicLinks;
+    const hasEmailFallback = config.appCode || config.enableMagicPins;
     return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
   }
   
@@ -432,7 +401,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   }
   
   // If user doesn't have passkeys but we have magic links enabled
-  if (config.enableMagicLinks) {
+  if (config.enableMagicPins) {
     return 'email-only';
   }
 
@@ -594,14 +563,14 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
     
     // Show email UI if organization-based or magic links are enabled
-    if (authConfig.org || authConfig.enableMagicLinks) return 'email';
+    if (authConfig.org || authConfig.enableMagicPins) return 'email';
     
     return 'generic';
   })();
   
   console.log('🎯 getAuthMethodForUI():', {
     enablePasskeys: authConfig.enablePasskeys,
-    enableMagicLinks: authConfig.enableMagicLinks,
+    enableMagicPins: authConfig.enableMagicPins,
     hasOrg: !!authConfig.org,
     supportsWebAuthn: webAuthnSupported,
     result
@@ -648,7 +617,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
         primaryText = $i18n('auth.sendPinByEmail');
         primaryLoadingText = $i18n('auth.sendingPin');
       }
-    } else if (config.enableMagicLinks) {
+    } else if (config.enableMagicPins) {
       // Fallback to magic links
       primaryMethod = 'magic-link';
       primaryText = $i18n('auth.sendMagicLink');
@@ -694,6 +663,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
         {error}
         disabled={loading}
         enableWebAuthn={emailInputWebAuthnEnabled}
+        {i18n}
         on:change={handleEmailChange}
         on:input={handleEmailChange}
         on:blur={handleEmailChange}
@@ -729,6 +699,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
           disabled={buttonConfig.primary.disabled}
           {loading}
           supportsWebAuthn={buttonConfig.primary.supportsWebAuthn}
+          {i18n}
           on:click={handleSignIn}
         />
         
@@ -742,6 +713,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
             disabled={loading || !email.trim()}
             {loading}
             supportsWebAuthn={false}
+            {i18n}
             on:click={handleSecondaryAction}
           />
         {/if}
@@ -755,6 +727,23 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
           className="webauthn-indicator"
         />
       {/if}
+      
+      <!-- Security explanation message -->
+      <div class="security-message">
+        {#if config?.branding?.companyName}
+          {#if config.appCode}
+            {$i18n('security.passwordlessWithPin', { companyName: config.branding.companyName })}
+          {:else}
+            {$i18n('security.passwordlessExplanation', { companyName: config.branding.companyName })}
+          {/if}
+        {:else}
+          {#if config.appCode}
+            {$i18n('security.passwordlessWithPinGeneric')}
+          {:else}
+            {$i18n('security.passwordlessGeneric')}
+          {/if}
+        {/if}
+      </div>
     </form>
 
   {:else if step === 'email-code-input'}
@@ -792,6 +781,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
           {error}
           disabled={loading}
           maxlength={6}
+          {i18n}
         />
         
         <div class="button-section">
@@ -803,6 +793,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
             disabled={loading || !emailCode.trim()}
             {loading}
             supportsWebAuthn={false}
+            {i18n}
           />
         </div>
       </form>
@@ -810,7 +801,8 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       <AuthButton
         type="button"
         variant="secondary"
-        text={texts.useDifferentEmail}
+        text={$i18n('action.useDifferentEmail')}
+        {i18n}
         on:click={resetForm}
       />
     </div>
@@ -825,14 +817,15 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       />
       
       <p class="magic-link-message">
-        {texts.magicLinkSent}<br>
+        {$i18n('status.magicLinkSent')}<br>
         <strong>{email}</strong>
       </p>
 
       <AuthButton
         type="button"
         variant="secondary"
-        text={texts.useDifferentEmail}
+        text={$i18n('action.useDifferentEmail')}
+        {i18n}
         on:click={resetForm}
       />
     </div>
@@ -927,6 +920,16 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     opacity: 0.6;
     cursor: not-allowed;
     text-decoration: none;
+  }
+  
+  /* Security message styling - matches thepia.com */
+  .security-message {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--auth-text-secondary, #6b7280);
+    line-height: 1.4;
+    opacity: 0.8;
   }
 
 </style>

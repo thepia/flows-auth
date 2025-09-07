@@ -11,7 +11,7 @@ const authConfig = {
   domain: 'thepia.com',
   clientId: 'your-client-id',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   // language defaults to 'en' if not specified
 };
 
@@ -27,7 +27,7 @@ const authConfig = {
   domain: 'thepia.com',
   clientId: 'your-client-id',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   language: 'es', // Spanish interface
 };
 
@@ -50,7 +50,7 @@ const authConfig = {
   domain: 'thepia.com',
   clientId: 'your-client-id',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   language: 'en',
   translations: customTranslations, // Override specific messages
   branding: {
@@ -101,18 +101,22 @@ const authStore = createAuthStore(authConfig);
     enablePasskeys: true,
   };
   
-  // DEPRECATED: Use config.translations instead
-  const legacyTexts = {
-    emailLabel: 'Your Email',
-    emailPlaceholder: 'email@example.com',
-    signInButton: 'Sign In Now'
+  // Modern approach: Use translations in config
+  const authConfig = {
+    apiBaseUrl: 'https://api.example.com',
+    clientId: 'your-client-id',
+    enablePasskeys: true,
+    translations: {
+      'email.label': 'Your Email',
+      'email.placeholder': 'email@example.com',
+      'auth.signIn': 'Sign In Now'
+    }
   };
 </script>
 
-<!-- Still supported for backward compatibility -->
+<!-- Modern i18n approach -->
 <SignInCore
   config={authConfig}
-  texts={legacyTexts}
   on:success={(event) => console.log('Success:', event.detail)}
 />
 ```
@@ -206,21 +210,11 @@ const customTranslations = {
 
 ## Migration Guide
 
-### From Legacy `texts` Prop
+### From Legacy `texts` Prop (No Longer Supported)
 
-**Before (deprecated):**
-```svelte
-<SignInCore
-  config={authConfig}
-  texts={{
-    emailLabel: 'Email Address',
-    signInButton: 'Login Now',
-    webAuthnReady: '🔐 Secure login ready'
-  }}
-/>
-```
+The `texts` prop has been completely removed. Use the modern i18n system instead:
 
-**After (recommended):**
+**Modern approach:**
 ```svelte
 <script>
   const authConfig = {

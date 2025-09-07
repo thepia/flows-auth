@@ -89,7 +89,7 @@ interface AuthDatabase {
     clientId: string;
     domain: string;
     enablePasskeys: boolean;
-    enableMagicLinks: boolean;
+    enableMagicPins: boolean;
   };
   
   // Encrypted storage for sensitive data

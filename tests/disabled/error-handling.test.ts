@@ -167,7 +167,7 @@ describe('Error Handling Regression Tests', () => {
             apiBaseUrl: 'https://api.thepia.com',
             clientId: 'test',
             domain: 'test.com',
-            enableMagicLinks: true
+            enableMagicPins: true
           }
         },
         context: new Map([['authStore', mockAuthStore]])

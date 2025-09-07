@@ -58,7 +58,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true
+  enableMagicPins: true
 };
 
 describe('Session Consistency Integration Tests', () => {

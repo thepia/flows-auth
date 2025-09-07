@@ -66,7 +66,7 @@ describe('BDD: flows-auth API Consumption', () => {
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         enablePasskeys: false, // Disabled for WorkOS testing
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       // Then: Auth store should be properly initialized
@@ -215,7 +215,7 @@ describe('BDD: flows-auth API Consumption', () => {
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         enablePasskeys: false, // Explicitly disabled
-        enableMagicLinks: true
+        enableMagicPins: true
       });
 
       // When: Checking what auth methods are available

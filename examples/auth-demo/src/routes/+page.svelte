@@ -41,7 +41,7 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
-let enableMagicLinks = true;
+let enableMagicPins = true;
 
 // New size and variant options
 let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
@@ -50,7 +50,7 @@ let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bo
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
 
 // i18n Configuration options
-let selectedLanguage = 'en'; // 'en', 'es'
+let selectedLanguage = 'en'; // 'en', 'da'
 let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'custom'
 let customTranslationOverrides = {}; // User-defined translation overrides
 let customTranslationsJson = '{}'; // JSON string for custom translations
@@ -679,7 +679,7 @@ $: combinedTranslations = selectedClientVariant === 'custom'
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicLinks, 
+  enableMagicPins, 
   signInMode,
   // i18n configuration
   language: selectedLanguage,
@@ -697,7 +697,7 @@ $: if (dynamicAuthConfig) {
   console.log('⚙️ SignInCore config updated:', {
     signInMode: dynamicAuthConfig.signInMode,
     enablePasskeys: dynamicAuthConfig.enablePasskeys,
-    enableMagicLinks: dynamicAuthConfig.enableMagicLinks,
+    enableMagicPins: dynamicAuthConfig.enableMagicPins,
     language: dynamicAuthConfig.language,
     clientVariant: selectedClientVariant,
     translationCount: Object.keys(combinedTranslations).length
@@ -818,31 +818,34 @@ $: if (dynamicAuthConfig) {
         <h2>Sign In Flow Demo</h2>
         <p>Test different sign-in methods with the core authentication components:</p>
         
-        <div class="demo-controls">
-          <div class="quick-emails">
-            <span>Quick test emails:</span>
-            <button class="btn btn-outline btn-sm" on:click={() => emailInput = 'demo@example.com'}>
-              demo@example.com
-            </button>
-            <button class="btn btn-outline btn-sm" on:click={() => emailInput = 'test@thepia.net'}>
-              test@thepia.net
-            </button>
-            <button class="btn btn-outline btn-sm" on:click={() => emailInput = ''}>
-              Clear
-            </button>
-          </div>
-        </div>
+        <div class="demo-layout">
+          <!-- Configuration Sidebar -->
+          <div class="config-sidebar">
+            <div class="sidebar-header">
+              <h3>Authentication Configuration</h3>
+              <p class="text-secondary">Configure component behavior:</p>
+            </div>
+            
+            <!-- Quick Email Input -->
+            <div class="config-section">
+              <h4>🔄 Set Initial Email</h4>
+              <div class="quick-emails">
+                <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'demo@example.com'}>
+                  demo@example.com
+                </button>
+                <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'test@thepia.net'}>
+                  test@thepia.net
+                </button>
+                <button class="btn btn-outline btn-xs" on:click={() => emailInput = ''}>
+                  Clear
+                </button>
+              </div>
+            </div>
         
-        <!-- Configuration Controls -->
-        <div class="signin-config card">
-          <div class="card-header">
-            <h3>Authentication Configuration</h3>
-            <p class="text-secondary">Configure the SignInCore component behavior:</p>
-          </div>
-          <div class="card-body">
+            <!-- Configuration Controls -->
             <div class="config-grid">
               <div class="config-group">
-                <label class="config-label">User Handling:</label>
+                <span class="config-label">User Handling:</span>
                 <div class="radio-group">
                   <label class="radio-option">
                     <input type="radio" bind:group={signInMode} value="login-only" />
@@ -856,7 +859,7 @@ $: if (dynamicAuthConfig) {
               </div>
 
               <div class="config-group">
-                <label class="config-label">Component Type:</label>
+                <span class="config-label">Component Type:</span>
                 <div class="radio-group">
                   <label class="radio-option">
                     <input type="radio" bind:group={useSignInForm} value={false} />
@@ -871,7 +874,7 @@ $: if (dynamicAuthConfig) {
 
               {#if !useSignInForm}
                 <div class="config-group">
-                  <label class="config-label">SignInCore Layout:</label>
+                  <span class="config-label">SignInCore Layout:</span>
                   <div class="radio-group">
                     <label class="radio-option">
                       <input type="radio" bind:group={signInCoreLayout} value="full-width" />
@@ -887,7 +890,7 @@ $: if (dynamicAuthConfig) {
 
               {#if useSignInForm}
                 <div class="config-group">
-                  <label class="config-label">Form Size:</label>
+                  <span class="config-label">Form Size:</span>
                   <div class="radio-group">
                     <label class="radio-option">
                       <input type="radio" bind:group={formSize} value="small" />
@@ -959,8 +962,8 @@ $: if (dynamicAuthConfig) {
                       <span>English</span>
                     </label>
                     <label class="radio-option">
-                      <input type="radio" bind:group={selectedLanguage} value="es" />
-                      <span>Español (Spanish)</span>
+                      <input type="radio" bind:group={selectedLanguage} value="da" />
+                      <span>Dansk (Danish)</span>
                     </label>
                   </div>
                 </div>
@@ -991,7 +994,7 @@ $: if (dynamicAuthConfig) {
                   <label class="config-label">Current Configuration:</label>
                   <div class="config-info">
                     <div class="info-line">
-                      <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Español'}
+                      <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Dansk'}
                     </div>
                     <div class="info-line">
                       <strong>Client:</strong> {currentClientVariant.name}
@@ -1011,29 +1014,30 @@ $: if (dynamicAuthConfig) {
                     <span>Enable Passkeys</span>
                   </label>
                   <label class="checkbox-option">
-                    <input type="checkbox" bind:checked={enableMagicLinks} />
-                    <span>Enable Magic Links</span>
+                    <input type="checkbox" bind:checked={enableMagicPins} />
+                    <span>Enable Magic Pins</span>
                   </label>
                 </div>
               </div>
             </div>
             
-            <div class="config-info">
+            <!-- <div class="config-info">
               <p><strong>Current Configuration:</strong></p>
               <ul>
                 <li>User Handling: {signInMode === 'login-only' ? 'Login Only' : 'Login or Register as Needed'}</li>
                 <li>Passkeys: {enablePasskeys ? 'Enabled' : 'Disabled'}</li>
-                <li>Magic Links: {enableMagicLinks ? 'Enabled' : 'Disabled'}</li>
+                <li>Magic Pins: {enableMagicPins ? 'Enabled' : 'Disabled'}</li>
                 <li>Autocomplete: {enablePasskeys ? 'email webauthn' : 'email'}</li>
-                <li>Auth Flow: {enablePasskeys && enableMagicLinks ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicLinks ? 'Email only' : 'No auth methods'}</li>
+                <li>Auth Flow: {enablePasskeys && enableMagicPins ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicPins ? 'Email only' : 'No auth methods'}</li>
               </ul>
-            </div>
+            </div> -->
           </div>
-        </div>
 
-        <!-- Live SignInCore Component -->
-        {#if authStore && dynamicAuthConfig && !isAuthenticated}
-          <div class="signin-demo card">
+          <!-- Main Demo Area -->
+          <div class="demo-main">
+            <!-- Live SignInCore Component -->
+            {#if authStore && dynamicAuthConfig && !isAuthenticated}
+              <div class="signin-demo card">
             <div class="card-header">
               <h3>Live Sign-In Component</h3>
               <p class="text-secondary">
@@ -1084,25 +1088,6 @@ $: if (dynamicAuthConfig) {
             </div>
           </div>
         {/if}
-        
-        <!-- Pin Integration Info -->
-        <div class="pin-integration-info card">
-          <div class="card-header">
-            <h4>🔢 Smart Pin Detection</h4>
-          </div>
-          <div class="card-body">
-            <p>The Live Sign-In component now includes intelligent pin detection:</p>
-            <ul>
-              <li><strong>Automatic Detection:</strong> When you enter an email, the system checks for existing valid pins</li>
-              <li><strong>Skip Redundant Sends:</strong> If a valid pin exists, it skips sending a new one and goes directly to verification</li>
-              <li><strong>Smart Messaging:</strong> Shows different messages for new codes vs. existing valid pins</li>
-              <li><strong>Seamless Experience:</strong> Users don't need to re-request pins after page reloads</li>
-            </ul>
-            
-            <div class="integration-note">
-              <p><strong>💡 Try it:</strong> Use the registration flow to send yourself a pin, then come back to this Sign-In form. 
-              Enter the same email and you'll see it detects the existing pin instead of sending a new one!</p>
-            </div>
           </div>
         </div>
       </div>
@@ -2084,10 +2069,85 @@ $: if (dynamicAuthConfig) {
     margin-bottom: 2rem;
   }
 
+  /* Sidebar Layout */
+  .demo-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .config-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .sidebar-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .sidebar-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .sidebar-header .text-secondary {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .config-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .config-section h4 {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .section-desc {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .quick-emails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .demo-main {
+    min-height: 60vh;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .demo-layout {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .config-sidebar {
+      position: static;
+    }
+  }
+
   .config-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
     margin-bottom: 1.5rem;
   }
 

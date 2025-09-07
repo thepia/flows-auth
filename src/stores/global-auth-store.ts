@@ -132,7 +132,7 @@ function areConfigsEqual(config1: AuthConfig, config2: AuthConfig): boolean {
     config1.clientId === config2.clientId &&
     config1.domain === config2.domain &&
     config1.enablePasskeys === config2.enablePasskeys &&
-    config1.enableMagicLinks === config2.enableMagicLinks
+    config1.enableMagicPins === config2.enableMagicPins
   );
 }
 
@@ -194,7 +194,7 @@ export function assertAuthConfig(config: unknown): asserts config is AuthConfig 
     throw new TypeError('AuthConfig.enablePasskeys must be a boolean');
   }
   
-  if (typeof c.enableMagicLinks !== 'boolean') {
-    throw new TypeError('AuthConfig.enableMagicLinks must be a boolean');
+  if (typeof c.enableMagicPins !== 'boolean') {
+    throw new TypeError('AuthConfig.enableMagicPins must be a boolean');
   }
 }

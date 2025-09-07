@@ -40,14 +40,14 @@ describe('SignInCore Configuration Reactivity', () => {
       clientId: 'test',
       domain: 'thepia.net',
       enablePasskeys: true,
-      enableMagicLinks: true,
+      enableMagicPins: true,
       signInMode: 'login-or-register'
     };
   });
 
   describe('Configuration Change Detection', () => {
     it('should re-render button text when enablePasskeys changes', async () => {
-      let config = { ...baseConfig, enablePasskeys: true, enableMagicLinks: false };
+      let config = { ...baseConfig, enablePasskeys: true, enableMagicPins: false };
       
       const { component, getByRole, rerender } = render(SignInCore, {
         props: { config }
@@ -58,7 +58,7 @@ describe('SignInCore Configuration Reactivity', () => {
       expect(button.textContent).toContain('Passkey');
 
       // Change config to disable passkeys
-      config = { ...baseConfig, enablePasskeys: false, enableMagicLinks: true };
+      config = { ...baseConfig, enablePasskeys: false, enableMagicPins: true };
       await rerender({ config });
 
       // Should now show email button
@@ -77,7 +77,7 @@ describe('SignInCore Configuration Reactivity', () => {
 
       // Test 1: Mutate existing object (BAD - won't trigger reactivity)
       config.enablePasskeys = false;
-      config.enableMagicLinks = false;
+      config.enableMagicPins = false;
       
       // Wait for potential updates
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -86,7 +86,7 @@ describe('SignInCore Configuration Reactivity', () => {
       expect(button.textContent).toBe(initialText);
 
       // Test 2: Replace config object (GOOD - triggers reactivity)
-      const newConfig = { ...config, enablePasskeys: false, enableMagicLinks: false };
+      const newConfig = { ...config, enablePasskeys: false, enableMagicPins: false };
       await component.$set({ config: newConfig });
 
       // Now button text SHOULD change
@@ -98,7 +98,7 @@ describe('SignInCore Configuration Reactivity', () => {
       let config = { 
         ...baseConfig, 
         enablePasskeys: true, 
-        enableMagicLinks: false 
+        enableMagicPins: false 
       };
       
       const { component, container, rerender } = render(SignInCore, {
@@ -113,7 +113,7 @@ describe('SignInCore Configuration Reactivity', () => {
       config = { 
         ...baseConfig, 
         enablePasskeys: false, 
-        enableMagicLinks: true 
+        enableMagicPins: true 
       };
       await rerender({ config });
 
@@ -167,13 +167,13 @@ describe('SignInCore Configuration Reactivity', () => {
       // Simulate the original broken pattern
       const authConfig = { ...baseConfig };
       let enablePasskeys = true;
-      let enableMagicLinks = true;
+      let enableMagicPins = true;
       let signInMode = 'login-or-register';
 
       // Original broken pattern - direct mutation
       const updateSignInConfigBroken = () => {
         authConfig.enablePasskeys = enablePasskeys;
-        authConfig.enableMagicLinks = enableMagicLinks;
+        authConfig.enableMagicPins = enableMagicPins;
         authConfig.signInMode = signInMode;
       };
 
@@ -182,7 +182,7 @@ describe('SignInCore Configuration Reactivity', () => {
         return {
           ...authConfig,
           enablePasskeys,
-          enableMagicLinks,
+          enableMagicPins,
           signInMode
         };
       };
@@ -193,7 +193,7 @@ describe('SignInCore Configuration Reactivity', () => {
 
       // Change the variables
       enablePasskeys = false;
-      enableMagicLinks = false;
+      enableMagicPins = false;
 
       // Test broken pattern
       updateSignInConfigBroken();
@@ -214,7 +214,7 @@ describe('SignInCore Configuration Reactivity', () => {
       // Test the Svelte reactive pattern we implemented
       const baseAuthConfig = { ...baseConfig };
       let enablePasskeys = true;
-      let enableMagicLinks = true;
+      let enableMagicPins = true;
       let signInMode = 'login-or-register';
 
       // Simulate the reactive statement
@@ -222,7 +222,7 @@ describe('SignInCore Configuration Reactivity', () => {
         return baseAuthConfig ? {
           ...baseAuthConfig,
           enablePasskeys,
-          enableMagicLinks,
+          enableMagicPins,
           signInMode
         } : null;
       };

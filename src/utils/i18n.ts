@@ -4,22 +4,36 @@
  */
 
 import { writable, derived, type Readable } from 'svelte/store';
+import { setContext, getContext } from 'svelte';
 
 // Default translations for auth components
 export const defaultTranslations = {
   en: {
     // Email input
     'email.label': 'Email address',
-    'email.placeholder': 'your.email@company.com',
+    'email.placeholder': 'your@email.com',
     'email.invalid': 'Please enter a valid email address',
     'email.required': 'Email address is required',
+    
+    // Form titles and descriptions
+    'form.signInTitle': 'Sign in to {companyName}',
+    'form.signInDescription': 'Use your {companyName} account, or create one.',
+    'form.signInGeneric': 'Sign in',
+    'form.signInGenericDescription': 'Enter your email to continue to {companyName}',
     
     // Authentication buttons  
     'auth.signIn': 'Sign In',
     'auth.signInWithPasskey': 'Sign in with Passkey',
+    'auth.continueWithTouchId': 'Continue with Touch ID',
+    'auth.continueWithFaceId': 'Continue with Face ID', 
+    'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
+    'auth.continueWithTouchIdFaceId': 'Continue with Touch ID/Face ID',
+    
+    // Email authentication - AppCode vs Magic Link variants
     'auth.sendPinByEmail': 'Send pin by email',
-    'auth.enterExistingPin': 'Enter existing pin',
+    'auth.sendPinToEmail': 'Send pin to email',
     'auth.sendMagicLink': 'Send Magic Link',
+    'auth.enterExistingPin': 'Enter existing pin',
     'auth.loading': 'Loading...',
     'auth.signingIn': 'Signing in...',
     'auth.sendingPin': 'Sending pin...',
@@ -57,6 +71,12 @@ export const defaultTranslations = {
     'webauthn.cancelled': 'Authentication was cancelled',
     'webauthn.notSupported': 'WebAuthn is not supported on this device',
     
+    // Security explanation messages
+    'security.passwordlessExplanation': '🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.',
+    'security.passwordlessGeneric': '🔐 Passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.',
+    'security.passwordlessWithPin': '🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.',
+    'security.passwordlessWithPinGeneric': '🔐 Passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.',
+    
     // General actions
     'action.retry': 'Try again',
     'action.back': 'Back',
@@ -64,13 +84,60 @@ export const defaultTranslations = {
     'action.cancel': 'Cancel',
     'action.useDifferentEmail': 'Use a different email',
     
+    // SignInForm specific
+    'signIn.title': 'Sign in',
+    'signIn.description': 'Enter your email to continue to {companyName}',
+    'signIn.descriptionGeneric': 'Enter your email to continue to your account',
+    'signIn.webAuthnIndicator': '🔐 WebAuthn ready - Touch ID/Face ID will appear automatically',
+    
+    // Magic Link step
+    'magicLink.title': 'Check your email',
+    'magicLink.description': 'We sent a secure login link to',
+    'magicLink.differentEmail': 'Use a different email',
+    
+    // Registration Terms step
+    'registration.termsTitle': 'Terms & Privacy',
+    'registration.termsDescription': 'Please review and accept our terms to create your account',
+    'registration.agreeTerms': 'I agree to the',
+    'registration.agreePrivacy': 'I agree to the',
+    'registration.termsLink': 'Terms of Service',
+    'registration.privacyLink': 'Privacy Policy',
+    'registration.createAccount': 'Create Account',
+    'registration.creatingAccount': 'Creating Account...',
+    'registration.webAuthnInfo': '🔐 Your device will prompt for Touch ID, Face ID, or Windows Hello',
+    
+    // Registration Success step
+    'registration.successTitle': 'Account Created Successfully!',
+    'registration.successDescription': 'Welcome to {companyName}!',
+    'registration.successDescriptionGeneric': 'Welcome to our platform!',
+    'registration.successExplore': 'You can now explore the application.',
+    'registration.welcomeEmail': '📧 We\'ve sent a welcome email to',
+    'registration.verifyEmail': '🔓 Verify your email to unlock all features',
+    
     // Registration/Terms
     'registration.required': 'Registration is required. Please complete the registration process.',
-    'terms.acceptRequired': 'You must accept the terms of service',
+    'terms.acceptRequired': 'You must accept the Terms of Service and Privacy Policy to continue.',
     'privacy.acceptRequired': 'You must accept the privacy policy',
     'registration.terms': 'I accept the {companyName} Terms of Service',
     'registration.privacy': 'I accept the {companyName} Privacy Policy',
     'registration.completing': 'Completing registration...',
+    'registration.termsServiceRequired': 'Terms of Service must be accepted',
+    
+    // Error messages specific to SignInForm
+    'error.magicLinkFailed': 'Failed to send magic link. Please try again.',
+    'error.noAuthMethods': 'No authentication methods available for this email.',
+    'error.noPasskeyFound': 'No passkey found for this email. Please register a new passkey or use a different sign-in method.',
+    'error.serviceTemporarilyUnavailable': 'Authentication service temporarily unavailable. Please try again in a moment.',
+    'error.authCancelled': 'Authentication was cancelled. Please try again.',
+    'error.passkeyNotSupported': 'Passkey authentication is not supported on this device.',
+    'error.securityError': 'Security error occurred. Please ensure you\'re on a secure connection.',
+    'error.noPasskeyAvailable': 'No passkey available on this device. Please register a new passkey.',
+    'error.authGenericFailed': 'Authentication failed. Please try again or use a different sign-in method.',
+    'error.registrationFailed': 'Registration failed',
+    
+    // Branding
+    'branding.securedBy': 'Secured by',
+    'branding.poweredBy': 'Thepia',
     
     // Time formatting
     'time.minute': 'minute',
@@ -78,76 +145,142 @@ export const defaultTranslations = {
     'time.second': 'second', 
     'time.seconds': 'seconds'
   },
-  es: {
+  da: {
     // Email input
-    'email.label': 'Dirección de correo electrónico',
-    'email.placeholder': 'tu.correo@empresa.com',
-    'email.invalid': 'Por favor ingresa una dirección de correo válida',
-    'email.required': 'La dirección de correo es obligatoria',
+    'email.label': 'E-mail adresse',
+    'email.placeholder': 'din@email.dk',
+    'email.invalid': 'Indtast venligst en gyldig e-mail adresse',
+    'email.required': 'E-mail adresse er påkrævet',
+    
+    // Form titles and descriptions
+    'form.signInTitle': 'Log ind på {companyName}',
+    'form.signInDescription': 'Brug din {companyName} konto, eller opret en.',
+    'form.signInGeneric': 'Log ind',
+    'form.signInGenericDescription': 'Indtast din e-mail for at fortsætte til {companyName}',
     
     // Authentication buttons  
-    'auth.signIn': 'Iniciar Sesión',
-    'auth.signInWithPasskey': 'Iniciar sesión con Passkey',
-    'auth.sendPinByEmail': 'Enviar pin por correo',
-    'auth.enterExistingPin': 'Ingresar pin existente',
-    'auth.sendMagicLink': 'Enviar Enlace Mágico',
-    'auth.loading': 'Cargando...',
-    'auth.signingIn': 'Iniciando sesión...',
-    'auth.sendingPin': 'Enviando pin...',
-    'auth.verifyingPin': 'Verificando pin...',
-    'auth.sendingMagicLink': 'Enviando enlace mágico...',
+    'auth.signIn': 'Log ind',
+    'auth.signInWithPasskey': 'Log ind med Passkey',
+    'auth.continueWithTouchId': 'Fortsæt med Touch ID',
+    'auth.continueWithFaceId': 'Fortsæt med Face ID', 
+    'auth.continueWithBiometric': 'Fortsæt med Touch ID/Face ID',
+    'auth.continueWithTouchIdFaceId': 'Fortsæt med Touch ID/Face ID',
+    
+    // Email authentication - AppCode vs Magic Link variants
+    'auth.sendPinByEmail': 'Send pin via e-mail',
+    'auth.sendPinToEmail': 'Send pin til e-mail',
+    'auth.sendMagicLink': 'Send Magisk Link',
+    'auth.enterExistingPin': 'Indtast eksisterende pin',
+    'auth.loading': 'Indlæser...',
+    'auth.signingIn': 'Logger ind...',
+    'auth.sendingPin': 'Sender pin...',
+    'auth.verifyingPin': 'Verificerer pin...',
+    'auth.sendingMagicLink': 'Sender magisk link...',
     
     // PIN/Code input
-    'code.label': 'Ingresa el código de verificación',
-    'code.placeholder': 'Código de 6 dígitos',
-    'code.invalid': 'Por favor ingresa un código válido de 6 dígitos',
-    'code.expired': 'El código de verificación ha expirado',
-    'code.incorrect': 'Código de verificación incorrecto',
+    'code.label': 'Indtast bekræftelseskode',
+    'code.placeholder': '6-cifret kode',
+    'code.invalid': 'Indtast venligst en gyldig 6-cifret kode',
+    'code.expired': 'Bekræftelseskoden er udløbet',
+    'code.incorrect': 'Forkert bekræftelseskode',
     
     // Status messages
-    'status.emailSent': 'Enviamos un código de verificación a',
-    'status.checkEmail': 'Revisa tu correo electrónico',
-    'status.pinValid': 'Ya se envió un pin válido, válido por {minutes} minuto{s}.',
-    'status.pinDirectAction': 'Ingresar pin aquí',
-    'status.pinDetected': '🔢 Pin válido detectado',
-    'status.signInSuccess': '¡Bienvenido de vuelta!',
-    'status.magicLinkSent': 'Enviamos un enlace seguro de inicio de sesión a',
+    'status.emailSent': 'Vi sendte en bekræftelseskode til',
+    'status.checkEmail': 'Tjek din e-mail',
+    'status.pinValid': 'En gyldig pin blev allerede sendt til dig, gyldig i {minutes} minut{s}.',
+    'status.pinDirectAction': 'Indtast pin her',
+    'status.pinDetected': '🔢 Gyldig pin fundet',
+    'status.signInSuccess': 'Velkommen tilbage!',
+    'status.magicLinkSent': 'Vi sendte et sikkert login link til',
     
     // Errors
-    'error.network': 'Error de red. Por favor intenta de nuevo.',
-    'error.authentication': 'Autenticación fallida. Por favor intenta de nuevo.',
-    'error.userNotFound': 'No se encontró cuenta con esta dirección de correo',
-    'error.invalidCredentials': 'Correo inválido o autenticación fallida',
-    'error.serviceUnavailable': 'Servicio temporalmente no disponible',
-    'error.unknown': 'Ocurrió un error inesperado',
+    'error.network': 'Netværksfejl. Prøv venligst igen.',
+    'error.authentication': 'Godkendelse mislykkedes. Prøv venligst igen.',
+    'error.userNotFound': 'Ingen konto fundet med denne e-mail adresse',
+    'error.invalidCredentials': 'Ugyldig e-mail eller godkendelse mislykkedes',
+    'error.serviceUnavailable': 'Tjenesten er midlertidigt utilgængelig',
+    'error.unknown': 'Der opstod en uventet fejl',
     
     // WebAuthn
-    'webauthn.ready': '🔐 WebAuthn listo - Touch ID/Face ID aparecerá automáticamente',
+    'webauthn.ready': '🔐 WebAuthn klar - Touch ID/Face ID vises automatisk',
     'webauthn.touchId': 'Touch ID',
     'webauthn.faceId': 'Face ID',
-    'webauthn.cancelled': 'Autenticación cancelada',
-    'webauthn.notSupported': 'WebAuthn no es compatible con este dispositivo',
+    'webauthn.cancelled': 'Godkendelse annulleret',
+    'webauthn.notSupported': 'WebAuthn understøttes ikke på denne enhed',
+    
+    // Security explanation messages
+    'security.passwordlessExplanation': '🔐 {companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.',
+    'security.passwordlessGeneric': '🔐 Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.',
+    'security.passwordlessWithPin': '🔐 {companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.',
+    'security.passwordlessWithPinGeneric': '🔐 Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.',
     
     // General actions
-    'action.retry': 'Intentar de nuevo',
-    'action.back': 'Volver',
-    'action.continue': 'Continuar',
-    'action.cancel': 'Cancelar',
-    'action.useDifferentEmail': 'Usar un correo diferente',
+    'action.retry': 'Prøv igen',
+    'action.back': 'Tilbage',
+    'action.continue': 'Fortsæt',
+    'action.cancel': 'Annuller',
+    'action.useDifferentEmail': 'Brug en anden e-mail',
+    
+    // SignInForm specific
+    'signIn.title': 'Log ind',
+    'signIn.description': 'Indtast din e-mail for at fortsætte til {companyName}',
+    'signIn.descriptionGeneric': 'Indtast din e-mail for at fortsætte til din konto',
+    'signIn.webAuthnIndicator': '🔐 WebAuthn klar - Touch ID/Face ID vises automatisk',
+    
+    // Magic Link step
+    'magicLink.title': 'Tjek din e-mail',
+    'magicLink.description': 'Vi sendte et sikkert login link til',
+    'magicLink.differentEmail': 'Brug en anden e-mail',
+    
+    // Registration Terms step
+    'registration.termsTitle': 'Vilkår og Privatliv',
+    'registration.termsDescription': 'Gennemgå og accepter venligst vores vilkår for at oprette din konto',
+    'registration.agreeTerms': 'Jeg accepterer',
+    'registration.agreePrivacy': 'Jeg accepterer',
+    'registration.termsLink': 'Servicevilkår',
+    'registration.privacyLink': 'Privatlivspolitik',
+    'registration.createAccount': 'Opret Konto',
+    'registration.creatingAccount': 'Opretter konto...',
+    'registration.webAuthnInfo': '🔐 Din enhed vil bede om Touch ID, Face ID eller Windows Hello',
+    
+    // Registration Success step
+    'registration.successTitle': 'Konto Oprettet!',
+    'registration.successDescription': 'Velkommen til {companyName}!',
+    'registration.successDescriptionGeneric': 'Velkommen til vores platform!',
+    'registration.successExplore': 'Du kan nu udforske applikationen.',
+    'registration.welcomeEmail': '📧 Vi har sendt en velkomst e-mail til',
+    'registration.verifyEmail': '🔓 Bekræft din e-mail for at låse op for alle funktioner',
     
     // Registration/Terms
-    'registration.required': 'Se requiere registro. Por favor completa el proceso de registro.',
-    'terms.acceptRequired': 'Debes aceptar los términos de servicio',
-    'privacy.acceptRequired': 'Debes aceptar la política de privacidad',
-    'registration.terms': 'Acepto los Términos de Servicio de {companyName}',
-    'registration.privacy': 'Acepto la Política de Privacidad de {companyName}',
-    'registration.completing': 'Completando registro...',
+    'registration.required': 'Registrering påkrævet. Fuldfør venligst registreringsprocessen.',
+    'terms.acceptRequired': 'Du skal acceptere Servicevilkår og Privatlivspolitik for at fortsætte.',
+    'privacy.acceptRequired': 'Du skal acceptere privatlivspolitikken',
+    'registration.terms': 'Jeg accepterer {companyName}s Servicevilkår',
+    'registration.privacy': 'Jeg accepterer {companyName}s Privatlivspolitik',
+    'registration.completing': 'Fuldfører registrering...',
+    'registration.termsServiceRequired': 'Du skal acceptere Servicevilkårene',
+    
+    // Error messages specific to SignInForm
+    'error.magicLinkFailed': 'Kunne ikke sende magisk link. Prøv venligst igen.',
+    'error.noAuthMethods': 'Ingen godkendelsesmetoder tilgængelige for denne e-mail.',
+    'error.noPasskeyFound': 'Ingen passkey fundet for denne e-mail. Registrer venligst en ny passkey eller brug en anden login-metode.',
+    'error.serviceTemporarilyUnavailable': 'Godkendelsestjenesten er midlertidigt utilgængelig. Prøv venligst igen om et øjeblik.',
+    'error.authCancelled': 'Godkendelse annulleret. Prøv venligst igen.',
+    'error.passkeyNotSupported': 'Passkey godkendelse understøttes ikke på denne enhed.',
+    'error.securityError': 'Sikkerhedsfejl opstod. Sørg venligst for at du er på en sikker forbindelse.',
+    'error.noPasskeyAvailable': 'Ingen passkey tilgængelig på denne enhed. Registrer venligst en ny passkey.',
+    'error.authGenericFailed': 'Godkendelse mislykkedes. Prøv venligst igen eller brug en anden login-metode.',
+    'error.registrationFailed': 'Registrering mislykkedes',
+    
+    // Branding
+    'branding.securedBy': 'Sikret af',
+    'branding.poweredBy': 'Thepia',
     
     // Time formatting
-    'time.minute': 'minuto',
-    'time.minutes': 'minutos',
-    'time.second': 'segundo', 
-    'time.seconds': 'segundos'
+    'time.minute': 'minut',
+    'time.minutes': 'minutter',
+    'time.second': 'sekund', 
+    'time.seconds': 'sekunder'
   }
 } as const;
 
@@ -237,6 +370,57 @@ export function createI18n(
       return lang!;
     }
   };
+}
+
+// Global i18n context for app-wide configuration
+const I18N_CONTEXT_KEY = 'flows-auth-i18n';
+
+/**
+ * Set global i18n context for the entire app
+ * Call this once at the root of your app
+ */
+export function setI18nContext(config: {
+  language?: string;
+  translations?: CustomTranslations;
+  fallbackLanguage?: SupportedLanguage;
+}) {
+  const i18n = createI18n(
+    config.language || detectUserLanguage(['en'], 'en'),
+    config.translations || {},
+    config.fallbackLanguage || 'en'
+  );
+  setContext(I18N_CONTEXT_KEY, i18n);
+  return i18n;
+}
+
+/**
+ * Get i18n from context or create a default instance
+ * Components should use this to get i18n configuration
+ */
+export function getI18n(config?: {
+  language?: string;
+  translations?: CustomTranslations;
+  fallbackLanguage?: SupportedLanguage;
+}) {
+  // Try to get from context first (app-wide configuration)
+  const contextI18n = getContext<ReturnType<typeof createI18n>>(I18N_CONTEXT_KEY);
+  if (contextI18n) {
+    // If config is provided, update the context i18n
+    if (config?.language) {
+      contextI18n.setLanguage(config.language);
+    }
+    if (config?.translations) {
+      contextI18n.setTranslations(config.translations);
+    }
+    return contextI18n;
+  }
+  
+  // No context, create instance from config or defaults
+  return createI18n(
+    config?.language || detectUserLanguage(['en'], 'en'),
+    config?.translations || {},
+    config?.fallbackLanguage || 'en'
+  );
 }
 
 /**

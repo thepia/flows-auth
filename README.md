@@ -68,7 +68,7 @@ yarn add @thepia/flows-auth
     clientId: 'your-client-id',
     domain: 'yourapp.com',
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
     branding: {
       companyName: 'Your Company',
       logoUrl: '/logo.svg',
@@ -210,7 +210,7 @@ interface AuthConfig {
   
   // Feature flags
   enablePasskeys: boolean;
-  enableMagicLinks: boolean;
+  enableMagicPins: boolean;
   
   // Optional
   redirectUri?: string;
@@ -393,7 +393,7 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
     clientId: 'demo-client',
     domain: 'example.com',
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
     branding: {
       companyName: 'Demo Company'
     }

@@ -22,7 +22,7 @@ export type DevScenario = {
   branding: DevBranding;
   config: {
     enablePasskeys: boolean;
-    enableMagicLinks: boolean;
+    enableMagicPins: boolean;
     apiBaseUrl: string;
     clientId: string;
     appCode?: string;
@@ -107,7 +107,7 @@ export const DEV_SCENARIOS: DevScenario[] = [
     branding: DEV_BRANDINGS[0],
     config: {
       enablePasskeys: true,
-      enableMagicLinks: true,
+      enableMagicPins: true,
       apiBaseUrl: 'auto-detect', // Will be replaced by detectApiServer()
       clientId: 'demo',
       appCode: 'demo',
@@ -125,7 +125,7 @@ export const DEV_SCENARIOS: DevScenario[] = [
     branding: DEV_BRANDINGS[1],
     config: {
       enablePasskeys: true,
-      enableMagicLinks: false,
+      enableMagicPins: false,
       apiBaseUrl: 'auto-detect',
       clientId: 'demo',
       appCode: 'demo',
@@ -143,7 +143,7 @@ export const DEV_SCENARIOS: DevScenario[] = [
     branding: DEV_BRANDINGS[2],
     config: {
       enablePasskeys: false,
-      enableMagicLinks: true,
+      enableMagicPins: true,
       apiBaseUrl: 'auto-detect',
       clientId: 'demo',
       appCode: 'demo',
@@ -161,7 +161,7 @@ export const DEV_SCENARIOS: DevScenario[] = [
     branding: DEV_BRANDINGS[3],
     config: {
       enablePasskeys: true,
-      enableMagicLinks: true,
+      enableMagicPins: true,
       apiBaseUrl: 'auto-detect',
       clientId: 'demo-enterprise',
       appCode: 'demo',

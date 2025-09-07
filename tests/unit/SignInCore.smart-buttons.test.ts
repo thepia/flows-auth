@@ -16,7 +16,7 @@ describe('SignInCore Smart Button Configuration', () => {
       clientId: 'test-client', 
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
+      enableMagicPins: false,
       signInMode: 'login-or-register',
       appCode: 'demo' // Enable pin authentication
     };
@@ -65,7 +65,7 @@ describe('SignInCore Smart Button Configuration', () => {
           primaryText = 'Send pin by email';
           primaryLoadingText = 'Sending pin...';
         }
-      } else if (config.enableMagicLinks) {
+      } else if (config.enableMagicPins) {
         // Fallback to magic links
         primaryMethod = 'magic-link';
         primaryText = 'Send Magic Link';
@@ -158,7 +158,7 @@ describe('SignInCore Smart Button Configuration', () => {
       const configWithMagicLinks = { 
         ...mockConfig, 
         appCode: undefined, 
-        enableMagicLinks: true 
+        enableMagicPins: true 
       };
       
       const config = getButtonConfig(
@@ -187,7 +187,7 @@ describe('SignInCore Smart Button Configuration', () => {
       const configWithMagicLinks = { 
         ...mockConfig, 
         appCode: undefined, 
-        enableMagicLinks: true 
+        enableMagicPins: true 
       };
       
       const config = getButtonConfig(
@@ -272,7 +272,7 @@ describe('SignInCore Smart Button Configuration', () => {
       const configDisabled = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicLinks: false,
+        enableMagicPins: false,
         appCode: undefined
       };
       

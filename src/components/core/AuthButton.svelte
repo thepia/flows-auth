@@ -1,9 +1,11 @@
 <!--
   AuthButton - State-aware authentication button component
-  Features: loading states, different auth methods, customizable appearance
+  Features: loading states, different auth methods, customizable appearance, i18n support
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
+import type { Readable } from 'svelte/store';
+import type { TranslationKey } from '../../utils/i18n';
 
 // Props
 export let type: 'submit' | 'button' = 'submit';
@@ -21,13 +23,25 @@ export let icon = '';
 export let showIcon = true;
 
 // Method-specific text and icons
-export let method: 'passkey' | 'email' | 'magic-link' | 'generic' = 'generic';
+export let method: 'passkey' | 'email' | 'email-code' | 'magic-link' | 'generic' | 
+                   'continue-touchid' | 'continue-faceid' | 'continue-biometric' = 'generic';
 export let supportsWebAuthn = false;
+
+// AppCode awareness for pin vs magic link
+export let isAppCodeBased = false;
+
+// i18n support (required - parent component must provide this)
+export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
 
 // Events
 const dispatch = createEventDispatcher<{
   click: { method: string };
 }>();
+
+// Apple device detection for biometric text
+$: isAppleDevice = detectAppleDevice();
+$: hasTouchId = detectTouchId();
+$: hasFaceId = detectFaceId();
 
 // Dynamic content based on method and state
 $: displayText = getDisplayText();
@@ -37,24 +51,80 @@ function getDisplayText(): string {
   if (loading && loadingText) return loadingText;
   if (text) return text;
   
-  // Default method-specific text
+  // Method-specific text using i18n
   if (loading) {
     switch (method) {
-      case 'passkey': return 'Signing in...';
-      case 'email': return 'Sending pin...';
-      case 'email-code': return 'Sending pin...';
-      case 'magic-link': return 'Sending magic link...';
-      default: return 'Loading...';
+      case 'passkey': return $i18n('auth.signingIn');
+      case 'email': 
+      case 'email-code': return $i18n('auth.sendingPin');
+      case 'magic-link': return $i18n('auth.sendingMagicLink');
+      case 'continue-touchid':
+      case 'continue-faceid':
+      case 'continue-biometric': return $i18n('auth.signingIn');
+      default: return $i18n('auth.loading');
     }
   }
   
   switch (method) {
-    case 'passkey': return supportsWebAuthn ? 'Sign in with Passkey' : 'Sign in';
-    case 'email': return 'Send pin by email';
-    case 'email-code': return 'Send pin by email';
-    case 'magic-link': return 'Send Magic Link';
-    default: return 'Continue';
+    case 'passkey': 
+      if (supportsWebAuthn && isAppleDevice) {
+        // Apple-specific passkey text
+        if (hasFaceId && hasTouchId) {
+          return $i18n('auth.continueWithTouchIdFaceId'); // "Continue with Touch ID/Face ID"
+        } else if (hasFaceId) {
+          return $i18n('auth.continueWithFaceId');
+        } else if (hasTouchId) {
+          return $i18n('auth.continueWithTouchId');
+        }
+        return $i18n('auth.continueWithBiometric');
+      }
+      return supportsWebAuthn ? $i18n('auth.signInWithPasskey') : $i18n('auth.signIn');
+    case 'email':
+      // AppCode-aware: use pin or magic link text
+      return isAppCodeBased ? $i18n('auth.sendPinToEmail') : $i18n('auth.sendMagicLink');
+    case 'email-code':
+      return $i18n('auth.sendPinToEmail');
+    case 'magic-link':
+      return $i18n('auth.sendMagicLink');
+    case 'continue-touchid':
+      return $i18n('auth.continueWithTouchId');
+    case 'continue-faceid':
+      return $i18n('auth.continueWithFaceId');
+    case 'continue-biometric':
+      // Smart biometric text based on device
+      if (isAppleDevice) {
+        if (hasFaceId && hasTouchId) {
+          return $i18n('auth.continueWithTouchIdFaceId');
+        } else if (hasFaceId) {
+          return $i18n('auth.continueWithFaceId');
+        } else if (hasTouchId) {
+          return $i18n('auth.continueWithTouchId');
+        }
+      }
+      return $i18n('auth.continueWithBiometric');
+    default: 
+      return $i18n('action.continue');
   }
+}
+
+// Apple device detection functions
+function detectAppleDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+}
+
+function detectTouchId(): boolean {
+  if (!isAppleDevice) return false;
+  // iPhone/iPad with Touch ID, or Mac with Touch Bar
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || 
+         (/Macintosh/.test(navigator.userAgent) && 'ontouchstart' in window);
+}
+
+function detectFaceId(): boolean {
+  if (!isAppleDevice) return false;
+  // Modern iPhones with Face ID (iPhone X and later)
+  return /iPhone/.test(navigator.userAgent) && 
+         screen.height >= 812; // Rough detection for Face ID devices
 }
 
 function getDisplayIcon(): string {
@@ -62,9 +132,19 @@ function getDisplayIcon(): string {
   if (icon) return icon;
   
   switch (method) {
-    case 'passkey': return '🔑';
+    case 'passkey': 
+      // Use Apple-specific icons on Apple devices
+      if (isAppleDevice) {
+        if (hasFaceId) return '😊'; // Face ID
+        if (hasTouchId) return '👆'; // Touch ID
+      }
+      return '🔑';
     case 'email': 
+    case 'email-code':
     case 'magic-link': return '✉️';
+    case 'continue-touchid': return '👆';
+    case 'continue-faceid': return '😊';
+    case 'continue-biometric': return isAppleDevice ? (hasFaceId ? '😊' : '👆') : '🔐';
     default: return '';
   }
 }
@@ -113,9 +193,11 @@ function getButtonClasses(): string {
   {disabled}
   on:click={handleClick}
   aria-label={text || displayText}
+  aria-describedby={loading ? 'button-loading-text' : null}
 >
   {#if loading}
     <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
+    <span id="button-loading-text" class="sr-only">Loading, please wait</span>
   {:else if showIcon && displayIcon}
     <span aria-hidden="true">{displayIcon}</span>
   {/if}
@@ -190,6 +272,19 @@ function getButtonClasses(): string {
     opacity: 0.5 !important;
     transform: none !important;
     box-shadow: none !important;
+  }
+  
+  /* Screen reader only text */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* Loading spinner */

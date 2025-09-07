@@ -74,7 +74,7 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
+      enableMagicPins: false,
       branding: {
         companyName: 'Test Company'
       }

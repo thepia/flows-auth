@@ -93,7 +93,7 @@ const authConfig = {
   domain: 'dev.thepia.net',                  // Real domain for WebAuthn
   clientId: 'flows-app-demo',                // Real client ID
   enablePasskeys: true,                      // Real passkey support
-  enableMagicLinks: true,                    // Real magic link support
+  enableMagicPins: true,                    // Real magic link support
   branding: { /* real branding */ }
 };
 

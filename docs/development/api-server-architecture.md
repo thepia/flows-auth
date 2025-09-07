@@ -220,7 +220,7 @@ In your flows-auth client code:
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   domain: 'thepia.net'
 };
 
@@ -228,7 +228,7 @@ const authConfig = {
 const authConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   domain: 'thepia.net'
 };
 
@@ -236,7 +236,7 @@ const authConfig = {
 const authConfig = {
   apiBaseUrl: import.meta.env.PUBLIC_API_BASE_URL || 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   domain: 'thepia.net'
 };
 ```

@@ -106,7 +106,7 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: true
+      enableMagicPins: true
     });
 
     // Mock successful email check, then reject magic link
@@ -149,7 +149,7 @@ describe('Promise Handling', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       enablePasskeys: true,
-      enableMagicLinks: true
+      enableMagicPins: true
     });
 
     // Mock successful email check with passkey

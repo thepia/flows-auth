@@ -81,7 +81,7 @@ export async function createDefaultAuthConfig(overrides: Partial<AuthConfig> = {
     
     // Authentication Methods
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
     
     // Default Branding
     branding: {

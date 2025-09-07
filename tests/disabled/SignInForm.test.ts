@@ -11,7 +11,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   branding: {
     companyName: 'Test Company',
     logoUrl: 'https://example.com/logo.svg',

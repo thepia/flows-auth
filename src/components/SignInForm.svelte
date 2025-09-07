@@ -7,7 +7,10 @@
   import { createAuthStore } from '../stores/auth-store';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
   import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
+  import { getI18n } from '../utils/i18n';
   import type { AuthConfig, User, AuthError, AuthMethod } from '../types';
+  import AuthButton from './core/AuthButton.svelte';
+  import EmailInput from './core/EmailInput.svelte';
 
   // Props - Support both patterns for backward compatibility
   export let config: AuthConfig | undefined = undefined;
@@ -34,6 +37,29 @@
     throw new Error('SignInForm: Must provide either authStore or config prop');
   })());
 
+  // Get i18n instance - will use context if available, or create from config
+  const i18nInstance = getI18n({
+    language: config?.language,
+    translations: config?.translations,
+    fallbackLanguage: config?.fallbackLanguage
+  });
+
+  // Extract the translation function store
+  const i18n = i18nInstance.t;
+
+  // Update i18n when config changes
+  $: {
+    if (config?.language) {
+      i18nInstance.setLanguage(config.language);
+    }
+    if (config?.translations) {
+      i18nInstance.setTranslations(config.translations);
+    }
+  }
+
+  // Determine if using AppCode-based authentication (pins instead of magic links)
+  $: isAppCodeBased = !!(config?.appCode);
+
   // Component state - Mirror React component state
   let email = initialEmail;
   let loading = false;
@@ -55,24 +81,24 @@
   // Initialize component
   onMount(async () => {
     // Debug WebAuthn support in development
-    if (config.errorReporting?.debug) {
+    if (config?.errorReporting?.debug) {
       const debugInfo = await getWebAuthnDebugInfo();
       logWebAuthnDebugInfo(debugInfo);
       
       console.log('🔍 SignInForm WebAuthn Check:', {
         isWebAuthnSupported: isWebAuthnSupported(),
-        enablePasskeys: config.enablePasskeys,
-        finalSupport: isWebAuthnSupported() && config.enablePasskeys
+        enablePasskeys: config?.enablePasskeys,
+        finalSupport: isWebAuthnSupported() && (config?.enablePasskeys ?? false)
       });
     }
     
-    supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
+    supportsWebAuthn = isWebAuthnSupported() && (config?.enablePasskeys ?? false);
     platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
     
     console.log('🔐 WebAuthn Status:', {
       supportsWebAuthn,
       platformAuthenticatorAvailable,
-      enablePasskeys: config.enablePasskeys
+      enablePasskeys: config?.enablePasskeys
     });
     
     // If initial email is provided, trigger conditional auth
@@ -108,6 +134,13 @@
     }, 1000);
   }
 
+  // Handle conditional auth trigger from EmailInput component
+  function handleConditionalAuth({ detail }) {
+    handleEmailChange({
+      target: { value: detail.email }
+    });
+  }
+
   // Start conditional authentication - mirrors thepia.com AuthModal implementation
   async function startConditionalAuthentication() {
     if (conditionalAuthActive || !email.trim()) return;
@@ -119,7 +152,7 @@
     try {
       conditionalAuthActive = true;
       console.log('🔍 Starting conditional authentication for:', email);
-      console.log('🔐 WebAuthn domain configured for passkeys:', store.getConfig?.()?.domain || 'unknown');
+      console.log('🔐 WebAuthn domain configured for passkeys:', config?.domain || 'unknown');
 
       // Use the auth store's conditional authentication
       const success = await store.startConditionalAuthentication(email);
@@ -128,10 +161,13 @@
         // Authentication succeeded - dispatch success event to parent
         console.log('✅ Conditional authentication successful - user signed in');
         // The auth store will handle state updates, we just need to let parent know
-        dispatch('success', {
-          user: $store.user,
-          method: 'passkey'
-        });
+        const user = $store.user;
+        if (user) {
+          dispatch('success', {
+            user: user,
+            method: 'passkey'
+          });
+        }
       }
     } catch (error) {
       // Conditional auth should fail silently - this is expected if no passkeys exist
@@ -161,7 +197,7 @@
         } catch (passkeyError) {
           console.warn('Passkey authentication failed:', passkeyError);
           // Fall back to magic link if enabled
-          if (config.enableMagicLinks) {
+          if (config?.enableMagicPins) {
             try {
               await handleMagicLinkAuth();
             } catch (magicLinkError) {
@@ -174,13 +210,13 @@
             loading = false;
           }
         }
-      } else if (userExists && config.enableMagicLinks) {
+      } else if (userExists && config?.enableMagicPins) {
         // User exists but no passkey - send magic link
         try {
           await handleMagicLinkAuth();
         } catch (magicLinkError) {
           console.warn('Magic link failed:', magicLinkError);
-          error = 'Failed to send magic link. Please try again.';
+          error = $i18n('error.magicLinkFailed');
           loading = false;
         }
       } else if (!userExists) {
@@ -189,7 +225,7 @@
         loading = false;
       } else {
         // No authentication methods available
-        error = 'No authentication methods available for this email.';
+        error = $i18n('error.noAuthMethods');
         loading = false;
       }
     } catch (err: any) {
@@ -242,32 +278,32 @@
 
     // Handle specific API endpoint errors
     if (message.includes('not found') || message.includes('404') || message.includes('endpoint')) {
-      return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
+      return $i18n('error.noPasskeyFound');
     }
 
     if (message.includes('/auth/webauthn/authenticate') || message.includes('/auth/webauthn/challenge') || status === 404) {
-      return 'Authentication service temporarily unavailable. Please try again in a moment.';
+      return $i18n('error.serviceTemporarilyUnavailable');
     }
 
     // Handle WebAuthn-specific errors
     if (message.includes('NotAllowedError') || message.includes('cancelled')) {
-      return 'Authentication was cancelled. Please try again.';
+      return $i18n('error.authCancelled');
     }
 
     if (message.includes('NotSupportedError')) {
-      return 'Passkey authentication is not supported on this device.';
+      return $i18n('error.passkeyNotSupported');
     }
 
     if (message.includes('SecurityError')) {
-      return 'Security error occurred. Please ensure you\'re on a secure connection.';
+      return $i18n('error.securityError');
     }
 
     if (message.includes('InvalidStateError')) {
-      return 'No passkey available on this device. Please register a new passkey.';
+      return $i18n('error.noPasskeyAvailable');
     }
 
     // Generic fallback
-    return 'Authentication failed. Please try again or use a different sign-in method.';
+    return $i18n('error.authGenericFailed');
   }
 
   // Handle magic link authentication
@@ -296,7 +332,7 @@
   // Handle Terms of Service acceptance
   function handleTermsAcceptance() {
     if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'You must accept the Terms of Service and Privacy Policy to continue.';
+      error = $i18n('terms.acceptRequired');
       return;
     }
 
@@ -308,7 +344,7 @@
   // Handle registration with passkey
   async function handleRegistration() {
     if (!acceptedTerms || !acceptedPrivacy) {
-      error = 'Terms of Service must be accepted';
+      error = $i18n('registration.termsServiceRequired');
       return;
     }
 
@@ -338,8 +374,8 @@
       }
     } catch (err: any) {
       loading = false;
-      error = err.message || 'Registration failed';
-      dispatch('error', { error: { code: 'registration_failed', message: error } });
+      error = err.message || $i18n('error.registrationFailed');
+      dispatch('error', { error: { code: 'registration_failed', message: error || $i18n('error.registrationFailed') } });
     }
   }
 
@@ -368,7 +404,7 @@
 </script>
 
 <div class="auth-form {className}" class:compact class:popup={variant === 'popup'} class:size-small={size === 'small'} class:size-medium={size === 'medium'} class:size-large={size === 'large'} class:size-full={size === 'full'} class:pos-top-right={variant === 'popup' && popupPosition === 'top-right'} class:pos-top-left={variant === 'popup' && popupPosition === 'top-left'} class:pos-bottom-right={variant === 'popup' && popupPosition === 'bottom-right'} class:pos-bottom-left={variant === 'popup' && popupPosition === 'bottom-left'}>
-  {#if showLogo && config.branding?.logoUrl}
+  {#if showLogo && config?.branding?.logoUrl}
     <div class="auth-logo">
       <img src={config.branding.logoUrl} alt={config.branding.companyName || 'Logo'} />
     </div>
@@ -379,57 +415,65 @@
       <!-- Combined Auth Step - Primary UI -->
       <div class="combined-auth-step">
         <div class="step-header">
-          <h2 class="step-title">Sign in</h2>
+          <h2 class="step-title">{$i18n('signIn.title')}</h2>
           <p class="step-description">
-            Enter your email to continue to {config.branding?.companyName || 'your account'}
+            {#if config?.branding?.companyName}
+              {$i18n('signIn.description', { companyName: config.branding.companyName })}
+            {:else}
+              {$i18n('signIn.descriptionGeneric')}
+            {/if}
           </p>
         </div>
 
         <form on:submit|preventDefault={handleSubmit}>
           <div class="input-group">
-            <label for="email" class="input-label">Email address</label>
-            <input
+            <EmailInput
               bind:value={email}
-              on:input={handleEmailChange}
-              id="email"
-              type="email"
-              class="email-input"
-              class:error={!!error}
-              placeholder="your.email@company.com"
-              autocomplete="email webauthn"
-              required
+              {i18n}
+              label="email.label"
+              placeholder="email.placeholder"
+              error={error}
               disabled={loading}
+              enableWebAuthn={supportsWebAuthn && (config?.enablePasskeys ?? false)}
+              on:change={({ detail }) => { email = detail.value; }}
+              on:conditionalAuth={handleConditionalAuth}
             />
-            {#if error}
-              <div class="error-message">{error}</div>
-            {/if}
           </div>
 
-          <button
+          <AuthButton
             type="submit"
-            class="continue-button"
-            class:loading
+            method={supportsWebAuthn && (config?.enablePasskeys ?? false) ? 'passkey' : (config?.enableMagicPins ?? false) ? (isAppCodeBased ? 'email' : 'magic-link') : 'generic'}
+            {loading}
             disabled={loading || !email.trim()}
-          >
-            {#if loading}
-              <span class="loading-spinner"></span>
-              Signing in...
-            {:else if supportsWebAuthn && config.enablePasskeys}
-              🔑 Sign in with Passkey
-            {:else if config.enableMagicLinks}
-              ✉️ Send Magic Link
-            {:else}
-              Continue
-            {/if}
-          </button>
+            {isAppCodeBased}
+            {i18n}
+            supportsWebAuthn={supportsWebAuthn}
+          />
         </form>
 
         <!-- Auth method indicators -->
-        {#if supportsWebAuthn && config.enablePasskeys}
+        {#if supportsWebAuthn && config?.enablePasskeys}
           <div class="webauthn-indicator">
-            <small>🔐 WebAuthn ready - Touch ID/Face ID will appear automatically</small>
+            <small>{$i18n('signIn.webAuthnIndicator')}</small>
           </div>
         {/if}
+        
+        <!-- Security explanation message -->
+        <div class="security-message">
+          {#if config?.branding?.companyName}
+            {#if isAppCodeBased}
+              {$i18n('security.passwordlessWithPin', { companyName: config.branding.companyName })}
+            {:else}
+              {$i18n('security.passwordlessExplanation', { companyName: config.branding.companyName })}
+            {/if}
+          {:else}
+            {#if isAppCodeBased}
+              {$i18n('security.passwordlessWithPinGeneric')}
+            {:else}
+              {$i18n('security.passwordlessGeneric')}
+            {/if}
+          {/if}
+        </div>
       </div>
 
     {:else if step === 'magic_link'}
@@ -442,20 +486,21 @@
               <circle cx="12" cy="12" r="10"/>
             </svg>
           </div>
-          <h2 class="step-title">Check your email</h2>
+          <h2 class="step-title">{$i18n('magicLink.title')}</h2>
           <p class="step-description">
-            We sent a secure login link to<br>
+            {$i18n('magicLink.description')}<br>
             <strong>{email}</strong>
           </p>
         </div>
 
-        <button
+        <AuthButton
           type="button"
-          class="secondary-button"
+          variant="secondary"
+          method="generic"
+          text={$i18n('magicLink.differentEmail')}
+          {i18n}
           on:click={resetForm}
-        >
-          Use a different email
-        </button>
+        />
       </div>
 
     {:else if step === 'registration-terms'}
@@ -463,11 +508,11 @@
       <div class="registration-terms-step">
         <div class="step-header">
           <button type="button" class="back-button" on:click={handleBack}>
-            ← Back
+            ← {$i18n('action.back')}
           </button>
-          <h2 class="step-title">Terms & Privacy</h2>
+          <h2 class="step-title">{$i18n('registration.termsTitle')}</h2>
           <p class="step-description">
-            Please review and accept our terms to create your account
+            {$i18n('registration.termsDescription')}
           </p>
         </div>
 
@@ -481,8 +526,8 @@
                   required
                 />
                 <span class="checkmark"></span>
-                I agree to the
-                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                {$i18n('registration.agreeTerms')}
+                <a href="/terms" target="_blank" rel="noopener noreferrer">{$i18n('registration.termsLink')}</a>
               </label>
             </div>
 
@@ -494,8 +539,8 @@
                   required
                 />
                 <span class="checkmark"></span>
-                I agree to the
-                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                {$i18n('registration.agreePrivacy')}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">{$i18n('registration.privacyLink')}</a>
               </label>
             </div>
 
@@ -506,25 +551,20 @@
             <div class="error-message">{error}</div>
           {/if}
 
-          <button
+          <AuthButton
             type="submit"
-            class="continue-button"
-            class:loading
+            method={supportsWebAuthn ? 'passkey' : 'generic'}
+            text={supportsWebAuthn ? undefined : $i18n('registration.createAccount')}
+            loadingText={$i18n('registration.creatingAccount')}
+            {loading}
             disabled={!acceptedTerms || !acceptedPrivacy || loading}
-          >
-            {#if loading}
-              <span class="loading-spinner"></span>
-              Creating Account...
-            {:else if supportsWebAuthn}
-              🔑 Register with Passkey
-            {:else}
-              Create Account
-            {/if}
-          </button>
+            {i18n}
+            supportsWebAuthn={supportsWebAuthn}
+          />
 
           {#if supportsWebAuthn}
             <div class="webauthn-info">
-              <small>🔐 Your device will prompt for Touch ID, Face ID, or Windows Hello</small>
+              <small>{$i18n('registration.webAuthnInfo')}</small>
             </div>
           {/if}
         </form>
@@ -542,25 +582,29 @@
               <circle cx="12" cy="12" r="10"/>
             </svg>
           </div>
-          <h2 class="step-title">Account Created Successfully!</h2>
+          <h2 class="step-title">{$i18n('registration.successTitle')}</h2>
           <p class="step-description">
-            Welcome to {config.branding?.companyName || 'our platform'}!
-            You can now explore the application.
+            {#if config?.branding?.companyName}
+              {$i18n('registration.successDescription', { companyName: config.branding.companyName })}
+            {:else}
+              {$i18n('registration.successDescriptionGeneric')}
+            {/if}
+            {$i18n('registration.successExplore')}
           </p>
         </div>
 
         <div class="success-info">
-          <p>📧 We've sent a welcome email to <strong>{email}</strong></p>
-          <p>🔓 Verify your email to unlock all features</p>
+          <p>{$i18n('registration.welcomeEmail')} <strong>{email}</strong></p>
+          <p>{$i18n('registration.verifyEmail')}</p>
         </div>
       </div>
     {/if}
   </div>
 
-  {#if config.branding?.showPoweredBy !== false}
+  {#if config?.branding?.showPoweredBy !== false}
     <div class="auth-footer">
       <p class="powered-by">
-        Secured by <strong>Thepia</strong>
+        {$i18n('branding.securedBy')} <strong>{$i18n('branding.poweredBy')}</strong>
       </p>
     </div>
   {/if}
@@ -923,6 +967,16 @@
     color: var(--color-text-success, #10b981);
     font-size: 12px;
     font-weight: 500;
+  }
+
+  /* Security message styling - matches thepia.com */
+  .security-message {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--auth-text-secondary, #6b7280);
+    line-height: 1.4;
+    opacity: 0.8;
   }
 
   /* Mobile responsive for registration */

@@ -263,7 +263,7 @@ This application doesn't use any cookies. Instead, we use:
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   domain: 'thepia.net',
 
   // Privacy settings (optimal defaults)
@@ -283,7 +283,7 @@ const authConfig = {
 const enterpriseAuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   domain: 'thepia.net',
 
   // Enterprise authentication options

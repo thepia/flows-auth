@@ -194,7 +194,7 @@
           </button>
         {/if}
 
-        {#if config?.enableMagicLinks}
+        {#if config?.enableMagicPins}
           <button 
             class="btn btn-secondary"
             on:click={handleEmailSubmit}

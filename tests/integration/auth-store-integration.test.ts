@@ -17,7 +17,7 @@ const LOCAL_TEST_CONFIG = {
   clientId: 'test-flows-auth-client',
   domain: 'dev.thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: true,
+  enableMagicPins: true,
   errorReporting: {
     enabled: true,
     debug: true

@@ -28,7 +28,7 @@ describe('SignInCore Logic', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: true,
+      enableMagicPins: true,
       signInMode: 'login-or-register'
     };
   });
@@ -37,7 +37,7 @@ describe('SignInCore Logic', () => {
     // Simulate the getAuthMethodForUI logic from SignInCore
     function getAuthMethodForUI(config: AuthConfig, supportsWebAuthn: boolean): 'passkey' | 'email' | 'generic' {
       if (config.enablePasskeys && supportsWebAuthn) return 'passkey';
-      if (config.enableMagicLinks) return 'email';
+      if (config.enableMagicPins) return 'email';
       return 'generic';
     }
 
@@ -45,7 +45,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = getAuthMethodForUI(config, true);
@@ -56,7 +56,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = getAuthMethodForUI(config, true);
@@ -67,7 +67,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = getAuthMethodForUI(config, false);
@@ -78,7 +78,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: false
+        enableMagicPins: false
       };
 
       const result = getAuthMethodForUI(config, false);
@@ -89,7 +89,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicLinks: false
+        enableMagicPins: false
       };
 
       const result = getAuthMethodForUI(config, true);
@@ -216,10 +216,10 @@ describe('SignInCore Logic', () => {
       const hasPasskeys = userCheck.hasWebAuthn;
 
       if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
-        return config.enableMagicLinks ? 'passkey-with-fallback' : 'passkey-only';
+        return config.enableMagicPins ? 'passkey-with-fallback' : 'passkey-only';
       }
       
-      if (config.enableMagicLinks) {
+      if (config.enableMagicPins) {
         return 'email-only';
       }
 
@@ -231,7 +231,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = determineAuthMethod(userCheck, config, true);
@@ -243,7 +243,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = determineAuthMethod(userCheck, config, true);
@@ -255,7 +255,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: false
+        enableMagicPins: false
       };
 
       const result = determineAuthMethod(userCheck, config, true);
@@ -267,7 +267,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicLinks: false
+        enableMagicPins: false
       };
 
       const result = determineAuthMethod(userCheck, config, true);
@@ -279,7 +279,7 @@ describe('SignInCore Logic', () => {
       const config = {
         ...mockConfig,
         enablePasskeys: true,
-        enableMagicLinks: true
+        enableMagicPins: true
       };
 
       const result = determineAuthMethod(userCheck, config, false);

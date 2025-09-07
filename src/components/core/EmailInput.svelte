@@ -4,18 +4,21 @@
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
+import type { Readable } from 'svelte/store';
+import type { TranslationKey } from '../../utils/i18n';
 
 // Props
 export let value = '';
-export let placeholder = 'your.email@company.com';
+export let placeholder: TranslationKey | '' = '';
 export let disabled = false;
 export let required = true;
 export let error: string | null = null;
-export let label = 'Email address';
+export let label: TranslationKey | '' = '';
 export let showLabel = true;
 export let enableWebAuthn = true;
 export let debounceMs = 1000;
 export let className = '';
+export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -73,12 +76,16 @@ function getInputClasses(): string {
   }
   return "input-brand";
 }
+
+// Reactive values for i18n
+$: displayPlaceholder = $i18n(placeholder || 'email.placeholder');
+$: displayLabel = $i18n(label || 'email.label');
 </script>
 
 <div class="space-y-2 {className}">
   {#if showLabel}
     <label for="email-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-      {label}
+      {displayLabel}
     </label>
   {/if}
   
@@ -90,7 +97,7 @@ function getInputClasses(): string {
     on:input={handleInput}
     on:focus={handleFocus}
     on:blur={handleBlur}
-    {placeholder}
+    placeholder={displayPlaceholder}
     {disabled}
     {required}
     autocomplete={enableWebAuthn ? "email webauthn" : "email"}

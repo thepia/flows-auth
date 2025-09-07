@@ -33,7 +33,7 @@ describe('Unregistered User Sign-In Flow', () => {
           clientId: 'test-client',
           domain: 'thepia.net',
           enablePasskeys: true,
-          enableMagicLinks: true
+          enableMagicPins: true
         });
         console.log('✅ Using local API server for testing');
       }
@@ -56,7 +56,7 @@ describe('Unregistered User Sign-In Flow', () => {
             clientId: 'test-client',
             domain: 'thepia.net',
             enablePasskeys: true,
-            enableMagicLinks: true
+            enableMagicPins: true
           });
           console.log('✅ Using production API server for testing');
         }

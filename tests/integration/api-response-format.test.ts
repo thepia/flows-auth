@@ -95,7 +95,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       clientId: 'test-client',
       domain: 'test.example.com',
       enablePasskeys: true,
-      enableMagicLinks: false
+      enableMagicPins: false
     };
 
     authStore = createAuthStore(config);

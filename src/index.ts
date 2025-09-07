@@ -84,7 +84,9 @@ export {
   detectUserLanguage, 
   getSupportedLanguages,
   isLanguageSupported,
-  defaultTranslations 
+  defaultTranslations,
+  setI18nContext,
+  getI18n
 } from './utils/i18n';
 
 export type {
@@ -174,7 +176,7 @@ export function createDefaultConfig(
     clientId: '',
     domain: '',
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
     branding: {
       companyName: 'Your Company',
       showPoweredBy: true,

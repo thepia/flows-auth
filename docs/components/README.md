@@ -31,7 +31,7 @@ This directory contains documentation for all user-facing components in the flow
     clientId: 'your-client-id',
     domain: 'example.com',
     enablePasskeys: true,
-    enableMagicLinks: true,
+    enableMagicPins: true,
   });
   
   let showRegistration = false;

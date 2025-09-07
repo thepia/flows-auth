@@ -15,7 +15,7 @@ describe('SignInCore User Flow Logic', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
+      enableMagicPins: false,
       signInMode: 'login-or-register',
       appCode: 'demo'
     };
@@ -104,7 +104,7 @@ describe('SignInCore User Flow Logic', () => {
       // If user has passkeys and we support them
       if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
         // Use passkey with fallback to email if other email methods are enabled
-        const hasEmailFallback = config.appCode || config.enableMagicLinks;
+        const hasEmailFallback = config.appCode || config.enableMagicPins;
         return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
       }
       
@@ -114,7 +114,7 @@ describe('SignInCore User Flow Logic', () => {
       }
       
       // If user doesn't have passkeys but we have magic links enabled
-      if (config.enableMagicLinks) {
+      if (config.enableMagicPins) {
         return 'email-only';
       }
 
@@ -138,7 +138,7 @@ describe('SignInCore User Flow Logic', () => {
 
     it('should select email-only when only magic links are enabled', () => {
       const userCheck = { hasWebAuthn: false };
-      const configMagicOnly = { ...mockConfig, appCode: undefined, enableMagicLinks: true };
+      const configMagicOnly = { ...mockConfig, appCode: undefined, enableMagicPins: true };
       const result = selectAuthenticationMethod(userCheck, configMagicOnly, true);
       
       expect(result).toBe('email-only');
@@ -149,7 +149,7 @@ describe('SignInCore User Flow Logic', () => {
       const configNone = { 
         ...mockConfig, 
         appCode: undefined, 
-        enableMagicLinks: false,
+        enableMagicPins: false,
         enablePasskeys: false 
       };
       const result = selectAuthenticationMethod(userCheck, configNone, true);

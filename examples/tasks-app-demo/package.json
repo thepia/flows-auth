@@ -40,6 +40,7 @@
     "vitest": "^1.0.0"
   },
   "dependencies": {
+    "@thepia/branding": "^1.4.0",
     "@thepia/flows-auth": "file:../.."
   }
 }

@@ -5,7 +5,6 @@
  */
 
 :root {
-  /* Text Colors */
   --color-text-1: #111827;
   --color-text-2: #4b5563;
   --color-text-3: #6b7280;
@@ -18,8 +17,6 @@
   --color-text-warning: #f59e0b;
   --color-text-error: #ef4444;
   --color-text-info: #0066cc;
-
-  /* Background Colors */
   --color-bg-1: #ffffff;
   --color-bg-2: #f9fafb;
   --color-bg-3: #f3f4f6;
@@ -31,8 +28,6 @@
   --color-bg-warning: #fef3c7;
   --color-bg-error: #fee2e2;
   --color-bg-info: #eff6ff;
-
-  /* Border Colors */
   --color-border-1: #e5e7eb;
   --color-border-2: #d1d5db;
   --color-border-3: #9ca3af;
@@ -43,25 +38,11 @@
   --color-border-warning: #f59e0b;
   --color-border-error: #ef4444;
   --color-border-info: #0066cc;
-
-  /* Interactive Colors */
   --color-interactive-default: #0066cc;
   --color-interactive-hover: #0052a3;
   --color-interactive-active: #1e40af;
   --color-interactive-focus: #0066cc;
   --color-interactive-disabled: #d1d5db;
-
-  /* Brand Colors */
-  --color-brand-primary: #0066cc;
-  --color-brand-primaryHover: #0052a3;
-  --color-brand-primaryActive: #1e40af;
-  --color-brand-primarySubtle: #eff6ff;
-  --color-brand-primaryMuted: #dbeafe;
-  --color-brand-accent: #ed8b00;
-  --color-brand-accentHover: #d97706;
-  --color-brand-accentActive: #b45309;
-
-  /* Color Palettes */
   --color-palette-demo-50: #eff6ff;
   --color-palette-demo-100: #dbeafe;
   --color-palette-demo-200: #bfdbfe;
@@ -73,7 +54,6 @@
   --color-palette-demo-800: #1e40af;
   --color-palette-demo-900: #1e3a8a;
   --color-palette-demo-950: #172554;
-
   --color-palette-accent-50: #fffbeb;
   --color-palette-accent-100: #fef3c7;
   --color-palette-accent-200: #fde68a;
@@ -85,7 +65,6 @@
   --color-palette-accent-800: #b45309;
   --color-palette-accent-900: #92400e;
   --color-palette-accent-950: #451a03;
-
   --color-palette-neutral-50: #f9fafb;
   --color-palette-neutral-100: #f3f4f6;
   --color-palette-neutral-200: #e5e7eb;
@@ -96,27 +75,33 @@
   --color-palette-neutral-700: #374151;
   --color-palette-neutral-800: #1f2937;
   --color-palette-neutral-900: #111827;
-
-  /* Typography */
-  --typography-fontFamily-brand-primary: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --typography-fontWeight-normal: 400;
-  --typography-fontWeight-medium: 500;
-  --typography-fontWeight-semibold: 600;
-  --typography-fontWeight-bold: 700;
-  --typography-fontSize-xs: 0.75rem;
-  --typography-fontSize-sm: 0.875rem;
-  --typography-fontSize-base: 1rem;
-  --typography-fontSize-lg: 1.125rem;
-  --typography-fontSize-xl: 1.25rem;
-  --typography-fontSize-2xl: 1.5rem;
-  --typography-fontSize-3xl: 1.875rem;
-  --typography-fontSize-4xl: 2.25rem;
-  --typography-lineHeight-tight: 1.25;
-  --typography-lineHeight-snug: 1.375;
-  --typography-lineHeight-normal: 1.5;
-  --typography-lineHeight-relaxed: 1.625;
-
-  /* Spacing */
+  --color-brand-primary: #0066cc;
+  --color-brand-primaryHover: #0052a3;
+  --color-brand-primaryActive: #1e40af;
+  --color-brand-primarySubtle: #eff6ff;
+  --color-brand-primaryMuted: #dbeafe;
+  --color-brand-accent: #ed8b00;
+  --color-brand-accentHover: #d97706;
+  --color-brand-accentActive: #b45309;
+  --font-fontFamily-brand-lead: Bembo, EB Garamond, New York, Times, serif;
+  --font-fontFamily-brand-body: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-fontFamily-brand-mono: JetBrains Mono, SF Mono, Monaco, Consolas, Liberation Mono, monospace;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-lineHeight-tight: 1.25;
+  --font-lineHeight-snug: 1.375;
+  --font-lineHeight-normal: 1.5;
+  --font-lineHeight-relaxed: 1.625;
   --size-space-1: 0.25rem;
   --size-space-2: 0.5rem;
   --size-space-3: 0.75rem;
@@ -129,8 +114,6 @@
   --size-space-16: 4rem;
   --size-space-20: 5rem;
   --size-space-24: 6rem;
-
-  /* Border Radius */
   --size-radius-sm: 0.125rem;
   --size-radius-base: 0.25rem;
   --size-radius-md: 0.375rem;
@@ -139,32 +122,22 @@
   --size-radius-2xl: 1rem;
   --size-radius-3xl: 1.5rem;
   --size-radius-full: 9999px;
-
-  /* Shadows */
   --size-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --size-shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --size-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --size-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --size-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --size-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-
-  /* Borders */
   --size-border-1: 1px;
   --size-border-2: 2px;
   --size-border-4: 4px;
-
-  /* Containers */
   --size-container-sm: 640px;
   --size-container-md: 768px;
   --size-container-lg: 1024px;
   --size-container-xl: 1200px;
-
-  /* Transitions */
   --size-transition-fast: 150ms;
   --size-transition-normal: 200ms;
   --size-transition-slow: 300ms;
-
-  /* Z-Index */
   --size-zIndex-dropdown: 1000;
   --size-zIndex-sticky: 1020;
   --size-zIndex-fixed: 1030;
@@ -173,106 +146,31 @@
   --size-zIndex-popover: 1060;
   --size-zIndex-tooltip: 1070;
 
-  /* Legacy compatibility aliases for existing app.css */
-  --primary: var(--color-brand-primary);
-  --primary-hover: var(--color-brand-primaryHover);
-  --primary-light: var(--color-brand-primarySubtle);
-  
-  --gray-50: var(--color-palette-neutral-50);
-  --gray-100: var(--color-palette-neutral-100);
-  --gray-200: var(--color-palette-neutral-200);
-  --gray-300: var(--color-palette-neutral-300);
-  --gray-400: var(--color-palette-neutral-400);
-  --gray-500: var(--color-palette-neutral-500);
-  --gray-600: var(--color-palette-neutral-600);
-  --gray-700: var(--color-palette-neutral-700);
-  --gray-800: var(--color-palette-neutral-800);
-  --gray-900: var(--color-palette-neutral-900);
-  
-  --white: #ffffff;
-  --black: #000000;
-  
-  --shadow-sm: var(--size-shadow-sm);
-  --shadow: var(--size-shadow-base);
-  --shadow-md: var(--size-shadow-md);
-  --shadow-lg: var(--size-shadow-lg);
-  --shadow-xl: var(--size-shadow-xl);
-  
-  --radius: var(--size-radius-md);
-  --radius-md: var(--size-radius-lg);
-  --radius-lg: var(--size-radius-xl);
-  --radius-xl: var(--size-radius-2xl);
+  /* Legacy compatibility aliases for old typography naming */
+  --typography-fontFamily-brand-primary: var(--font-fontFamily-brand-body);
+  --font-family-brand: var(--font-fontFamily-brand-body);
+  --font-family-brand-lead: var(--font-fontFamily-brand-lead);
+  --font-family-brand-mono: var(--font-fontFamily-brand-mono);
 
-  /* Additional aliases for flows-auth and existing app compatibility */
-  --brand-primary: var(--color-brand-primary);
-  --brand-primary-hover: var(--color-brand-primaryHover);
-  --brand-primary-light: var(--color-brand-primarySubtle);
-  --brand-accent: var(--color-brand-accent);
-  --brand-accent-hover: var(--color-brand-accentHover);
-  --font-family-brand: var(--typography-fontFamily-brand-primary);
-  
-  /* Legacy spacing variables */
-  --spacing-1: var(--size-space-1);
-  --spacing-2: var(--size-space-2);
-  --spacing-3: var(--size-space-3);
-  --spacing-4: var(--size-space-4);
-  --spacing-5: var(--size-space-5);
-  --spacing-6: var(--size-space-6);
-  --spacing-8: var(--size-space-8);
-  --spacing-10: var(--size-space-10);
-  --spacing-12: var(--size-space-12);
-  --spacing-16: var(--size-space-16);
-  --spacing-20: var(--size-space-20);
-  --spacing-24: var(--size-space-24);
-  
   /* Legacy font variables */
-  --font-size-xs: var(--typography-fontSize-xs);
-  --font-size-sm: var(--typography-fontSize-sm);
-  --font-size-base: var(--typography-fontSize-base);
-  --font-size-lg: var(--typography-fontSize-lg);
-  --font-size-xl: var(--typography-fontSize-xl);
-  --font-size-2xl: var(--typography-fontSize-2xl);
-  --font-size-3xl: var(--typography-fontSize-3xl);
-  --font-size-4xl: var(--typography-fontSize-4xl);
-  
-  --font-weight-normal: var(--typography-fontWeight-normal);
-  --font-weight-medium: var(--typography-fontWeight-medium);
-  --font-weight-semibold: var(--typography-fontWeight-semibold);
-  --font-weight-bold: var(--typography-fontWeight-bold);
-  
-  --line-height-tight: var(--typography-lineHeight-tight);
-  --line-height-snug: var(--typography-lineHeight-snug);
-  --line-height-normal: var(--typography-lineHeight-normal);
-  --line-height-relaxed: var(--typography-lineHeight-relaxed);
-  
-  /* Legacy color variables */
-  --color-white: var(--white);
-  --color-black: var(--black);
-  --color-gray-50: var(--gray-50);
-  --color-gray-100: var(--gray-100);
-  --color-gray-200: var(--gray-200);
-  --color-gray-300: var(--gray-300);
-  --color-gray-400: var(--gray-400);
-  --color-gray-500: var(--gray-500);
-  --color-gray-600: var(--gray-600);
-  --color-gray-700: var(--gray-700);
-  --color-gray-800: var(--gray-800);
-  --color-gray-900: var(--gray-900);
-  
-  /* Legacy border/transition variables */
-  --border-width: 1px;
-  --transition-fast: var(--size-transition-fast);
-  --transition-normal: var(--size-transition-normal);
-  --transition-slow: var(--size-transition-slow);
-  
-  /* Legacy z-index variables */
-  --z-dropdown: var(--size-zIndex-dropdown);
-  --z-sticky: var(--size-zIndex-sticky);
-  --z-fixed: var(--size-zIndex-fixed);
-  --z-modal-backdrop: var(--size-zIndex-modal-backdrop);
-  --z-modal: var(--size-zIndex-modal);
-  --z-popover: var(--size-zIndex-popover);
-  --z-tooltip: var(--size-zIndex-tooltip);
+  --font-size-xs: var(--font-size-xs);
+  --font-size-sm: var(--font-size-sm);
+  --font-size-base: var(--font-size-base);
+  --font-size-lg: var(--font-size-lg);
+  --font-size-xl: var(--font-size-xl);
+  --font-size-2xl: var(--font-size-2xl);
+  --font-size-3xl: var(--font-size-3xl);
+  --font-size-4xl: var(--font-size-4xl);
+
+  --font-weight-normal: var(--font-weight-normal);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+  --font-weight-bold: var(--font-weight-bold);
+
+  --line-height-tight: var(--font-lineHeight-tight);
+  --line-height-snug: var(--font-lineHeight-snug);
+  --line-height-normal: var(--font-lineHeight-normal);
+  --line-height-relaxed: var(--font-lineHeight-relaxed);
 }
 
 /* Brand Theme Classes */

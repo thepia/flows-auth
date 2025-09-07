@@ -664,13 +664,13 @@
   .step-title {
     font-size: 24px;
     font-weight: 700;
-    color: #111827;
+    color: var(--color-text-primary, #111827);
     margin: 0 0 8px 0;
   }
 
   .step-description {
     font-size: 16px;
-    color: #4b5563;
+    color: var(--color-text-secondary, #4b5563);
     margin: 0;
     line-height: 1.625;
   }
@@ -683,7 +683,7 @@
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-text-primary, #374151);
     margin-bottom: 8px;
   }
 
@@ -701,22 +701,22 @@
 
   .email-input:focus {
     outline: none;
-    border-color: var(--brand-primary, #0066cc);
+    border-color: var(--color-brand-primary, #0066cc);
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
   }
 
   .email-input:disabled {
-    background: #f9fafb;
-    color: #6b7280;
+    background: var(--color-bg-2, #f9fafb);
+    color: var(--color-text-3, #6b7280);
     cursor: not-allowed;
   }
 
   .email-input.error {
-    border-color: #ef4444;
+    border-color: var(--color-border-error, #ef4444);
   }
 
   .error-message {
-    color: #ef4444;
+    color: var(--color-text-error, #ef4444);
     font-size: 14px;
     margin-top: 4px;
   }
@@ -724,7 +724,7 @@
   .continue-button {
     width: 100%;
     padding: 12px 16px;
-    background: var(--brand-primary, #0066cc);
+    background: var(--color-brand-primary, #0066cc);
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -741,13 +741,13 @@
   }
 
   .continue-button:hover:not(:disabled) {
-    background: var(--brand-primary-hover, #0052a3);
+    background: var(--color-brand-primary-hover, #0052a3);
     transform: translateY(-1px);
   }
 
   .continue-button:disabled {
-    background: #d1d5db;
-    color: #6b7280;
+    background: var(--color-interactive-disabled, #d1d5db);
+    color: var(--color-text-3, #6b7280);
     cursor: not-allowed;
     transform: none;
   }
@@ -771,13 +771,13 @@
   }
 
   .powered-by {
-    color: #6b7280;
+    color: var(--color-text-3, #6b7280);
     font-size: 14px;
     margin: 0;
   }
 
   .powered-by strong {
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
   }
 
   /* Registration-specific styles */
@@ -787,7 +787,7 @@
     top: 0;
     background: none;
     border: none;
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
     cursor: pointer;
     padding: 8px;
     border-radius: 4px;
@@ -796,7 +796,7 @@
   }
 
   .back-button:hover {
-    background: var(--primary-light, #e6f2ff);
+    background: var(--color-brand-primarySubtle, #e6f2ff);
   }
 
   .terms-section {
@@ -814,7 +814,7 @@
     gap: 12px;
     font-size: 14px;
     line-height: 1.5;
-    color: #374151;
+    color: var(--color-text-primary, #374151);
     cursor: pointer;
   }
 
@@ -822,11 +822,11 @@
     margin: 0;
     width: 18px;
     height: 18px;
-    accent-color: var(--brand-primary, #0066cc);
+    accent-color: var(--color-brand-primary, #0066cc);
   }
 
   .checkbox-label a {
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
     text-decoration: none;
   }
 
@@ -858,20 +858,20 @@
 
   .name-input:focus {
     outline: none;
-    border-color: var(--brand-primary, #0066cc);
+    border-color: var(--color-brand-primary, #0066cc);
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
   }
 
   .name-input:disabled {
-    background: #f9fafb;
-    color: #6b7280;
+    background: var(--color-bg-2, #f9fafb);
+    color: var(--color-text-3, #6b7280);
     cursor: not-allowed;
   }
 
   .register-button {
     width: 100%;
     padding: 12px 16px;
-    background: var(--brand-primary, #0066cc);
+    background: var(--color-brand-primary, #0066cc);
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -888,13 +888,13 @@
   }
 
   .register-button:hover:not(:disabled) {
-    background: var(--brand-primary-hover, #0052a3);
+    background: var(--color-brand-primary-hover, #0052a3);
     transform: translateY(-1px);
   }
 
   .register-button:disabled {
-    background: #d1d5db;
-    color: #6b7280;
+    background: var(--color-interactive-disabled, #d1d5db);
+    color: var(--color-text-3, #6b7280);
     cursor: not-allowed;
     transform: none;
   }
@@ -911,7 +911,7 @@
   .success-info p {
     margin: 8px 0;
     font-size: 14px;
-    color: #0c4a6e;
+    color: var(--color-text-info, #0c4a6e);
   }
 
   .webauthn-info {
@@ -920,7 +920,7 @@
   }
 
   .webauthn-info small {
-    color: #10b981;
+    color: var(--color-text-success, #10b981);
     font-size: 12px;
     font-weight: 500;
   }
@@ -939,7 +939,7 @@
   }
 
   .webauthn-indicator small {
-    color: #10b981;
+    color: var(--color-text-success, #10b981);
     font-size: 12px;
     font-weight: 500;
   }
@@ -951,7 +951,7 @@
     top: 0;
     background: none;
     border: none;
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
     cursor: pointer;
     padding: 8px;
     border-radius: 4px;
@@ -959,7 +959,7 @@
   }
 
   .back-button:hover {
-    background: var(--primary-light, #e6f2ff);
+    background: var(--color-brand-primarySubtle, #e6f2ff);
   }
 
   .step-header {
@@ -976,7 +976,7 @@
   .alt-auth-button {
     background: none;
     border: none;
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
     cursor: pointer;
     font-size: 14px;
     text-decoration: underline;
@@ -984,7 +984,7 @@
   }
 
   .alt-auth-button:hover {
-    color: var(--primary-hover, #0052a3);
+    color: var(--color-brand-primaryHover, #0052a3);
   }
 
   /* Magic Link Step */
@@ -998,8 +998,8 @@
     width: 100%;
     padding: 12px 16px;
     background: #ffffff;
-    color: var(--brand-primary, #0066cc);
-    border: 2px solid var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, #0066cc);
+    border: 2px solid var(--color-brand-primary, #0066cc);
     border-radius: 8px;
     font-size: 16px;
     font-weight: 500;
@@ -1009,7 +1009,7 @@
   }
 
   .secondary-button:hover {
-    background: var(--primary-light, #e6f2ff);
+    background: var(--color-brand-primarySubtle, #e6f2ff);
   }
 
   /* Mobile responsive */

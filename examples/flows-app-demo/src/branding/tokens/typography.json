@@ -1,10 +1,21 @@
 {
-  "$description": "Demo Company typography tokens - extracted from existing CSS",
-  "typography": {
+  "$description": "Demo Company typography tokens - updated to match new branding conventions",
+  "font": {
     "fontFamily": {
       "$description": "Font family definitions for demo company typography",
       "brand": {
-        "primary": {
+        "lead": {
+          "value": [
+            "Bembo",
+            "EB Garamond", 
+            "New York",
+            "Times",
+            "serif"
+          ],
+          "type": "fontFamily",
+          "$description": "Lead font for headings and titles"
+        },
+        "body": {
           "value": [
             "-apple-system",
             "BlinkMacSystemFont",
@@ -16,18 +27,30 @@
             "sans-serif"
           ],
           "type": "fontFamily",
-          "$description": "Primary brand font for UI and most content"
+          "$description": "Body font for most content"
+        },
+        "mono": {
+          "value": [
+            "JetBrains Mono",
+            "SF Mono",
+            "Monaco",
+            "Consolas",
+            "Liberation Mono",
+            "monospace"
+          ],
+          "type": "fontFamily",
+          "$description": "Monospace font for code and technical content"
         }
       }
     },
-    "fontWeight": {
+    "weight": {
       "$description": "Font weight values",
       "normal": { "value": "400", "type": "fontWeight", "$description": "Normal weight" },
       "medium": { "value": "500", "type": "fontWeight", "$description": "Medium weight" },
       "semibold": { "value": "600", "type": "fontWeight", "$description": "Semibold weight" },
       "bold": { "value": "700", "type": "fontWeight", "$description": "Bold weight" }
     },
-    "fontSize": {
+    "size": {
       "$description": "Font size values matching existing design system", 
       "xs": { "value": "0.75rem", "type": "dimension", "$description": "12px - extra small" },
       "sm": { "value": "0.875rem", "type": "dimension", "$description": "14px - small" },

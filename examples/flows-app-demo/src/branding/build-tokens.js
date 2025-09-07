@@ -142,6 +142,37 @@ async function generateCSS(tokens) {
     lines.push(`  ${cssVar}: ${cssValue};`);
   }
 
+  lines.push('');
+  
+  // Legacy compatibility aliases for old typography naming
+  lines.push('  /* Legacy compatibility aliases for old typography naming */');
+  lines.push('  --typography-fontFamily-brand-primary: var(--font-fontFamily-brand-body);');
+  lines.push('  --font-family-brand: var(--font-fontFamily-brand-body);');
+  lines.push('  --font-family-brand-lead: var(--font-fontFamily-brand-lead);');
+  lines.push('  --font-family-brand-mono: var(--font-fontFamily-brand-mono);');
+  lines.push('');
+  
+  // Additional legacy font variables
+  lines.push('  /* Legacy font variables */');
+  lines.push('  --font-size-xs: var(--font-size-xs);');
+  lines.push('  --font-size-sm: var(--font-size-sm);');
+  lines.push('  --font-size-base: var(--font-size-base);');
+  lines.push('  --font-size-lg: var(--font-size-lg);');
+  lines.push('  --font-size-xl: var(--font-size-xl);');
+  lines.push('  --font-size-2xl: var(--font-size-2xl);');
+  lines.push('  --font-size-3xl: var(--font-size-3xl);');
+  lines.push('  --font-size-4xl: var(--font-size-4xl);');
+  lines.push('');
+  lines.push('  --font-weight-normal: var(--font-weight-normal);');
+  lines.push('  --font-weight-medium: var(--font-weight-medium);');
+  lines.push('  --font-weight-semibold: var(--font-weight-semibold);');
+  lines.push('  --font-weight-bold: var(--font-weight-bold);');
+  lines.push('');
+  lines.push('  --line-height-tight: var(--font-lineHeight-tight);');
+  lines.push('  --line-height-snug: var(--font-lineHeight-snug);');
+  lines.push('  --line-height-normal: var(--font-lineHeight-normal);');
+  lines.push('  --line-height-relaxed: var(--font-lineHeight-relaxed);');
+
   lines.push('}');
   lines.push('');
 

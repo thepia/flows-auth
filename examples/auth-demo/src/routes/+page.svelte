@@ -648,6 +648,96 @@ function handleStepChange(detail) {
   console.log(`📍 Authentication flow step: ${detail.step}`);
 }
 
+function handleSignInClose() {
+  console.log('✖️ SignInForm popup closed by user');
+  // In a real app, you might hide the popup or reset state
+  // For demo purposes, we'll just log it
+}
+
+// Auth Store State Mocking Functions
+function mockUnauthenticated() {
+  if (!authStore) return;
+  
+  console.log('🔄 Mocking unauthenticated state');
+  // Clear the store state to simulate logged out user
+  authStore.update(state => ({
+    ...state,
+    state: 'unauthenticated',
+    user: null,
+    accessToken: null,
+    refreshToken: null,
+    expiresAt: null,
+    loading: false,
+    error: null
+  }));
+}
+
+function mockAuthenticated() {
+  if (!authStore) return;
+  
+  console.log('🔄 Mocking authenticated state');
+  // Create mock user and tokens
+  const mockUser = {
+    id: 'mock-user-123',
+    email: emailInput || 'demo@example.com',
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  authStore.update(state => ({
+    ...state,
+    state: 'authenticated',
+    user: mockUser,
+    accessToken: 'mock-access-token-' + Date.now(),
+    refreshToken: 'mock-refresh-token-' + Date.now(),
+    expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
+    loading: false,
+    error: null
+  }));
+}
+
+function mockLoading() {
+  if (!authStore) return;
+  
+  console.log('🔄 Mocking loading state');
+  authStore.update(state => ({
+    ...state,
+    state: 'loading',
+    loading: true,
+    error: null
+  }));
+  
+  // Automatically clear loading after 3 seconds for demo purposes
+  setTimeout(() => {
+    if (authStore) {
+      authStore.update(state => ({
+        ...state,
+        state: 'unauthenticated', 
+        loading: false
+      }));
+    }
+  }, 3000);
+}
+
+function mockError() {
+  if (!authStore) return;
+  
+  console.log('🔄 Mocking error state');
+  const mockError = {
+    code: 'MOCK_ERROR',
+    message: 'This is a mock error for testing purposes',
+    details: 'Simulated error state from demo controls'
+  };
+  
+  authStore.update(state => ({
+    ...state,
+    state: 'error',
+    error: mockError,
+    loading: false
+  }));
+}
+
 // Handle custom translation updates
 function updateCustomTranslations() {
   try {
@@ -839,6 +929,34 @@ $: if (dynamicAuthConfig) {
                 <button class="btn btn-outline btn-xs" on:click={() => emailInput = ''}>
                   Clear
                 </button>
+              </div>
+            </div>
+
+            <!-- Basic Auth Store State -->
+            <div class="config-section">
+              <h4>⚙️ Auth Store State</h4>
+              <div class="auth-state-controls">
+                <!-- Legacy Store State -->
+                <div class="state-section">
+                  <span class="config-label">Current State:</span>
+                  <span class="state-badge {authState}">{authState}</span>
+                </div>
+                
+                <!-- Legacy State Mock Actions -->
+                <div class="state-actions">
+                  <button class="btn btn-outline btn-xs" on:click={mockUnauthenticated}>
+                    🚪 Mock Unauthenticated
+                  </button>
+                  <button class="btn btn-outline btn-xs" on:click={mockAuthenticated}>
+                    ✅ Mock Authenticated
+                  </button>
+                  <button class="btn btn-outline btn-xs" on:click={mockLoading}>
+                    ⏳ Mock Loading
+                  </button>
+                  <button class="btn btn-outline btn-xs" on:click={mockError}>
+                    ❌ Mock Error State
+                  </button>
+                </div>
               </div>
             </div>
         
@@ -1037,19 +1155,8 @@ $: if (dynamicAuthConfig) {
           <div class="demo-main">
             <!-- Live SignInCore Component -->
             {#if authStore && dynamicAuthConfig && !isAuthenticated}
-              <div class="signin-demo card">
-            <div class="card-header">
-              <h3>Live Sign-In Component</h3>
-              <p class="text-secondary">
-                {#if signInMode === 'login-only'}
-                  Login-only mode - will show error if user doesn't exist
-                {:else}
-                  Login-or-register mode - will automatically handle new users
-                {/if}
-              </p>
-            </div>
-            <div class="card-body">
-              {#if useSignInForm}
+              {#if useSignInForm && formVariant === 'popup'}
+                <!-- Popup SignInForm - no card wrapper to avoid double borders -->
                 {#await import('@thepia/flows-auth') then { SignInForm }}
                   <SignInForm 
                     config={dynamicAuthConfig}
@@ -1068,26 +1175,176 @@ $: if (dynamicAuthConfig) {
                   </div>
                 {/await}
               {:else}
-                {#await import('@thepia/flows-auth') then { SignInCore }}
-                  <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
-                    <SignInCore 
-                      config={dynamicAuthConfig}
-                      initialEmail={emailInput}
-                      className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
-                      on:success={(e) => handleSignInSuccess(e.detail)}
-                      on:error={(e) => handleSignInError(e.detail)}
-                      on:stepChange={(e) => handleStepChange(e.detail)}
-                    />
+                <!-- Inline components with card wrapper -->
+                <div class="signin-demo card">
+                  <div class="card-header">
+                    <h3>Live Sign-In Component</h3>
+                    <p class="text-secondary">
+                      {#if signInMode === 'login-only'}
+                        Login-only mode - will show error if user doesn't exist
+                      {:else}
+                        Login-or-register mode - will automatically handle new users
+                      {/if}
+                    </p>
                   </div>
-                {:catch error}
-                  <div class="signin-error">
-                    <p>Failed to load SignInCore: {error.message}</p>
+                  <div class="card-body">
+                    {#if useSignInForm}
+                      {#await import('@thepia/flows-auth') then { SignInForm }}
+                        <SignInForm 
+                          config={dynamicAuthConfig}
+                          initialEmail={emailInput}
+                          size={formSize}
+                          variant={formVariant}
+                          popupPosition={popupPosition}
+                          className="demo-signin-form"
+                          on:success={(e) => handleSignInSuccess(e.detail)}
+                          on:error={(e) => handleSignInError(e.detail)}
+                          on:stepChange={(e) => handleStepChange(e.detail)}
+                          on:close={handleSignInClose}
+                        />
+                      {:catch error}
+                        <div class="signin-error">
+                          <p>Failed to load SignInForm: {error.message}</p>
+                        </div>
+                      {/await}
+                    {:else}
+                      {#await import('@thepia/flows-auth') then { SignInCore }}
+                        <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
+                          <SignInCore 
+                            config={dynamicAuthConfig}
+                            initialEmail={emailInput}
+                            className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
+                            on:success={(e) => handleSignInSuccess(e.detail)}
+                            on:error={(e) => handleSignInError(e.detail)}
+                            on:stepChange={(e) => handleStepChange(e.detail)}
+                          />
+                        </div>
+                      {:catch error}
+                        <div class="signin-error">
+                          <p>Failed to load SignInForm: {error.message}</p>
+                        </div>
+                      {/await}
+                    {/if}
                   </div>
-                {/await}
+                </div>
               {/if}
-            </div>
+            {/if}
           </div>
-        {/if}
+
+          <!-- State Machine Sidebar (Right) -->
+          <div class="state-machine-sidebar">
+            <div class="sidebar-header">
+              <h3>🔧 State Machine</h3>
+              <p class="text-secondary">Monitor and control authentication state machine:</p>
+            </div>
+            
+            {#if authStore && authStore.stateMachine}
+              <!-- Current State Display -->
+              <div class="config-section">
+                <h4>Current States</h4>
+                <div class="state-display-compact">
+                  <div class="state-item-compact">
+                    <span class="state-label">Machine:</span>
+                    <span class="machine-state-badge">{stateMachineState || 'loading'}</span>
+                  </div>
+                  <div class="state-item-compact">
+                    <span class="state-label">Legacy:</span>
+                    <span class="state-badge {authState}">{authState}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- State Machine Event Controls -->
+              <div class="config-section">
+                <h4>State Events</h4>
+                <div class="event-controls-compact">
+                  <div class="control-group-compact">
+                    <span class="group-label">Session:</span>
+                    <div class="control-buttons-compact">
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.checkSession()}>
+                        Check
+                      </button>
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
+                        Invalid
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="control-group-compact">
+                    <span class="group-label">Input:</span>
+                    <div class="control-buttons-compact">
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.clickNext()}>
+                        Next
+                      </button>
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
+                        Email
+                      </button>
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.clickContinue()}>
+                        Continue
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="control-group-compact">
+                    <span class="group-label">Auth:</span>
+                    <div class="control-buttons-compact">
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
+                        Passkey
+                      </button>
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
+                        Success
+                      </button>
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
+                        Error
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="control-group-compact">
+                    <span class="group-label">Reset:</span>
+                    <div class="control-buttons-compact">
+                      <button class="btn btn-outline btn-xs" on:click={() => authStore.resetToAuth()}>
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- State Machine Context (Compact) -->
+              <div class="config-section">
+                <details class="context-details-compact">
+                  <summary class="context-summary">Machine Context</summary>
+                  <div class="context-data-compact">
+                    {#if stateMachineContext}
+                      <div class="context-item-compact">
+                        <strong>Email:</strong> {stateMachineContext.email || 'None'}
+                      </div>
+                      <div class="context-item-compact">
+                        <strong>User:</strong> {stateMachineContext.user?.email || 'None'}
+                      </div>
+                      <div class="context-item-compact">
+                        <strong>Error:</strong> {stateMachineContext.error?.message || 'None'}
+                      </div>
+                      <div class="context-item-compact">
+                        <strong>Retry:</strong> {stateMachineContext.retryCount || 0}
+                      </div>
+                      {#if stateMachineContext.sessionData}
+                        <div class="context-item-compact">
+                          <strong>Session:</strong> {stateMachineContext.sessionData.accessToken ? 'Present' : 'None'}
+                        </div>
+                      {/if}
+                    {:else}
+                      <div class="context-item-compact">No context available</div>
+                    {/if}
+                  </div>
+                </details>
+              </div>
+            {:else}
+              <div class="no-state-machine">
+                <p class="text-secondary">State machine not available</p>
+              </div>
+            {/if}
           </div>
         </div>
       </div>
@@ -1409,23 +1666,26 @@ $: if (dynamicAuthConfig) {
     {:else if selectedDemo === 'state-machine'}
       <div class="content-section">
         <h2>Authentication State Machine</h2>
-        <p>Monitor the internal state machine that drives authentication flows:</p>
+        <p>Monitor and control the internal state machine that drives authentication flows:</p>
         
         <div class="state-display grid grid-cols-2 gap-4">
           <div class="state-card card">
             <div class="card-header">
-              <h4>Current State</h4>
+              <h4>Current Machine State</h4>
             </div>
             <div class="card-body">
               <div class="state-value">
-                {stateMachineState || authState || 'loading'}
+                {stateMachineState || 'loading'}
+              </div>
+              <div class="state-info-small">
+                Legacy: <code>{authState || 'loading'}</code>
               </div>
             </div>
           </div>
           
           <div class="context-card card">
             <div class="card-header">
-              <h4>Context</h4>
+              <h4>Machine Context</h4>
             </div>
             <div class="card-body">
               <pre class="context-json">
@@ -1435,20 +1695,139 @@ $: if (dynamicAuthConfig) {
           </div>
         </div>
         
+        <!-- State Machine Controls -->
+        {#if authStore && authStore.stateMachine}
+          <div class="machine-control-panel card">
+            <div class="card-header">
+              <h4>State Machine Controls</h4>
+              <p class="text-secondary">Send events to transition between states</p>
+            </div>
+            <div class="card-body">
+              <div class="control-grid">
+                <div class="control-group">
+                  <h5>Session Events</h5>
+                  <div class="control-buttons">
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.checkSession()}>
+                      CHECK_SESSION
+                    </button>
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
+                      INVALID_SESSION
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="control-group">
+                  <h5>User Input Events</h5>
+                  <div class="control-buttons">
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.clickNext()}>
+                      USER_CLICKS_NEXT
+                    </button>
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
+                      EMAIL_TYPED
+                    </button>
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.clickContinue()}>
+                      CONTINUE_CLICKED
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="control-group">
+                  <h5>Auth Flow Events</h5>
+                  <div class="control-buttons">
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
+                      PASSKEY_SELECTED
+                    </button>
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
+                      WEBAUTHN_SUCCESS
+                    </button>
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
+                      WEBAUTHN_ERROR
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="control-group">
+                  <h5>Reset Events</h5>
+                  <div class="control-buttons">
+                    <button class="btn btn-outline btn-sm" on:click={() => authStore.resetToAuth()}>
+                      RESET_TO_COMBINED_AUTH
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
+        
         <div class="state-info card">
           <div class="card-body">
-            <h4>State Machine Flow</h4>
-            <p>The authentication state machine manages these key states:</p>
-            <ul>
-              <li><code>checkingSession</code> - Initial session validation</li>
-              <li><code>sessionValid</code> - Existing valid session found</li>
-              <li><code>sessionInvalid</code> - No valid session, needs authentication</li>
-              <li><code>combinedAuth</code> - Combined authentication form</li>
-              <li><code>conditionalMediation</code> - Passkey auto-discovery</li>
-              <li><code>biometricPrompt</code> - WebAuthn authentication</li>
-              <li><code>sessionCreated</code> - New session established</li>
-              <li><code>appLoaded</code> - Authentication complete</li>
-            </ul>
+            <h4>All State Machine States (26 Total)</h4>
+            <p>The authentication state machine manages these states:</p>
+            
+            <div class="states-grid">
+              <div class="state-category">
+                <h5>Session Management</h5>
+                <ul>
+                  <li><code>checkingSession</code> - Initial session validation</li>
+                  <li><code>sessionValid</code> - Existing valid session found</li>
+                  <li><code>sessionInvalid</code> - No valid session, needs authentication</li>
+                </ul>
+              </div>
+              
+              <div class="state-category">
+                <h5>Authentication Flow</h5>
+                <ul>
+                  <li><code>combinedAuth</code> - Combined authentication form</li>
+                  <li><code>emailCodeInput</code> - PIN/code entry state</li>
+                  <li><code>conditionalMediation</code> - Passkey auto-discovery</li>
+                  <li><code>autofillPasskeys</code> - Autofill passkey suggestions</li>
+                  <li><code>waitForExplicit</code> - Waiting for explicit user action</li>
+                  <li><code>explicitAuth</code> - Explicit authentication flow</li>
+                </ul>
+              </div>
+              
+              <div class="state-category">
+                <h5>User Management</h5>
+                <ul>
+                  <li><code>auth0UserLookup</code> - Looking up user in Auth0</li>
+                  <li><code>directWebAuthnAuth</code> - Direct WebAuthn authentication</li>
+                  <li><code>passkeyRegistration</code> - Passkey registration flow</li>
+                  <li><code>newUserRegistration</code> - New user registration</li>
+                  <li><code>webauthnRegister</code> - WebAuthn registration</li>
+                </ul>
+              </div>
+              
+              <div class="state-category">
+                <h5>Authentication States</h5>
+                <ul>
+                  <li><code>authenticatedUnconfirmed</code> - Logged in but email unverified</li>
+                  <li><code>authenticatedConfirmed</code> - Full access after verification</li>
+                  <li><code>biometricPrompt</code> - WebAuthn authentication prompt</li>
+                  <li><code>auth0WebAuthnVerify</code> - WebAuthn verification with Auth0</li>
+                </ul>
+              </div>
+              
+              <div class="state-category">
+                <h5>Error Handling</h5>
+                <ul>
+                  <li><code>passkeyError</code> - General passkey error</li>
+                  <li><code>errorHandling</code> - Generic error handling</li>
+                  <li><code>credentialNotFound</code> - No matching credential</li>
+                  <li><code>userCancellation</code> - User cancelled operation</li>
+                  <li><code>credentialMismatch</code> - Credential mismatch error</li>
+                </ul>
+              </div>
+              
+              <div class="state-category">
+                <h5>Session Creation</h5>
+                <ul>
+                  <li><code>auth0TokenExchange</code> - Token exchange process</li>
+                  <li><code>sessionCreated</code> - New session established</li>
+                  <li><code>loadingApp</code> - Loading application</li>
+                  <li><code>appLoaded</code> - Authentication complete</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2072,12 +2451,12 @@ $: if (dynamicAuthConfig) {
   /* Sidebar Layout */
   .demo-layout {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 320px 1fr 320px;
     gap: 2rem;
     align-items: start;
   }
 
-  .config-sidebar {
+  .config-sidebar, .state-machine-sidebar {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
@@ -2133,13 +2512,13 @@ $: if (dynamicAuthConfig) {
   }
 
   /* Responsive adjustments */
-  @media (max-width: 1024px) {
+  @media (max-width: 1200px) {
     .demo-layout {
       grid-template-columns: 1fr;
       gap: 1.5rem;
     }
 
-    .config-sidebar {
+    .config-sidebar, .state-machine-sidebar {
       position: static;
     }
   }
@@ -2207,6 +2586,326 @@ $: if (dynamicAuthConfig) {
 
   .config-info li {
     margin: 0.25rem 0;
+  }
+
+  /* Auth State Controls */
+  .auth-state-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .state-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .current-state {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .state-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .state-badge.authenticated {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .state-badge.unauthenticated {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fed7aa;
+  }
+
+  .state-badge.loading {
+    background: #dbeafe;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+  }
+
+  .state-badge.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+
+  .state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .machine-controls {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .machine-state-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+  }
+
+  .context-group {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .context-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .context-info {
+    margin-top: 0.5rem;
+  }
+
+  .context-details summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .context-details summary:hover {
+    color: var(--text-primary);
+  }
+
+  .context-data {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .context-item {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+    padding-left: 0.5rem;
+  }
+
+  .context-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* State Machine Panel Styles */
+  .machine-control-panel {
+    margin-bottom: 2rem;
+  }
+
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .control-group {
+    padding: 1rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .control-group h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .control-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .control-buttons .btn {
+    font-size: 0.8rem;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  .state-info-small {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .state-category {
+    padding: 1rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .state-category h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .state-category ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .state-category li {
+    margin: 0.25rem 0;
+  }
+
+  .state-category code {
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+    background: var(--background-primary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    font-weight: 500;
+  }
+
+  /* State Machine Sidebar Compact Styles */
+  .state-display-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .state-item-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+  }
+
+  .state-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .event-controls-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .control-group-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .group-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .control-buttons-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .control-buttons-compact .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    min-height: auto;
+  }
+
+  .context-details-compact {
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+  }
+
+  .context-summary {
+    cursor: pointer;
+    padding: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .context-summary:hover {
+    background: var(--background-primary);
+  }
+
+  .context-data-compact {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .context-item-compact {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+    word-break: break-word;
+  }
+
+  .context-item-compact strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .no-state-machine {
+    padding: 2rem 1rem;
+    text-align: center;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    border: 2px dashed var(--border-color);
   }
 
   /* Demo SignInForm styles */

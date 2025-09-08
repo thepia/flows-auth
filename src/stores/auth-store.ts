@@ -1625,7 +1625,9 @@ function createAuthStore(config: AuthConfig) {
       send: (event: any) => stateMachine.send(event),
       matches: (state: AuthMachineState) => stateMachine.matches(state),
       currentState: () => stateMachine.currentState,
-      currentContext: () => stateMachine.currentContext
+      currentContext: () => stateMachine.currentContext,
+      // Expose full state machine for debugging and testing
+      _instance: stateMachine
     },
     
     // State machine event senders (convenience methods)

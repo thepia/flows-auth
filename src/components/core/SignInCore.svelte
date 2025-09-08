@@ -56,7 +56,7 @@ const authStore = createAuthStore(config);
 let email = initialEmail;
 let loading = false;
 let error: string | null = null;
-let step: 'email-input' | 'email-code-input' | 'magic-link-sent' | 'registration-terms' = 'email-input';
+let step: 'combinedAuth' | 'emailCodeInput' | 'magicLinkSent' | 'registrationTerms' = 'combinedAuth';
 let supportsWebAuthn = false;
 let conditionalAuthActive = false;
 let userExists = false;
@@ -252,7 +252,7 @@ function goToPinInput() {
   
   console.log('🔢 Direct pin action: Going to pin verification step');
   emailCodeSent = true; // Mark as sent since we have a valid pin
-  step = 'email-code-input';
+  step = 'emailCodeInput';
   dispatch('stepChange', { step });
 }
 
@@ -272,7 +272,7 @@ async function handleSecondaryAction() {
         // Skip sending new code, go directly to verification step
         console.log('🔢 Secondary action: Valid pin detected, going to verification step');
         emailCodeSent = true;
-        step = 'email-code-input';
+        step = 'emailCodeInput';
         loading = false;
         dispatch('stepChange', { step });
       } else {
@@ -324,7 +324,7 @@ async function handleSignIn() {
       } else {
         // Transition to registration
         console.log('🔄 User not found - transitioning to registration');
-        step = 'registration-terms';
+        step = 'registrationTerms';
         loading = false;
         dispatch('stepChange', { step });
         return;
@@ -360,7 +360,7 @@ async function handleSignIn() {
           // Skip sending new code, go directly to verification step
           console.log('🔢 Valid pin detected, skipping email send and going to verification step');
           emailCodeSent = true;
-          step = 'email-code-input';
+          step = 'emailCodeInput';
           loading = false;
           dispatch('stepChange', { step });
         } else {
@@ -434,7 +434,7 @@ async function handleMagicLinkAuth() {
     const result = await authStore.signInWithMagicLink(email);
 
     if (result.step === 'magic-link' || result.magicLinkSent) {
-      step = 'magic-link-sent';
+      step = 'magicLinkSent';
       loading = false;
       dispatch('stepChange', { step });
     }
@@ -452,7 +452,7 @@ async function handleEmailCodeAuth() {
     
     if (result.success) {
       emailCodeSent = true;
-      step = 'email-code-input';
+      step = 'emailCodeInput';
       loading = false;
       dispatch('stepChange', { step });
     } else {
@@ -534,7 +534,7 @@ function getUserFriendlyErrorMessage(err: any): string {
 }
 
 function resetForm() {
-  step = 'email-input';
+  step = 'combinedAuth';
   error = null;
   loading = false;
   emailCode = '';
@@ -553,7 +553,7 @@ $: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebA
 let lastCheckedEmail = '';
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (email && config.appCode && step === 'email-input' && email.trim() !== lastCheckedEmail) {
+$: if (email && config.appCode && step === 'combinedAuth' && email.trim() !== lastCheckedEmail) {
   checkEmailForExistingPin(email);
 }
 
@@ -653,8 +653,8 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
 </script>
 
 <div class="sign-in-core {className}">
-  {#if step === 'email-input'}
-    <!-- Email Input Step -->
+  {#if step === 'combinedAuth'}
+    <!-- Combined Auth Step - Email entry with intelligent routing -->
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput
         bind:value={email}
@@ -746,7 +746,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       </div>
     </form>
 
-  {:else if step === 'email-code-input'}
+  {:else if step === 'emailCodeInput'}
     <!-- Email Code Input Step -->
     <div class="email-code-input">
       {#if emailCodeSent && !hasValidPin}
@@ -807,7 +807,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       />
     </div>
 
-  {:else if step === 'magic-link-sent'}
+  {:else if step === 'magicLinkSent'}
     <!-- Magic Link Sent Step -->
     <div class="magic-link-sent">
       <AuthStateMessage
@@ -830,7 +830,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       />
     </div>
 
-  {:else if step === 'registration-terms'}
+  {:else if step === 'registrationTerms'}
     <!-- Registration flow would be handled by parent or separate component -->
     <AuthStateMessage
       type="info"

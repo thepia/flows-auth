@@ -46,6 +46,7 @@ export type AuthMachineState =
   | 'sessionValid'
   | 'sessionInvalid'
   | 'combinedAuth'
+  | 'emailCodeInput'             // PIN/code entry state
   | 'conditionalMediation'
   | 'autofillPasskeys'
   | 'waitForExplicit'
@@ -55,8 +56,8 @@ export type AuthMachineState =
   | 'passkeyRegistration'
   | 'newUserRegistration'
   | 'webauthnRegister'           // Registration with passkey
-  | 'authenticated-unconfirmed'  // Logged in but email not verified
-  | 'authenticated-confirmed'    // Full access after email verification
+  | 'authenticatedUnconfirmed'   // Logged in but email not verified
+  | 'authenticatedConfirmed'     // Full access after email verification
   | 'biometricPrompt'
   | 'auth0WebAuthnVerify'
   | 'passkeyError'
@@ -79,6 +80,9 @@ export type AuthMachineEvent =
   | { type: 'PASSKEY_SELECTED'; credential: any }
   | { type: 'USER_EXISTS'; hasPasskey: boolean }
   | { type: 'USER_NOT_FOUND' }
+  | { type: 'PIN_REQUIRED' }        // Transition to email code input
+  | { type: 'PIN_SUBMITTED'; code: string }
+  | { type: 'PIN_VERIFIED' }
   | { type: 'WEBAUTHN_SUCCESS'; response: any }
   | { type: 'WEBAUTHN_ERROR'; error: AuthError; timing: number }
   | { type: 'TOKEN_EXCHANGE_SUCCESS'; tokens: any }

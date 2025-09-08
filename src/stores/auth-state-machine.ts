@@ -312,8 +312,22 @@ export class AuthStateMachine {
           this.actions.setEmail(event.email);
           return 'conditionalMediation';
         }
+        if (event.type === 'PIN_REQUIRED') {
+          // User has valid PIN or needs to enter one
+          return 'emailCodeInput';
+        }
         if (event.type === 'CONTINUE_CLICKED') {
           return 'explicitAuth';
+        }
+        break;
+
+      case 'emailCodeInput':
+        if (event.type === 'PIN_SUBMITTED') {
+          // Verify the PIN code
+          return 'auth0TokenExchange';
+        }
+        if (event.type === 'RESET_TO_COMBINED_AUTH') {
+          return 'combinedAuth';
         }
         break;
 

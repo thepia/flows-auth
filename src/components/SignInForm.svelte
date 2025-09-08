@@ -3,7 +3,7 @@
   Features email-triggered WebAuthn, conditional authentication, and white labeling
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { createAuthStore } from '../stores/auth-store';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
   import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
@@ -24,12 +24,17 @@
   export let size: 'small' | 'medium' | 'large' | 'full' = 'medium';
   export let variant: 'inline' | 'popup' = 'inline';
   export let popupPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right';
+  
+  // Popup modal controls
+  export let showCloseButton = true;
+  export let closeOnEscape = true;
 
   // Events
   const dispatch = createEventDispatcher<{
     success: { user: User; method: AuthMethod };
     error: { error: AuthError };
     stepChange: { step: string };
+    close: {}; // New event for popup close
   }>();
 
   // Auth store - Use provided authStore or create from config for backward compatibility
@@ -64,7 +69,7 @@
   let email = initialEmail;
   let loading = false;
   let error: string | null = null;
-  let step: 'combined-auth' | 'auto-auth' | 'webauthn-register' | 'email-sent' | 'credential-recovery' | 'magic_link' | 'registration-terms' | 'registration-success' = 'combined-auth';
+  let step: 'combinedAuth' | 'autoAuth' | 'webauthnRegister' | 'emailSent' | 'credentialRecovery' | 'magicLink' | 'registrationTerms' | 'registrationSuccess' = 'combinedAuth';
   let supportsWebAuthn = false;
   let conditionalAuthActive = false;
   let emailChangeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -77,6 +82,18 @@
 
   // WebAuthn state
   let platformAuthenticatorAvailable = false;
+
+  // Popup close functionality
+  function handleClose() {
+    dispatch('close');
+  }
+
+  // Handle escape key for popup
+  function handleKeydown(event: KeyboardEvent) {
+    if (closeOnEscape && event.key === 'Escape' && variant === 'popup') {
+      handleClose();
+    }
+  }
 
   // Initialize component
   onMount(async () => {
@@ -104,6 +121,18 @@
     // If initial email is provided, trigger conditional auth
     if (initialEmail && supportsWebAuthn) {
       await startConditionalAuthentication();
+    }
+    
+    // Setup popup escape key handling
+    if (variant === 'popup') {
+      document.addEventListener('keydown', handleKeydown);
+    }
+  });
+  
+  onDestroy(() => {
+    // Cleanup escape key listener
+    if (variant === 'popup') {
+      document.removeEventListener('keydown', handleKeydown);
     }
   });
 
@@ -221,7 +250,7 @@
         }
       } else if (!userExists) {
         // User doesn't exist - switch to registration flow
-        step = 'registration-terms';
+        step = 'registrationTerms';
         loading = false;
       } else {
         // No authentication methods available
@@ -238,7 +267,7 @@
           message.includes('endpoint')) {
         // User doesn't exist or has no passkey - transition to registration
         console.log('🔄 User not found or no passkey available - transitioning to registration');
-        step = 'registration-terms';
+        step = 'registrationTerms';
         error = null; // Clear error since we're handling it
       } else {
         // Other errors - show user-friendly message
@@ -313,7 +342,7 @@
 
       // Check for magic link sent response - the API returns 'magic-link' step
       if (result.step === 'magic-link' || result.magicLinkSent) {
-        step = 'magic_link';
+        step = 'magicLink';
         loading = false;
       }
     } catch (err: any) {
@@ -324,7 +353,7 @@
 
   // Handle form submission based on current step
   function handleSubmit() {
-    if (step === 'combined-auth') {
+    if (step === 'combinedAuth') {
       handleSignIn();
     }
   }
@@ -363,7 +392,7 @@
 
       if (result.step === 'success' && result.user) {
         // Registration successful - user enters app immediately
-        step = 'registration-success';
+        step = 'registrationSuccess';
         loading = false;
 
         // Dispatch success event
@@ -384,17 +413,17 @@
     error = null;
     switch (step) {
       case 'registration-terms':
-        step = 'combined-auth';
+        step = 'combinedAuth';
         break;
       default:
-        step = 'combined-auth';
+        step = 'combinedAuth';
     }
     dispatch('stepChange', { step });
   }
 
   // Reset form to initial state
   function resetForm() {
-    step = 'combined-auth';
+    step = 'combinedAuth';
     error = null;
     loading = false;
     // Reset registration state
@@ -404,6 +433,15 @@
 </script>
 
 <div class="auth-form {className}" class:compact class:popup={variant === 'popup'} class:size-small={size === 'small'} class:size-medium={size === 'medium'} class:size-large={size === 'large'} class:size-full={size === 'full'} class:pos-top-right={variant === 'popup' && popupPosition === 'top-right'} class:pos-top-left={variant === 'popup' && popupPosition === 'top-left'} class:pos-bottom-right={variant === 'popup' && popupPosition === 'bottom-right'} class:pos-bottom-left={variant === 'popup' && popupPosition === 'bottom-left'}>
+  {#if variant === 'popup' && showCloseButton}
+    <button class="popup-close" on:click={handleClose} aria-label="Close authentication form">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  {/if}
+  
   {#if showLogo && config?.branding?.logoUrl}
     <div class="auth-logo">
       <img src={config.branding.logoUrl} alt={config.branding.companyName || 'Logo'} />
@@ -411,7 +449,7 @@
   {/if}
 
   <div class="auth-container">
-    {#if step === 'combined-auth'}
+    {#if step === 'combinedAuth'}
       <!-- Combined Auth Step - Primary UI -->
       <div class="combined-auth-step">
         <div class="step-header">
@@ -476,7 +514,7 @@
         </div>
       </div>
 
-    {:else if step === 'magic_link'}
+    {:else if step === 'magicLink'}
       <!-- Magic Link Sent Step -->
       <div class="magic-link-step">
         <div class="step-header">
@@ -503,7 +541,7 @@
         />
       </div>
 
-    {:else if step === 'registration-terms'}
+    {:else if step === 'registrationTerms'}
       <!-- Registration Terms of Service Step -->
       <div class="registration-terms-step">
         <div class="step-header">
@@ -572,7 +610,7 @@
 
 
 
-    {:else if step === 'registration-success'}
+    {:else if step === 'registrationSuccess'}
       <!-- Registration Success Step -->
       <div class="registration-success-step">
         <div class="step-header">
@@ -648,8 +686,54 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid #e5e7eb;
     padding: 20px;
-    max-width: 320px;
     margin: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* Popup size variants - respect size configuration */
+  .auth-form.popup.size-small {
+    max-width: 280px;
+  }
+  
+  .auth-form.popup.size-medium {
+    max-width: 360px;
+  }
+  
+  .auth-form.popup.size-large {
+    max-width: 480px;
+  }
+  
+  .auth-form.popup.size-full {
+    max-width: 90vw;
+  }
+  
+  /* Close button for popup */
+  .popup-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    color: #6b7280;
+    transition: all 0.2s;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .popup-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  
+  .popup-close:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
   }
 
   /* Popup positioning */
@@ -1073,25 +1157,37 @@
       margin: 0 16px;
     }
 
+    /* Mobile popup styles - responsive but respect size preferences */
     .auth-form.popup {
-      max-width: calc(100vw - 40px);
-      left: 20px !important;
-      right: 20px !important;
       padding: 16px;
+      max-height: 85vh;
+    }
+    
+    /* Override size variants on mobile for better usability */
+    .auth-form.popup.size-small,
+    .auth-form.popup.size-medium {
+      max-width: calc(100vw - 40px);
+      min-width: 280px;
+    }
+    
+    .auth-form.popup.size-large {
+      max-width: calc(100vw - 30px);
+    }
+    
+    .auth-form.popup.size-full {
+      max-width: calc(100vw - 20px);
     }
 
+    /* Mobile popup positioning - center instead of corners */
     .auth-form.popup.pos-bottom-right,
-    .auth-form.popup.pos-bottom-left {
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-    }
-
+    .auth-form.popup.pos-bottom-left,
     .auth-form.popup.pos-top-right,
     .auth-form.popup.pos-top-left {
-      top: 20px;
-      left: 20px;
-      right: 20px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      right: auto;
+      bottom: auto;
     }
 
     .auth-logo img {

@@ -17,6 +17,11 @@ let authState = 'loading';
 let stateMachineState = null;
 let stateMachineContext = null;
 
+// State Machine components
+let ProfessionalStateMachineComponent = null;
+let SessionStateMachineComponent = null;
+let SignInStateMachineComponent = null;
+
 // Demo controls
 let selectedDemo = 'overview';
 let emailInput = '';
@@ -48,6 +53,12 @@ let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
 let formVariant = 'inline'; // 'inline', 'popup'
 let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
+
+// State machine diagram options
+let diagramCompact = false;
+let diagramDirection = 'TB'; // 'TB' (top-bottom) or 'LR' (left-right)
+let dualAuthMachine = null; // For dynamic state machine extraction
+let dualState = null; // Current dual auth state
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -122,53 +133,88 @@ const demoSections = [
   { id: 'state-machine', title: 'State Machine', icon: Settings },
 ];
 
+// Load StateMachineFlow as soon as possible
 onMount(async () => {
   if (!browser) return;
   
   console.log('🎯 Demo page initializing...');
   
+  // Load state machine components for immediate rendering
+  const loadComponentPromise = import('@thepia/flows-auth').then((module) => {
+    const { SessionStateMachineFlow, SignInStateMachineFlow, ProfessionalStateMachine } = module;
+    SessionStateMachineComponent = SessionStateMachineFlow;
+    SignInStateMachineComponent = SignInStateMachineFlow;
+    ProfessionalStateMachineComponent = ProfessionalStateMachine;
+    console.log('State machine components loaded including new Professional component');
+  });
+  
   try {
-    // Use the global auth store (not context-based)
-    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
+    // Load components and auth store in parallel
+    const { getGlobalAuthStore, getGlobalAuthConfig, DualAuthMachine } = await import('@thepia/flows-auth');
     
-    // Wait for layout to initialize the global auth store
+    // Create dual auth machine for visualization (independent of global auth store)
+    dualAuthMachine = new DualAuthMachine(
+      {
+        apiBaseUrl: 'https://api.thepia.com',
+        domain: 'thepia.net',
+        enablePasskeys: enablePasskeys,
+        enableMagicPins: enableMagicPins
+      }
+    );
+    console.log('✅ DualAuthMachine created successfully for visualization');
+    
+    // Subscribe to dual state changes
+    if (dualAuthMachine) {
+      dualAuthMachine.onStateChange((state) => {
+        dualState = state;
+        console.log('📊 Dual auth state update:', state);
+      });
+    }
+    
+    // Separately wait for layout to initialize the global auth store (for demo UI)
     let attempts = 0;
-    while (!authStore && attempts < 20) {
+    while (!authStore && attempts < 10) {
       try {
         authStore = getGlobalAuthStore();
         break; // Success - exit loop
       } catch (error) {
         // Auth store not yet initialized, wait and try again
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 25));
         attempts++;
       }
     }
     
     if (!authStore) {
-      throw new Error('Auth store not available after waiting');
+      console.warn('⚠️ Global auth store not available, but dualAuthMachine is ready for visualization');
+      // Don't throw error - dualAuthMachine is independent and ready for visualization
     }
     
-    console.log('🔐 Auth store retrieved using proper pattern');
-    
-    // Get config from global singleton
-    authConfig = getGlobalAuthConfig();
-    console.log('⚙️ Auth config retrieved from singleton');
-    
-    // Subscribe to auth state changes
-    authStore.subscribe((state) => {
-      isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
-      currentUser = state.user;
-      authState = state.state;
-      console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
-    });
-    
-    // Subscribe to state machine updates if available
-    if (authStore.stateMachine) {
-      authStore.stateMachine.subscribe((sm) => {
-        stateMachineState = sm.state;
-        stateMachineContext = sm.context;
-        console.log('🔧 State machine update:', { state: sm.state });
+    // Only configure global auth store if it's available
+    if (authStore) {
+      console.log('🔐 Auth store retrieved using proper pattern');
+      
+      // Get config from global singleton
+      authConfig = getGlobalAuthConfig();
+      console.log('⚙️ Auth config retrieved from singleton');
+      
+      // Subscribe to auth state changes
+      authStore.subscribe((state) => {
+        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+        currentUser = state.user;
+        authState = state.state;
+        console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
       });
+      
+      // Subscribe to state machine updates if available
+      if (authStore.stateMachine) {
+        authStore.stateMachine.subscribe((sm) => {
+          stateMachineState = sm.state;
+          stateMachineContext = sm.context;
+          console.log('🔧 State machine update:', { state: sm.state });
+        });
+      }
+    } else {
+      console.log('📝 Demo initialized with visualization-only mode (no global auth store)');
     }
     
     console.log('✅ Demo page initialization complete');
@@ -880,12 +926,103 @@ $: if (dynamicAuthConfig) {
           <div class="feature-card">
             <Activity size={32} class="feature-icon" />
             <h3>State Machine</h3>
-            <p>XState-inspired authentication state management</p>
+            <p>XState-inspired authentication state management with 26 states</p>
           </div>
           <div class="feature-card">
             <Settings size={32} class="feature-icon" />
             <h3>Branded Components</h3>
             <p>White-label ready with configurable branding</p>
+          </div>
+        </div>
+        
+        <!-- Interactive State Machine Visualization -->
+        <div class="state-machine-overview card">
+          <div class="card-header">
+            <h3>🔧 Interactive State Machine</h3>
+            <p class="text-secondary">Live visualization of the authentication flow - current state: <strong>{stateMachineState || 'checkingSession'}</strong></p>
+          </div>
+          <div class="card-body">
+            <!-- Diagram Controls -->
+            <div class="diagram-controls">
+              <label class="control-item">
+                <input type="checkbox" bind:checked={diagramCompact} />
+                <span>Compact Mode</span>
+              </label>
+              <div class="control-item">
+                <label for="diagram-direction">Layout Direction:</label>
+                <select id="diagram-direction" bind:value={diagramDirection} class="form-select">
+                  <option value="TB">Top to Bottom</option>
+                  <option value="LR">Left to Right</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="state-machines-container">
+              {#if ProfessionalStateMachineComponent}
+                <div class="machine-grid">
+                  <!-- Session State Machine (Professional) -->
+                  <div class="machine-section">
+                    <svelte:component this={ProfessionalStateMachineComponent}
+                      dualState={dualState}
+                      signInMachine={dualAuthMachine?.sessionMachineInstance}
+                      title="Session State Machine"
+                      theme="blue"
+                      width={1200}
+                      height={350}
+                      onStateClick={(state) => {
+                        console.log('Session state clicked:', state);
+                      }}
+                      on:stateClick={(e) => {
+                        console.log('Session state clicked event:', e.detail);
+                      }}
+                    />
+                  </div>
+
+                  <!-- Sign-In State Machine (Professional) -->
+                  <div class="machine-section">
+                    <svelte:component this={ProfessionalStateMachineComponent}
+                      dualState={dualState}
+                      signInMachine={dualAuthMachine?.signInMachineInstance}
+                      title="Sign-In State Machine"
+                      theme="green"
+                      width={1200}
+                      height={350}
+                      onStateClick={(state) => {
+                        console.log('Sign-in state clicked:', state);
+                      }}
+                      on:stateClick={(e) => {
+                        console.log('Sign-in state clicked event:', e.detail);
+                      }}
+                    />
+                  </div>
+                </div>
+              {:else}
+                <div class="graph-error">
+                  <p>Loading state machine visualizations...</p>
+                  <p class="text-secondary">The state machines are initializing...</p>
+                </div>
+              {/if}
+            </div>
+            
+            <div class="state-info">
+              <div class="state-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Current State:</span>
+                  <span class="stat-value">{stateMachineState || 'checkingSession'}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Total States:</span>
+                  <span class="stat-value">26</span>
+                </div>
+                {#if stateMachineContext}
+                  <div class="stat-item">
+                    <span class="stat-label">Has Context:</span>
+                    <span class="stat-value">Yes</span>
+                  </div>
+                {/if}
+              </div>
+
+            </div>
           </div>
         </div>
         
@@ -1030,8 +1167,8 @@ $: if (dynamicAuthConfig) {
                 </div>
 
                 <div class="config-group">
-                  <label class="config-label">Display Variant:</label>
-                  <div class="radio-group">
+                  <div class="config-label" id="display-variant-label">Display Variant:</div>
+                  <div class="radio-group" role="radiogroup" aria-labelledby="display-variant-label">
                     <label class="radio-option">
                       <input type="radio" bind:group={formVariant} value="inline" />
                       <span>Inline (normal flow)</span>
@@ -1045,8 +1182,8 @@ $: if (dynamicAuthConfig) {
 
                 {#if formVariant === 'popup'}
                   <div class="config-group">
-                    <label class="config-label">Popup Position:</label>
-                    <div class="radio-group">
+                    <div class="config-label" id="popup-position-label">Popup Position:</div>
+                    <div class="radio-group" role="radiogroup" aria-labelledby="popup-position-label">
                       <label class="radio-option">
                         <input type="radio" bind:group={popupPosition} value="top-right" />
                         <span>Top Right</span>
@@ -1073,7 +1210,7 @@ $: if (dynamicAuthConfig) {
                 <h4 class="config-section-title">🌍 Internationalization (i18n)</h4>
                 
                 <div class="config-group">
-                  <label class="config-label">Language:</label>
+                  <div class="config-label">Language:</div>
                   <div class="radio-group">
                     <label class="radio-option">
                       <input type="radio" bind:group={selectedLanguage} value="en" />
@@ -1087,7 +1224,7 @@ $: if (dynamicAuthConfig) {
                 </div>
 
                 <div class="config-group">
-                  <label class="config-label">Client Variant:</label>
+                  <div class="config-label">Client Variant:</div>
                   <div class="radio-group">
                     <label class="radio-option">
                       <input type="radio" bind:group={selectedClientVariant} value="default" />
@@ -1109,7 +1246,7 @@ $: if (dynamicAuthConfig) {
                 </div>
 
                 <div class="config-group">
-                  <label class="config-label">Current Configuration:</label>
+                  <div class="config-label">Current Configuration:</div>
                   <div class="config-info">
                     <div class="info-line">
                       <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Dansk'}
@@ -1125,7 +1262,7 @@ $: if (dynamicAuthConfig) {
               </div>
               
               <div class="config-group">
-                <label class="config-label">Authentication Methods:</label>
+                <div class="config-label">Authentication Methods:</div>
                 <div class="checkbox-group">
                   <label class="checkbox-option">
                     <input type="checkbox" bind:checked={enablePasskeys} />
@@ -1235,23 +1372,57 @@ $: if (dynamicAuthConfig) {
           <div class="state-machine-sidebar">
             <div class="sidebar-header">
               <h3>🔧 State Machine</h3>
-              <p class="text-secondary">Monitor and control authentication state machine:</p>
+              <p class="text-secondary">Interactive authentication flow visualization:</p>
             </div>
             
             {#if authStore && authStore.stateMachine}
-              <!-- Current State Display -->
+              <!-- Interactive State Machine Graphs -->
               <div class="config-section">
-                <h4>Current States</h4>
-                <div class="state-display-compact">
-                  <div class="state-item-compact">
-                    <span class="state-label">Machine:</span>
-                    <span class="machine-state-badge">{stateMachineState || 'loading'}</span>
+                <h4>📊 State Machine Visualization</h4>
+                {#if ProfessionalStateMachineComponent}
+                  <!-- Compact Session Machine (Professional) -->
+                  <div class="compact-machine">
+                    <svelte:component this={ProfessionalStateMachineComponent}
+                      dualState={dualState}
+                      signInMachine={dualAuthMachine?.sessionMachineInstance}
+                      title="Session"
+                      theme="blue"
+                      width={280}
+                      height={180}
+                      onStateClick={(state) => console.log('Session state clicked:', state)}
+                      on:stateClick={(e) => console.log('Session state clicked event:', e.detail)}
+                    />
                   </div>
-                  <div class="state-item-compact">
-                    <span class="state-label">Legacy:</span>
-                    <span class="state-badge {authState}">{authState}</span>
+                  
+                  <!-- Compact Sign-In Machine (Professional) -->
+                  <div class="compact-machine">
+                    <svelte:component this={ProfessionalStateMachineComponent}
+                      dualState={dualState}
+                      signInMachine={dualAuthMachine?.signInMachineInstance}
+                      title="Sign-In"
+                      theme="green"
+                      width={280}
+                      height={180}
+                      onStateClick={(state) => console.log('Sign-in state clicked:', state)}
+                      on:stateClick={(e) => console.log('Sign-in state clicked event:', e.detail)}
+                    />
                   </div>
-                </div>
+                {:else}
+                  <div class="graph-error">
+                    <p>Loading state machines...</p>
+                    <!-- Fallback to simple state display -->
+                    <div class="state-display-compact">
+                      <div class="state-item-compact">
+                        <span class="state-label">Machine:</span>
+                        <span class="machine-state-badge">{stateMachineState || 'loading'}</span>
+                      </div>
+                      <div class="state-item-compact">
+                        <span class="state-label">Legacy:</span>
+                        <span class="state-badge {authState}">{authState}</span>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
               </div>
               
               <!-- State Machine Event Controls -->
@@ -1387,7 +1558,7 @@ $: if (dynamicAuthConfig) {
             <!-- Enhanced options section -->
             <div class="check-options">
               <div class="option-group">
-                <label class="option-label">Call Method:</label>
+                <div class="option-label">Call Method:</div>
                 <div class="radio-group">
                   <label class="radio-option">
                     <input type="radio" bind:group={checkMethod} value="store" />
@@ -1401,7 +1572,7 @@ $: if (dynamicAuthConfig) {
               </div>
 
               <div class="option-group">
-                <label class="option-label">Result Format:</label>
+                <div class="option-label">Result Format:</div>
                 <div class="radio-group">
                   <label class="radio-option">
                     <input type="radio" bind:group={resultFormat} value="formatted" />
@@ -1985,9 +2156,6 @@ $: if (dynamicAuthConfig) {
     transition: transform 0.2s;
   }
   
-  .nav-item.active .nav-arrow {
-    transform: rotate(90deg);
-  }
   
   .content-section {
     margin-bottom: 2rem;
@@ -2149,17 +2317,6 @@ $: if (dynamicAuthConfig) {
     border-left: 4px solid var(--primary-color);
   }
   
-  .scenario-card .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .scenario-card h3 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
   
   .scenario-badge {
     padding: 0.25rem 0.75rem;
@@ -2201,23 +2358,6 @@ $: if (dynamicAuthConfig) {
     border-radius: var(--radius-sm);
   }
   
-  .scenario-flow h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-  }
-  
-  .scenario-flow ol {
-    margin: 0;
-    padding-left: 1.5rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-  
-  .scenario-flow li {
-    margin-bottom: 0.25rem;
-  }
   
   /* Check Options Styles */
   .check-options {
@@ -2523,6 +2663,24 @@ $: if (dynamicAuthConfig) {
     }
   }
 
+  /* Overview state machine responsive */
+  @media (max-width: 900px) {
+    .state-machine-container {
+      padding: 0.5rem;
+    }
+    
+    .state-stats {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .stat-item {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
   .config-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -2571,22 +2729,6 @@ $: if (dynamicAuthConfig) {
     border: 1px solid var(--border-color);
   }
 
-  .config-info p {
-    margin: 0 0 0.5rem 0;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .config-info ul {
-    margin: 0;
-    padding-left: 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-
-  .config-info li {
-    margin: 0.25rem 0;
-  }
 
   /* Auth State Controls */
   .auth-state-controls {
@@ -2687,16 +2829,6 @@ $: if (dynamicAuthConfig) {
     margin-top: 0.5rem;
   }
 
-  .context-details summary {
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-
-  .context-details summary:hover {
-    color: var(--text-primary);
-  }
 
   .context-data {
     margin-top: 0.5rem;
@@ -2714,10 +2846,6 @@ $: if (dynamicAuthConfig) {
     padding-left: 0.5rem;
   }
 
-  .context-item strong {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
 
   /* State Machine Panel Styles */
   .machine-control-panel {
@@ -2908,6 +3036,139 @@ $: if (dynamicAuthConfig) {
     border: 2px dashed var(--border-color);
   }
 
+  .graph-error {
+    padding: 1rem;
+    background: var(--background-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .graph-error p {
+    margin: 0 0 0.75rem 0;
+    color: #dc2626;
+    font-weight: 500;
+  }
+
+  /* Overview State Machine Section */
+  .state-machine-overview {
+    margin: 2rem 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  .state-machines-container {
+    margin-bottom: 1.5rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    overflow: visible;
+    position: relative;
+  }
+
+  .machine-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .machine-section {
+    background: white;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .compact-machine {
+    margin-bottom: 1rem;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .compact-machine:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 1200px) {
+    .machine-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .diagram-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--background-muted);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+  }
+  
+  .diagram-controls .control-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .diagram-controls input[type="checkbox"] {
+    margin: 0;
+  }
+  
+  .diagram-controls .form-select {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+    min-width: 150px;
+  }
+
+  .state-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .state-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 1rem;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+  }
+
+  .state-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .state-description strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
   /* Demo SignInForm styles */
   .demo-signin-form {
     border: none !important;
@@ -2947,16 +3208,6 @@ $: if (dynamicAuthConfig) {
     margin-bottom: 1.5rem;
   }
 
-  .pin-integration-info ul {
-    padding-left: 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    line-height: 1.6;
-  }
-
-  .pin-integration-info li {
-    margin: 0.5rem 0;
-  }
 
   .integration-note {
     margin-top: 1.5rem;
@@ -2966,12 +3217,6 @@ $: if (dynamicAuthConfig) {
     border-radius: var(--radius-sm);
   }
 
-  .integration-note p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-style: italic;
-  }
 
   @media (max-width: 768px) {
     .hero-title {
@@ -2990,12 +3235,6 @@ $: if (dynamicAuthConfig) {
     
     .action-buttons {
       flex-direction: column;
-    }
-    
-    .scenario-card .card-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
     }
   }
 

@@ -17,6 +17,10 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 
 // Development components
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
+export { default as StateMachineFlow } from './components/StateMachineFlow.svelte';
+export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte';
+export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte';
+export { default as ProfessionalStateMachine } from './components/ProfessionalStateMachine.svelte';
 
 // Core granular components
 export { 
@@ -28,6 +32,12 @@ export {
 
 // State Machine
 export { AuthActions, AuthGuards, AuthStateMachine } from './stores/auth-state-machine';
+
+// New dual state machines
+export { SessionStateMachine } from './stores/session-state-machine';
+export { SignInStateMachine } from './stores/signin-state-machine';
+export { DualAuthMachine } from './stores/dual-auth-machine';
+export type { DualAuthState } from './stores/dual-auth-machine';
 
 // Stores
 export {

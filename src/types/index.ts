@@ -41,6 +41,7 @@ export type RegistrationStep =
   | 'error';
 
 // State Machine Types - Based on documented authentication state machine
+// Legacy state machine - to be deprecated in favor of dual state machines
 export type AuthMachineState =
   | 'checkingSession'
   | 'sessionValid'
@@ -69,6 +70,10 @@ export type AuthMachineState =
   | 'sessionCreated'
   | 'loadingApp'
   | 'appLoaded';
+
+// New dual state machine types
+export * from './session-state-machine';
+export * from './signin-state-machine';
 
 export type AuthMachineEvent = 
   | { type: 'CHECK_SESSION' }

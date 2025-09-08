@@ -26,12 +26,13 @@ export default defineConfig({
       formats: ['es', 'cjs']
     },
     rollupOptions: {
-      external: ['svelte', 'svelte/store', 'svelte/internal'],
+      external: ['svelte', 'svelte/store', 'svelte/internal', 'd3'],
       output: {
         globals: {
           svelte: 'Svelte',
           'svelte/store': 'SvelteStore',
-          'svelte/internal': 'SvelteInternal'
+          'svelte/internal': 'SvelteInternal',
+          'd3': 'D3'
         }
       }
     },

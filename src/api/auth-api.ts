@@ -11,12 +11,19 @@ import type {
   SignInRequest,
   SignInResponse,
   PasskeyRequest,
+  PasskeyCredential,
   MagicLinkRequest,
   RefreshTokenRequest,
   LogoutRequest,
   PasskeyChallenge,
   AuthError,
-  User
+  User,
+  UserProfile,
+  UserPasskey,
+  WebAuthnRegistrationOptions,
+  WebAuthnRegistrationResponse,
+  WebAuthnVerificationResult,
+  RegistrationResponse
 } from '../types';
 
 export class AuthApiClient {
@@ -313,8 +320,8 @@ export class AuthApiClient {
   /**
    * Get user profile
    */
-  async getProfile(): Promise<any> {
-    return this.request<any>('/auth/profile', {
+  async getProfile(): Promise<UserProfile> {
+    return this.request<UserProfile>('/auth/profile', {
       method: 'GET'
     }, true);
   }
@@ -435,7 +442,7 @@ export class AuthApiClient {
   /**
    * Create passkey
    */
-  async createPasskey(credential: any): Promise<void> {
+  async createPasskey(credential: PasskeyCredential): Promise<void> {
     await this.request<void>('/auth/passkey/create', {
       method: 'POST',
       body: JSON.stringify({ credential })
@@ -445,8 +452,8 @@ export class AuthApiClient {
   /**
    * List user's passkeys
    */
-  async listPasskeys(): Promise<any[]> {
-    return this.request<any[]>('/auth/passkeys', {
+  async listPasskeys(): Promise<UserPasskey[]> {
+    return this.request<UserPasskey[]>('/auth/passkeys', {
       method: 'GET'
     }, true);
   }
@@ -544,8 +551,8 @@ export class AuthApiClient {
   /**
    * Get WebAuthn registration options for new passkey
    */
-  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<any> {
-    return this.request<any>('/auth/webauthn/register-options', {
+  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<WebAuthnRegistrationOptions> {
+    return this.request<WebAuthnRegistrationOptions>('/auth/webauthn/register-options', {
       method: 'POST',
       body: JSON.stringify(data)
     });
@@ -556,33 +563,9 @@ export class AuthApiClient {
    */
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
-    registrationResponse: any;
-  }): Promise<{
-    success: boolean;
-    error?: string;
-    tokens?: {
-      accessToken: string;
-      refreshToken: string;
-      expiresAt: number;
-    };
-    user?: {
-      id: string;
-      email: string;
-    };
-  }> {
-    return this.request<{
-      success: boolean;
-      error?: string;
-      tokens?: {
-        accessToken: string;
-        refreshToken: string;
-        expiresAt: number;
-      };
-      user?: {
-        id: string;
-        email: string;
-      };
-    }>('/auth/webauthn/register-verify', {
+    registrationResponse: WebAuthnRegistrationResponse;
+  }): Promise<WebAuthnVerificationResult> {
+    return this.request<WebAuthnVerificationResult>('/auth/webauthn/register-verify', {
       method: 'POST',
       body: JSON.stringify({
         ...registrationData,

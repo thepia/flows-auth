@@ -3,6 +3,10 @@
  * Based on thepia.com React implementation
  */
 
+import type { EnhancedUserCheck, AuthFlowResult } from './enhanced-auth';
+import type { AuthApiClient } from '../api/auth-api';
+import type { AuthStateMachine } from '../stores/auth-state-machine';
+
 // User types
 export interface User {
   id: string;
@@ -334,6 +338,57 @@ export interface PasskeyCredential {
   type: 'public-key';
 }
 
+// Passkey management types
+export interface UserPasskey {
+  id: string;
+  name?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  type?: string;
+}
+
+// User profile type
+export interface UserProfile extends User {
+  passkeys?: UserPasskey[];
+  mfaEnabled?: boolean;
+  organizations?: string[];
+}
+
+// WebAuthn registration types
+export interface WebAuthnRegistrationOptions {
+  challenge: string;
+  rp: {
+    name: string;
+    id: string;
+  };
+  user: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  timeout?: number;
+  attestation?: AttestationConveyancePreference;
+}
+
+export interface WebAuthnRegistrationResponse {
+  id: string;
+  rawId: ArrayBuffer;
+  response: AuthenticatorAttestationResponse;
+  type: 'public-key';
+}
+
+export interface WebAuthnVerificationResult {
+  success: boolean;
+  error?: string;
+  tokens?: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt: number;
+  };
+}
+
 // Error types
 export interface AuthError {
   code: string;
@@ -483,6 +538,103 @@ export type AuthStoreMethods = {
   // Convenience methods for backward compatibility
   signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
 };
+
+// Svelte store types
+export type Unsubscriber = () => void;
+export type Subscriber<T> = (value: T) => void;
+export type Readable<T> = {
+  subscribe: (run: Subscriber<T>) => Unsubscriber;
+};
+
+// Complete auth store type with all methods
+export interface CompleteAuthStore extends Readable<AuthStore> {
+  signIn: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
+  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
+  signInWithMagicLink: (email: string) => Promise<SignInResponse>;
+  signOut: () => Promise<void>;
+  refreshTokens: () => Promise<void>;
+  isAuthenticated: () => boolean;
+  getAccessToken: () => string | null;
+  reset: () => void;
+  initialize: () => void;
+  startConditionalAuthentication: (email: string) => Promise<boolean>;
+  checkUser: (email: string) => Promise<{
+    exists: boolean;
+    hasWebAuthn: boolean;
+    userId?: string;
+    emailVerified?: boolean;
+    invitationTokenHash?: string;
+    lastPinExpiry?: number;
+  }>;
+  registerUser: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }) => Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }>;
+  createAccount: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }) => Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }>;
+  registerIndividualUser: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+  }) => Promise<{
+    success: boolean;
+    user: User;
+    verificationRequired: boolean;
+    message: string;
+  }>;
+  checkUserWithInvitation: (
+    email: string,
+    invitationOptions?: { token: string; tokenData?: InvitationTokenData; skipTokenValidation?: boolean }
+  ) => Promise<EnhancedUserCheck>;
+  determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
+  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
+  api: AuthApiClient;
+  
+  // Email-based authentication methods
+  sendEmailCode: (email: string) => Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }>;
+  verifyEmailCode: (email: string, code: string) => Promise<SignInResponse>;
+  
+  // Dynamic role configuration methods
+  getApplicationContext: () => ApplicationContext | null;
+  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
+  migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
+  
+  // State machine interface
+  stateMachine: {
+    subscribe: (run: Subscriber<{ state: AuthMachineState; context: AuthMachineContext }>) => Unsubscriber;
+    send: (event: AuthMachineEvent) => void;
+    matches: (state: AuthMachineState) => boolean;
+    currentState: () => AuthMachineState;
+    currentContext: () => AuthMachineContext;
+    _instance: AuthStateMachine;
+  };
+  
+  // State machine event senders
+  checkSession: () => void;
+  typeEmail: (email: string) => void;
+  clickContinue: () => void;
+  clickNext: () => void;
+  resetToAuth: () => void;
+  
+  // Cleanup
+  destroy: () => void;
+}
 
 // Re-export i18n types for convenience
 export type { 

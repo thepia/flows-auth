@@ -208,18 +208,6 @@ onMount(async () => {
 });
 
 // Demo actions
-async function testSignIn() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('🧪 Testing sign in with:', emailInput);
-    const result = await authStore.signIn(emailInput);
-    console.log('✅ Sign in result:', result);
-  } catch (error) {
-    console.error('❌ Sign in failed:', error);
-  }
-}
-
 async function testPasskeySignIn() {
   if (!authStore || !emailInput.trim()) return;
   

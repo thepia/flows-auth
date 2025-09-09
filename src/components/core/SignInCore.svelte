@@ -6,7 +6,7 @@
 <script lang="ts">
 import { createEventDispatcher, onMount } from 'svelte';
 import { createAuthStore } from '../../stores/auth-store';
-import type { AuthConfig, AuthError, AuthMethod, User } from '../../types';
+import type { AuthConfig, AuthError, AuthMethod, User, SignInState } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 import { getI18n } from '../../utils/i18n';
 
@@ -53,10 +53,12 @@ const dispatch = createEventDispatcher<{
 const authStore = createAuthStore(config);
 
 // Component state
+// Extend SignInState with additional states needed by SignInCore
+type SignInCoreStep = SignInState | 'magicLinkSent' | 'registrationTerms';
 let email = initialEmail;
 let loading = false;
 let error: string | null = null;
-let step: 'combinedAuth' | 'emailCodeInput' | 'magicLinkSent' | 'registrationTerms' = 'combinedAuth';
+let step: SignInCoreStep = 'emailEntry'; // Using SignInState's initial state
 let supportsWebAuthn = false;
 let conditionalAuthActive = false;
 let userExists = false;
@@ -252,7 +254,7 @@ function goToPinInput() {
   
   console.log('🔢 Direct pin action: Going to pin verification step');
   emailCodeSent = true; // Mark as sent since we have a valid pin
-  step = 'emailCodeInput';
+  step = 'pinEntry';
   dispatch('stepChange', { step });
 }
 
@@ -272,7 +274,7 @@ async function handleSecondaryAction() {
         // Skip sending new code, go directly to verification step
         console.log('🔢 Secondary action: Valid pin detected, going to verification step');
         emailCodeSent = true;
-        step = 'emailCodeInput';
+        step = 'pinEntry';
         loading = false;
         dispatch('stepChange', { step });
       } else {
@@ -360,7 +362,7 @@ async function handleSignIn() {
           // Skip sending new code, go directly to verification step
           console.log('🔢 Valid pin detected, skipping email send and going to verification step');
           emailCodeSent = true;
-          step = 'emailCodeInput';
+          step = 'pinEntry';
           loading = false;
           dispatch('stepChange', { step });
         } else {
@@ -452,7 +454,7 @@ async function handleEmailCodeAuth() {
     
     if (result.success) {
       emailCodeSent = true;
-      step = 'emailCodeInput';
+      step = 'pinEntry';
       loading = false;
       dispatch('stepChange', { step });
     } else {
@@ -534,7 +536,7 @@ function getUserFriendlyErrorMessage(err: any): string {
 }
 
 function resetForm() {
-  step = 'combinedAuth';
+  step = 'emailEntry';
   error = null;
   loading = false;
   emailCode = '';
@@ -553,7 +555,7 @@ $: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebA
 let lastCheckedEmail = '';
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (email && config.appCode && step === 'combinedAuth' && email.trim() !== lastCheckedEmail) {
+$: if (email && config.appCode && step === 'emailEntry' && email.trim() !== lastCheckedEmail) {
   checkEmailForExistingPin(email);
 }
 
@@ -653,7 +655,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
 </script>
 
 <div class="sign-in-core {className}">
-  {#if step === 'combinedAuth'}
+  {#if step === 'emailEntry'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput
@@ -746,7 +748,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       </div>
     </form>
 
-  {:else if step === 'emailCodeInput'}
+  {:else if step === 'pinEntry'}
     <!-- Email Code Input Step -->
     <div class="email-code-input">
       {#if emailCodeSent && !hasValidPin}

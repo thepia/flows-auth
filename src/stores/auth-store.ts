@@ -167,7 +167,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     switch (currentState) {
       case 'emailEntry':
         if (event.type === 'EMAIL_SUBMITTED') return 'userChecked';
-        if (event.type === 'EMAIL_ENTERED') return 'emailEntry'; // Stay in same state
         break;
       
       case 'userChecked':
@@ -179,7 +178,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       case 'passkeyPrompt':
         if (event.type === 'PASSKEY_SUCCESS') return 'signedIn';
         if (event.type === 'PASSKEY_FAILED') return 'generalError';
-        if (event.type === 'PIN_REQUESTED') return 'pinEntry'; // Fallback to PIN
         break;
         
       case 'pinEntry':
@@ -202,7 +200,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         break;
         
       case 'generalError':
-        if (event.type === 'RETRY') return 'emailEntry';
         if (event.type === 'RESET') return 'emailEntry';
         break;
     }
@@ -348,69 +345,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       }
     }, refreshTime);
   }
-
-  /**
-   * Initiate sign-in flow
-   */
-  async function signIn(email: string, method?: AuthMethod): Promise<SignInResponse> {
-    updateState({ state: 'loading', error: null });
-    sendSignInEvent({ type: 'EMAIL_SUBMITTED', email });
-    emit('sign_in_started', { method });
-
-    try {
-      // First check the user to determine flow
-      const userCheck = await checkUser(email);
-      
-      if (userCheck.exists) {
-        sendSignInEvent({ type: 'USER_EXISTS', hasPasskey: userCheck.hasWebAuthn });
-      } else {
-        sendSignInEvent({ type: 'USER_NOT_FOUND' });
-      }
-
-      const response = await api.signIn({ email, method });
-      
-      if (response.step === 'success' && response.user && response.accessToken) {
-        saveAuthSession(response, method === 'passkey' ? 'passkey' : 'password');
-        updateState({
-          state: 'authenticated',
-          user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
-        });
-        // Convert SignInResponse to SessionData format for PIN_VERIFIED event
-        const sessionData = {
-          accessToken: response.accessToken || '',
-          refreshToken: response.refreshToken || '',
-          user: {
-            id: response.user.id,
-            email: response.user.email,
-            name: response.user.name || '',
-            emailVerified: response.user.emailVerified || false
-          },
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000), // Default 24h
-          lastActivity: Date.now()
-        };
-        sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
-        scheduleTokenRefresh();
-        emit('sign_in_success', { user: response.user, method });
-      }
-
-      return response;
-    } catch (error: unknown) {
-      const authError: AuthError = {
-        code: (error as any)?.code || 'unknown_error',
-        message: (error as any)?.message || 'Sign in failed'
-      };
-      
-      updateState({ state: 'error', error: authError });
-      sendSignInEvent({ type: 'ERROR', error: { code: authError.code, message: authError.message, type: 'authentication', retryable: true } });
-      emit('sign_in_error', { error: authError, method });
-      throw authError;
-    }
-  }
-
   /**
    * Sign in with passkey
    */
@@ -1714,7 +1648,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   return {
     // Legacy store interface (backward compatibility)
     subscribe: store.subscribe,
-    signIn,
     signInWithPasskey,
     signInWithMagicLink,
     signOut,

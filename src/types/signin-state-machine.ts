@@ -15,24 +15,20 @@ export type SignInState =
   | 'generalError';           // API server 500 errors from any server call
 
 export type SignInEvent = 
-  | { type: 'EMAIL_ENTERED'; email: string }            // User typed email
-  | { type: 'EMAIL_SUBMITTED'; email: string }          // User submitted email
-  | { type: 'USER_EXISTS'; hasPasskey: boolean }        // User lookup result
-  | { type: 'USER_NOT_FOUND' }                          // New user detected
+  | { type: 'EMAIL_SUBMITTED'; email: string }          // A valid email is entered and the user checked (not needed)
+  | { type: 'USER_EXISTS'; hasPasskey: boolean }        // A valid email is entered and the user checked, user found
+  | { type: 'USER_NOT_FOUND' }                          // A valid email is entered and the user checked, not found
   | { type: 'PASSKEY_AVAILABLE' }                       // WebAuthn credentials found
   | { type: 'PASSKEY_SELECTED' }                        // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any }        // WebAuthn authentication succeeded
   | { type: 'PASSKEY_FAILED'; error: WebAuthnError }    // WebAuthn authentication failed
-  | { type: 'PIN_REQUESTED' }                           // Magic PIN flow started
-  | { type: 'PIN_ENTERED'; pin: string }                // User entered PIN
-  | { type: 'PIN_VERIFIED'; session: SessionData }      // PIN verification succeeded
+  | { type: 'PIN_VERIFIED'; session: SessionData }      // PIN verification success from server
   | { type: 'REGISTER_PASSKEY' }                        // Start passkey registration
   | { type: 'PASSKEY_REGISTERED'; session: SessionData }// Passkey registration complete
   | { type: 'EMAIL_VERIFICATION_REQUIRED' }             // Email needs verification
   | { type: 'EMAIL_SENT' }                             // Email with PIN sent
   | { type: 'EMAIL_VERIFIED'; session: SessionData }    // Email verification complete
-  | { type: 'RETRY' }                                   // User wants to retry
-  | { type: 'RESET' }                                   // Reset to initial state
+  | { type: 'RESET' }                                   // Reset to email entry
   | { type: 'ERROR'; error: SignInError };              // Generic error occurred
 
 export interface WebAuthnError {

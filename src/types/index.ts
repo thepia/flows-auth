@@ -553,7 +553,6 @@ export type Readable<T> = {
 
 // Complete auth store type with all methods
 export interface CompleteAuthStore extends Readable<AuthStore> {
-  signIn: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
   signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
   signInWithMagicLink: (email: string) => Promise<SignInResponse>;
   signOut: () => Promise<void>;

@@ -683,90 +683,6 @@ function handleSignInClose() {
   // For demo purposes, we'll just log it
 }
 
-// Auth Store State Mocking Functions
-function mockUnauthenticated() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking unauthenticated state');
-  // Clear the store state to simulate logged out user
-  authStore.update(state => ({
-    ...state,
-    state: 'unauthenticated',
-    user: null,
-    accessToken: null,
-    refreshToken: null,
-    expiresAt: null,
-    loading: false,
-    error: null
-  }));
-}
-
-function mockAuthenticated() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking authenticated state');
-  // Create mock user and tokens
-  const mockUser = {
-    id: 'mock-user-123',
-    email: emailInput || 'demo@example.com',
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  authStore.update(state => ({
-    ...state,
-    state: 'authenticated',
-    user: mockUser,
-    accessToken: 'mock-access-token-' + Date.now(),
-    refreshToken: 'mock-refresh-token-' + Date.now(),
-    expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
-    loading: false,
-    error: null
-  }));
-}
-
-function mockLoading() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking loading state');
-  authStore.update(state => ({
-    ...state,
-    state: 'loading',
-    loading: true,
-    error: null
-  }));
-  
-  // Automatically clear loading after 3 seconds for demo purposes
-  setTimeout(() => {
-    if (authStore) {
-      authStore.update(state => ({
-        ...state,
-        state: 'unauthenticated', 
-        loading: false
-      }));
-    }
-  }, 3000);
-}
-
-function mockError() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking error state');
-  const mockError = {
-    code: 'MOCK_ERROR',
-    message: 'This is a mock error for testing purposes',
-    details: 'Simulated error state from demo controls'
-  };
-  
-  authStore.update(state => ({
-    ...state,
-    state: 'error',
-    error: mockError,
-    loading: false
-  }));
-}
-
 // Handle custom translation updates
 function updateCustomTranslations() {
   try {
@@ -1056,22 +972,6 @@ $: if (dynamicAuthConfig) {
                 <div class="state-section">
                   <span class="config-label">Current State:</span>
                   <span class="state-badge {authState}">{authState}</span>
-                </div>
-                
-                <!-- Legacy State Mock Actions -->
-                <div class="state-actions">
-                  <button class="btn btn-outline btn-xs" on:click={mockUnauthenticated}>
-                    🚪 Mock Unauthenticated
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockAuthenticated}>
-                    ✅ Mock Authenticated
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockLoading}>
-                    ⏳ Mock Loading
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockError}>
-                    ❌ Mock Error State
-                  </button>
                 </div>
               </div>
             </div>

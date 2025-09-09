@@ -20,7 +20,6 @@ import {
   getOptimalSessionConfig,
   type FlowsSessionData
 } from '../utils/sessionManager';
-import { AuthStateMachine } from './auth-state-machine';
 import type {
   AuthConfig,
   AuthStore,
@@ -33,13 +32,14 @@ import type {
   AuthEventData,
   AuthMachineState,
   AuthMachineContext,
-  AuthMachineEvent,
   ApplicationContext,
   StorageConfigurationUpdate,
   SessionMigrationResult,
   StorageType,
   User,
-  InvitationTokenData
+  InvitationTokenData,
+  SignInState,
+  SignInEvent
 } from '../types';
 
 // Legacy localStorage migration (remove old localStorage entries if they exist)
@@ -84,9 +84,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     return undefined;
   };
 
-  // Initialize API client and state machine
+  // Initialize API client
   const api = new AuthApiClient(config);
-  const stateMachine = new AuthStateMachine(api, config);
 
   // Clean up any legacy localStorage data and migrate to sessionStorage if needed
   if (browser) {
@@ -110,6 +109,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
   const initialState: AuthStore = {
     state: isValidSession ? 'authenticated' : 'unauthenticated',
+    signInState: 'emailEntry', // Start with email entry for sign-in flow
     user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
@@ -119,19 +119,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
   const store = writable<AuthStore>(initialState);
   
-  // Create state machine store
-  const stateMachineStore = writable({
-    state: stateMachine.currentState,
-    context: stateMachine.currentContext
-  });
-
-  // Subscribe to state machine changes
-  const unsubscribeStateMachine = stateMachine.onTransition((state, context) => {
-    stateMachineStore.set({ state, context });
-    
-    // Update legacy store based on state machine state
-    updateLegacyStoreFromStateMachine(state, context);
-  });
+  // Note: Removed state machine store - now using direct signInState management
 
   // Event handlers
   const eventHandlers = new Map<AuthEventType, ((data: AuthEventData) => void)[]>();
@@ -170,6 +158,73 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   function updateState(updates: Partial<AuthStore>) {
     store.update(state => ({ ...state, ...updates }));
+  }
+
+  /**
+   * Process SignInEvent and transition signInState
+   */
+  function processSignInTransition(currentState: SignInState, event: SignInEvent): SignInState {
+    switch (currentState) {
+      case 'emailEntry':
+        if (event.type === 'EMAIL_SUBMITTED') return 'userChecked';
+        if (event.type === 'EMAIL_ENTERED') return 'emailEntry'; // Stay in same state
+        break;
+      
+      case 'userChecked':
+        if (event.type === 'USER_EXISTS' && event.hasPasskey) return 'passkeyPrompt';
+        if (event.type === 'USER_EXISTS' && !event.hasPasskey) return 'pinEntry';
+        if (event.type === 'USER_NOT_FOUND') return 'pinEntry';
+        break;
+        
+      case 'passkeyPrompt':
+        if (event.type === 'PASSKEY_SUCCESS') return 'signedIn';
+        if (event.type === 'PASSKEY_FAILED') return 'generalError';
+        if (event.type === 'PIN_REQUESTED') return 'pinEntry'; // Fallback to PIN
+        break;
+        
+      case 'pinEntry':
+        if (event.type === 'PIN_VERIFIED') return 'signedIn';
+        if (event.type === 'EMAIL_VERIFICATION_REQUIRED') return 'emailVerification';
+        break;
+        
+      case 'emailVerification':
+        if (event.type === 'EMAIL_VERIFIED') return 'signedIn';
+        break;
+        
+      case 'signedIn':
+        if (event.type === 'REGISTER_PASSKEY') return 'passkeyRegistration';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'passkeyRegistration':
+        if (event.type === 'PASSKEY_REGISTERED') return 'signedIn';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'generalError':
+        if (event.type === 'RETRY') return 'emailEntry';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+    }
+    return currentState; // No transition found, stay in current state
+  }
+
+  /**
+   * Send SignInEvent and update signInState accordingly
+   */
+  function sendSignInEvent(event: SignInEvent) {
+    store.update(s => {
+      const newSignInState = processSignInTransition(s.signInState, event);
+      console.log(`SignIn transition: ${s.signInState} -> ${newSignInState} (${event.type})`);
+      return { ...s, signInState: newSignInState };
+    });
+  }
+
+  /**
+   * Update signInState directly
+   */
+  function updateSignInState(newSignInState: SignInState) {
+    store.update(s => ({ ...s, signInState: newSignInState }));
   }
 
   /**
@@ -299,9 +354,19 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   async function signIn(email: string, method?: AuthMethod): Promise<SignInResponse> {
     updateState({ state: 'loading', error: null });
+    sendSignInEvent({ type: 'EMAIL_SUBMITTED', email });
     emit('sign_in_started', { method });
 
     try {
+      // First check the user to determine flow
+      const userCheck = await checkUser(email);
+      
+      if (userCheck.exists) {
+        sendSignInEvent({ type: 'USER_EXISTS', hasPasskey: userCheck.hasWebAuthn });
+      } else {
+        sendSignInEvent({ type: 'USER_NOT_FOUND' });
+      }
+
       const response = await api.signIn({ email, method });
       
       if (response.step === 'success' && response.user && response.accessToken) {
@@ -314,6 +379,20 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
           error: null
         });
+        // Convert SignInResponse to SessionData format for PIN_VERIFIED event
+        const sessionData = {
+          accessToken: response.accessToken || '',
+          refreshToken: response.refreshToken || '',
+          user: {
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name || '',
+            emailVerified: response.user.emailVerified || false
+          },
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000), // Default 24h
+          lastActivity: Date.now()
+        };
+        sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method });
       }
@@ -326,6 +405,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       };
       
       updateState({ state: 'error', error: authError });
+      sendSignInEvent({ type: 'ERROR', error: { code: authError.code, message: authError.message, type: 'authentication', retryable: true } });
       emit('sign_in_error', { error: authError, method });
       throw authError;
     }
@@ -436,6 +516,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'passkey' });
         emit('passkey_used', { user: response.user });
+        
+        // Send SignInEvent for state transition to 'signedIn'
+        sendSignInEvent({ type: 'PASSKEY_SUCCESS', credential: credential });
 
         reportAuthState({
           event: 'webauthn-success',
@@ -478,6 +561,18 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         updateState({ state: 'error', error: authError });
         emit('sign_in_error', { error: authError, method: 'passkey' });
       }
+      
+      // Send SignInEvent for passkey failure
+      sendSignInEvent({ 
+        type: 'PASSKEY_FAILED', 
+        error: {
+          name: (error as any)?.name || 'PasskeyError',
+          message: authError.message,
+          timing: Date.now() - startTime,
+          type: 'credential-not-found'
+        }
+      });
+      
       throw authError;
     }
   }
@@ -636,7 +731,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   async function checkUser(email: string) {
     try {
       const result = await api.checkEmail(email);
-      return {
+      const userData = {
         exists: result.exists,
         hasWebAuthn: result.hasPasskey,
         userId: result.userId,
@@ -644,6 +739,15 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         invitationTokenHash: result.invitationTokenHash,
         lastPinExpiry: result.lastPinExpiry as any
       };
+      
+      // Send SignInEvent based on user existence
+      if (result.exists) {
+        sendSignInEvent({ type: 'USER_EXISTS', hasPasskey: !!result.hasPasskey });
+      } else {
+        sendSignInEvent({ type: 'USER_NOT_FOUND' });
+      }
+      
+      return userData;
     } catch (error: unknown) {
       console.error('Error checking user:', error);
       return { exists: false, hasWebAuthn: false, emailVerified: false };
@@ -1277,8 +1381,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    * Initialize store (check for existing session)
    */
   function initialize(): void {
-    // Start the state machine - it will handle session checking
-    stateMachine.start();
+    // Note: Previously started state machine, now using direct signInState management
+    // Session checking is handled by existing session initialization above
   }
 
   /**
@@ -1566,6 +1670,21 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           appCode: getEffectiveAppCode() 
         });
         
+        // Convert SignInResponse to SessionData format for EMAIL_VERIFIED event
+        const sessionData = {
+          accessToken: response.accessToken || '',
+          refreshToken: response.refreshToken || '',
+          user: {
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name || '',
+            emailVerified: response.user.emailVerified || false
+          },
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000), // Default 24h
+          lastActivity: Date.now()
+        };
+        sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
+        
         return response;
       } else {
         throw new Error('Invalid response from email code verification');
@@ -1623,26 +1742,12 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     updateStorageConfiguration,
     migrateSession,
     
-    // State machine interface
-    stateMachine: {
-      subscribe: stateMachineStore.subscribe,
-      send: (event: AuthMachineEvent) => stateMachine.send(event),
-      matches: (state: AuthMachineState) => stateMachine.matches(state),
-      currentState: () => stateMachine.currentState,
-      currentContext: () => stateMachine.currentContext,
-      // Expose full state machine for debugging and testing
-      _instance: stateMachine
-    },
-    
-    // State machine event senders (convenience methods)
-    checkSession: () => stateMachine.send({ type: 'CHECK_SESSION' }),
-    typeEmail: (email: string) => stateMachine.send({ type: 'EMAIL_TYPED', email }),
-    clickContinue: () => stateMachine.send({ type: 'CONTINUE_CLICKED' }),
-    clickNext: () => stateMachine.send({ type: 'USER_CLICKS_NEXT' }),
-    resetToAuth: () => stateMachine.send({ type: 'RESET_TO_COMBINED_AUTH' }),
+    // Note: Removed state machine interface - now using direct signInState management
     
     // Cleanup
-    destroy: unsubscribeStateMachine
+    destroy: () => {
+      // Note: No longer need to unsubscribe from state machine
+    }
   };
 }
 
@@ -1658,18 +1763,13 @@ export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthS
     isLoading: derived(authStore, $auth => $auth.state === 'loading'),
     error: derived(authStore, $auth => $auth.error),
     
-    // State machine derived stores
-    currentStep: derived(authStore.stateMachine, $sm => $sm.state),
-    machineContext: derived(authStore.stateMachine, $sm => $sm.context),
-    isInState: (state: AuthMachineState) => derived(authStore.stateMachine, $sm => $sm.state === state),
-    
-    // Convenience derived stores for common states
-    isCheckingSession: derived(authStore.stateMachine, $sm => $sm.state === 'checkingSession'),
-    isCombinedAuth: derived(authStore.stateMachine, $sm => $sm.state === 'combinedAuth'),
-    isConditionalAuth: derived(authStore.stateMachine, $sm => $sm.state === 'conditionalMediation'),
-    isBiometricPrompt: derived(authStore.stateMachine, $sm => $sm.state === 'biometricPrompt'),
-    hasError: derived(authStore.stateMachine, $sm => 
-      ['passkeyError', 'credentialNotFound', 'userCancellation', 'credentialMismatch'].includes($sm.state)
-    )
+    // Sign-in state derived stores
+    signInState: derived(authStore, $auth => $auth.signInState),
+    isEmailEntry: derived(authStore, $auth => $auth.signInState === 'emailEntry'),
+    isUserChecked: derived(authStore, $auth => $auth.signInState === 'userChecked'),
+    isPasskeyPrompt: derived(authStore, $auth => $auth.signInState === 'passkeyPrompt'),
+    isPinEntry: derived(authStore, $auth => $auth.signInState === 'pinEntry'),
+    isSignedIn: derived(authStore, $auth => $auth.signInState === 'signedIn'),
+    hasSignInError: derived(authStore, $auth => $auth.signInState === 'generalError')
   };
 }

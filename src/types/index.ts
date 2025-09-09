@@ -6,6 +6,10 @@
 import type { EnhancedUserCheck, AuthFlowResult } from './enhanced-auth';
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthStateMachine } from '../stores/auth-state-machine';
+import type { SignInState, SignInEvent } from './signin-state-machine';
+
+// Export signin state machine types first so they can be used in AuthStore
+export * from './signin-state-machine';
 
 // User types
 export interface User {
@@ -77,7 +81,7 @@ export type AuthMachineState =
 
 // New dual state machine types
 // Removed: session-state-machine types - SessionStateMachine removed
-export * from './signin-state-machine';
+// Note: signin-state-machine types exported at top of file
 
 export type AuthMachineEvent = 
   | { type: 'CHECK_SESSION' }
@@ -517,6 +521,7 @@ export interface EmailVerificationPromptProps {
 // Store state
 export interface AuthStore {
   state: AuthState;
+  signInState: SignInState;  // Added: UI flow state for sign-in process
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -615,22 +620,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
   migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
   
-  // State machine interface
-  stateMachine: {
-    subscribe: (run: Subscriber<{ state: AuthMachineState; context: AuthMachineContext }>) => Unsubscriber;
-    send: (event: AuthMachineEvent) => void;
-    matches: (state: AuthMachineState) => boolean;
-    currentState: () => AuthMachineState;
-    currentContext: () => AuthMachineContext;
-    _instance: AuthStateMachine;
-  };
-  
-  // State machine event senders
-  checkSession: () => void;
-  typeEmail: (email: string) => void;
-  clickContinue: () => void;
-  clickNext: () => void;
-  resetToAuth: () => void;
+  // Note: Removed state machine interface - now using direct signInState management
   
   // Cleanup
   destroy: () => void;

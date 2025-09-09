@@ -69,9 +69,19 @@ export interface SignInContext {
   challengeId: string | null;
 }
 
-// Import and re-export SessionData from session state machine for consistency
-import type { SessionData } from './session-state-machine';
-export type { SessionData };
+// SessionData type - moved here since session-state-machine was removed
+export interface SessionData {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    emailVerified: boolean;
+  };
+  expiresAt: number;
+  lastActivity: number;
+}
 
 /**
  * Sign-In State Machine Transitions

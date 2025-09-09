@@ -2,7 +2,7 @@
   ProfessionalStateMachine - Professional state machine visualization with improved Dagre + enhanced SVG
   
   Props:
-  - dualState: DualAuthState for current state highlighting
+  - authState: Current AuthState from store for current state highlighting
   - signInMachine: Sign-in state machine instance for dynamic extraction
   - title: Display title for the flow
   - theme: Color theme ('green' for sign-in, 'blue' for session)
@@ -15,7 +15,7 @@
   import dagre from '@dagrejs/dagre';
   
   // Props
-  export let dualState = null;
+  export let authState = 'unauthenticated'; // Current AuthState from store
   export let signInMachine = null;
   export let title = 'State Machine';
   export let theme: 'green' | 'blue' = 'green';
@@ -140,7 +140,7 @@
   function createFlowNodes() {
     try {
       const { transitions, categories } = getStateMachineData();
-      const currentState = dualState?.signIn?.state || dualState?.session?.state || 'emailEntry';
+      const currentState = authState || 'unauthenticated';
       
       stateCategories = categories;
       
@@ -309,7 +309,7 @@
   }
 
   // Reactive layout updates
-  $: if (signInMachine || dualState) {
+  $: if (signInMachine || authState) {
     layoutGraph();
   }
 
@@ -358,7 +358,7 @@
           font-weight: 500;
         "
       >
-        Current: {dualState?.signIn?.state || dualState?.session?.state || 'unknown'}
+        Current: {authState || 'unknown'}
       </span>
     </div>
   </div>

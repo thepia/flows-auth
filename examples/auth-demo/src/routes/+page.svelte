@@ -18,7 +18,7 @@ let stateMachineState = null;
 let stateMachineContext = null;
 
 // State Machine components
-let ProfessionalStateMachineComponent = null;
+// Removed: ProfessionalStateMachine - no longer exported from library
 let SessionStateMachineComponent = null;
 let SignInStateMachineComponent = null;
 
@@ -57,8 +57,9 @@ let useSignInForm = false; // Toggle between SignInCore and SignInForm
 // State machine diagram options
 let diagramCompact = false;
 let diagramDirection = 'TB'; // 'TB' (top-bottom) or 'LR' (left-right)
-let dualAuthMachine = null; // For dynamic state machine extraction
-let dualState = null; // Current dual auth state
+// Simplified: Use auth store state directly instead of complex dual machine  
+let signInState = 'emailEntry'; // Current sign-in state (stubbed for now)
+// Note: authState already exists above
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -141,35 +142,18 @@ onMount(async () => {
   
   // Load state machine components for immediate rendering
   const loadComponentPromise = import('@thepia/flows-auth').then((module) => {
-    const { SessionStateMachineFlow, SignInStateMachineFlow, ProfessionalStateMachine } = module;
+    const { SessionStateMachineFlow, SignInStateMachineFlow } = module;
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
-    ProfessionalStateMachineComponent = ProfessionalStateMachine;
-    console.log('State machine components loaded including new Professional component');
+    // Note: ProfessionalStateMachine removed from library exports
+    console.log('State machine components loaded (simplified)');
   });
   
   try {
-    // Load components and auth store in parallel
-    const { getGlobalAuthStore, getGlobalAuthConfig, DualAuthMachine } = await import('@thepia/flows-auth');
+    // Load auth store (simplified - no more dual machine)
+    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
     
-    // Create dual auth machine for visualization (independent of global auth store)
-    dualAuthMachine = new DualAuthMachine(
-      {
-        apiBaseUrl: 'https://api.thepia.com',
-        domain: 'thepia.net',
-        enablePasskeys: enablePasskeys,
-        enableMagicPins: enableMagicPins
-      }
-    );
-    console.log('✅ DualAuthMachine created successfully for visualization');
-    
-    // Subscribe to dual state changes
-    if (dualAuthMachine) {
-      dualAuthMachine.onStateChange((state) => {
-        dualState = state;
-        console.log('📊 Dual auth state update:', state);
-      });
-    }
+    console.log('✅ Auth store imports loaded - no dual machine needed');
     
     // Separately wait for layout to initialize the global auth store (for demo UI)
     let attempts = 0;
@@ -185,8 +169,7 @@ onMount(async () => {
     }
     
     if (!authStore) {
-      console.warn('⚠️ Global auth store not available, but dualAuthMachine is ready for visualization');
-      // Don't throw error - dualAuthMachine is independent and ready for visualization
+      console.warn('⚠️ Global auth store not available for demo UI');
     }
     
     // Only configure global auth store if it's available
@@ -958,43 +941,39 @@ $: if (dynamicAuthConfig) {
             </div>
             
             <div class="state-machines-container">
-              {#if ProfessionalStateMachineComponent}
+              {#if SessionStateMachineComponent}
                 <div class="machine-grid">
-                  <!-- Session State Machine (Professional) -->
+                  <!-- AuthState Machine (Simplified) -->
                   <div class="machine-section">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.sessionMachineInstance}
-                      title="Session State Machine"
-                      theme="blue"
-                      width={1200}
-                      height={350}
+                    <svelte:component this={SessionStateMachineComponent}
+                      authState={authState}
+                      width={600}
+                      height={300}
                       onStateClick={(state) => {
-                        console.log('Session state clicked:', state);
+                        console.log('Auth state clicked:', state);
                       }}
                       on:stateClick={(e) => {
-                        console.log('Session state clicked event:', e.detail);
+                        console.log('Auth state clicked event:', e.detail);
                       }}
                     />
                   </div>
 
-                  <!-- Sign-In State Machine (Professional) -->
-                  <div class="machine-section">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.signInMachineInstance}
-                      title="Sign-In State Machine"
-                      theme="green"
-                      width={1200}
-                      height={350}
-                      onStateClick={(state) => {
-                        console.log('Sign-in state clicked:', state);
-                      }}
-                      on:stateClick={(e) => {
-                        console.log('Sign-in state clicked event:', e.detail);
-                      }}
-                    />
-                  </div>
+                  <!-- Sign-In State Machine (Simplified) -->
+                  {#if SignInStateMachineComponent}
+                    <div class="machine-section">
+                      <svelte:component this={SignInStateMachineComponent}
+                        currentSignInState={signInState}
+                        width={600}
+                        height={300}
+                        onStateClick={(state) => {
+                          console.log('Sign-in state clicked:', state);
+                        }}
+                        on:stateClick={(e) => {
+                          console.log('Sign-in state clicked event:', e.detail);
+                        }}
+                      />
+                    </div>
+                  {/if}
                 </div>
               {:else}
                 <div class="graph-error">
@@ -1379,33 +1358,28 @@ $: if (dynamicAuthConfig) {
               <!-- Interactive State Machine Graphs -->
               <div class="config-section">
                 <h4>📊 State Machine Visualization</h4>
-                {#if ProfessionalStateMachineComponent}
-                  <!-- Compact Session Machine (Professional) -->
+                {#if SessionStateMachineComponent}
+                  <!-- Compact AuthState Machine (Simplified) -->
                   <div class="compact-machine">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.sessionMachineInstance}
-                      title="Session"
-                      theme="blue"
+                    <svelte:component this={SessionStateMachineComponent}
+                      authState={authState}
+                      compact={true}
                       width={280}
                       height={180}
-                      onStateClick={(state) => console.log('Session state clicked:', state)}
-                      on:stateClick={(e) => console.log('Session state clicked event:', e.detail)}
+                      onStateClick={(state) => console.log('Auth state clicked:', state)}
+                      on:stateClick={(e) => console.log('Auth state clicked event:', e.detail)}
                     />
                   </div>
                   
-                  <!-- Compact Sign-In Machine (Professional) -->
+                  <!-- Current Auth State Display -->
                   <div class="compact-machine">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.signInMachineInstance}
-                      title="Sign-In"
-                      theme="green"
-                      width={280}
-                      height={180}
-                      onStateClick={(state) => console.log('Sign-in state clicked:', state)}
-                      on:stateClick={(e) => console.log('Sign-in state clicked event:', e.detail)}
-                    />
+                    <div class="state-display">
+                      <h4>Current State</h4>
+                      <div class="state-value">{authState}</div>
+                      {#if signInState !== 'emailEntry'}
+                        <div class="signin-state">Sign-in: {signInState}</div>
+                      {/if}
+                    </div>
                   </div>
                 {:else}
                   <div class="graph-error">
@@ -3167,6 +3141,33 @@ $: if (dynamicAuthConfig) {
   .state-description strong {
     color: var(--text-primary);
     font-weight: 600;
+  }
+
+  .state-display {
+    padding: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    text-align: center;
+  }
+
+  .state-display h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .state-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 5px;
+  }
+
+  .signin-state {
+    font-size: 12px;
+    color: var(--text-secondary);
   }
 
   /* Demo SignInForm styles */

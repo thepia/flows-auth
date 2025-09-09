@@ -2,7 +2,7 @@
   SignInStateMachineFlow - Sign-In State Machine visualization with Dagre layout
   
   Props:
-  - dualState: DualAuthState for current state highlighting
+  - currentSignInState: Current SignInState for highlighting
   - signInMachine: Sign-in state machine instance for dynamic extraction
   - compact: Boolean for layout density
   - width: Container width
@@ -17,7 +17,7 @@
   import dagre from '@dagrejs/dagre';
 
   // Props
-  export let dualState = null;
+  export let currentSignInState = 'emailEntry'; // Current SignInState
   export let signInMachine = null;
   export let compact = false;
   export let width = 600;
@@ -133,7 +133,7 @@
 
   // Create flow nodes
   function createFlowNodes() {
-    const currentState = dualState?.signIn?.state || 'emailEntry';
+    const currentState = currentSignInState || 'emailEntry';
     
     // Get all unique states from categories
     const allStates = Object.values(stateCategories)
@@ -240,7 +240,7 @@
   // Reactive statements
   $: {
     // Trigger re-layout when key props change
-    direction; compact; dualState; signInMachine;
+    direction; compact; currentSignInState; signInMachine;
     
     // Get dynamic data
     stateCategories = getSignInStateCategories();
@@ -276,7 +276,7 @@
   
   <div class="machine-header">
     <h4>Sign-In State Machine</h4>
-    <span class="current-state">Current: {dualState?.signIn?.state || 'emailEntry'}</span>
+    <span class="current-state">Current: {currentSignInState || 'emailEntry'}</span>
   </div>
 
   <div class="flow-container"

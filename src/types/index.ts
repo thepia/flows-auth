@@ -76,7 +76,7 @@ export type AuthMachineState =
   | 'appLoaded';
 
 // New dual state machine types
-export * from './session-state-machine';
+// Removed: session-state-machine types - SessionStateMachine removed
 export * from './signin-state-machine';
 
 export type AuthMachineEvent = 

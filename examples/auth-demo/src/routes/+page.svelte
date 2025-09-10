@@ -58,10 +58,28 @@ let useSignInForm = false; // Toggle between SignInCore and SignInForm
 // These will be computed reactively from the auth store
 // Note: authState already exists above
 
-// Reactive computations from auth store
-$: signInState = authStore ? $authStore.signInState || 'emailEntry' : 'emailEntry';
-$: hasValidPinStatus = authStore ? hasValidPin($authStore) : false;
-$: pinRemainingMinutes = authStore ? (getPinTimeRemaining($authStore) || 0) : 0;
+// Declare reactive variables first
+let signInState = 'emailEntry';
+let hasValidPinStatus = false;
+let pinRemainingMinutes = 0;
+
+// Reactive computations from auth store - simplified debugging
+$: {
+  if (authStore) {
+    const storeValue = $authStore;
+    console.log('🔄 [Sidebar] Raw auth store update:', {
+      state: storeValue.state,
+      signInState: storeValue.signInState,
+      hasUser: !!storeValue.user,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Update our local variables
+    signInState = storeValue.signInState || 'emailEntry';
+    hasValidPinStatus = hasValidPin(storeValue);
+    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
+  }
+}
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -1162,8 +1180,8 @@ $: if (dynamicAuthConfig) {
 
           <!-- Main Demo Area -->
           <div class="demo-main">
-            <!-- Live SignInCore Component -->
-            {#if authStore && dynamicAuthConfig && !isAuthenticated}
+            <!-- Live SignInCore Component   && !isAuthenticated -->
+            {#if authStore && dynamicAuthConfig}
               {#if useSignInForm && formVariant === 'popup'}
                 <!-- Popup SignInForm - no card wrapper to avoid double borders -->
                 {#await import('@thepia/flows-auth') then { SignInForm }}
@@ -1221,6 +1239,7 @@ $: if (dynamicAuthConfig) {
                         <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
                           <SignInCore 
                             config={dynamicAuthConfig}
+                            authStore={authStore}
                             initialEmail={emailInput}
                             className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
                             on:success={(e) => handleSignInSuccess(e.detail)}

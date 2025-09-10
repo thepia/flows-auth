@@ -65,6 +65,30 @@ pnpm lint          # Biome linting (must pass)
 
 ## ⚠️ CRITICAL MISTAKES TO AVOID
 
+### 0. Auth Store Singleton Pattern Violations
+- **NEVER allow components to create their own auth store instances**
+- **SignInCore and SignInForm MUST accept authStore prop and use provided store**
+- **Root Cause**: Multiple store instances break reactivity between components and sidebars
+- **Example**: SignInCore creating its own store while sidebar uses global store = sidebar never updates
+
+**Correct Pattern**:
+```svelte
+<!-- SignInCore.svelte -->
+export let authStore: ReturnType<typeof createAuthStore> | undefined = undefined;
+const store = authStore || createAuthStore(config);
+
+<!-- Usage -->
+<SignInCore {config} {authStore} />
+```
+
+**Wrong Pattern**:
+```svelte
+<!-- SignInCore.svelte - WRONG -->
+const authStore = createAuthStore(config); // Creates isolated instance
+```
+
+**This architectural violation caused**: Sidebar signInState never updating despite state machine transitions working correctly in SignInCore. Always use shared store instances.
+
 ### 1. GitHub Packages Publishing Authentication
 - **NEVER keep local `.npmrc` files with environment variable references for publishing**
 - **Local `.npmrc` with `//npm.pkg.github.com/:_authToken=$NODE_AUTH_TOKEN` breaks npm publish**

@@ -109,7 +109,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
   const initialState: AuthStore = {
     state: isValidSession ? 'authenticated' : 'unauthenticated',
-    signInState: 'emailEntry', // Start with email entry for sign-in flow
+    signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
     user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
@@ -212,13 +212,17 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    * Returns the new signInState after processing
    */
   function sendSignInEvent(event: SignInEvent): SignInState {
-    let newSignInState: SignInState;
+    let newSignInState: SignInState = 'emailEntry'; // Initialize with default
     store.update(s => {
       newSignInState = processSignInTransition(s.signInState, event);
-      console.log(`SignIn transition: ${s.signInState} -> ${newSignInState} (${event.type})`);
-      return { ...s, signInState: newSignInState };
+      console.log(`🔄 [AuthStore] SignIn transition: ${s.signInState} -> ${newSignInState} (${event.type})`);
+      console.log(`🔍 [AuthStore] Store update - before:`, { signInState: s.signInState, timestamp: new Date().toISOString() });
+      const updatedStore = { ...s, signInState: newSignInState };
+      console.log(`🔍 [AuthStore] Store update - after:`, { signInState: updatedStore.signInState, timestamp: new Date().toISOString() });
+      return updatedStore;
     });
-    return newSignInState!;
+    console.log(`✅ [AuthStore] sendSignInEvent returning:`, newSignInState);
+    return newSignInState;
   }
 
   /**

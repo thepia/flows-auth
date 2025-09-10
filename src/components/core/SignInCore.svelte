@@ -17,6 +17,7 @@ import CodeInput from './CodeInput.svelte';
 
 // Props
 export let config: AuthConfig;
+export let authStore: ReturnType<typeof createAuthStore> | undefined = undefined;
 export let initialEmail = '';
 export let className = '';
 
@@ -49,8 +50,8 @@ const dispatch = createEventDispatcher<{
   stepChange: { step: string };
 }>();
 
-// Auth store
-const authStore = createAuthStore(config);
+// Auth store - Use provided authStore or create from config for backward compatibility
+const store: ReturnType<typeof createAuthStore> = authStore || createAuthStore(config);
 
 // Component state
 // Extend SignInState with additional states needed by SignInCore
@@ -61,7 +62,7 @@ let error: string | null = null;
 
 // Local state for non-SignInState steps
 let localStep: 'magicLinkSent' | 'registrationTerms' | null = null;
-let currentSignInState: SignInState = $authStore.signInState;
+let currentSignInState: SignInState = $store.signInState;
 
 // Computed step: use localStep if set, otherwise use current signInState
 $: step = localStep || (currentSignInState as SignInCoreStep);
@@ -73,7 +74,7 @@ $: if (step) {
 
 // Subscribe to store changes for external updates (e.g., successful auth from other components)
 $: {
-  const storeState = $authStore.signInState;
+  const storeState = $store.signInState;
   // Only update if we're not in a local step and the store changed externally
   if (localStep === null && storeState !== currentSignInState) {
     currentSignInState = storeState;
@@ -85,13 +86,13 @@ function setLocalStep(localStepValue: typeof localStep) {
   localStep = localStepValue;
   // Clear localStep when returning to SignInState flow
   if (localStepValue === null) {
-    currentSignInState = authStore.sendSignInEvent({ type: 'RESET' });
+    currentSignInState = store.sendSignInEvent({ type: 'RESET' });
   }
 }
 
 // Helper to send SignInEvents to the auth store and update local state
 function sendSignInEvent(event: SignInEvent) {
-  currentSignInState = authStore.sendSignInEvent(event);
+  currentSignInState = store.sendSignInEvent(event);
   // Clear any local step override when transitioning via events
   if (localStep !== null) {
     localStep = null;
@@ -163,7 +164,7 @@ async function checkEmailForExistingPin(emailValue: string) {
     try {
       console.log('🔍 Reactive email pin check for:', emailValue.trim());
       lastCheckedEmail = emailValue.trim(); // Set before API call to prevent race conditions
-      const userCheck = await authStore.checkUser(emailValue.trim());
+      const userCheck = await store.checkUser(emailValue.trim());
       hasValidPin = checkForValidPin(userCheck);
       pinRemainingMinutes = getRemainingPinMinutes(userCheck);
       userExists = userCheck.exists;
@@ -214,7 +215,7 @@ onMount(async () => {
     // Check for existing valid pins if app code is configured
     if (config.appCode) {
       try {
-        const userCheck = await authStore.checkUser(initialEmail);
+        const userCheck = await store.checkUser(initialEmail);
         hasValidPin = checkForValidPin(userCheck);
         userExists = userCheck.exists;
         hasPasskeys = userCheck.hasWebAuthn;
@@ -265,11 +266,11 @@ async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
     conditionalAuthActive = true;
     console.log('🔍 Starting conditional authentication for:', event.detail.email);
 
-    const success = await authStore.startConditionalAuthentication(event.detail.email);
+    const success = await store.startConditionalAuthentication(event.detail.email);
     if (success) {
       console.log('✅ Conditional authentication successful');
       dispatch('success', {
-        user: $authStore.user,
+        user: $store.user,
         method: 'passkey',
       });
     }
@@ -349,7 +350,7 @@ async function handleSignIn() {
 
   try {
     // Check what auth methods are available for this email
-    const userCheck = await authStore.checkUser(email);
+    const userCheck = await store.checkUser(email);
     userExists = userCheck.exists;
     hasPasskeys = userCheck.hasWebAuthn;
 
@@ -471,7 +472,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
 // Handle passkey authentication
 async function handlePasskeyAuth() {
   try {
-    const result = await authStore.signInWithPasskey(email);
+    const result = await store.signInWithPasskey(email);
 
     if (result.step === 'success' && result.user) {
       loading = false;
@@ -490,7 +491,7 @@ async function handlePasskeyAuth() {
 // Handle magic link authentication
 async function handleMagicLinkAuth() {
   try {
-    const result = await authStore.signInWithMagicLink(email);
+    const result = await store.signInWithMagicLink(email);
 
     if (result.step === 'magic-link' || result.magicLinkSent) {
       loading = false;
@@ -506,11 +507,11 @@ async function handleMagicLinkAuth() {
 // Handle email code authentication (transparently uses app endpoints if configured)
 async function handleEmailCodeAuth() {
   try {
-    const result = await authStore.sendEmailCode(email);
+    const result = await store.sendEmailCode(email);
     
     if (result.success) {
       // Notify auth store that PIN was sent to drive state transition
-      authStore.notifyPinSent();
+      store.notifyPinSent();
       
       emailCodeSent = true;
       loading = false;
@@ -535,7 +536,7 @@ async function handleEmailCodeVerification() {
   error = null;
 
   try {
-    const result = await authStore.verifyEmailCode(email, emailCode);
+    const result = await store.verifyEmailCode(email, emailCode);
     
     if (result.step === 'success' && result.user) {
       loading = false;
@@ -553,7 +554,7 @@ async function handleEmailCodeVerification() {
         expiresAt: result.expiresIn ? Date.now() + (result.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000),
         lastActivity: Date.now()
       };
-      authStore.notifyPinVerified(sessionData);
+      store.notifyPinVerified(sessionData);
       
       // Clear pin state after successful verification to prevent reuse
       hasValidPin = false;
@@ -920,11 +921,11 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
         showIcon={true}
       />
       
-      {#if $authStore.user}
+      {#if $store.user}
         <div class="user-welcome">
           <h3>Welcome back!</h3>
-          <p><strong>{$authStore.user.name || $authStore.user.email}</strong></p>
-          <p class="user-email">{$authStore.user.email}</p>
+          <p><strong>{$store.user.name || $store.user.email}</strong></p>
+          <p class="user-email">{$store.user.email}</p>
         </div>
         
         <AuthButton
@@ -933,7 +934,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
           text="Continue to App"
           {i18n}
           on:click={() => dispatch('success', { 
-            user: $authStore.user, 
+            user: $store.user, 
             method: 'email-code' 
           })}
         />

@@ -55,8 +55,13 @@ let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bo
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
 
 // Simplified: Use auth store state directly instead of complex dual machine  
-let signInState = 'emailEntry'; // Current sign-in state (stubbed for now)
+// These will be computed reactively from the auth store
 // Note: authState already exists above
+
+// Reactive computations from auth store
+$: signInState = authStore ? $authStore.signInState || 'emailEntry' : 'emailEntry';
+$: hasValidPinStatus = authStore ? hasValidPin($authStore) : false;
+$: pinRemainingMinutes = authStore ? (getPinTimeRemaining($authStore) || 0) : 0;
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -182,7 +187,13 @@ onMount(async () => {
         isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
         currentUser = state.user;
         authState = state.state;
-        console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
+        console.log('📊 Auth state update:', { 
+          state: state.state, 
+          signInState: state.signInState,
+          hasValidPin: hasValidPin(state),
+          pinRemainingMinutes: getPinTimeRemaining(state) || 0,
+          user: !!state.user 
+        });
       });
       
       // Subscribe to state machine updates if available
@@ -940,9 +951,21 @@ $: if (dynamicAuthConfig) {
               <div class="auth-state-controls">
                 <!-- Legacy Store State -->
                 <div class="state-section">
-                  <span class="config-label">Current State:</span>
+                  <span class="config-label">Store State:</span>
                   <span class="state-badge {authState}">{authState}</span>
                 </div>
+                <!-- Sign In State -->
+                <div class="state-section">
+                  <span class="config-label">SignIn State:</span>
+                  <span class="machine-state-badge">{signInState}</span>
+                </div>
+                <!-- PIN Status -->
+                {#if hasValidPinStatus}
+                  <div class="state-section">
+                    <span class="config-label">PIN:</span>
+                    <span class="pin-badge">Valid ({pinRemainingMinutes}min)</span>
+                  </div>
+                {/if}
               </div>
             </div>
         
@@ -2655,6 +2678,16 @@ $: if (dynamicAuthConfig) {
     background: #e0f2fe;
     color: #0369a1;
     border: 1px solid #bae6fd;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+  }
+  .pin-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
     font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
   }
 

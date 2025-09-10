@@ -105,12 +105,13 @@ export class SignInStateMachine {
         }
       });
 
-      // Send event to transition to userChecked state  
-      if (userCheck.exists) {
-        this.send({ type: 'USER_EXISTS', hasPasskey: userCheck.hasPasskey || false });
-      } else {
-        this.send({ type: 'USER_NOT_FOUND' });
-      }
+      // Send USER_CHECKED event with user data
+      this.send({ 
+        type: 'USER_CHECKED', 
+        email: this.context.email || email,
+        exists: userCheck.exists,
+        hasPasskey: userCheck.hasPasskey || false 
+      });
     } catch (error) {
       console.error('User lookup failed:', error);
       this.send({ 
@@ -253,7 +254,7 @@ export class SignInStateMachine {
     // Return the correct state machine transitions based on actual business logic
     return [
       // Basic flow - direct from emailEntry to userChecked (no userLookup state)
-      { source: 'emailEntry', target: 'userChecked', event: 'EMAIL_SUBMITTED' },
+      { source: 'emailEntry', target: 'userChecked', event: 'USER_CHECKED' },
       { source: 'emailEntry', target: 'generalError', event: 'ERROR' },
       
       // After userChecked - conditional transitions based on user state
@@ -301,33 +302,32 @@ export class SignInStateMachine {
           this.updateContext({ email: event.email, error: null });
           return 'emailEntry'; // Stay in same state, just update context
         }
-        if (event.type === 'EMAIL_SUBMITTED') {
-          if (this.isValidEmail(event.email)) {
-            this.updateContext({ email: event.email });
-            // Perform user lookup immediately and transition to userChecked
-            this.performUserLookup(event.email);
-            return 'userChecked';
-          } else {
-            this.updateContext({ 
-              error: {
-                code: 'INVALID_EMAIL',
-                message: 'Please enter a valid email address',
-                type: 'validation',
-                retryable: false
-              }
-            });
-            return 'generalError';
-          }
+        if (event.type === 'USER_CHECKED') {
+          // This event shouldn't happen in emailEntry, but handle it gracefully
+          this.updateContext({ 
+            email: event.email,
+            user: {
+              exists: event.exists,
+              hasPasskey: event.hasPasskey,
+              emailVerified: false
+            }
+          });
+          return 'userChecked';
         }
         break;
 
       case 'userChecked':
         // Handle user lookup results and auto-transitions in entry actions
-        if (event.type === 'USER_EXISTS') {
-          return 'userChecked'; // Stay in same state, entry actions will handle transition
-        }
-        if (event.type === 'USER_NOT_FOUND') {
-          return 'userChecked'; // Stay in same state, entry actions will handle transition
+        if (event.type === 'USER_CHECKED') {
+          // Update context with user data
+          this.updateContext({ 
+            user: {
+              exists: event.exists,
+              hasPasskey: event.hasPasskey,
+              emailVerified: false
+            }
+          });
+          return event.hasPasskey ? 'passkeyPrompt' : 'userChecked';
         }
         if (event.type === 'ERROR') {
           this.updateContext({ error: event.error });

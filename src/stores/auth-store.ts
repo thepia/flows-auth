@@ -166,14 +166,13 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   function processSignInTransition(currentState: SignInState, event: SignInEvent): SignInState {
     switch (currentState) {
       case 'emailEntry':
-        if (event.type === 'EMAIL_SUBMITTED') return 'userChecked';
-        if (event.type === 'PIN_VERIFIED') return 'signedIn'; // Direct PIN verification from email entry (app-based flow) (this is transitional to help buggy SignInCore)
+        if (event.type === 'USER_CHECKED') {
+          // Transition to passkeyPrompt if user has passkey, otherwise userChecked
+          return 'userChecked';
+        }
         break;
       
       case 'userChecked':
-        if (event.type === 'USER_EXISTS' && event.hasPasskey) return 'passkeyPrompt';
-        if (event.type === 'USER_EXISTS' && !event.hasPasskey) return 'userChecked'; // Stay in userChecked until PIN sent
-        if (event.type === 'USER_NOT_FOUND') return 'userChecked'; // Stay in userChecked until PIN sent  
         if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry'; // Transition to PIN entry after email sent
         break;
         
@@ -210,13 +209,16 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
   /**
    * Send SignInEvent and update signInState accordingly
+   * Returns the new signInState after processing
    */
-  function sendSignInEvent(event: SignInEvent) {
+  function sendSignInEvent(event: SignInEvent): SignInState {
+    let newSignInState: SignInState;
     store.update(s => {
-      const newSignInState = processSignInTransition(s.signInState, event);
+      newSignInState = processSignInTransition(s.signInState, event);
       console.log(`SignIn transition: ${s.signInState} -> ${newSignInState} (${event.type})`);
       return { ...s, signInState: newSignInState };
     });
+    return newSignInState!;
   }
 
   /**
@@ -676,12 +678,13 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         lastPinExpiry: result.lastPinExpiry as any
       };
       
-      // Send SignInEvent based on user existence
-      if (result.exists) {
-        sendSignInEvent({ type: 'USER_EXISTS', hasPasskey: !!result.hasPasskey });
-      } else {
-        sendSignInEvent({ type: 'USER_NOT_FOUND' });
-      }
+      // Send USER_CHECKED event with user data
+      sendSignInEvent({ 
+        type: 'USER_CHECKED', 
+        email, 
+        exists: result.exists, 
+        hasPasskey: !!result.hasPasskey 
+      });
       
       return userData;
     } catch (error: unknown) {
@@ -1671,6 +1674,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     // SignIn flow control methods
     notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
     notifyPinVerified: (sessionData: any) => sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
+    sendSignInEvent, // Expose for components to send custom events
     
     // Email-based authentication methods (transparently uses app endpoints if configured)
     sendEmailCode: signInWithAppEmail,

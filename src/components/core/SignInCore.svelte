@@ -6,7 +6,7 @@
 <script lang="ts">
 import { createEventDispatcher, onMount } from 'svelte';
 import { createAuthStore } from '../../stores/auth-store';
-import type { AuthConfig, AuthError, AuthMethod, User, SignInState } from '../../types';
+import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 import { getI18n } from '../../utils/i18n';
 
@@ -58,21 +58,45 @@ type SignInCoreStep = SignInState | 'magicLinkSent' | 'registrationTerms';
 let email = initialEmail;
 let loading = false;
 let error: string | null = null;
-let step: SignInCoreStep = 'emailEntry'; // Using SignInState's initial state
 
-// Subscribe to auth store signInState for automatic transitions
+// Local state for non-SignInState steps
+let localStep: 'magicLinkSent' | 'registrationTerms' | null = null;
+let currentSignInState: SignInState = $authStore.signInState;
+
+// Computed step: use localStep if set, otherwise use current signInState
+$: step = localStep || (currentSignInState as SignInCoreStep);
+
+// React to step changes and dispatch stepChange events
+$: if (step) {
+  dispatch('stepChange', { step });
+}
+
+// Subscribe to store changes for external updates (e.g., successful auth from other components)
 $: {
-  const storeSignInState = $authStore.signInState;
-  
-  // React to key auth store state transitions
-  if (storeSignInState === 'signedIn' && step !== 'signedIn') {
-    console.log('🔄 SignInCore: Auto-transitioning to signedIn state from auth store');
-    step = 'signedIn';
-    dispatch('stepChange', { step });
+  const storeState = $authStore.signInState;
+  // Only update if we're not in a local step and the store changed externally
+  if (localStep === null && storeState !== currentSignInState) {
+    currentSignInState = storeState;
   }
-  
-  // Add other automatic transitions as needed
-  // For now, keep manual transitions for other states
+}
+
+// Helper to set local-only steps
+function setLocalStep(localStepValue: typeof localStep) {
+  localStep = localStepValue;
+  // Clear localStep when returning to SignInState flow
+  if (localStepValue === null) {
+    currentSignInState = authStore.sendSignInEvent({ type: 'RESET' });
+  }
+}
+
+// Helper to send SignInEvents to the auth store and update local state
+function sendSignInEvent(event: SignInEvent) {
+  currentSignInState = authStore.sendSignInEvent(event);
+  // Clear any local step override when transitioning via events
+  if (localStep !== null) {
+    localStep = null;
+  }
+  return currentSignInState;
 }
 let supportsWebAuthn = false;
 let conditionalAuthActive = false;
@@ -153,8 +177,13 @@ async function checkEmailForExistingPin(emailValue: string) {
         hasPasskeys
       });
       
-      // Don't auto-advance to pin input - let user choose their authentication method
-      // The pin status message and smart button configuration will show appropriate options
+      // Send USER_CHECKED event to transition the state machine to userChecked state
+      sendSignInEvent({ 
+        type: 'USER_CHECKED', 
+        email: emailValue.trim(), 
+        exists: userCheck.exists, 
+        hasPasskey: userCheck.hasWebAuthn 
+      });
     } catch (error) {
       console.warn('Error in reactive email pin check:', error);
     }
@@ -265,12 +294,14 @@ async function startConditionalAuthentication() {
 
 // Direct action to go to pin input when pin status message is clicked
 function goToPinInput() {
-  if (!hasValidPin) return;
+  if (!hasValidPin || !email.trim()) {
+    return;
+  }
   
-  console.log('🔢 Direct pin action: Going to pin verification step');
+  // We should already be in userChecked state from reactive email checking
+  // Just send SENT_PIN_EMAIL to transition to pinEntry
   emailCodeSent = true; // Mark as sent since we have a valid pin
-  step = 'pinEntry';
-  dispatch('stepChange', { step });
+  sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
 }
 
 // Handle secondary action (pin fallback when passkey is primary)
@@ -289,9 +320,8 @@ async function handleSecondaryAction() {
         // Skip sending new code, go directly to verification step
         console.log('🔢 Secondary action: Valid pin detected, going to verification step');
         emailCodeSent = true;
-        step = 'pinEntry';
         loading = false;
-        dispatch('stepChange', { step });
+        sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
       } else {
         // Send new pin
         console.log('📧 Secondary action: Sending new pin');
@@ -314,6 +344,8 @@ async function handleSignIn() {
 
   loading = true;
   error = null;
+  
+  // Don't send any event here - will send USER_CHECKED after checkUser completes
 
   try {
     // Check what auth methods are available for this email
@@ -339,16 +371,27 @@ async function handleSignIn() {
         loading = false;
         return;
       } else {
-        // Transition to registration
+        // Transition to registration (not a SignInState, keep as local state change)
         console.log('🔄 User not found - transitioning to registration');
-        step = 'registrationTerms';
         loading = false;
-        dispatch('stepChange', { step });
+        sendSignInEvent({ 
+          type: 'USER_CHECKED', 
+          email: email.trim(), 
+          exists: false, 
+          hasPasskey: false 
+        });
+        setLocalStep('registrationTerms');
         return;
       }
     }
 
-    // User exists - determine authentication method based on config and user capabilities
+    // User exists - send USER_CHECKED event and determine authentication method
+    sendSignInEvent({ 
+      type: 'USER_CHECKED', 
+      email: email.trim(), 
+      exists: userExists, 
+      hasPasskey: hasPasskeys 
+    });
     const authMethod = determineAuthMethod(userCheck);
     console.log('🔐 Determined auth method:', authMethod);
 
@@ -377,9 +420,8 @@ async function handleSignIn() {
           // Skip sending new code, go directly to verification step
           console.log('🔢 Valid pin detected, skipping email send and going to verification step');
           emailCodeSent = true;
-          step = 'pinEntry';
           loading = false;
-          dispatch('stepChange', { step });
+          sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
         } else {
           await handleEmailCodeAuth();
         }
@@ -451,9 +493,8 @@ async function handleMagicLinkAuth() {
     const result = await authStore.signInWithMagicLink(email);
 
     if (result.step === 'magic-link' || result.magicLinkSent) {
-      step = 'magicLinkSent';
       loading = false;
-      dispatch('stepChange', { step });
+      setLocalStep('magicLinkSent');
     }
   } catch (err: any) {
     loading = false;
@@ -472,9 +513,7 @@ async function handleEmailCodeAuth() {
       authStore.notifyPinSent();
       
       emailCodeSent = true;
-      step = 'pinEntry';
       loading = false;
-      dispatch('stepChange', { step });
     } else {
       throw new Error(result.message || 'Failed to send email code');
     }
@@ -569,7 +608,8 @@ function getUserFriendlyErrorMessage(err: any): string {
 }
 
 function resetForm() {
-  step = 'emailEntry';
+  sendSignInEvent({ type: 'RESET' });
+  localStep = null; // Clear local step override
   error = null;
   loading = false;
   emailCode = '';
@@ -694,7 +734,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
 </script>
 
 <div class="sign-in-core {className}">
-  {#if step === 'emailEntry'}
+  {#if step === 'emailEntry' || step === 'userChecked'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput

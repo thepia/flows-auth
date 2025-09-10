@@ -15,10 +15,8 @@ export type SignInState =
   | 'generalError';           // API server 500 errors from any server call
 
 export type SignInEvent = 
-  | { type: 'EMAIL_SUBMITTED'; email: string }          // A valid email is entered and the user checked (not needed)
+  | { type: 'USER_CHECKED'; email: string; exists: boolean; hasPasskey: boolean }  // User check completed with results
   | { type: 'EMAIL_ENTERED'; email: string }            // User entered email - used by state machine
-  | { type: 'USER_EXISTS'; hasPasskey: boolean }        // A valid email is entered and the user checked, user found
-  | { type: 'USER_NOT_FOUND' }                          // A valid email is entered and the user checked, not found
   | { type: 'SENT_PIN_EMAIL' }                         // PIN email sent successfully, transition to pin entry
   | { type: 'PIN_REQUESTED' }                          // PIN authentication requested - used by state machine
   | { type: 'PASSKEY_AVAILABLE' }                       // WebAuthn credentials found
@@ -85,7 +83,7 @@ export interface SessionData {
 /**
  * Sign-In State Machine Transitions
  * 
- * emailEntry -> userChecked (EMAIL_SUBMITTED, after lookup)
+ * emailEntry -> userChecked (USER_CHECKED, after lookup)
  * emailEntry -> userError (invalid email)
  * emailEntry -> networkError (lookup failed)
  * 

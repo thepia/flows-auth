@@ -613,6 +613,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   // SignIn flow control methods
   notifyPinSent: () => void;
   notifyPinVerified: (sessionData: any) => void;
+  sendSignInEvent: (event: SignInEvent) => SignInState;
 
   // Email-based authentication methods
   sendEmailCode: (email: string) => Promise<{

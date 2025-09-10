@@ -20,8 +20,30 @@ vi.mock('../../src/stores/auth-store', () => ({
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     sendEmailCode: vi.fn(),
-    subscribe: vi.fn(),
-    unsubscribe: vi.fn()
+    sendSignInEvent: vi.fn((event) => {
+      // Return a signInState based on the event type
+      if (event.type === 'USER_CHECKED') return 'userChecked';
+      if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry';
+      return 'emailEntry';
+    }),
+    notifyPinSent: vi.fn(),
+    notifyPinVerified: vi.fn(),
+    verifyEmailCode: vi.fn(),
+    // Proper Svelte store subscribe implementation
+    subscribe: vi.fn((callback) => {
+      // Call the callback with initial state
+      callback({
+        state: 'unauthenticated',
+        signInState: 'emailEntry',
+        user: null,
+        error: null,
+        loading: false,
+        hasPasskeys: false,
+        hasValidPin: false
+      });
+      // Return unsubscribe function
+      return () => {};
+    })
   }))
 }));
 

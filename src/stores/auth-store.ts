@@ -167,12 +167,14 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     switch (currentState) {
       case 'emailEntry':
         if (event.type === 'EMAIL_SUBMITTED') return 'userChecked';
+        if (event.type === 'PIN_VERIFIED') return 'signedIn'; // Direct PIN verification from email entry (app-based flow) (this is transitional to help buggy SignInCore)
         break;
       
       case 'userChecked':
         if (event.type === 'USER_EXISTS' && event.hasPasskey) return 'passkeyPrompt';
-        if (event.type === 'USER_EXISTS' && !event.hasPasskey) return 'pinEntry';
-        if (event.type === 'USER_NOT_FOUND') return 'pinEntry';
+        if (event.type === 'USER_EXISTS' && !event.hasPasskey) return 'userChecked'; // Stay in userChecked until PIN sent
+        if (event.type === 'USER_NOT_FOUND') return 'userChecked'; // Stay in userChecked until PIN sent  
+        if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry'; // Transition to PIN entry after email sent
         break;
         
       case 'passkeyPrompt':
@@ -1665,6 +1667,10 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     determineAuthFlow,
     on,
     api,
+    
+    // SignIn flow control methods
+    notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
+    notifyPinVerified: (sessionData: any) => sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
     
     // Email-based authentication methods (transparently uses app endpoints if configured)
     sendEmailCode: signInWithAppEmail,

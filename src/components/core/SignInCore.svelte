@@ -59,6 +59,21 @@ let email = initialEmail;
 let loading = false;
 let error: string | null = null;
 let step: SignInCoreStep = 'emailEntry'; // Using SignInState's initial state
+
+// Subscribe to auth store signInState for automatic transitions
+$: {
+  const storeSignInState = $authStore.signInState;
+  
+  // React to key auth store state transitions
+  if (storeSignInState === 'signedIn' && step !== 'signedIn') {
+    console.log('🔄 SignInCore: Auto-transitioning to signedIn state from auth store');
+    step = 'signedIn';
+    dispatch('stepChange', { step });
+  }
+  
+  // Add other automatic transitions as needed
+  // For now, keep manual transitions for other states
+}
 let supportsWebAuthn = false;
 let conditionalAuthActive = false;
 let userExists = false;
@@ -453,6 +468,9 @@ async function handleEmailCodeAuth() {
     const result = await authStore.sendEmailCode(email);
     
     if (result.success) {
+      // Notify auth store that PIN was sent to drive state transition
+      authStore.notifyPinSent();
+      
       emailCodeSent = true;
       step = 'pinEntry';
       loading = false;
@@ -482,6 +500,21 @@ async function handleEmailCodeVerification() {
     
     if (result.step === 'success' && result.user) {
       loading = false;
+      
+      // Notify auth store that PIN was verified to drive state transition
+      const sessionData = {
+        accessToken: result.accessToken || '',
+        refreshToken: result.refreshToken || '',
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name || '',
+          emailVerified: result.user.emailVerified || false
+        },
+        expiresAt: result.expiresIn ? Date.now() + (result.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000),
+        lastActivity: Date.now()
+      };
+      authStore.notifyPinVerified(sessionData);
       
       // Clear pin state after successful verification to prevent reuse
       hasValidPin = false;
@@ -832,6 +865,35 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       />
     </div>
 
+  {:else if step === 'signedIn'}
+    <!-- Signed In Success State -->
+    <div class="signed-in-success">
+      <AuthStateMessage
+        type="success"
+        message={$i18n('auth.signedInSuccess')}
+        showIcon={true}
+      />
+      
+      {#if $authStore.user}
+        <div class="user-welcome">
+          <h3>Welcome back!</h3>
+          <p><strong>{$authStore.user.name || $authStore.user.email}</strong></p>
+          <p class="user-email">{$authStore.user.email}</p>
+        </div>
+        
+        <AuthButton
+          type="button"
+          variant="primary"
+          text="Continue to App"
+          {i18n}
+          on:click={() => dispatch('success', { 
+            user: $authStore.user, 
+            method: 'email-code' 
+          })}
+        />
+      {/if}
+    </div>
+
   {:else if step === 'registrationTerms'}
     <!-- Registration flow would be handled by parent or separate component -->
     <AuthStateMessage
@@ -855,7 +917,8 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
   }
 
   .email-code-input,
-  .magic-link-sent {
+  .magic-link-sent,
+  .signed-in-success {
     text-align: center;
   }
 
@@ -924,6 +987,32 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
     text-decoration: none;
   }
   
+  /* User welcome styling for signed-in state */
+  .user-welcome {
+    margin: 16px 0 24px 0;
+    padding: 16px;
+    background: var(--auth-success-bg, #f0f9ff);
+    border: 1px solid var(--auth-success-border, #bae6fd);
+    border-radius: 8px;
+  }
+
+  .user-welcome h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--auth-text-primary, #111827);
+  }
+
+  .user-welcome p {
+    margin: 4px 0;
+    color: var(--auth-text-primary, #111827);
+  }
+
+  .user-email {
+    font-size: 0.875rem;
+    color: var(--auth-text-secondary, #6b7280) !important;
+  }
+
   /* Security message styling - matches thepia.com */
   .security-message {
     margin-top: 16px;

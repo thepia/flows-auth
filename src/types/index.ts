@@ -606,6 +606,10 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
   api: AuthApiClient;
   
+  // SignIn flow control methods
+  notifyPinSent: () => void;
+  notifyPinVerified: (sessionData: any) => void;
+  
   // Email-based authentication methods
   sendEmailCode: (email: string) => Promise<{
     success: boolean;

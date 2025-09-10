@@ -18,6 +18,7 @@ export type SignInEvent =
   | { type: 'EMAIL_SUBMITTED'; email: string }          // A valid email is entered and the user checked (not needed)
   | { type: 'USER_EXISTS'; hasPasskey: boolean }        // A valid email is entered and the user checked, user found
   | { type: 'USER_NOT_FOUND' }                          // A valid email is entered and the user checked, not found
+  | { type: 'SENT_PIN_EMAIL' }                         // PIN email sent successfully, transition to pin entry
   | { type: 'PASSKEY_AVAILABLE' }                       // WebAuthn credentials found
   | { type: 'PASSKEY_SELECTED' }                        // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any }        // WebAuthn authentication succeeded
@@ -27,7 +28,7 @@ export type SignInEvent =
   | { type: 'PASSKEY_REGISTERED'; session: SessionData }// Passkey registration complete
   | { type: 'EMAIL_VERIFICATION_REQUIRED' }             // Email needs verification
   | { type: 'EMAIL_SENT' }                             // Email with PIN sent
-  | { type: 'EMAIL_VERIFIED'; session: SessionData }    // Email verification complete
+  | { type: 'EMAIL_VERIFIED'; session: SessionData }    // Email verification complete(for newly created/registered user that never logged in with email)
   | { type: 'RESET' }                                   // Reset to email entry
   | { type: 'ERROR'; error: SignInError };              // Generic error occurred
 

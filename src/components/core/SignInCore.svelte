@@ -638,20 +638,15 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       if (config.appCode) {
         secondaryAction = {
           method: 'email-code',
-          text: hasValidPin ? $i18n('auth.enterExistingPin') : $i18n('auth.sendPinByEmail'),
-          loadingText: hasValidPin ? $i18n('auth.verifyingPin') : $i18n('auth.sendingPin')
+          text: $i18n('auth.sendPinByEmail'),
+          loadingText: $i18n('auth.sendingPin')
         };
       }
     } else if (config.appCode) {
       // User doesn't have passkeys, use pin authentication
       primaryMethod = 'email-code';
-      if (hasValidPin) {
-        primaryText = $i18n('auth.enterExistingPin');
-        primaryLoadingText = $i18n('auth.verifyingPin');
-      } else {
-        primaryText = $i18n('auth.sendPinByEmail');
-        primaryLoadingText = $i18n('auth.sendingPin');
-      }
+      primaryText = $i18n('auth.sendPinByEmail');
+      primaryLoadingText = $i18n('auth.sendingPin');
     } else if (config.enableMagicPins) {
       // Fallback to magic links
       primaryMethod = 'magic-link';

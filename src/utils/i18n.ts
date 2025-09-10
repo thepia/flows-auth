@@ -33,11 +33,9 @@ export const defaultTranslations = {
     'auth.sendPinByEmail': 'Send pin by email',
     'auth.sendPinToEmail': 'Send pin to email',
     'auth.sendMagicLink': 'Send Magic Link',
-    'auth.enterExistingPin': 'Enter existing pin',
     'auth.loading': 'Loading...',
     'auth.signingIn': 'Signing in...',
     'auth.sendingPin': 'Sending pin...',
-    'auth.verifyingPin': 'Verifying pin...',
     'auth.sendingMagicLink': 'Sending magic link...',
     
     // PIN/Code input
@@ -170,11 +168,9 @@ export const defaultTranslations = {
     'auth.sendPinByEmail': 'Send pin via e-mail',
     'auth.sendPinToEmail': 'Send pin til e-mail',
     'auth.sendMagicLink': 'Send Magisk Link',
-    'auth.enterExistingPin': 'Indtast eksisterende pin',
     'auth.loading': 'Indlæser...',
     'auth.signingIn': 'Logger ind...',
     'auth.sendingPin': 'Sender pin...',
-    'auth.verifyingPin': 'Verificerer pin...',
     'auth.sendingMagicLink': 'Sender magisk link...',
     
     // PIN/Code input

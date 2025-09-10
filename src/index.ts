@@ -185,7 +185,7 @@ export function createDefaultConfig(
     clientId: '',
     domain: '',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: true,
     branding: {
       companyName: 'Your Company',
       showPoweredBy: true,

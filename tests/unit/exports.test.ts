@@ -67,13 +67,13 @@ describe('Library Exports', () => {
     it('should export AuthActions', async () => {
       const { AuthActions } = await import('../../src/index');
       expect(AuthActions).toBeDefined();
-      expect(typeof AuthActions).toBe('object');
+      expect(typeof AuthActions).toBe('function'); // Classes are functions
     });
 
     it('should export AuthGuards', async () => {
       const { AuthGuards } = await import('../../src/index');
       expect(AuthGuards).toBeDefined();
-      expect(typeof AuthGuards).toBe('object');
+      expect(typeof AuthGuards).toBe('function'); // Classes are functions
     });
 
     it('should export AuthStateMachine', async () => {

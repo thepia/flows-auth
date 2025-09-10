@@ -174,7 +174,7 @@ onMount(async () => {
     supportsWebAuthn,
     platformAuthenticatorAvailable,
     enablePasskeys: config.enablePasskeys,
-    enableMagicPins: config.enableMagicPins,
+    enableMagicLinks: config.enableMagicLinks,
     signInMode: config.signInMode,
   });
 
@@ -408,7 +408,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   // If user has passkeys and we support them
   if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
     // Use passkey with fallback to email if other email methods are enabled
-    const hasEmailFallback = config.appCode || config.enableMagicPins;
+    const hasEmailFallback = config.appCode || config.enableMagicLinks;
     return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
   }
   
@@ -418,7 +418,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   }
   
   // If user doesn't have passkeys but we have magic links enabled
-  if (config.enableMagicPins) {
+  if (config.enableMagicLinks) {
     return 'email-only';
   }
 
@@ -598,14 +598,14 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
     
     // Show email UI if organization-based or magic links are enabled
-    if (authConfig.appCode || authConfig.enableMagicPins) return 'email';
+    if (authConfig.appCode || authConfig.enableMagicLinks) return 'email';
     
     return 'generic';
   })();
   
   console.log('🎯 getAuthMethodForUI():', {
     enablePasskeys: authConfig.enablePasskeys,
-    enableMagicPins: authConfig.enableMagicPins,
+    enableMagicLinks: authConfig.enableMagicLinks,
     hasAppCode: !!authConfig.appCode,
     supportsWebAuthn: webAuthnSupported,
     result
@@ -625,6 +625,17 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
   let primaryText = $i18n('auth.signIn');
   let primaryLoadingText = $i18n('auth.loading');
   let secondaryAction = null;
+
+  // Set default button text based on available authentication methods
+  if (config.appCode) {
+    primaryMethod = 'email-code';
+    primaryText = $i18n('auth.sendPinByEmail');
+    primaryLoadingText = $i18n('auth.sendingPin');
+  } else if (config.enableMagicLinks) {
+    primaryMethod = 'magic-link';
+    primaryText = $i18n('auth.sendMagicLink');
+    primaryLoadingText = $i18n('auth.sendingMagicLink');
+  }
 
   // If we have user information and email is entered, make smart decisions
   if (emailValue && emailValue.trim() && userExists !== null) {
@@ -647,7 +658,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       primaryMethod = 'email-code';
       primaryText = $i18n('auth.sendPinByEmail');
       primaryLoadingText = $i18n('auth.sendingPin');
-    } else if (config.enableMagicPins) {
+    } else if (config.enableMagicLinks) {
       // Fallback to magic links
       primaryMethod = 'magic-link';
       primaryText = $i18n('auth.sendMagicLink');

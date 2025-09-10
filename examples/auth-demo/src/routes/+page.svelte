@@ -46,7 +46,7 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
-let enableMagicPins = true;
+let enableMagicLinks = true;
 
 // New size and variant options
 let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
@@ -54,9 +54,6 @@ let formVariant = 'inline'; // 'inline', 'popup'
 let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
 
-// State machine diagram options
-let diagramCompact = false;
-let diagramDirection = 'TB'; // 'TB' (top-bottom) or 'LR' (left-right)
 // Simplified: Use auth store state directly instead of complex dual machine  
 let signInState = 'emailEntry'; // Current sign-in state (stubbed for now)
 // Note: authState already exists above
@@ -702,7 +699,7 @@ $: combinedTranslations = selectedClientVariant === 'custom'
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicPins, 
+  enableMagicLinks, 
   signInMode,
   // i18n configuration
   language: selectedLanguage,
@@ -720,7 +717,7 @@ $: if (dynamicAuthConfig) {
   console.log('⚙️ SignInCore config updated:', {
     signInMode: dynamicAuthConfig.signInMode,
     enablePasskeys: dynamicAuthConfig.enablePasskeys,
-    enableMagicPins: dynamicAuthConfig.enableMagicPins,
+    enableMagicLinks: dynamicAuthConfig.enableMagicLinks,
     language: dynamicAuthConfig.language,
     clientVariant: selectedClientVariant,
     translationCount: Object.keys(combinedTranslations).length
@@ -828,22 +825,7 @@ $: if (dynamicAuthConfig) {
             <h3>🔧 Interactive State Machine</h3>
             <p class="text-secondary">Live visualization of the authentication flow - current state: <strong>{stateMachineState || 'checkingSession'}</strong></p>
           </div>
-          <div class="card-body">
-            <!-- Diagram Controls -->
-            <div class="diagram-controls">
-              <label class="control-item">
-                <input type="checkbox" bind:checked={diagramCompact} />
-                <span>Compact Mode</span>
-              </label>
-              <div class="control-item">
-                <label for="diagram-direction">Layout Direction:</label>
-                <select id="diagram-direction" bind:value={diagramDirection} class="form-select">
-                  <option value="TB">Top to Bottom</option>
-                  <option value="LR">Left to Right</option>
-                </select>
-              </div>
-            </div>
-            
+          <div class="card-body">            
             <div class="state-machines-container">
               {#if SessionStateMachineComponent}
                 <div class="machine-grid">
@@ -1136,8 +1118,8 @@ $: if (dynamicAuthConfig) {
                     <span>Enable Passkeys</span>
                   </label>
                   <label class="checkbox-option">
-                    <input type="checkbox" bind:checked={enableMagicPins} />
-                    <span>Enable Magic Pins</span>
+                    <input type="checkbox" bind:checked={enableMagicLinks} />
+                    <span>Enable Magic Links</span>
                   </label>
                 </div>
               </div>
@@ -1148,9 +1130,9 @@ $: if (dynamicAuthConfig) {
               <ul>
                 <li>User Handling: {signInMode === 'login-only' ? 'Login Only' : 'Login or Register as Needed'}</li>
                 <li>Passkeys: {enablePasskeys ? 'Enabled' : 'Disabled'}</li>
-                <li>Magic Pins: {enableMagicPins ? 'Enabled' : 'Disabled'}</li>
+                <li>Magic Links: {enableMagicLinks ? 'Enabled' : 'Disabled'}</li>
                 <li>Autocomplete: {enablePasskeys ? 'email webauthn' : 'email'}</li>
-                <li>Auth Flow: {enablePasskeys && enableMagicPins ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicPins ? 'Email only' : 'No auth methods'}</li>
+                <li>Auth Flow: {enablePasskeys && enableMagicLinks ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicLinks ? 'Email only' : 'No auth methods'}</li>
               </ul>
             </div> -->
           </div>

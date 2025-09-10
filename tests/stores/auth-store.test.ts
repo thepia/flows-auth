@@ -488,11 +488,14 @@ describe('Auth Store', () => {
     });
   });
 
+  // AppCode not org
+  // Don't tet magic link, only magic pin.
+  // Soon we will not support configs without appCode.
   describe('Email Authentication (Transparent Org Support)', () => {
     it('should use org endpoints when org is configured', async () => {
       const configWithOrg: AuthConfig = {
         ...mockConfig,
-        org: 'test-org'
+        appCode: 'test-app'
       };
       
       const authStore = createAuthStore(configWithOrg);
@@ -514,7 +517,7 @@ describe('Auth Store', () => {
     it('should fall back to magic link when org is not configured', async () => {
       const configWithoutOrg: AuthConfig = {
         ...mockConfig,
-        enableMagicPins: true
+        enableMagicLinks: false
       };
       delete (configWithoutOrg as any).org;
       

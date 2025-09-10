@@ -226,7 +226,7 @@
         } catch (passkeyError) {
           console.warn('Passkey authentication failed:', passkeyError);
           // Fall back to magic link if enabled
-          if (config?.enableMagicPins) {
+          if (config?.enableMagicLinks) {
             try {
               await handleMagicLinkAuth();
             } catch (magicLinkError) {
@@ -239,7 +239,7 @@
             loading = false;
           }
         }
-      } else if (userExists && config?.enableMagicPins) {
+      } else if (userExists && config?.enableMagicLinks) {
         // User exists but no passkey - send magic link
         try {
           await handleMagicLinkAuth();
@@ -480,7 +480,7 @@
 
           <AuthButton
             type="submit"
-            method={supportsWebAuthn && (config?.enablePasskeys ?? false) ? 'passkey' : (config?.enableMagicPins ?? false) ? (isAppCodeBased ? 'email' : 'magic-link') : 'generic'}
+            method={supportsWebAuthn && (config?.enablePasskeys ?? false) ? 'passkey' : (config?.enableMagicLinks ?? false) ? (isAppCodeBased ? 'email' : 'magic-link') : 'generic'}
             {loading}
             disabled={loading || !email.trim()}
             {isAppCodeBased}

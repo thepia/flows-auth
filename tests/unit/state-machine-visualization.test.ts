@@ -46,9 +46,6 @@ describe('State Machine Visualization Translation', () => {
       // Registration flow - only accessible from signedIn
       expect(transitionMap.get('signedIn-passkeyRegistration')).toBe('REGISTER_PASSKEY');
       expect(transitionMap.get('passkeyRegistration-signedIn')).toBe('PASSKEY_REGISTERED');
-      
-      // Error recovery
-      expect(transitionMap.get('generalError-emailEntry')).toBe('RETRY');
     });
 
     it('should not have duplicate transitions', () => {
@@ -152,17 +149,6 @@ describe('State Machine Visualization Translation', () => {
       // But should have incoming transitions
       const incomingToSignedIn = transitions.filter(t => t.target === 'signedIn');
       expect(incomingToSignedIn.length).toBeGreaterThan(0);
-    });
-
-    it('should have proper error recovery paths', () => {
-      const transitions = signInMachine.getStateTransitions();
-      const errorStates = ['generalError'];
-      
-      errorStates.forEach(errorState => {
-        const recoveryTransition = transitions.find(t => t.source === errorState && t.target === 'emailEntry');
-        expect(recoveryTransition).toBeDefined();
-        expect(recoveryTransition?.event).toBe('RETRY');
-      });
     });
 
     it('should validate the three main authentication paths', () => {

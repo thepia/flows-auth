@@ -120,7 +120,7 @@ function getRemainingPinMinutes(userCheck: any): number {
 }
 
 // Debounced function to check email for existing pins (reactive statement compatible)
-let emailCheckTimeout: number;
+let emailCheckTimeout: ReturnType<typeof setTimeout> | undefined;
 async function checkEmailForExistingPin(emailValue: string) {
   // Clear any existing timeout to debounce rapid changes
   if (emailCheckTimeout) {
@@ -598,7 +598,7 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
     
     // Show email UI if organization-based or magic links are enabled
-    if (authConfig.org || authConfig.enableMagicPins) return 'email';
+    if (authConfig.appCode || authConfig.enableMagicPins) return 'email';
     
     return 'generic';
   })();
@@ -606,7 +606,7 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
   console.log('🎯 getAuthMethodForUI():', {
     enablePasskeys: authConfig.enablePasskeys,
     enableMagicPins: authConfig.enableMagicPins,
-    hasOrg: !!authConfig.org,
+    hasAppCode: !!authConfig.appCode,
     supportsWebAuthn: webAuthnSupported,
     result
   });

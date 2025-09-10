@@ -11,7 +11,6 @@ import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     signIn: vi.fn(),
-    signInWithPassword: vi.fn(),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
@@ -135,14 +134,14 @@ describe('Dynamic Role Security Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(serverVerifiedResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(serverVerifiedResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
-      // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      // Authenticate using magic link (passwordless)
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Should only accept server-verified roles
       expect(serverVerifiedResponse.user?.metadata?.serverVerified).toBe(true);
@@ -174,7 +173,7 @@ describe('Dynamic Role Security Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(authResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(authResponse);
 
       // Mock storage configuration update with validation
       const mockUpdateStorageConfiguration = vi.fn().mockImplementation(async (update) => {
@@ -186,8 +185,8 @@ describe('Dynamic Role Security Tests', () => {
       });
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
-      // Authenticate as guest
-      await authStore.signInWithPassword('guest@example.com', 'password');
+      // Authenticate as guest using magic link (passwordless)
+      await authStore.signInWithMagicLink('guest@example.com');
 
       // Attempt to upgrade to employee should fail
       try {
@@ -532,7 +531,7 @@ describe('Dynamic Role Security Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(authResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(authResponse);
 
       // Mock migration that preserves authentication
       const mockMigrateSession = vi.fn().mockResolvedValue({
@@ -545,8 +544,8 @@ describe('Dynamic Role Security Tests', () => {
 
       (authStore as any).migrateSession = mockMigrateSession;
 
-      // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      // Authenticate using magic link (passwordless)
+      await authStore.signInWithMagicLink('employee@company.com');
       
       // Verify authenticated before migration
       expect(authStore.isAuthenticated()).toBe(true);

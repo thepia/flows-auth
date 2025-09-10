@@ -16,9 +16,11 @@ export type SignInState =
 
 export type SignInEvent = 
   | { type: 'EMAIL_SUBMITTED'; email: string }          // A valid email is entered and the user checked (not needed)
+  | { type: 'EMAIL_ENTERED'; email: string }            // User entered email - used by state machine
   | { type: 'USER_EXISTS'; hasPasskey: boolean }        // A valid email is entered and the user checked, user found
   | { type: 'USER_NOT_FOUND' }                          // A valid email is entered and the user checked, not found
   | { type: 'SENT_PIN_EMAIL' }                         // PIN email sent successfully, transition to pin entry
+  | { type: 'PIN_REQUESTED' }                          // PIN authentication requested - used by state machine
   | { type: 'PASSKEY_AVAILABLE' }                       // WebAuthn credentials found
   | { type: 'PASSKEY_SELECTED' }                        // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any }        // WebAuthn authentication succeeded
@@ -106,6 +108,5 @@ export interface SessionData {
  * 
  * signedIn -> emailEntry (RESET)
  * 
- * All error states -> emailEntry (RETRY)
  * All states -> emailEntry (RESET)
  */

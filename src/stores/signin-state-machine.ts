@@ -275,9 +275,6 @@ export class SignInStateMachine {
       { source: 'signedIn', target: 'passkeyRegistration', event: 'REGISTER_PASSKEY' },
       { source: 'passkeyRegistration', target: 'signedIn', event: 'PASSKEY_REGISTERED' },
       { source: 'passkeyRegistration', target: 'generalError', event: 'ERROR' },
-      
-      // Error recovery
-      { source: 'generalError', target: 'emailEntry', event: 'RETRY' }
     ];
   }
 
@@ -389,9 +386,6 @@ export class SignInStateMachine {
 
       // Error state
       case 'generalError':
-        if (event.type === 'RETRY') {
-          return 'emailEntry';
-        }
         if (event.type === 'RESET') {
           return 'emailEntry';
         }
@@ -431,10 +425,5 @@ export class SignInStateMachine {
   // Reset to initial state
   reset(): void {
     this.send({ type: 'RESET' });
-  }
-
-  // Manual retry from error states
-  retry(): void {
-    this.send({ type: 'RETRY' });
   }
 }

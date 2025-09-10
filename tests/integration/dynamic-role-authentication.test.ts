@@ -11,7 +11,6 @@ import type { AuthConfig, SignInResponse, ApplicationContext, StorageConfigurati
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     signIn: vi.fn(),
-    signInWithPassword: vi.fn(),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
@@ -81,14 +80,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Simulate the application detecting the employee role and upgrading storage
       const expectedUpdate: StorageConfigurationUpdate = {
@@ -130,14 +129,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(guestAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(guestAuthResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('guest@example.com', 'password');
+      await authStore.signInWithMagicLink('guest@example.com');
 
       // For guest users, no storage upgrade should occur
       expect(mockUpdateStorageConfiguration).not.toHaveBeenCalled();
@@ -187,14 +186,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Should upgrade to employee configuration
       const expectedUpdate: StorageConfigurationUpdate = {
@@ -254,14 +253,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(adminAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(adminAuthResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('admin@company.com', 'password');
+      await authStore.signInWithMagicLink('admin@company.com');
 
       // Should upgrade to admin configuration
       const expectedUpdate: StorageConfigurationUpdate = {
@@ -305,14 +304,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(unknownRoleResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(unknownRoleResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('unknown@example.com', 'password');
+      await authStore.signInWithMagicLink('unknown@example.com');
 
       // Should not upgrade configuration for unknown roles (remain as guest)
       expect(mockUpdateStorageConfiguration).not.toHaveBeenCalled();
@@ -344,7 +343,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update failure
       const mockUpdateStorageConfiguration = vi.fn().mockRejectedValue(
@@ -353,7 +352,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Attempt to update storage configuration
       try {
@@ -399,14 +398,14 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(noMetadataResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(noMetadataResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate
-      await authStore.signInWithPassword('nometa@example.com', 'password');
+      await authStore.signInWithMagicLink('nometa@example.com');
 
       // Should not upgrade configuration when metadata is missing
       expect(mockUpdateStorageConfiguration).not.toHaveBeenCalled();
@@ -440,7 +439,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update and migration
       const mockUpdateStorageConfiguration = vi.fn();
@@ -456,7 +455,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       (authStore as any).migrateSession = mockMigrateSession;
 
       // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Simulate application-level storage upgrade
       const storageUpdate: StorageConfigurationUpdate = {
@@ -507,7 +506,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(employeeAuthResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update and migration failure
       const mockUpdateStorageConfiguration = vi.fn();
@@ -524,7 +523,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       (authStore as any).migrateSession = mockMigrateSession;
 
       // Authenticate
-      await authStore.signInWithPassword('employee@company.com', 'password');
+      await authStore.signInWithMagicLink('employee@company.com');
 
       // Simulate application-level storage upgrade attempt
       mockUpdateStorageConfiguration.mockImplementation(async (update) => {

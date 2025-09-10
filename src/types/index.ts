@@ -3,10 +3,10 @@
  * Based on thepia.com React implementation
  */
 
-import type { EnhancedUserCheck, AuthFlowResult } from './enhanced-auth';
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthStateMachine } from '../stores/auth-state-machine';
-import type { SignInState, SignInEvent } from './signin-state-machine';
+import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
+import type { SignInEvent, SignInState } from './signin-state-machine';
 
 // Export signin state machine types first so they can be used in AuthStore
 export * from './signin-state-machine';
@@ -26,18 +26,23 @@ export interface User {
 // Authentication states - simplified with email verification support
 export type AuthState =
   | 'unauthenticated'
-  | 'authenticated-unconfirmed'  // Has passkey but email not verified
-  | 'authenticated-confirmed'    // Full access after email verification
-  | 'authenticated'              // Generic authenticated state for backward compatibility
+  | 'authenticated-unconfirmed' // Has passkey but email not verified
+  | 'authenticated-confirmed' // Full access after email verification
+  | 'authenticated' // Generic authenticated state for backward compatibility
   | 'loading'
   | 'error';
 
 export type AuthMethod = 'passkey' | 'magic-link' | 'email-code';
 
-
-
 // Sign-in flow states - passwordless only
-export type SignInStep = 'email' | 'passkey' | 'magic-link' | 'email-code' | 'loading' | 'success' | 'error';
+export type SignInStep =
+  | 'email'
+  | 'passkey'
+  | 'magic-link'
+  | 'email-code'
+  | 'loading'
+  | 'success'
+  | 'error';
 
 // Registration flow states
 export type RegistrationStep =
@@ -55,7 +60,7 @@ export type AuthMachineState =
   | 'sessionValid'
   | 'sessionInvalid'
   | 'combinedAuth'
-  | 'emailCodeInput'             // PIN/code entry state
+  | 'emailCodeInput' // PIN/code entry state
   | 'conditionalMediation'
   | 'autofillPasskeys'
   | 'waitForExplicit'
@@ -64,9 +69,9 @@ export type AuthMachineState =
   | 'directWebAuthnAuth'
   | 'passkeyRegistration'
   | 'newUserRegistration'
-  | 'webauthnRegister'           // Registration with passkey
-  | 'authenticatedUnconfirmed'   // Logged in but email not verified
-  | 'authenticatedConfirmed'     // Full access after email verification
+  | 'webauthnRegister' // Registration with passkey
+  | 'authenticatedUnconfirmed' // Logged in but email not verified
+  | 'authenticatedConfirmed' // Full access after email verification
   | 'biometricPrompt'
   | 'auth0WebAuthnVerify'
   | 'passkeyError'
@@ -83,7 +88,7 @@ export type AuthMachineState =
 // Removed: session-state-machine types - SessionStateMachine removed
 // Note: signin-state-machine types exported at top of file
 
-export type AuthMachineEvent = 
+export type AuthMachineEvent =
   | { type: 'CHECK_SESSION' }
   | { type: 'VALID_SESSION'; session: SessionData }
   | { type: 'INVALID_SESSION' }
@@ -93,7 +98,7 @@ export type AuthMachineEvent =
   | { type: 'PASSKEY_SELECTED'; credential: any }
   | { type: 'USER_EXISTS'; hasPasskey: boolean }
   | { type: 'USER_NOT_FOUND' }
-  | { type: 'PIN_REQUIRED' }        // Transition to email code input
+  | { type: 'PIN_REQUIRED' } // Transition to email code input
   | { type: 'PIN_SUBMITTED'; code: string }
   | { type: 'PIN_VERIFIED' }
   | { type: 'WEBAUTHN_SUCCESS'; response: any }
@@ -131,13 +136,13 @@ export interface StorageConfig {
 export interface ApplicationContext {
   // Domain-based hints
   domain?: string; // e.g., 'internal.company.com' suggests all users are employees
-  
-  // URL-based hints  
+
+  // URL-based hints
   urlPath?: string; // e.g., '/admin/login' suggests admin users
-  
+
   // Application-level hints
   userType?: 'all_employees' | 'all_guests' | 'mixed'; // Corporate intranet vs public site
-  
+
   // Security override
   forceGuestMode?: boolean; // Always start with guest settings for security
 }
@@ -162,7 +167,6 @@ export interface SessionMigrationResult {
 
 export type StorageType = 'sessionStorage' | 'localStorage';
 
-
 // Authentication configuration
 export interface AuthConfig {
   apiBaseUrl: string;
@@ -177,10 +181,10 @@ export interface AuthConfig {
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
   appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
-  
+
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
-  
+
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
   translations?: import('../utils/i18n').CustomTranslations; // Custom translation overrides
@@ -215,7 +219,6 @@ export interface AuthBranding {
   customCSS?: string;
 }
 
-
 // API request/response types
 export interface SignInRequest {
   email: string;
@@ -240,7 +243,6 @@ export interface PasskeyRequest {
   credential: PasskeyCredential; // Properly typed WebAuthn credential
   challengeId?: string; // Optional challenge ID for verification
 }
-
 
 export interface MagicLinkRequest {
   email: string;
@@ -401,7 +403,7 @@ export interface AuthError {
   timestamp?: string;
 }
 
-export type AuthErrorCode = 
+export type AuthErrorCode =
   | 'user_not_found'
   | 'email_not_verified'
   | 'passkey_not_supported'
@@ -479,7 +481,6 @@ export interface PasskeyStepProps {
   branding?: AuthBranding;
 }
 
-
 export interface MagicLinkStepProps {
   email: string;
   onBack: () => void;
@@ -488,7 +489,6 @@ export interface MagicLinkStepProps {
   error?: string;
   branding?: AuthBranding;
 }
-
 
 export interface TermsOfServiceProps {
   onAccept: (accepted: { terms: boolean; privacy: boolean; marketing?: boolean }) => void;
@@ -521,7 +521,7 @@ export interface EmailVerificationPromptProps {
 // Store state
 export interface AuthStore {
   state: AuthState;
-  signInState: SignInState;  // Added: UI flow state for sign-in process
+  signInState: SignInState; // Added: UI flow state for sign-in process
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -539,7 +539,7 @@ export type AuthStoreMethods = {
   isAuthenticated: () => boolean;
   getAccessToken: () => string | null;
   reset: () => void;
-  
+
   // Convenience methods for backward compatibility
   signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
 };
@@ -600,16 +600,20 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   }>;
   checkUserWithInvitation: (
     email: string,
-    invitationOptions?: { token: string; tokenData?: InvitationTokenData; skipTokenValidation?: boolean }
+    invitationOptions?: {
+      token: string;
+      tokenData?: InvitationTokenData;
+      skipTokenValidation?: boolean;
+    }
   ) => Promise<EnhancedUserCheck>;
   determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
   api: AuthApiClient;
-  
+
   // SignIn flow control methods
   notifyPinSent: () => void;
   notifyPinVerified: (sessionData: any) => void;
-  
+
   // Email-based authentication methods
   sendEmailCode: (email: string) => Promise<{
     success: boolean;
@@ -617,21 +621,21 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     timestamp: number;
   }>;
   verifyEmailCode: (email: string, code: string) => Promise<SignInResponse>;
-  
+
   // Dynamic role configuration methods
   getApplicationContext: () => ApplicationContext | null;
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
   migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
-  
+
   // Note: Removed state machine interface - now using direct signInState management
-  
+
   // Cleanup
   destroy: () => void;
 }
 
 // Re-export i18n types for convenience
-export type { 
+export type {
   CustomTranslations,
   TranslationKey,
-  SupportedLanguage 
+  SupportedLanguage,
 } from '../utils/i18n';

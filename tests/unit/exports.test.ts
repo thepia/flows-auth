@@ -2,7 +2,7 @@
  * Comprehensive Export Tests
  * Verifies all exported functions and components can be imported properly
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Library Exports', () => {
   describe('API Clients', () => {

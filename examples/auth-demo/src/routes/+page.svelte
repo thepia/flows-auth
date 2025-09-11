@@ -149,6 +149,7 @@ let registrationLoading = false;
 const demoSections = [
   { id: 'overview', title: 'Overview', icon: Activity },
   { id: 'signin', title: 'Sign In Flow', icon: User },
+  { id: 'signin-machine', title: 'Interactive SignIn Machine', icon: Shield },
   { id: 'register', title: 'Registration', icon: Mail },
   { id: 'passkey', title: 'Passkey Auth', icon: Key },
   { id: 'state-machine', title: 'State Machine', icon: Settings },
@@ -486,6 +487,128 @@ function getRecommendedAction(state) {
   if (!state.emailVerified) return 'resend-verification';
   if (!state.hasWebAuthn) return 'passkey-setup';
   return 'use-signin';
+}
+
+// Handle clicks on the SignIn state machine diagram
+function handleSignInStateClick(clickedState) {
+  console.log('🎯 State machine clicked:', clickedState, 'Current state:', signInState);
+  
+  if (!authStore) {
+    console.warn('No auth store available for state transition');
+    return;
+  }
+
+  try {
+    // Determine appropriate event based on clicked state and current state
+    let event = null;
+    
+    switch (clickedState) {
+      case 'emailEntry':
+        // Reset to email entry
+        event = { type: 'RESET' };
+        break;
+        
+      case 'userChecked':
+        // If we're in emailEntry, simulate user check
+        if (signInState === 'emailEntry') {
+          event = { 
+            type: 'USER_CHECKED', 
+            email: testEmail || emailInput || 'demo@example.com',
+            exists: true, 
+            hasPasskey: false 
+          };
+        }
+        break;
+        
+      case 'passkeyPrompt':
+        // Simulate transition to passkey prompt (user exists with passkey)
+        if (signInState === 'emailEntry') {
+          event = { 
+            type: 'USER_CHECKED', 
+            email: testEmail || emailInput || 'demo@example.com',
+            exists: true, 
+            hasPasskey: true 
+          };
+        }
+        break;
+        
+      case 'emailVerification':
+        // If we're in userChecked, simulate needing email verification
+        if (signInState === 'userChecked') {
+          event = { type: 'EMAIL_VERIFICATION_REQUIRED' };
+        }
+        break;
+        
+      case 'pinEntry':
+        // Simulate PIN email sent
+        if (signInState === 'emailVerification') {
+          event = { type: 'EMAIL_SENT' };
+        } else if (signInState === 'userChecked') {
+          // Direct path to PIN entry via email sent
+          event = { type: 'SENT_PIN_EMAIL' };
+        }
+        break;
+        
+      case 'signedIn':
+        // Simulate successful authentication
+        if (signInState === 'pinEntry') {
+          event = { 
+            type: 'PIN_VERIFIED', 
+            session: {
+              accessToken: 'demo_token_' + Date.now(),
+              user: { 
+                id: 'demo_user',
+                email: testEmail || emailInput || 'demo@example.com',
+                name: 'Demo User' 
+              }
+            }
+          };
+        } else if (signInState === 'passkeyPrompt') {
+          event = { 
+            type: 'PASSKEY_SUCCESS', 
+            credential: {
+              accessToken: 'demo_token_' + Date.now(),
+              user: { 
+                id: 'demo_user',
+                email: testEmail || emailInput || 'demo@example.com',
+                name: 'Demo User' 
+              }
+            }
+          };
+        }
+        break;
+        
+      case 'passkeyRegistration':
+        // Start passkey registration
+        if (signInState === 'signedIn') {
+          event = { type: 'REGISTER_PASSKEY' };
+        }
+        break;
+        
+      case 'generalError':
+        // Simulate error
+        event = { 
+          type: 'ERROR', 
+          error: {
+            code: 'DEMO_ERROR',
+            message: 'Demo error triggered from state machine click',
+            type: 'demo',
+            retryable: true
+          }
+        };
+        break;
+    }
+    
+    if (event) {
+      console.log('🚀 Sending event to auth store:', event);
+      const newState = authStore.sendSignInEvent(event);
+      console.log('✅ State transition complete:', signInState, '->', newState);
+    } else {
+      console.log('⚠️ No valid transition from', signInState, 'to', clickedState);
+    }
+  } catch (error) {
+    console.error('❌ Error in state transition:', error);
+  }
 }
 
 function hasValidPin(state) {
@@ -874,17 +997,22 @@ $: if (dynamicAuthConfig) {
                   </div>
 
                   <!-- Sign-In State Machine (Simplified) -->
-                  {#if SignInStateMachineComponent}
+                  {#if SignInStateMachineComponent && authStore?.signInMachine}
                     <div class="machine-section">
                       <svelte:component this={SignInStateMachineComponent}
                         currentSignInState={signInState}
+                        signInMachine={authStore.signInMachine}
                         width={600}
                         height={300}
                         onStateClick={(state) => {
                           console.log('Sign-in state clicked:', state);
+                          handleSignInStateClick(state);
                         }}
                         on:stateClick={(e) => {
                           console.log('Sign-in state clicked event:', e.detail);
+                          if (e.detail && e.detail.state) {
+                            handleSignInStateClick(e.detail.state);
+                          }
                         }}
                       />
                     </div>
@@ -1406,6 +1534,109 @@ $: if (dynamicAuthConfig) {
         </div>
       </div>
     
+    {:else if selectedDemo === 'signin-machine'}
+      <div class="content-section">
+        <h2>Interactive SignIn State Machine</h2>
+        <p>Click on states in the diagram below to trigger actual state transitions in the global auth store:</p>
+        
+        <div class="machine-status-grid">
+          <div class="state-card card">
+            <div class="card-header">
+              <h4>Current SignIn State</h4>
+            </div>
+            <div class="card-body">
+              <div class="state-value current-signin-state">
+                {signInState || 'emailEntry'}
+              </div>
+              <div class="state-info-small">
+                Click any state in the diagram to transition
+              </div>
+            </div>
+          </div>
+          
+          <div class="quick-actions card">
+            <div class="card-header">
+              <h4>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+              <div class="action-buttons">
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('emailEntry')}>
+                  🔄 Reset to Start
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('userChecked')}>
+                  👤 Check User
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('pinEntry')}>
+                  📧 Send PIN
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('signedIn')}>
+                  ✅ Sign In
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive SignIn State Machine Diagram -->
+        <div class="machine-diagram-section card">
+          <div class="card-header">
+            <h4>Interactive State Flow Diagram</h4>
+            <p class="text-secondary">Click any state to trigger that transition • Current state is highlighted</p>
+          </div>
+          <div class="card-body">
+            {#if SignInStateMachineComponent && authStore?.signInMachine}
+              <div class="signin-machine-container">
+                <svelte:component this={SignInStateMachineComponent}
+                  currentSignInState={signInState}
+                  signInMachine={authStore.signInMachine}
+                  width={800}
+                  height={400}
+                  compact={false}
+                  enableZoom={true}
+                  onStateClick={(state) => {
+                    console.log('🎯 Interactive state clicked:', state);
+                    handleSignInStateClick(state);
+                  }}
+                  on:stateClick={(e) => {
+                    if (e.detail && e.detail.state) {
+                      console.log('🎯 Interactive state event:', e.detail.state);
+                      handleSignInStateClick(e.detail.state);
+                    }
+                  }}
+                />
+              </div>
+            {:else}
+              <div class="loading-state">
+                <p>Loading interactive state machine...</p>
+                <p class="text-secondary">Initializing SignIn state machine visualization</p>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Event Log for Debugging -->
+        <div class="event-log card">
+          <div class="card-header">
+            <h4>State Transition Log</h4>
+            <p class="text-secondary">Monitor state changes and events in real-time</p>
+          </div>
+          <div class="card-body">
+            <div class="log-instructions">
+              <p><strong>How to use:</strong></p>
+              <ul>
+                <li>🎯 <strong>Click any state</strong> in the diagram above to trigger a transition</li>
+                <li>📊 <strong>Watch the current state</strong> update in real-time</li>
+                <li>🔍 <strong>Open browser console</strong> to see detailed event logs</li>
+                <li>🔄 <strong>Use quick actions</strong> for common transitions</li>
+              </ul>
+              <p class="current-state-display">
+                Current State: <code class="signin-state-code">{signInState}</code>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     {:else if selectedDemo === 'register'}
       <div class="content-section">
         <h2>Registration Flow Demo</h2>
@@ -2985,36 +3216,99 @@ $: if (dynamicAuthConfig) {
     margin-bottom: 0;
   }
 
+  /* Interactive SignIn Machine Styles */
+  .machine-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .current-signin-state {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    padding: 0.5rem;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-family: monospace;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .action-buttons .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .machine-diagram-section {
+    margin-bottom: 2rem;
+  }
+
+  .signin-machine-container {
+    background: #fafafa;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .event-log {
+    background: var(--color-background-secondary);
+  }
+
+  .log-instructions {
+    line-height: 1.6;
+  }
+
+  .log-instructions ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .log-instructions li {
+    margin-bottom: 0.5rem;
+  }
+
+  .current-state-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--color-background);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--color-primary);
+  }
+
+  .signin-state-code {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .machine-status-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .action-buttons .btn {
+      min-width: 100px;
+    }
+  }
+
   @media (max-width: 1200px) {
     .machine-grid {
       grid-template-columns: 1fr;
     }
-  }
-  
-  .diagram-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.75rem;
-    background: var(--background-muted);
-    border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
-  }
-  
-  .diagram-controls .control-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .diagram-controls input[type="checkbox"] {
-    margin: 0;
-  }
-  
-  .diagram-controls .form-select {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9rem;
-    min-width: 150px;
   }
 
   .state-info {
@@ -3058,11 +3352,6 @@ $: if (dynamicAuthConfig) {
     color: var(--text-secondary);
     line-height: 1.6;
     margin: 0;
-  }
-
-  .state-description strong {
-    color: var(--text-primary);
-    font-weight: 600;
   }
 
   .state-display {

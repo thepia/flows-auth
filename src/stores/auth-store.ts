@@ -8,6 +8,7 @@ import { writable, derived, get } from 'svelte/store';
 // Check if running in browser
 const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
+import { SignInStateMachine } from './signin-state-machine';
 import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
 import {
@@ -119,7 +120,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
   const store = writable<AuthStore>(initialState);
   
-  // Note: Removed state machine store - now using direct signInState management
+  // Create SignInStateMachine instance for state machine visualization and logic
+  const signInMachine = new SignInStateMachine(config);
 
   // Event handlers
   const eventHandlers = new Map<AuthEventType, ((data: AuthEventData) => void)[]>();
@@ -1689,7 +1691,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     updateStorageConfiguration,
     migrateSession,
     
-    // Note: Removed state machine interface - now using direct signInState management
+    // SignIn State Machine for visualization and advanced state management
+    signInMachine,
     
     // Cleanup
     destroy: () => {

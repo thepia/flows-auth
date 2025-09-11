@@ -5,6 +5,7 @@
 
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthStateMachine } from '../stores/auth-state-machine';
+import type { SignInStateMachine } from '../stores/signin-state-machine';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 import type { SignInEvent, SignInState } from './signin-state-machine';
 
@@ -628,7 +629,8 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
   migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
 
-  // Note: Removed state machine interface - now using direct signInState management
+  // SignIn State Machine for visualization and advanced state management
+  signInMachine: SignInStateMachine;
 
   // Cleanup
   destroy: () => void;

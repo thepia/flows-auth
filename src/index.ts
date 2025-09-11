@@ -18,10 +18,10 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 // Development components
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
 export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte'; // AuthState visualization
+export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte'; // SignInState visualization
 
 // Removed: Debugging/visualization components moved to demo applications
 // - StateMachineFlow - legacy state machine visualization  
-// - SignInStateMachineFlow - SignInState visualization
 // - ProfessionalStateMachine - advanced state machine visualization
 
 // Core granular components

@@ -57,7 +57,18 @@ describe('Auth Store Singleton Architecture', () => {
     globalStore.sendSignInEvent({ type: 'USER_CHECKED', email: 'test@example.com', exists: true, hasPasskey: false });
     
     // The isolated store won't see this change - this is the root cause of sidebar issues
-    expect(globalStore.currentState.signInState).not.toBe(isolatedStore.currentState.signInState);
+    // Get current states from stores using the Svelte store interface
+    let globalStoreState: any;
+    let isolatedStoreState: any;
+    
+    const unsubGlobal = globalStore.subscribe(state => { globalStoreState = state; });
+    const unsubIsolated = isolatedStore.subscribe(state => { isolatedStoreState = state; });
+    
+    expect(globalStoreState.signInState).not.toBe(isolatedStoreState.signInState);
+    
+    // Clean up subscriptions
+    unsubGlobal();
+    unsubIsolated();
   });
 
   it('should demonstrate correct shared store pattern', () => {

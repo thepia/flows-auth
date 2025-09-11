@@ -2,9 +2,10 @@
   SessionStateMachineFlow - Auth State visualization using Svelte Flow
 -->
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import { writable } from 'svelte/store';
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
+  import { createEventDispatcher } from 'svelte';
 
   export let authState = 'unauthenticated';
   export let width = 600;
@@ -13,13 +14,10 @@
 
   const dispatch = createEventDispatcher();
 
-  let nodes = [];
-  let edges = [];
-
   const authStateCategories = {
     lifecycle: {
       color: '#3b82f6',
-      states: ['unauthenticated', 'loading', 'authenticated']
+      states: ['unauthenticated', 'authenticated']
     },
     verification: {
       color: '#8b5cf6', 
@@ -31,19 +29,21 @@
     }
   };
 
-  const authStateEdges = [
-    { source: 'unauthenticated', target: 'loading' },
-    { source: 'loading', target: 'authenticated' },
-    { source: 'loading', target: 'error' },
-    { source: 'loading', target: 'unauthenticated' },
-    { source: 'loading', target: 'authenticated-unconfirmed' },
-    { source: 'authenticated-unconfirmed', target: 'authenticated-confirmed' },
-    { source: 'authenticated-unconfirmed', target: 'authenticated' },
-    { source: 'error', target: 'loading' },
-    { source: 'error', target: 'unauthenticated' },
-    { source: 'authenticated', target: 'unauthenticated' },
-    { source: 'authenticated-confirmed', target: 'unauthenticated' },
-    { source: 'authenticated-unconfirmed', target: 'unauthenticated' }
+  // Simplified transitions without loading state
+  const authStateTransitions = [
+    // Direct authentication transitions
+    { source: 'unauthenticated', target: 'authenticated', event: 'SIGN_IN_SUCCESS' },
+    { source: 'unauthenticated', target: 'authenticated-unconfirmed', event: 'SIGN_IN_UNVERIFIED' },
+    { source: 'unauthenticated', target: 'error', event: 'SIGN_IN_ERROR' },
+    
+    // From authenticated states  
+    { source: 'authenticated', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-confirmed', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-unconfirmed', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-unconfirmed', target: 'authenticated-confirmed', event: 'EMAIL_VERIFIED' },
+    
+    // Error recovery
+    { source: 'error', target: 'unauthenticated', event: 'RESET' }
   ];
 
   function formatStateName(state) {
@@ -63,54 +63,99 @@
     return { category: 'unknown', color: '#64748b', states: [] };
   }
 
-  function createFlowData() {
+  function createStaticFlowData() {
     const flowNodes = Object.entries(authStateCategories)
       .flatMap(([categoryName, config]) => 
         config.states.map((state, index) => {
-          const isCurrentState = authState === state;
           const categoryIndex = Object.keys(authStateCategories).indexOf(categoryName);
           
           return {
             id: state,
+            type: 'default',
             position: { 
-              x: (index * 180) + (categoryIndex * 50), 
-              y: categoryIndex * 100 + 50 
+              x: Math.max(0, (index * 160) + (categoryIndex * 40)), 
+              y: Math.max(0, categoryIndex * 80 + 50)
             },
             data: { 
               label: formatStateName(state)
             },
-            style: {
-              background: config.color,
-              border: `3px solid ${isCurrentState ? '#fbbf24' : 'transparent'}`,
-              color: 'white',
-              fontWeight: isCurrentState ? '600' : '500',
-              fontSize: '12px',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              minWidth: '140px',
-              textAlign: 'center',
-              boxShadow: isCurrentState ? '0 0 0 2px rgba(251, 191, 36, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
-              ...(isCurrentState && { animation: 'pulse 2s infinite' })
-            }
+            className: 'auth-node' // Static class for all nodes
           };
         })
       );
 
-    const flowEdges = authStateEdges.map((edge, index) => ({
-      id: `edge-${edge.source}-${edge.target}-${index}`,
-      source: edge.source,
-      target: edge.target,
-      style: { 
-        stroke: '#94a3b8', 
-        strokeWidth: 2 
+    const flowEdges = authStateTransitions.map((transition, index) => ({
+      id: `edge-${transition.source}-${transition.target}-${index}`,
+      source: transition.source,
+      target: transition.target,
+      type: 'default',
+      label: transition.event,
+      labelStyle: {
+        fontSize: '10px',
+        fill: '#374151',
+        fontWeight: '500'
       },
-      markerEnd: {
-        type: 'arrowclosed',
-        color: '#94a3b8'
+      labelBgStyle: {
+        fill: 'white',
+        fillOpacity: 0.8
       }
     }));
 
     return { nodes: flowNodes, edges: flowEdges };
+  }
+
+  // Create complete state machine data using bind pattern
+  function createFlowData() {
+    const flowNodes = Object.entries(authStateCategories)
+      .flatMap(([categoryName, config]) => 
+        config.states.map((state, index) => {
+          const categoryIndex = Object.keys(authStateCategories).indexOf(categoryName);
+          
+          return {
+            id: state,
+            type: 'default',
+            position: { 
+              x: Math.max(0, (index * 160) + (categoryIndex * 40)), 
+              y: Math.max(0, categoryIndex * 80 + 50)
+            },
+            data: { 
+              label: formatStateName(state)
+            },
+            className: 'auth-node'
+          };
+        })
+      );
+
+    const flowEdges = authStateTransitions.map((transition, index) => ({
+      id: `edge-${transition.source}-${transition.target}-${index}`,
+      source: transition.source,
+      target: transition.target,
+      type: 'default',
+      label: transition.event,
+      labelStyle: {
+        fontSize: '10px',
+        fill: '#374151',
+        fontWeight: '500'
+      },
+      labelBgStyle: {
+        fill: 'white',
+        fillOpacity: 0.8
+      }
+    }));
+
+    return { nodes: flowNodes, edges: flowEdges };
+  }
+
+  // Create stores for v0.1.30 API
+  const flowData = createFlowData();
+  const nodes = writable(flowData.nodes);
+  const edges = writable(flowData.edges);
+
+  // Update nodes when authState changes
+  $: {
+    const updatedFlowData = createFlowData();
+    nodes.set(updatedFlowData.nodes);
+    edges.set(updatedFlowData.edges);
   }
 
   function handleNodeClick(event) {
@@ -122,11 +167,7 @@
     dispatch('stateClick', { state: nodeId });
   }
 
-  $: {
-    const flowData = createFlowData();
-    nodes = flowData.nodes;
-    edges = flowData.edges;
-  }
+  $: currentStateClass = `current-state-${authState}`;
 </script>
 
 <div class="auth-state-flow" style="width: {width}px; height: {height}px;">
@@ -137,15 +178,14 @@
     </div>
   </div>
 
-  <div class="flow-container" style="height: {height - 60}px;">
+  <div class="flow-container {currentStateClass}" style="height: {height - 60}px;">
     <SvelteFlow 
-      {nodes} 
+      {nodes}
       {edges}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={true}
       fitView={true}
-      fitViewOptions={{ padding: 20 }}
       on:nodeclick={handleNodeClick}
     >
       <Controls />
@@ -253,6 +293,50 @@
 
   .legend-color.errors {
     background-color: #ef4444;
+  }
+
+  /* Svelte Flow node styling */
+  :global(.svelte-flow__node.auth-node) {
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 8px;
+    width: 120px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 2px solid transparent;
+  }
+
+  /* Dynamic state highlighting using CSS selectors */
+  .current-state-unauthenticated :global(.svelte-flow__node[data-id="unauthenticated"]),
+  .current-state-loading :global(.svelte-flow__node[data-id="loading"]),  
+  .current-state-authenticated :global(.svelte-flow__node[data-id="authenticated"]),
+  .current-state-authenticated-unconfirmed :global(.svelte-flow__node[data-id="authenticated-unconfirmed"]),
+  .current-state-authenticated-confirmed :global(.svelte-flow__node[data-id="authenticated-confirmed"]),
+  .current-state-error :global(.svelte-flow__node[data-id="error"]) {
+    border: 2px solid #fbbf24 !important;
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+    animation: pulse 2s infinite;
+  }
+
+  :global(.svelte-flow__edge path) {
+    stroke: #94a3b8;
+    stroke-width: 2;
+  }
+
+  :global(.svelte-flow__edge .svelte-flow__edge-path) {
+    stroke: #94a3b8;
+    stroke-width: 2;
+  }
+
+  :global(.svelte-flow__arrowhead) {
+    fill: #94a3b8;
   }
 
   @keyframes pulse {

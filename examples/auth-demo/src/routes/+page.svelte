@@ -1,26 +1,39 @@
 <script>
 import { browser } from '$app/environment';
-import { onMount, getContext } from 'svelte';
+import { onMount } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus } from '@thepia/flows-auth';
 
-// Use singleton auth store pattern
-let authStoreFromContext = null;
-let authConfigFromSingleton = null;
+// ✅ RECEIVE AUTH STORE VIA PROPS (explicit prop passing pattern)
+export let authStore = null;
+export let isAuthenticated = false;
+export let user = null;
 
-// Component state
-let authStore = null;
-let authConfig = null;
+// Optional SvelteKit props
+export let params = {};
+
+// Component state  
 let currentUser = null;
-let isAuthenticated = false;
-let authState = 'loading';
+let authState = 'unauthenticated'; // Start with unauthenticated, not loading
 let stateMachineState = null;
 let stateMachineContext = null;
+let authSubscribed = false;
 
-// State Machine components
-// Removed: ProfessionalStateMachine - no longer exported from library
+// Static auth config for display purposes
+let authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'demo', 
+  domain: 'thepia.net',
+  enablePasskeys: false,
+  enableMagicLinks: true,
+  branding: { companyName: 'Auth Demo' }
+};
+
+// State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = null;
 let SignInStateMachineComponent = null;
+let SignInFormComponent = null;
+let SignInCoreComponent = null;
 
 // Demo controls
 let selectedDemo = 'overview';
@@ -155,55 +168,35 @@ const demoSections = [
   { id: 'state-machine', title: 'State Machine', icon: Settings },
 ];
 
-// Load StateMachineFlow as soon as possible
 onMount(async () => {
   if (!browser) return;
   
   console.log('🎯 Demo page initializing...');
   
-  // Load state machine components for immediate rendering
-  const loadComponentPromise = import('@thepia/flows-auth').then((module) => {
-    const { SessionStateMachineFlow, SignInStateMachineFlow } = module;
+  try {
+    // Single dynamic import for all components
+    const authModule = await import('@thepia/flows-auth');
+    const {
+      SessionStateMachineFlow,
+      SignInStateMachineFlow,
+      SignInForm,
+      SignInCore
+    } = authModule;
+    
+    // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
-    // Note: ProfessionalStateMachine removed from library exports
-    console.log('State machine components loaded (simplified)');
-  });
-  
-  try {
-    // Load auth store (simplified - no more dual machine)
-    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
+    SignInFormComponent = SignInForm;
+    SignInCoreComponent = SignInCore;
     
-    console.log('✅ Auth store imports loaded - no dual machine needed');
+    console.log('✅ Auth components loaded dynamically');
     
-    // Separately wait for layout to initialize the global auth store (for demo UI)
-    let attempts = 0;
-    while (!authStore && attempts < 10) {
-      try {
-        authStore = getGlobalAuthStore();
-        break; // Success - exit loop
-      } catch (error) {
-        // Auth store not yet initialized, wait and try again
-        await new Promise(resolve => setTimeout(resolve, 25));
-        attempts++;
-      }
-    }
-    
-    if (!authStore) {
-      console.warn('⚠️ Global auth store not available for demo UI');
-    }
-    
-    // Only configure global auth store if it's available
+    // Use auth store passed from layout (explicit prop passing pattern per ADR 0004)
     if (authStore) {
-      console.log('🔐 Auth store retrieved using proper pattern');
-      
-      // Get config from global singleton
-      authConfig = getGlobalAuthConfig();
-      console.log('⚙️ Auth config retrieved from singleton');
+      console.log('🔐 Auth store available from props');
       
       // Subscribe to auth state changes
       authStore.subscribe((state) => {
-        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
         currentUser = state.user;
         authState = state.state;
         console.log('📊 Auth state update:', { 
@@ -223,8 +216,10 @@ onMount(async () => {
           console.log('🔧 State machine update:', { state: sm.state });
         });
       }
+      
+      console.log('✅ Auth store subscriptions configured');
     } else {
-      console.log('📝 Demo initialized with visualization-only mode (no global auth store)');
+      console.log('⏳ Auth store not yet available - will be provided by layout');
     }
     
     console.log('✅ Demo page initialization complete');
@@ -233,6 +228,31 @@ onMount(async () => {
     console.error('❌ Failed to initialize demo page:', error);
   }
 });
+
+// Reactive subscription to auth store when it becomes available
+$: if (authStore && !authSubscribed) {
+  console.log('🔄 Setting up auth store subscriptions reactively');
+  
+  // Subscribe to auth state changes
+  authStore.subscribe((state) => {
+    currentUser = state.user;
+    authState = state.state;
+    console.log('📊 Reactive auth state update:', { 
+      state: state.state, 
+      user: !!state.user 
+    });
+  });
+  
+  // Subscribe to state machine updates if available
+  if (authStore.stateMachine) {
+    authStore.stateMachine.subscribe((sm) => {
+      stateMachineState = sm.state;
+      stateMachineContext = sm.context;
+    });
+  }
+  
+  authSubscribed = true;
+}
 
 // Demo actions
 async function testPasskeySignIn() {
@@ -363,8 +383,6 @@ function selectDemo(sectionId) {
 }
 
 async function updateDomain() {
-  if (!authConfig) return;
-  
   // Update the auth config with new domain
   authConfig.domain = currentDomain;
   console.log('🌐 Updated domain to:', currentDomain);
@@ -494,7 +512,8 @@ function handleSignInStateClick(clickedState) {
   console.log('🎯 State machine clicked:', clickedState, 'Current state:', signInState);
   
   if (!authStore) {
-    console.warn('No auth store available for state transition');
+    console.warn('No auth store available for state transition - store is still initializing');
+    console.log('Auth store status:', { authStore, isAuthenticated, user });
     return;
   }
 
@@ -997,11 +1016,10 @@ $: if (dynamicAuthConfig) {
                   </div>
 
                   <!-- Sign-In State Machine (Simplified) -->
-                  {#if SignInStateMachineComponent && authStore?.signInMachine}
+                  {#if SignInStateMachineComponent}
                     <div class="machine-section">
                       <svelte:component this={SignInStateMachineComponent}
                         currentSignInState={signInState}
-                        signInMachine={authStore.signInMachine}
                         width={600}
                         height={300}
                         onStateClick={(state) => {
@@ -1024,27 +1042,7 @@ $: if (dynamicAuthConfig) {
                   <p class="text-secondary">The state machines are initializing...</p>
                 </div>
               {/if}
-            </div>
-            
-            <div class="state-info">
-              <div class="state-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Current State:</span>
-                  <span class="stat-value">{stateMachineState || 'checkingSession'}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Total States:</span>
-                  <span class="stat-value">26</span>
-                </div>
-                {#if stateMachineContext}
-                  <div class="stat-item">
-                    <span class="stat-label">Has Context:</span>
-                    <span class="stat-value">Yes</span>
-                  </div>
-                {/if}
-              </div>
-
-            </div>
+            </div>            
           </div>
         </div>
         
@@ -1312,8 +1310,8 @@ $: if (dynamicAuthConfig) {
             {#if authStore && dynamicAuthConfig}
               {#if useSignInForm && formVariant === 'popup'}
                 <!-- Popup SignInForm - no card wrapper to avoid double borders -->
-                {#await import('@thepia/flows-auth') then { SignInForm }}
-                  <SignInForm 
+                {#if browser && SignInFormComponent}
+                  <svelte:component this={SignInFormComponent} 
                     config={dynamicAuthConfig}
                     initialEmail={emailInput}
                     size={formSize}
@@ -1324,11 +1322,11 @@ $: if (dynamicAuthConfig) {
                     on:error={(e) => handleSignInError(e.detail)}
                     on:stepChange={(e) => handleStepChange(e.detail)}
                   />
-                {:catch error}
-                  <div class="signin-error">
-                    <p>Failed to load SignInForm: {error.message}</p>
+                {:else}
+                  <div class="signin-loading">
+                    <p>Loading SignInForm...</p>
                   </div>
-                {/await}
+                {/if}
               {:else}
                 <!-- Inline components with card wrapper -->
                 <div class="signin-demo card">
@@ -1344,8 +1342,8 @@ $: if (dynamicAuthConfig) {
                   </div>
                   <div class="card-body">
                     {#if useSignInForm}
-                      {#await import('@thepia/flows-auth') then { SignInForm }}
-                        <SignInForm 
+                      {#if browser && SignInFormComponent}
+                        <svelte:component this={SignInFormComponent} 
                           config={dynamicAuthConfig}
                           initialEmail={emailInput}
                           size={formSize}
@@ -1357,15 +1355,15 @@ $: if (dynamicAuthConfig) {
                           on:stepChange={(e) => handleStepChange(e.detail)}
                           on:close={handleSignInClose}
                         />
-                      {:catch error}
-                        <div class="signin-error">
-                          <p>Failed to load SignInForm: {error.message}</p>
+                      {:else}
+                        <div class="signin-loading">
+                          <p>Loading SignInForm...</p>
                         </div>
-                      {/await}
+                      {/if}
                     {:else}
-                      {#await import('@thepia/flows-auth') then { SignInCore }}
+                      {#if browser && SignInCoreComponent}
                         <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
-                          <SignInCore 
+                          <svelte:component this={SignInCoreComponent} 
                             config={dynamicAuthConfig}
                             authStore={authStore}
                             initialEmail={emailInput}
@@ -1375,11 +1373,11 @@ $: if (dynamicAuthConfig) {
                             on:stepChange={(e) => handleStepChange(e.detail)}
                           />
                         </div>
-                      {:catch error}
-                        <div class="signin-error">
-                          <p>Failed to load SignInForm: {error.message}</p>
+                      {:else}
+                        <div class="signin-loading">
+                          <p>Loading SignInCore...</p>
                         </div>
-                      {/await}
+                      {/if}
                     {/if}
                   </div>
                 </div>
@@ -1584,11 +1582,10 @@ $: if (dynamicAuthConfig) {
             <p class="text-secondary">Click any state to trigger that transition • Current state is highlighted</p>
           </div>
           <div class="card-body">
-            {#if SignInStateMachineComponent && authStore?.signInMachine}
+            {#if SignInStateMachineComponent}
               <div class="signin-machine-container">
                 <svelte:component this={SignInStateMachineComponent}
                   currentSignInState={signInState}
-                  signInMachine={authStore.signInMachine}
                   width={800}
                   height={400}
                   compact={false}

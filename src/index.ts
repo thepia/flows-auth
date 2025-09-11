@@ -19,10 +19,7 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
 export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte'; // AuthState visualization
 export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte'; // SignInState visualization
-
-// Removed: Debugging/visualization components moved to demo applications
-// - StateMachineFlow - legacy state machine visualization  
-// - ProfessionalStateMachine - advanced state machine visualization
+export { default as TestFlow } from './components/TestFlow.svelte'; // Simple test component
 
 // Core granular components
 export { 
@@ -35,8 +32,6 @@ export {
 // State Machine
 export { AuthActions, AuthGuards, AuthStateMachine } from './stores/auth-state-machine';
 
-// State machines (keeping only SignInStateMachine)
-export { SignInStateMachine } from './stores/signin-state-machine';
 
 // Stores
 export {

@@ -5,12 +5,10 @@
 
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthStateMachine } from '../stores/auth-state-machine';
-import type { SignInStateMachine } from '../stores/signin-state-machine';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
-import type { SignInEvent, SignInState } from './signin-state-machine';
-
-// Export signin state machine types first so they can be used in AuthStore
-export * from './signin-state-machine';
+// SignIn state types (keeping only the types, removed the class)
+import type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError } from './signin-state-machine';
+export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
 
 // User types
 export interface User {
@@ -30,7 +28,6 @@ export type AuthState =
   | 'authenticated-unconfirmed' // Has passkey but email not verified
   | 'authenticated-confirmed' // Full access after email verification
   | 'authenticated' // Generic authenticated state for backward compatibility
-  | 'loading'
   | 'error';
 
 export type AuthMethod = 'passkey' | 'magic-link' | 'email-code';
@@ -530,21 +527,6 @@ export interface AuthStore {
   error: AuthError | null;
 }
 
-// Auth store methods - passwordless only with strict typing
-export type AuthStoreMethods = {
-  signIn: (request: SignInRequest) => Promise<SignInResponse>;
-  signInWithPasskey: (request: PasskeyRequest) => Promise<SignInResponse>;
-  signInWithMagicLink: (request: MagicLinkRequest) => Promise<SignInResponse>;
-  signOut: () => Promise<void>;
-  refreshTokens: () => Promise<void>;
-  isAuthenticated: () => boolean;
-  getAccessToken: () => string | null;
-  reset: () => void;
-
-  // Convenience methods for backward compatibility
-  signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
-};
-
 // Svelte store types
 export type Unsubscriber = () => void;
 export type Subscriber<T> = (value: T) => void;
@@ -628,9 +610,6 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   getApplicationContext: () => ApplicationContext | null;
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
   migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
-
-  // SignIn State Machine for visualization and advanced state management
-  signInMachine: SignInStateMachine;
 
   // Cleanup
   destroy: () => void;

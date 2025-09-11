@@ -6,6 +6,7 @@
 <script lang="ts">
 import { createEventDispatcher, onMount } from 'svelte';
 import { createAuthStore } from '../../stores/auth-store';
+import { useAuth } from '../../utils/auth-context';
 import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 import { getI18n } from '../../utils/i18n';
@@ -50,8 +51,17 @@ const dispatch = createEventDispatcher<{
   stepChange: { step: string };
 }>();
 
-// Auth store - Use provided authStore or create from config for backward compatibility
-const store: ReturnType<typeof createAuthStore> = authStore || createAuthStore(config);
+// Auth store - Use context store, provided authStore, or create from config (backward compatibility)
+const store: ReturnType<typeof createAuthStore> = (() => {
+  // First try to use context store (preferred pattern per ADR 0004)
+  try {
+    return useAuth();
+  } catch {
+    // Fallback to provided authStore or create new one (backward compatibility)
+    console.warn('⚠️ SignInCore: Using fallback auth store. Consider using setAuthContext() in layout.');
+    return authStore || createAuthStore(config);
+  }
+})();
 
 // Component state
 // Extend SignInState with additional states needed by SignInCore

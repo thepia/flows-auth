@@ -5,6 +5,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { createAuthStore } from '../stores/auth-store';
+  import { useAuth } from '../utils/auth-context';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
   import { getWebAuthnDebugInfo, logWebAuthnDebugInfo } from '../utils/webauthn-debug';
   import { getI18n } from '../utils/i18n';
@@ -37,10 +38,19 @@
     close: {}; // New event for popup close
   }>();
 
-  // Auth store - Use provided authStore or create from config for backward compatibility
-  const store = authStore || (config ? createAuthStore(config) : (() => {
-    throw new Error('SignInForm: Must provide either authStore or config prop');
-  })());
+  // Auth store - Use context store, provided authStore, or create from config (backward compatibility)
+  const store = (() => {
+    // First try to use context store (preferred pattern per ADR 0004)
+    try {
+      return useAuth();
+    } catch {
+      // Fallback to provided authStore or create new one (backward compatibility)
+      console.warn('⚠️ SignInForm: Using fallback auth store. Consider using setAuthContext() in layout.');
+      return authStore || (config ? createAuthStore(config) : (() => {
+        throw new Error('SignInForm: Must provide either authStore or config prop, or use setAuthContext() in layout');
+      })());
+    }
+  })();
 
   // Get i18n instance - will use context if available, or create from config
   const i18nInstance = getI18n({

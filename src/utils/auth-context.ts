@@ -1,32 +1,46 @@
 /**
  * Auth Context Utilities for Svelte Components
  * 
- * Provides easy access to the global auth store from any component
- * without needing to pass stores down through props.
+ * Implements the context + store pattern recommended in ADR 0004.
+ * Provides SSR-safe auth store access with explicit component dependencies.
  * 
- * This is the Svelte equivalent of React Context for auth state.
+ * Usage:
+ * 1. Call setAuthContext(config) in root layout component
+ * 2. Use useAuth() in any child component to access the store
  */
 
 import { getContext, setContext } from 'svelte';
+import { createAuthStore } from '../stores/auth-store';
 import { getGlobalAuthStore, initializeAuth, assertAuthConfig, type GlobalAuthStore } from '../stores/global-auth-store';
 import type { AuthConfig } from '../types';
 
 const AUTH_CONTEXT_KEY = 'flows-auth-store';
 
 /**
- * Set the auth store in Svelte context (usually in +layout.svelte)
+ * Set the auth store in Svelte context (call in +layout.svelte)
+ * 
+ * Creates a new auth store instance scoped to the component tree.
+ * This is the preferred pattern per ADR 0004.
  * 
  * @param config - Auth configuration
- * @returns The initialized auth store
+ * @returns The created auth store
  */
 export function setAuthContext(config: AuthConfig): GlobalAuthStore {
-  const authStore = initializeAuth(config);
+  assertAuthConfig(config);
+  
+  // Create a new store instance for this context
+  const authStore = createAuthStore(config);
   setContext(AUTH_CONTEXT_KEY, authStore);
+  
+  console.log('🔐 Auth context initialized');
   return authStore;
 }
 
 /**
  * Get the auth store from Svelte context
+ * 
+ * Preferred method per ADR 0004 - provides explicit store dependencies.
+ * Falls back to global store for backward compatibility during migration.
  * 
  * @returns The auth store or throws error if not available
  */
@@ -34,13 +48,16 @@ export function getAuthContext(): GlobalAuthStore {
   const authStore = getContext<GlobalAuthStore>(AUTH_CONTEXT_KEY);
   
   if (!authStore) {
-    // Fallback to global store if context not available
+    // Temporary fallback to global store for migration compatibility
+    // TODO: Remove this fallback in next major version
     try {
+      console.warn('⚠️ Using legacy global auth store. Migrate to setAuthContext() in layout component.');
       return getGlobalAuthStore();
     } catch {
       throw new Error(
-        '🚨 Auth store not available in component context! ' +
-        'Make sure to call setAuthContext(config) in your root layout component.'
+        '🚨 Auth store not available! ' +
+        'Call setAuthContext(config) in your root layout component, or ' +
+        'use the legacy initializeAuth(config) for backward compatibility.'
       );
     }
   }
@@ -71,7 +88,7 @@ export function hasAuthContext(): boolean {
 /**
  * Hook-like function for Svelte components to access auth store
  * 
- * Usage in component:
+ * Recommended usage pattern per ADR 0004:
  * ```svelte
  * <script>
  *   import { useAuth } from '@thepia/flows-auth/utils/auth-context';

@@ -8,7 +8,6 @@ import { writable, derived, get } from 'svelte/store';
 // Check if running in browser
 const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
-import { SignInStateMachine } from './signin-state-machine';
 import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
 import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
 import {
@@ -119,9 +118,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   };
 
   const store = writable<AuthStore>(initialState);
-  
-  // Create SignInStateMachine instance for state machine visualization and logic
-  const signInMachine = new SignInStateMachine(config);
 
   // Event handlers
   const eventHandlers = new Map<AuthEventType, ((data: AuthEventData) => void)[]>();
@@ -368,7 +364,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     }
 
     if (!conditional) {
-      updateState({ state: 'loading', error: null });
+      updateState({ error: null }); // Clear errors but don't change state
       emit('sign_in_started', { method: 'passkey' });
       reportAuthState({
         event: 'webauthn-start',
@@ -528,7 +524,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   async function signInWithMagicLink(email: string): Promise<SignInResponse> {
     const startTime = Date.now();
     
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('sign_in_started', { method: 'magic-link' });
     
     reportAuthState({
@@ -712,7 +708,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -787,7 +783,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     verificationRequired: boolean;
     message: string;
   }> {
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -810,7 +806,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       console.log('✅ Verification email sent');
 
       updateState({
-        state: 'loading', // Use valid AuthState
+        state: 'unauthenticated', // Not authenticated until email clicked
         user: null, // Not authenticated until email clicked
         error: null
       });
@@ -848,7 +844,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -1305,7 +1301,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       case 'checkingSession':
       case 'loadingApp':
         updateState({
-          state: 'loading',
+          // Don't change state during app loading
           error: null
         });
         break;
@@ -1538,7 +1534,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       };
     }
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('app_email_started', { email, appCode: getEffectiveAppCode() });
 
     try {
@@ -1586,7 +1582,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       throw new Error('Email code verification is only available with organization configuration. This email uses magic link authentication instead.');
     }
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('app_email_verify_started', { email, appCode: getEffectiveAppCode() });
 
     try {
@@ -1691,9 +1687,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     updateStorageConfiguration,
     migrateSession,
     
-    // SignIn State Machine for visualization and advanced state management
-    signInMachine,
-    
     // Cleanup
     destroy: () => {
       // Note: No longer need to unsubscribe from state machine
@@ -1710,7 +1703,7 @@ export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthS
     // Legacy derived stores
     user: derived(authStore, $auth => $auth.user),
     isAuthenticated: derived(authStore, $auth => $auth.state === 'authenticated'),
-    isLoading: derived(authStore, $auth => $auth.state === 'loading'),
+    isLoading: derived(authStore, () => false), // No loading state exists
     error: derived(authStore, $auth => $auth.error),
     
     // Sign-in state derived stores

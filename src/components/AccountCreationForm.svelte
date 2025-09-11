@@ -5,6 +5,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { createAuthStore } from '../stores/auth-store';
+  import { useAuth } from '../utils/auth-context';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
   import type { 
     AuthConfig, 
@@ -36,8 +37,17 @@ const dispatch = createEventDispatcher<{
   switchToSignIn: Record<string, never>;
 }>();
 
-  // Auth store
-  const authStore = createAuthStore(config);
+  // Auth store - Use context store or create from config (backward compatibility)
+  const authStore = (() => {
+    // First try to use context store (preferred pattern per ADR 0004)
+    try {
+      return useAuth();
+    } catch {
+      // Fallback to creating from config (backward compatibility)
+      console.warn('⚠️ AccountCreationForm: Using fallback auth store. Consider using setAuthContext() in layout.');
+      return createAuthStore(config);
+    }
+  })();
   
   // Track registration completion for auth store subscription
   let registrationCompleted = false;

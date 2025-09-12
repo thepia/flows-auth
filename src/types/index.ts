@@ -180,6 +180,8 @@ export interface AuthConfig {
   applicationContext?: ApplicationContext; // Optional application context for role hints
   appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
 
+  invitationToken?: string; // Optional invitation token for account creation permission
+
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
 
@@ -424,6 +426,7 @@ export interface AuthEventData {
   appCode?: string;
   success?: boolean;
   timestamp?: number;
+  requiresVerification?: boolean;
 }
 
 export type AuthEventType =

@@ -15,6 +15,7 @@ import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import EmailInput from './EmailInput.svelte';
 import CodeInput from './CodeInput.svelte';
+import AuthNewUserInfo from './AuthNewUserInfo.svelte';
 
 // Props
 export let config: AuthConfig;
@@ -95,6 +96,9 @@ let pinRemainingMinutes = 0;
 // Email code state
 let emailCode = '';
 let emailCodeSent = false;
+
+// Registration state
+let fullName = '';
 
 // WebAuthn state
 let platformAuthenticatorAvailable = false;
@@ -355,16 +359,28 @@ async function handleSignIn() {
         error = 'No account found for this email address. Please check your email or create an account.';
         loading = false;
         return;
-      } else {
-        // Transition to registration (not a SignInState, keep as local state change)
-        console.log('🔄 User not found - transitioning to registration');
-        loading = false;
-        sendSignInEvent({ 
-          type: 'USER_CHECKED', 
-          email: email.trim(), 
-          exists: false, 
-          hasPasskey: false 
-        });
+      } else if (fullName && fullName.trim()) {
+        // User has entered Full Name, create account
+        const [firstName, ...rest] = fullName.trim().split(' ');
+        const lastName = rest.join(' ');
+        
+        console.log('🔄 Creating account:', { email, firstName, lastName });
+        try {
+          await store.createAccount({
+            email: email.trim(),
+            firstName,
+            lastName,
+            acceptedTerms: false,
+            acceptedPrivacy: false,
+            invitationToken: config.invitationToken
+          });
+          await handleEmailCodeAuth();
+          loading = false;
+        } catch (registrationError: any) {
+          console.error('❌ Account creation failed:', registrationError);
+          error = registrationError.message || 'Failed to create account. Please try again.';
+          loading = false;
+        }
         return;
       }
     }
@@ -593,11 +609,21 @@ function resetForm() {
 
 // Determine authentication method and button configuration
 $: authMethodForUI = getAuthMethodForUI(config, supportsWebAuthn);
-$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, supportsWebAuthn, userExists, hasPasskeys, hasValidPin);
+$: isNewUserSignin = currentSignInState === 'userChecked' && !userExists && config.signInMode !== 'login-only';
+$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, supportsWebAuthn, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName);
 $: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebAuthn);
 
 // Keep track of last checked email to avoid duplicate calls
 let lastCheckedEmail = '';
+
+// Reactive statement to reset when email becomes empty
+$: if (!email.trim() && (currentSignInState === 'userChecked' || currentSignInState === 'pinEntry')) {
+  sendSignInEvent({ type: 'RESET' });
+  lastCheckedEmail = '';
+  userExists = false;
+  hasPasskeys = false;
+  hasValidPin = false;
+}
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
 $: if (email && config.appCode && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked') && email.trim() !== lastCheckedEmail) {
@@ -631,7 +657,7 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig, webAuthnSupported:
   return webAuthnSupported && authConfig.enablePasskeys;
 }
 
-function getButtonConfig(method: string, isLoading: boolean, emailValue: string, webAuthnSupported: boolean, userExists: boolean, hasPasskeys: boolean, hasValidPin: boolean) {
+function getButtonConfig(method: string, isLoading: boolean, emailValue: string, webAuthnSupported: boolean, userExists: boolean, hasPasskeys: boolean, hasValidPin: boolean, isNewUserSignin: boolean, fullName: string) {
   // Smart button configuration based on discovered user state
   let primaryMethod = method;
   let primaryText = $i18n('auth.signIn');
@@ -678,13 +704,21 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     }
   }
 
+  // Check if button should be disabled
+  let isDisabled = isLoading || !emailValue || !emailValue.trim();
+  
+  // If this is new user registration, require valid full name (3+ characters)
+  if (isNewUserSignin) {
+    isDisabled = isDisabled || !fullName || fullName.trim().length < 3;
+  }
+
   const buttonConfig = {
     primary: {
       method: primaryMethod,
       supportsWebAuthn: webAuthnSupported && primaryMethod === 'passkey',
       text: primaryText,
       loadingText: primaryLoadingText,
-      disabled: isLoading || !emailValue || !emailValue.trim()
+      disabled: isDisabled
     },
     secondary: secondaryAction
   };
@@ -694,10 +728,13 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     userExists,
     hasPasskeys,
     hasValidPin,
+    isNewUserSignin,
+    fullName: fullName ? `"${fullName}"` : 'empty',
     originalMethod: method,
     primaryMethod,
     primaryText,
     secondaryAction: secondaryAction ? secondaryAction.text : 'none',
+    disabled: isDisabled,
     config: buttonConfig
   });
   
@@ -741,6 +778,24 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
             </button>
           </span>
         </div>
+      {/if}
+
+      {#if currentSignInState === 'userChecked' && !userExists}
+        {#if config.signInMode === 'login-only'}
+          <AuthStateMessage
+            type="info"
+            message={$i18n('auth.onlyRegisteredUsers')}
+            showIcon={true}
+          />
+        {:else}
+          <!-- Registration form for new users -->
+          <AuthNewUserInfo
+            bind:fullName
+            disabled={loading}
+            error={null}
+            {i18n}
+          />
+        {/if}
       {/if}
       
       <div class="button-section">

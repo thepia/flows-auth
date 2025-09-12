@@ -509,14 +509,43 @@ export class AuthApiClient {
   }): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/create-user` : '/auth/register';
-    
-    return this.request<SignInResponse>(endpoint, {
+
+    const response = await this.request<{
+      success?: boolean;
+      user?: any;
+      message?: string;
+      step?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      expiresIn?: number;
+    }>(endpoint, {
       method: 'POST',
       body: JSON.stringify(userData),
       headers: {
         'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
     });
+
+    // Transform API response to SignInResponse format
+    if (response.success && response.user) {
+      // API returned {success: true, user: {...}} format
+      return {
+        step: 'success',
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn
+      };
+    } else if (response.step) {
+      // API returned legacy SignInResponse format
+      return response as SignInResponse;
+    } else {
+      // API returned error or unexpected format
+      return {
+        step: 'error',
+        user: undefined
+      };
+    }
   }
 
   /**

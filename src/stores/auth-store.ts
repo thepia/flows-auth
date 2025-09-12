@@ -172,6 +172,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       
       case 'userChecked':
         if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry'; // Transition to PIN entry after email sent
+        if (event.type === 'RESET') return 'emailEntry';
         break;
         
       case 'passkeyPrompt':
@@ -214,13 +215,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     let newSignInState: SignInState = 'emailEntry'; // Initialize with default
     store.update(s => {
       newSignInState = processSignInTransition(s.signInState, event);
-      console.log(`🔄 [AuthStore] SignIn transition: ${s.signInState} -> ${newSignInState} (${event.type})`);
-      console.log(`🔍 [AuthStore] Store update - before:`, { signInState: s.signInState, timestamp: new Date().toISOString() });
       const updatedStore = { ...s, signInState: newSignInState };
-      console.log(`🔍 [AuthStore] Store update - after:`, { signInState: updatedStore.signInState, timestamp: new Date().toISOString() });
       return updatedStore;
     });
-    console.log(`✅ [AuthStore] sendSignInEvent returning:`, newSignInState);
     return newSignInState;
   }
 
@@ -797,7 +794,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
       console.log('✅ User account created:', registrationResponse.user.id);
 
-      console.log('🔄 Sending verification email...');
       const magicLinkResponse = await api.startPasswordlessAuthentication(userData.email);
       
       if (!magicLinkResponse.success) {
@@ -831,11 +827,94 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   }
 
   /**
-   * Create account with passkey - Enhanced registration flow
+   * Create account without passkey - Simple registration flow
+   * Creates user account and sends email verification, no immediate authentication
+   */
+  async function createAccount(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
+    const startTime = Date.now();
+
+    updateState({ error: null }); // Clear errors but don't change state
+    emit('registration_started', { email: userData.email });
+
+    try {
+      reportAuthState({
+        event: 'registration-start',
+        email: userData.email,
+        context: { 
+          operation: 'createAccount',
+          hasInvitationToken: !!userData.invitationToken,
+          webauthnRequired: false
+        }
+      });
+
+      // Create user account via API
+      console.log('🔄 Creating user account without passkey...');
+      const registrationResponse = await api.registerUser(userData);
+
+      if (registrationResponse.step !== 'success' || !registrationResponse.user) {
+        throw new Error('Failed to create user account');
+      }
+
+      console.log('✅ User account created:', registrationResponse.user.id);
+
+      // Don't authenticate immediately, return the response for further processing
+      // The calling component will handle the next steps (e.g., email verification)
+      
+      reportAuthState({
+        event: 'registration-success',
+        email: userData.email,
+        userId: registrationResponse.user.id,
+        duration: Date.now() - startTime,
+        context: { 
+          operation: 'createAccount',
+          authenticated: false,
+          requiresEmailVerification: true
+        }
+      });
+
+      emit('registration_success', { 
+        user: registrationResponse.user,
+        requiresVerification: true 
+      });
+
+      return registrationResponse;
+    } catch (error: unknown) {
+      const authError: AuthError = {
+        code: (error as any)?.code || 'account_creation_failed',
+        message: (error as any)?.message || 'Failed to create user account'
+      };
+
+      reportAuthState({
+        event: 'registration-failure',
+        email: userData.email,
+        error: authError.message,
+        duration: Date.now() - startTime,
+        context: { 
+          operation: 'createAccount',
+          errorCode: (error as any)?.code
+        }
+      });
+
+      updateState({ state: 'error', error: authError });
+      emit('registration_error', { error: authError });
+      throw authError;
+    }
+  }
+
+  /**
+   * BROKEN: Create account with passkey - Enhanced registration flow
    * For now, this is an enhanced version of registerUser with better error handling
    * TODO: Implement full WebAuthn integration when API endpoints are confirmed
    */
-  async function createAccount(userData: {
+  // biome-ignore lint/correctness/noUnusedVariables: Broken function kept for reference
+  async function createAccountBroken(userData: {
     email: string;
     firstName?: string;
     lastName?: string;
@@ -854,7 +933,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         throw new Error('Passkey authentication is not supported on this device. Please use a device with biometric authentication.');
       }
 
-      const platformAvailable = await browser ? (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
+      const platformAvailable = browser ? await (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
       if (!platformAvailable) {
         throw new Error('No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.');
       }
@@ -1271,7 +1350,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   /**
    * Update legacy store based on state machine state
    */
+  // biome-ignore lint/correctness/noUnusedVariables: Legacy function kept for reference
   function updateLegacyStoreFromStateMachine(state: AuthMachineState, context: AuthMachineContext): void {
+    // biome-ignore lint/correctness/noUnusedVariables: Variable used in legacy patterns
     const currentStore = get(store);
     
     switch (state) {

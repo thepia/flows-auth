@@ -62,6 +62,13 @@ export const defaultTranslations = {
     'error.serviceUnavailable': 'Service is temporarily unavailable',
     'error.unknown': 'An unexpected error occurred',
     
+    // Auth state messages
+    'auth.onlyRegisteredUsers': 'Only registered users can sign in. Please contact support if you need access.',
+    'auth.fullName': 'Full Name',
+    'auth.fullNamePlaceholder': 'Enter your full name',
+    'auth.newUserTermsNotice': 'As a new user you will have to review and confirm the terms of service after signing-in via e-mail.',
+    'auth.signedInSuccess': 'Successfully signed in!',
+    
     // WebAuthn
     'webauthn.ready': '🔐 WebAuthn ready - Touch ID/Face ID will appear automatically',
     'webauthn.touchId': 'Touch ID',
@@ -196,6 +203,13 @@ export const defaultTranslations = {
     'error.invalidCredentials': 'Ugyldig e-mail eller godkendelse mislykkedes',
     'error.serviceUnavailable': 'Tjenesten er midlertidigt utilgængelig',
     'error.unknown': 'Der opstod en uventet fejl',
+    
+    // Auth state messages
+    'auth.onlyRegisteredUsers': 'Kun registrerede brugere kan logge ind. Kontakt support hvis du har brug for adgang.',
+    'auth.fullName': 'Fulde Navn',
+    'auth.fullNamePlaceholder': 'Indtast dit fulde navn',
+    'auth.newUserTermsNotice': 'Som ny bruger skal du gennemgå og bekræfte servicevilkårene efter login via e-mail.',
+    'auth.signedInSuccess': 'Du er nu logget ind!',
     
     // WebAuthn
     'webauthn.ready': '🔐 WebAuthn klar - Touch ID/Face ID vises automatisk',

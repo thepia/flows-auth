@@ -110,7 +110,7 @@ $: {
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
-let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'custom'
+let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'app.thepia.net', 'custom'
 let customTranslationOverrides = {}; // User-defined translation overrides
 let customTranslationsJson = '{}'; // JSON string for custom translations
 let customTranslationError = null; // Error message for invalid JSON
@@ -158,8 +158,29 @@ const clientVariants = {
       'auth.sendPinByEmail': 'Send secure medical verification'
     }
   },
+  'app.thepia.net': {
+    name: 'app.thepia.net',
+    companyName: 'Task Coordination',
+    translations: {
+      'signIn.title': 'Receiving Requests',
+      'signIn.description': 'Receive task lists and work requests directly from the coordinator.',
+      'signIn.descriptionGeneric': 'Receive task lists and work requests directly from the coordinator.',
+      'email.label': 'Personal e-mail',
+      'email.placeholder': 'Enter your personal email address',
+      'status.emailSent': "We'll send you a confirmation email to verify this address.",
+      'status.checkEmail': 'Check your email',
+      'auth.sendPinByEmail': 'Send Confirmation',
+      'auth.signIn': 'Send Confirmation',
+      'auth.loading': 'Sending...',
+      'auth.sendingPin': 'Sending confirmation...',
+      'status.signInSuccess': 'Confirmation sent successfully!',
+      'webauthn.ready': '🔐 Secure authentication ready',
+      'security.passwordlessExplanation': '🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email confirmation for enhanced security.',
+      'auth.signInWithPasskey': 'Continue with Touch ID/Face ID'
+    }
+  },
   custom: {
-    name: 'Custom Configuration',
+    name: 'Custom Configuration', 
     companyName: 'Your Company',
     translations: {} // Will be populated from textarea
   }
@@ -1240,6 +1261,10 @@ $: dynamicAuthConfig = authConfig ? {
                     <label class="radio-option">
                       <input type="radio" bind:group={selectedClientVariant} value="healthcare" />
                       <span>🏥 MedSecure Health</span>
+                    </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="app.thepia.net" />
+                      <span>📋 app.thepia.net</span>
                     </label>
                   </div>
                 </div>

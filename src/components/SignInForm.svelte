@@ -804,6 +804,7 @@
     font-weight: 700;
     color: var(--color-text-primary, #111827);
     margin: 0 0 8px 0;
+    text-align: left;
   }
 
   .step-description {
@@ -811,6 +812,7 @@
     color: var(--color-text-secondary, #4b5563);
     margin: 0;
     line-height: 1.625;
+    text-align: left;
   }
 
   .input-group {

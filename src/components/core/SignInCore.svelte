@@ -77,6 +77,8 @@ let currentSignInState: SignInState = $store.signInState;
 // Computed step: use localStep if set, otherwise use current signInState
 $: step = localStep || (currentSignInState as SignInCoreStep);
 
+
+
 // React to step changes and dispatch stepChange events
 $: if (step) {
   dispatch('stepChange', { step });
@@ -180,20 +182,20 @@ async function checkEmailForExistingPin(emailValue: string) {
       userExists = userCheck.exists;
       hasPasskeys = userCheck.hasWebAuthn;
       
-      console.log('🔍 Reactive pin check result:', { 
+      console.log('🔍 Reactive pin check result:', {
         email: emailValue.trim(),
         hasValidPin,
         lastPinExpiry: userCheck.lastPinExpiry,
         userExists,
         hasPasskeys
       });
-      
+
       // Send USER_CHECKED event to transition the state machine to userChecked state
-      sendSignInEvent({ 
-        type: 'USER_CHECKED', 
-        email: emailValue.trim(), 
-        exists: userCheck.exists, 
-        hasPasskey: userCheck.hasWebAuthn 
+      sendSignInEvent({
+        type: 'USER_CHECKED',
+        email: emailValue.trim(),
+        exists: userCheck.exists,
+        hasPasskey: userCheck.hasWebAuthn
       });
     } catch (error) {
       console.warn('Error in reactive email pin check:', error);
@@ -355,8 +357,6 @@ async function handleSignIn() {
 
   loading = true;
   error = null;
-  
-  // Don't send any event here - will send USER_CHECKED after checkUser completes
 
   try {
     // Check what auth methods are available for this email
@@ -639,7 +639,7 @@ $: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebA
 let lastCheckedEmail = '';
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (email && config.appCode && step === 'emailEntry' && email.trim() !== lastCheckedEmail) {
+$: if (email && config.appCode && (step === 'emailEntry' || step === 'userChecked') && email.trim() !== lastCheckedEmail) {
   checkEmailForExistingPin(email);
 }
 
@@ -837,6 +837,56 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
         {/if}
       </div>
     </form>
+
+  {:else if step === 'userChecked'}
+    <!-- Authentication Method Selection Step -->
+    <div class="auth-method-selection">
+      <div class="user-info">
+        <h3>Sign in as {email}</h3>
+        <p class="auth-instruction">Choose your authentication method:</p>
+      </div>
+      
+      <!-- Authentication options based on available methods -->
+      {#if hasPasskeys && supportsWebAuthn}
+        <button
+          type="button"
+          class="auth-method-button primary"
+          on:click={() => sendSignInEvent({ type: 'PASSKEY_AVAILABLE' })}
+          disabled={loading}
+        >
+          🔐 Use Passkey
+        </button>
+      {/if}
+      
+      {#if hasValidPin}
+        <button
+          type="button"
+          class="auth-method-button"
+          on:click={() => sendSignInEvent({ type: 'PIN_REQUESTED' })}
+          disabled={loading}
+        >
+          🔢 Enter PIN Code ({pinRemainingMinutes} min remaining)
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="auth-method-button"
+          on:click={() => sendSignInEvent({ type: 'EMAIL_VERIFICATION_REQUIRED' })}
+          disabled={loading}
+        >
+          📧 Send Email Verification
+        </button>
+      {/if}
+      
+      <button
+        type="button"
+        class="reset-button"
+        on:click={resetForm}
+        disabled={loading}
+      >
+        ← Back to email entry
+      </button>
+    </div>
 
   {:else if step === 'pinEntry'}
     <!-- Email Code Input Step -->

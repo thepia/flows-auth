@@ -1,6 +1,8 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
+import { writable } from 'svelte/store';
+import { setContext } from 'svelte';
 import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
 import '../app.css';
 import '@thepia/flows-auth/dist/style.css';
@@ -15,18 +17,21 @@ let authStore = null;
 let isLoading = true;
 let initError = null;
 
-console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
+// Create context immediately during component initialization
+const authStoreContext = writable(null);
+setContext('authStore', authStoreContext);
 
-// ✅ CORRECT PATTERN: Create auth store in layout, pass via props
-onMount(async () => {
+// Create auth store in onMount to prevent reactive loops
+onMount(() => {
   if (!browser) {
-    console.log('⚠️ Non-browser environment - auth store will be null');
-    isLoading = false;
+    console.log('⚠️ Non-browser environment');
     return;
   }
 
   try {
-    // ✅ Create config synchronously (direct config object, not quickAuthSetup)
+    console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
+
+    // Create config synchronously
     const authConfig = {
       apiBaseUrl: 'https://api.thepia.com',
       clientId: 'demo',
@@ -40,27 +45,37 @@ onMount(async () => {
       }
     };
     console.log('⚙️ Auth config created:', authConfig);
-    
-    // ✅ Create single auth store that all components will share
+
+    // Create single auth store that all components will share
     authStore = createAuthStore(authConfig);
     console.log('🔧 Auth store created');
-    
+
+    // Update context with the created auth store
+    authStoreContext.set(authStore);
+    console.log('🔄 Auth store context updated');
+
+    // Initialize the auth store (check for existing session)
+    authStore.initialize();
+    console.log('✅ Auth store initialized');
+
     // Subscribe to auth state changes for layout reactivity
-    authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state) => {
       isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
       user = state.user;
       console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
     });
-    
-    // Initialize the auth store (check for existing session)
-    authStore.initialize();
+
     isLoading = false;
-    
-    console.log('✅ Auth demo initialization complete');
-    
+    console.log('✅ Auth store setup complete');
+
+    // Return cleanup function
+    return () => {
+      unsubscribe();
+    };
+
   } catch (error) {
-    console.error('❌ Failed to initialize auth demo:', error);
-    initError = error.message;
+    console.error('❌ Failed to create/initialize auth store:', error);
+    initError = error instanceof Error ? error.message : 'Unknown error';
     isLoading = false;
   }
 });
@@ -113,8 +128,8 @@ onMount(async () => {
 				</div>
 			{:else}
 				<!-- ✅ Pass authStore to all pages via slot props -->
+				{console.log('🎯 Layout rendering slot (context-based):', { authStore: !!authStore, isAuthenticated, user: !!user })}
 				<slot 
-					authStore={authStore} 
 					isAuthenticated={isAuthenticated} 
 					user={user} 
 				/>

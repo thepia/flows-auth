@@ -4,15 +4,14 @@
 -->
 <script>
   import { browser } from '$app/environment';
-  import { onMount, setContext } from 'svelte';
-  import { createAuthStore } from '@thepia/flows-auth';
-  
+  import { setAuthContext } from '@thepia/flows-auth';
+
   // Layout component that will show auth state
   import LayoutAuthStatus from './LayoutAuthStatus.svelte';
-  
+
   let authStore = null;
   let authStoreReady = false;
-  
+
   // SINGLE config object that will be shared by ALL components
   const sharedConfig = {
     apiBaseUrl: 'https://api.thepia.com',
@@ -26,20 +25,18 @@
       companyName: 'Proof Test'
     }
   };
-  
-  // Create auth store during component initialization (only way setContext works)
+
+  // Create auth store using the proper context pattern
   if (browser) {
-    console.log('🔧 Layout: Creating shared auth store during initialization...');
-    authStore = createAuthStore(sharedConfig);
-    authStore.initialize();
-    authStoreReady = true;
-    console.log('✅ Layout: Shared auth store created');
-  }
-  
-  // Set context during component initialization (MUST be synchronous)
-  if (authStore) {
-    setContext('authStore', authStore);
-    console.log('✅ Layout: Auth store set in context');
+    console.log('🔧 Layout: Creating shared auth store using setAuthContext...');
+    try {
+      authStore = setAuthContext(sharedConfig);
+      authStore.initialize();
+      authStoreReady = true;
+      console.log('✅ Layout: Shared auth store created and set in context');
+    } catch (error) {
+      console.error('❌ Layout: Failed to create auth store:', error);
+    }
   }
 </script>
 
@@ -49,7 +46,7 @@
   <div class="layout-section">
     <h2>Layout Component (this file)</h2>
     {#if authStoreReady}
-      <LayoutAuthStatus {authStore} />
+      <LayoutAuthStatus />
     {:else}
       <p>⏳ Creating shared auth store...</p>
     {/if}

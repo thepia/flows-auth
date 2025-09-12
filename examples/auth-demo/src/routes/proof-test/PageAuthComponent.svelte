@@ -1,21 +1,49 @@
 <!--
   Page Auth Component
-  Individual component that uses the shared auth store
+  Individual component that uses the shared auth store via context
 -->
 <script>
+  import { onMount, onDestroy } from 'svelte';
+  import { useAuth, useAuthSafe } from '@thepia/flows-auth';
+
   export let title;
-  export let authStore;
-  
+
   let authState = null;
-  let storeId = Math.random().toString(36).substr(2, 9);
-  
-  // Subscribe to auth state changes from the shared store
-  if (authStore) {
-    authStore.subscribe((state) => {
-      authState = state;
-      console.log(`📱 ${title} (${storeId}): Auth state updated:`, state.state);
-    });
+  let storeId = Math.random().toString(36).substring(2, 11);
+  let authStore = null;
+  let authError = null;
+  let unsubscribe = null;
+
+  // Get auth store using the proper context pattern
+  try {
+    authStore = useAuth();
+    console.log(`📱 ${title} (${storeId}): Auth store from useAuth():`, !!authStore);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`📱 ${title} (${storeId}): useAuth() failed, trying useAuthSafe():`, errorMessage);
+    authStore = useAuthSafe();
+    if (!authStore) {
+      authError = errorMessage;
+      console.error(`📱 ${title} (${storeId}): No auth store available:`, error);
+    }
   }
+
+  // Subscribe to auth state changes with proper lifecycle management
+  onMount(() => {
+    if (authStore) {
+      unsubscribe = authStore.subscribe((state) => {
+        authState = state;
+        console.log(`📱 ${title} (${storeId}): Auth state updated:`, state.state);
+      });
+    }
+  });
+
+  // Clean up subscription on component destroy
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  });
   
   function testSignIn() {
     if (authStore) {

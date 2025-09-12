@@ -1672,21 +1672,24 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     determineAuthFlow,
     on,
     api,
-    
+
     // SignIn flow control methods
     notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
     notifyPinVerified: (sessionData: any) => sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
     sendSignInEvent, // Expose for components to send custom events
-    
+
     // Email-based authentication methods (transparently uses app endpoints if configured)
     sendEmailCode: signInWithAppEmail,
     verifyEmailCode: verifyAppEmailCode,
-    
+
     // Dynamic role configuration methods
     getApplicationContext,
     updateStorageConfiguration,
     migrateSession,
-    
+
+    // Configuration access
+    getConfig: () => config,
+
     // Cleanup
     destroy: () => {
       // Note: No longer need to unsubscribe from state machine

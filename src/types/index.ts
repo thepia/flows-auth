@@ -611,6 +611,9 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
   migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
 
+  // Configuration access
+  getConfig: () => AuthConfig;
+
   // Cleanup
   destroy: () => void;
 }

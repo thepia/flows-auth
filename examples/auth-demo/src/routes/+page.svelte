@@ -1,13 +1,22 @@
 <script>
 import { browser } from '$app/environment';
-import { onMount } from 'svelte';
+import { onMount, getContext } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus } from '@thepia/flows-auth';
 
-// ✅ RECEIVE AUTH STORE VIA PROPS (explicit prop passing pattern)
-export let authStore = null;
+// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
 export let isAuthenticated = false;
 export let user = null;
+
+// Get authStore from context instead of props
+const authStoreContext = getContext('authStore');
+let authStore = null;
+
+// Initialize authStore from context once
+if (authStoreContext && browser) {
+  authStore = $authStoreContext;
+  console.log('📦 Auth store from context:', { authStore: !!authStore, isAuthenticated, user: !!user });
+}
 
 // Optional SvelteKit props
 export let params = {};
@@ -19,15 +28,14 @@ let stateMachineState = null;
 let stateMachineContext = null;
 let authSubscribed = false;
 
-// Static auth config for display purposes
-let authConfig = {
-  apiBaseUrl: 'https://api.thepia.com',
-  clientId: 'demo', 
-  domain: 'thepia.net',
-  enablePasskeys: false,
-  enableMagicLinks: true,
-  branding: { companyName: 'Auth Demo' }
-};
+// Auth config will be retrieved from the auth store (created in layout)
+let authConfig = null;
+
+// Get authConfig from authStore when available
+$: if (authStore && authStore.getConfig) {
+  authConfig = authStore.getConfig();
+  console.log('⚙️ Auth config from authStore:', authConfig);
+}
 
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = null;
@@ -77,16 +85,22 @@ let hasValidPinStatus = false;
 let pinRemainingMinutes = 0;
 
 // Reactive computations from auth store - simplified debugging
+let lastLoggedState = null;
 $: {
   if (authStore) {
     const storeValue = $authStore;
-    console.log('🔄 [Sidebar] Raw auth store update:', {
-      state: storeValue.state,
-      signInState: storeValue.signInState,
-      hasUser: !!storeValue.user,
-      timestamp: new Date().toISOString()
-    });
-    
+
+    // Only log when state actually changes to prevent spam
+    if (storeValue.state !== lastLoggedState) {
+      console.log('🔄 [Sidebar] Auth state changed:', {
+        state: storeValue.state,
+        signInState: storeValue.signInState,
+        hasUser: !!storeValue.user,
+        timestamp: new Date().toISOString()
+      });
+      lastLoggedState = storeValue.state;
+    }
+
     // Update our local variables
     signInState = storeValue.signInState || 'emailEntry';
     hasValidPinStatus = hasValidPin(storeValue);
@@ -229,30 +243,8 @@ onMount(async () => {
   }
 });
 
-// Reactive subscription to auth store when it becomes available
-$: if (authStore && !authSubscribed) {
-  console.log('🔄 Setting up auth store subscriptions reactively');
-  
-  // Subscribe to auth state changes
-  authStore.subscribe((state) => {
-    currentUser = state.user;
-    authState = state.state;
-    console.log('📊 Reactive auth state update:', { 
-      state: state.state, 
-      user: !!state.user 
-    });
-  });
-  
-  // Subscribe to state machine updates if available
-  if (authStore.stateMachine) {
-    authStore.stateMachine.subscribe((sm) => {
-      stateMachineState = sm.state;
-      stateMachineContext = sm.context;
-    });
-  }
-  
-  authSubscribed = true;
-}
+// Note: Auth store subscriptions are handled in the reactive block above
+// to avoid creating duplicate subscriptions
 
 // Demo actions
 async function testPasskeySignIn() {
@@ -384,6 +376,7 @@ function selectDemo(sectionId) {
 
 async function updateDomain() {
   // Update the auth config with new domain
+  // TODO use the store to modify the domain used for passkeys. Config cannot be edited directly.
   authConfig.domain = currentDomain;
   console.log('🌐 Updated domain to:', currentDomain);
   
@@ -883,17 +876,7 @@ $: dynamicAuthConfig = authConfig ? {
   }
 } : null;
 
-// Log changes for debugging
-$: if (dynamicAuthConfig) {
-  console.log('⚙️ SignInCore config updated:', {
-    signInMode: dynamicAuthConfig.signInMode,
-    enablePasskeys: dynamicAuthConfig.enablePasskeys,
-    enableMagicLinks: dynamicAuthConfig.enableMagicLinks,
-    language: dynamicAuthConfig.language,
-    clientVariant: selectedClientVariant,
-    translationCount: Object.keys(combinedTranslations).length
-  });
-}
+// Note: Config logging removed to prevent console spam
 </script>
 
 <div class="demo-container">
@@ -1308,6 +1291,10 @@ $: if (dynamicAuthConfig) {
           <div class="demo-main">
             <!-- Live SignInCore Component   && !isAuthenticated -->
             {#if authStore && dynamicAuthConfig}
+              <!-- Debug: Log what should be shown -->
+              {#if browser}
+                {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, dynamicAuthConfig: !!dynamicAuthConfig, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
+              {/if}
               {#if useSignInForm && formVariant === 'popup'}
                 <!-- Popup SignInForm - no card wrapper to avoid double borders -->
                 {#if browser && SignInFormComponent}

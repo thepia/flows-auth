@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Claude has a terrible track record at making correct decisions on implementing the correct patterns in this repository. As an example Claude consistently disbelieves that the user record should be checked automatically when a valid email is entered or autofilled. It is therefore vital to thoroughly check the instructions and documentation.
+
 ## 📚 Documentation Authority - Quick Reference
 
 **When information conflicts, these documents are authoritative:**

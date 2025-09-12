@@ -182,6 +182,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       case 'pinEntry':
         if (event.type === 'PIN_VERIFIED') return 'signedIn';
         if (event.type === 'EMAIL_VERIFICATION_REQUIRED') return 'emailVerification';
+        if (event.type === 'RESET') return 'emailEntry';
         break;
         
       case 'emailVerification':

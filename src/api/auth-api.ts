@@ -29,13 +29,40 @@ import type {
 export class AuthApiClient {
   private config: AuthConfig;
   private baseUrl: string;
+  private effectiveBaseUrl: Promise<string>;
 
   constructor(config: AuthConfig) {
     this.config = config;
     this.baseUrl = config.apiBaseUrl.replace(/\/$/, '');
     
+    // Create a promise that resolves to the effective base URL
+    // This allows for async API detection while keeping the constructor synchronous
+    this.effectiveBaseUrl = this.detectEffectiveBaseUrl();
+    
     // Rate limiting is now handled by the intelligent client rate limiter
     // No configuration needed - uses 5 req/sec default with server backoff
+  }
+
+  /**
+   * Detect the effective base URL to use (local dev server or production)
+   */
+  private async detectEffectiveBaseUrl(): Promise<string> {
+    // If running in browser and config allows detection
+    if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
+      try {
+        // Try to use the detection utility if available
+        const { detectApiServer } = await import('../utils/api-detection');
+        const apiServer = await detectApiServer();
+        console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
+        return apiServer.url.replace(/\/$/, '');
+      } catch (error) {
+        // Fall back to configured URL if detection fails
+        console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
+      }
+    }
+    
+    // Use the configured URL as-is
+    return this.baseUrl;
   }
 
   /**
@@ -69,7 +96,9 @@ export class AuthApiClient {
     options: RequestInit = {},
     includeAuth = false
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Resolve the effective base URL (will use cached promise result after first call)
+    const effectiveUrl = await this.effectiveBaseUrl;
+    const url = `${effectiveUrl}${endpoint}`;
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

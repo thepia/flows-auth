@@ -58,8 +58,7 @@
         "useConsistentArrayType": "error",
         "useForOf": "error",
         "useImportType": "error",
-        "useShorthandFunctionType": "error",
-        "useTrailingComma": "warn"
+        "useShorthandFunctionType": "error"
       },
       "suspicious": {
         "noArrayIndexKey": "error",

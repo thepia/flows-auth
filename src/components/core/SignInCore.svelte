@@ -48,7 +48,6 @@ $: {
 const dispatch = createEventDispatcher<{
   success: { user: User; method: AuthMethod };
   error: { error: AuthError };
-  stepChange: { step: string };
 }>();
 
 // Auth store - Use context store, provided authStore, or create from config (backward compatibility)
@@ -64,51 +63,26 @@ const store: ReturnType<typeof createAuthStore> = (() => {
 })();
 
 // Component state
-// Extend SignInState with additional states needed by SignInCore
-type SignInCoreStep = SignInState | 'magicLinkSent' | 'registrationTerms';
 let email = initialEmail;
 let loading = false;
 let error: string | null = null;
 
 // Local state for non-SignInState steps
-let localStep: 'magicLinkSent' | 'registrationTerms' | null = null;
 let currentSignInState: SignInState = $store.signInState;
-
-// Computed step: use localStep if set, otherwise use current signInState
-$: step = localStep || (currentSignInState as SignInCoreStep);
-
-
-
-// React to step changes and dispatch stepChange events
-$: if (step) {
-  dispatch('stepChange', { step });
-}
 
 // Subscribe to store changes for external updates (e.g., successful auth from other components)
 $: {
   const storeState = $store.signInState;
-  // Only update if we're not in a local step and the store changed externally
-  if (localStep === null && storeState !== currentSignInState) {
+  // Only update if we're not in a local state and the store changed externally
+  if (storeState !== currentSignInState) {
     currentSignInState = storeState;
   }
 }
 
-// Helper to set local-only steps
-function setLocalStep(localStepValue: typeof localStep) {
-  localStep = localStepValue;
-  // Clear localStep when returning to SignInState flow
-  if (localStepValue === null) {
-    currentSignInState = store.sendSignInEvent({ type: 'RESET' });
-  }
-}
 
 // Helper to send SignInEvents to the auth store and update local state
 function sendSignInEvent(event: SignInEvent) {
   currentSignInState = store.sendSignInEvent(event);
-  // Clear any local step override when transitioning via events
-  if (localStep !== null) {
-    localStep = null;
-  }
   return currentSignInState;
 }
 let supportsWebAuthn = false;
@@ -391,18 +365,10 @@ async function handleSignIn() {
           exists: false, 
           hasPasskey: false 
         });
-        setLocalStep('registrationTerms');
         return;
       }
     }
 
-    // User exists - send USER_CHECKED event and determine authentication method
-    sendSignInEvent({ 
-      type: 'USER_CHECKED', 
-      email: email.trim(), 
-      exists: userExists, 
-      hasPasskey: hasPasskeys 
-    });
     const authMethod = determineAuthMethod(userCheck);
     console.log('🔐 Determined auth method:', authMethod);
 
@@ -417,11 +383,7 @@ async function handleSignIn() {
         } catch (passkeyError) {
           console.warn('Passkey authentication failed:', passkeyError);
           // Fall back to appropriate email method
-          if (config.appCode) {
-            await handleEmailCodeAuth();
-          } else {
-            await handleMagicLinkAuth();
-          }
+          await handleEmailCodeAuth();
         }
         break;
       
@@ -505,7 +467,7 @@ async function handleMagicLinkAuth() {
 
     if (result.step === 'magic-link' || result.magicLinkSent) {
       loading = false;
-      setLocalStep('magicLinkSent');
+      // setLocalStep('magicLinkSent');
     }
   } catch (err: any) {
     loading = false;
@@ -620,7 +582,6 @@ function getUserFriendlyErrorMessage(err: any): string {
 
 function resetForm() {
   sendSignInEvent({ type: 'RESET' });
-  localStep = null; // Clear local step override
   error = null;
   loading = false;
   emailCode = '';
@@ -639,11 +600,11 @@ $: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebA
 let lastCheckedEmail = '';
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (email && config.appCode && (step === 'emailEntry' || step === 'userChecked') && email.trim() !== lastCheckedEmail) {
+$: if (email && config.appCode && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked') && email.trim() !== lastCheckedEmail) {
   checkEmailForExistingPin(email);
 }
 
-function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' | 'generic' {
+function getAuthMethodForUI(authConfig: AuthConfig, webAuthnSupported: boolean): 'passkey' | 'email' | 'generic' {
   const result = (() => {
     // Show passkey UI if passkeys are enabled and supported
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
@@ -665,12 +626,12 @@ function getAuthMethodForUI(authConfig, webAuthnSupported): 'passkey' | 'email' 
   return result;
 }
 
-function getEmailInputWebAuthnEnabled(authConfig, webAuthnSupported): boolean {
+function getEmailInputWebAuthnEnabled(authConfig: AuthConfig, webAuthnSupported: boolean): boolean {
   // Enable WebAuthn autocomplete if passkeys are supported and enabled in config
   return webAuthnSupported && authConfig.enablePasskeys;
 }
 
-function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userExists, hasPasskeys, hasValidPin) {
+function getButtonConfig(method: string, isLoading: boolean, emailValue: string, webAuthnSupported: boolean, userExists: boolean, hasPasskeys: boolean, hasValidPin: boolean) {
   // Smart button configuration based on discovered user state
   let primaryMethod = method;
   let primaryText = $i18n('auth.signIn');
@@ -745,7 +706,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
 </script>
 
 <div class="sign-in-core {className}">
-  {#if step === 'emailEntry' || step === 'userChecked'}
+  {#if currentSignInState === 'emailEntry' || currentSignInState === 'userChecked'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput
@@ -812,12 +773,12 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       </div>
 
       {#if supportsWebAuthn && config.enablePasskeys}
-        <AuthStateMessage
+        <!-- <AuthStateMessage
           type="info"
           message={$i18n('webauthn.ready')}
           showIcon={true}
           className="webauthn-indicator"
-        />
+        /> -->
       {/if}
       
       <!-- Security explanation message -->
@@ -838,57 +799,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       </div>
     </form>
 
-  {:else if step === 'userChecked'}
-    <!-- Authentication Method Selection Step -->
-    <div class="auth-method-selection">
-      <div class="user-info">
-        <h3>Sign in as {email}</h3>
-        <p class="auth-instruction">Choose your authentication method:</p>
-      </div>
-      
-      <!-- Authentication options based on available methods -->
-      {#if hasPasskeys && supportsWebAuthn}
-        <button
-          type="button"
-          class="auth-method-button primary"
-          on:click={() => sendSignInEvent({ type: 'PASSKEY_AVAILABLE' })}
-          disabled={loading}
-        >
-          🔐 Use Passkey
-        </button>
-      {/if}
-      
-      {#if hasValidPin}
-        <button
-          type="button"
-          class="auth-method-button"
-          on:click={() => sendSignInEvent({ type: 'PIN_REQUESTED' })}
-          disabled={loading}
-        >
-          🔢 Enter PIN Code ({pinRemainingMinutes} min remaining)
-        </button>
-      {:else}
-        <button
-          type="button"
-          class="auth-method-button"
-          on:click={() => sendSignInEvent({ type: 'EMAIL_VERIFICATION_REQUIRED' })}
-          disabled={loading}
-        >
-          📧 Send Email Verification
-        </button>
-      {/if}
-      
-      <button
-        type="button"
-        class="reset-button"
-        on:click={resetForm}
-        disabled={loading}
-      >
-        ← Back to email entry
-      </button>
-    </div>
-
-  {:else if step === 'pinEntry'}
+  {:else if currentSignInState === 'pinEntry'}
     <!-- Email Code Input Step -->
     <div class="email-code-input">
       {#if emailCodeSent && !hasValidPin}
@@ -949,30 +860,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       />
     </div>
 
-  {:else if step === 'magicLinkSent'}
-    <!-- Magic Link Sent Step -->
-    <div class="magic-link-sent">
-      <AuthStateMessage
-        type="success"
-        message={$i18n('status.checkEmail')}
-        showIcon={true}
-      />
-      
-      <p class="magic-link-message">
-        {$i18n('status.magicLinkSent')}<br>
-        <strong>{email}</strong>
-      </p>
-
-      <AuthButton
-        type="button"
-        variant="secondary"
-        text={$i18n('action.useDifferentEmail')}
-        {i18n}
-        on:click={resetForm}
-      />
-    </div>
-
-  {:else if step === 'signedIn'}
+  {:else if currentSignInState === 'signedIn'}
     <!-- Signed In Success State -->
     <div class="signed-in-success">
       <AuthStateMessage
@@ -1001,7 +889,7 @@ function getButtonConfig(method, isLoading, emailValue, webAuthnSupported, userE
       {/if}
     </div>
 
-  {:else if step === 'registrationTerms'}
+  {:else if currentSignInState === 'registrationTerms'}
     <!-- Registration flow would be handled by parent or separate component -->
     <AuthStateMessage
       type="info"

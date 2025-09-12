@@ -396,7 +396,7 @@ export function setI18nContext(config: {
 export function getI18n(config?: {
   language?: string;
   translations?: CustomTranslations;
-  fallbackLanguage?: SupportedLanguage;
+  fallbackLanguage?: string;
 }) {
   // Try to get from context first (app-wide configuration)
   const contextI18n = getContext<ReturnType<typeof createI18n>>(I18N_CONTEXT_KEY);
@@ -415,7 +415,7 @@ export function getI18n(config?: {
   return createI18n(
     config?.language || detectUserLanguage(['en'], 'en'),
     config?.translations || {},
-    config?.fallbackLanguage || 'en'
+    config?.fallbackLanguage as unknown as SupportedLanguage || 'en'
   );
 }
 

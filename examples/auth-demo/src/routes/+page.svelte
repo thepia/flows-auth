@@ -1,6 +1,8 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
+// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
+const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus } from '@thepia/flows-auth';
 
@@ -9,7 +11,7 @@ export let isAuthenticated = false;
 export let user = null;
 
 // Get authStore from context instead of props
-const authStoreContext = getContext('authStore');
+const authStoreContext = getContext(AUTH_CONTEXT_KEY);
 let authStore = null;
 
 // Initialize authStore from context once

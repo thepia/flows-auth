@@ -4,9 +4,9 @@
   Handles auth state machine integration
 -->
 <script lang="ts">
-import { createEventDispatcher, onMount } from 'svelte';
-import { createAuthStore } from '../../stores/auth-store';
-import { useAuth } from '../../utils/auth-context';
+import { createEventDispatcher, onMount, getContext } from 'svelte';
+import type { createAuthStore } from '../../stores/auth-store';
+import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
 import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent } from '../../types';
 import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
 import { getI18n } from '../../utils/i18n';
@@ -16,32 +16,34 @@ import AuthStateMessage from './AuthStateMessage.svelte';
 import EmailInput from './EmailInput.svelte';
 import CodeInput from './CodeInput.svelte';
 import AuthNewUserInfo from './AuthNewUserInfo.svelte';
+import UserManagement from '../UserManagement.svelte';
 
-// Props
-export let config: AuthConfig;
-export let authStore: ReturnType<typeof createAuthStore> | undefined = undefined;
+// Props - only presentational props, no auth logic props
 export let initialEmail = '';
 export let className = '';
 
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
+// Get config from auth store context only
+$: authConfig = store?.getConfig();
+
 // Get i18n instance - will use context if available, or create from config
 const i18nInstance = getI18n({
-  language: config?.language,
-  translations: config?.translations,
-  fallbackLanguage: config?.fallbackLanguage
+  language: authConfig?.language,
+  translations: authConfig?.translations,
+  fallbackLanguage: authConfig?.fallbackLanguage
 });
 
 // Extract the translation function store
 const i18n = i18nInstance.t;
 
-// Update i18n when config changes
+// Update i18n when authConfig changes
 $: {
-  if (config?.language) {
-    i18nInstance.setLanguage(config.language);
+  if (authConfig?.language) {
+    i18nInstance.setLanguage(authConfig.language);
   }
-  if (config?.translations) {
-    i18nInstance.setTranslations(config.translations);
+  if (authConfig?.translations) {
+    i18nInstance.setTranslations(authConfig.translations);
   }
 }
 
@@ -49,19 +51,17 @@ $: {
 const dispatch = createEventDispatcher<{
   success: { user: User; method: AuthMethod };
   error: { error: AuthError };
+  navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
 
-// Auth store - Use context store, provided authStore, or create from config (backward compatibility)
-const store: ReturnType<typeof createAuthStore> = (() => {
-  // First try to use context store (preferred pattern per ADR 0004)
-  try {
-    return useAuth();
-  } catch {
-    // Fallback to provided authStore or create new one (backward compatibility)
-    console.warn('⚠️ SignInCore: Using fallback auth store. Consider using setAuthContext() in layout.');
-    return authStore || createAuthStore(config);
-  }
-})();
+// Get auth store from context using reactive pattern  
+const authStoreContext = getContext<any>(AUTH_CONTEXT_KEY);
+
+// Use reactive $store syntax - automatically subscribes and updates
+$: store = $authStoreContext as ReturnType<typeof createAuthStore>;
+
+// Debug logging to see what's happening
+$: console.log('🔍 SignInCore: store =', !!store, store);
 
 // Component state
 let email = initialEmail;
@@ -69,11 +69,11 @@ let loading = false;
 let error: string | null = null;
 
 // Local state for non-SignInState steps
-let currentSignInState: SignInState = $store.signInState;
+let currentSignInState: SignInState = store ? $store.signInState : 'emailEntry';
 
 // Subscribe to store changes for external updates (e.g., successful auth from other components)
 $: {
-  const storeState = $store.signInState;
+  const storeState = store ? $store.signInState : 'emailEntry';
   // Only update if we're not in a local state and the store changed externally
   if (storeState !== currentSignInState) {
     currentSignInState = storeState;
@@ -186,16 +186,16 @@ onMount(async () => {
   // Determine what authentication methods are available
   const browserSupportsWebAuthn = isWebAuthnSupported();
   
-  supportsWebAuthn = browserSupportsWebAuthn && config.enablePasskeys;
+  supportsWebAuthn = browserSupportsWebAuthn && authConfig?.enablePasskeys;
   platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
 
   console.log('🔐 SignInCore Authentication Methods:', {
     browserSupportsWebAuthn,
     supportsWebAuthn,
     platformAuthenticatorAvailable,
-    enablePasskeys: config.enablePasskeys,
-    enableMagicLinks: config.enableMagicLinks,
-    signInMode: config.signInMode,
+    enablePasskeys: authConfig?.enablePasskeys,
+    enableMagicLinks: authConfig.enableMagicLinks,
+    signInMode: authConfig.signInMode,
   });
 
   // If initial email is provided, check for existing pins and trigger conditional auth
@@ -203,7 +203,7 @@ onMount(async () => {
     email = initialEmail;
     
     // Check for existing valid pins if app code is configured
-    if (config.appCode) {
+    if (authConfig.appCode) {
       try {
         const userCheck = await store.checkUser(initialEmail);
         hasValidPin = checkForValidPin(userCheck);
@@ -355,7 +355,7 @@ async function handleSignIn() {
 
     // Handle non-existing users based on config
     if (!userExists) {
-      if (config.signInMode === 'login-only') {
+      if (authConfig.signInMode === 'login-only') {
         error = 'No account found for this email address. Please check your email or create an account.';
         loading = false;
         return;
@@ -372,7 +372,7 @@ async function handleSignIn() {
             lastName,
             acceptedTerms: false,
             acceptedPrivacy: false,
-            invitationToken: config.invitationToken
+            invitationToken: authConfig.invitationToken
           });
           await handleEmailCodeAuth();
           loading = false;
@@ -437,19 +437,19 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   const hasPasskeys = userCheck.hasWebAuthn;
 
   // If user has passkeys and we support them
-  if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
+  if (hasPasskeys && supportsWebAuthn && authConfig?.enablePasskeys) {
     // Use passkey with fallback to email if other email methods are enabled
-    const hasEmailFallback = config.appCode || config.enableMagicLinks;
+    const hasEmailFallback = authConfig.appCode || authConfig.enableMagicLinks;
     return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
   }
   
   // If app-based email authentication is available
-  if (config.appCode) {
+  if (authConfig.appCode) {
     return 'email-code';
   }
   
   // If user doesn't have passkeys but we have magic links enabled
-  if (config.enableMagicLinks) {
+  if (authConfig.enableMagicLinks) {
     return 'email-only';
   }
 
@@ -608,10 +608,10 @@ function resetForm() {
 }
 
 // Determine authentication method and button configuration
-$: authMethodForUI = getAuthMethodForUI(config, supportsWebAuthn);
-$: isNewUserSignin = currentSignInState === 'userChecked' && !userExists && config.signInMode !== 'login-only';
+$: authMethodForUI = getAuthMethodForUI(authConfig, supportsWebAuthn);
+$: isNewUserSignin = currentSignInState === 'userChecked' && !userExists && authConfig.signInMode !== 'login-only';
 $: buttonConfig = getButtonConfig(authMethodForUI, loading, email, supportsWebAuthn, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName);
-$: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(config, supportsWebAuthn);
+$: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(authConfig, supportsWebAuthn);
 
 // Keep track of last checked email to avoid duplicate calls
 let lastCheckedEmail = '';
@@ -626,12 +626,14 @@ $: if (!email.trim() && (currentSignInState === 'userChecked' || currentSignInSt
 }
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (email && config.appCode && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked') && email.trim() !== lastCheckedEmail) {
+$: if (email && authConfig?.appCode && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked') && email.trim() !== lastCheckedEmail) {
   checkEmailForExistingPin(email);
 }
 
-function getAuthMethodForUI(authConfig: AuthConfig, webAuthnSupported: boolean): 'passkey' | 'email' | 'generic' {
+function getAuthMethodForUI(authConfig: AuthConfig | null | undefined, webAuthnSupported: boolean): 'passkey' | 'email' | 'generic' {
   const result = (() => {
+    if (!authConfig) return 'generic';
+    
     // Show passkey UI if passkeys are enabled and supported
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
     
@@ -642,9 +644,9 @@ function getAuthMethodForUI(authConfig: AuthConfig, webAuthnSupported: boolean):
   })();
   
   console.log('🎯 getAuthMethodForUI():', {
-    enablePasskeys: authConfig.enablePasskeys,
-    enableMagicLinks: authConfig.enableMagicLinks,
-    hasAppCode: !!authConfig.appCode,
+    enablePasskeys: authConfig?.enablePasskeys,
+    enableMagicLinks: authConfig?.enableMagicLinks,
+    hasAppCode: !!authConfig?.appCode,
     supportsWebAuthn: webAuthnSupported,
     result
   });
@@ -652,9 +654,9 @@ function getAuthMethodForUI(authConfig: AuthConfig, webAuthnSupported: boolean):
   return result;
 }
 
-function getEmailInputWebAuthnEnabled(authConfig: AuthConfig, webAuthnSupported: boolean): boolean {
+function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined, webAuthnSupported: boolean): boolean {
   // Enable WebAuthn autocomplete if passkeys are supported and enabled in config
-  return webAuthnSupported && authConfig.enablePasskeys;
+  return webAuthnSupported && (authConfig?.enablePasskeys || false);
 }
 
 function getButtonConfig(method: string, isLoading: boolean, emailValue: string, webAuthnSupported: boolean, userExists: boolean, hasPasskeys: boolean, hasValidPin: boolean, isNewUserSignin: boolean, fullName: string) {
@@ -665,11 +667,11 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
   let secondaryAction = null;
 
   // Set default button text based on available authentication methods
-  if (config.appCode) {
+  if (authConfig?.appCode) {
     primaryMethod = 'email-code';
     primaryText = $i18n('auth.sendPinByEmail');
     primaryLoadingText = $i18n('auth.sendingPin');
-  } else if (config.enableMagicLinks) {
+  } else if (authConfig?.enableMagicLinks) {
     primaryMethod = 'magic-link';
     primaryText = $i18n('auth.sendMagicLink');
     primaryLoadingText = $i18n('auth.sendingMagicLink');
@@ -677,26 +679,26 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
 
   // If we have user information and email is entered, make smart decisions
   if (emailValue && emailValue.trim() && userExists !== null) {
-    if (webAuthnSupported && config.enablePasskeys && hasPasskeys) {
+    if (webAuthnSupported && authConfig?.enablePasskeys && hasPasskeys) {
       // User has passkeys - prioritize passkey authentication
       primaryMethod = 'passkey';
       primaryText = $i18n('auth.signInWithPasskey');
       primaryLoadingText = $i18n('auth.signingIn');
       
       // Add secondary action for pin fallback if available
-      if (config.appCode) {
+      if (authConfig?.appCode) {
         secondaryAction = {
           method: 'email-code',
           text: $i18n('auth.sendPinByEmail'),
           loadingText: $i18n('auth.sendingPin')
         };
       }
-    } else if (config.appCode) {
+    } else if (authConfig?.appCode) {
       // User doesn't have passkeys, use pin authentication
       primaryMethod = 'email-code';
       primaryText = $i18n('auth.sendPinByEmail');
       primaryLoadingText = $i18n('auth.sendingPin');
-    } else if (config.enableMagicLinks) {
+    } else if (authConfig?.enableMagicLinks) {
       // Fallback to magic links
       primaryMethod = 'magic-link';
       primaryText = $i18n('auth.sendMagicLink');
@@ -742,6 +744,7 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
 }
 </script>
 
+{#if store && authConfig}
 <div class="sign-in-core {className}">
   {#if currentSignInState === 'emailEntry' || currentSignInState === 'userChecked'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
@@ -781,7 +784,7 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       {/if}
 
       {#if currentSignInState === 'userChecked' && !userExists}
-        {#if config.signInMode === 'login-only'}
+        {#if authConfig.signInMode === 'login-only'}
           <AuthStateMessage
             type="info"
             message={$i18n('auth.onlyRegisteredUsers')}
@@ -827,7 +830,7 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
         {/if}
       </div>
 
-      {#if supportsWebAuthn && config.enablePasskeys}
+      {#if supportsWebAuthn && authConfig?.enablePasskeys}
         <!-- <AuthStateMessage
           type="info"
           message={$i18n('webauthn.ready')}
@@ -838,14 +841,14 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       
       <!-- Security explanation message -->
       <div class="security-message">
-        {#if config?.branding?.companyName}
-          {#if config.appCode}
-            {$i18n('security.passwordlessWithPin', { companyName: config.branding.companyName })}
+        {#if authConfig?.branding?.companyName}
+          {#if authConfig.appCode}
+            {$i18n('security.passwordlessWithPin', { companyName: authConfig.branding.companyName })}
           {:else}
-            {$i18n('security.passwordlessExplanation', { companyName: config.branding.companyName })}
+            {$i18n('security.passwordlessExplanation', { companyName: authConfig.branding.companyName })}
           {/if}
         {:else}
-          {#if config.appCode}
+          {#if authConfig.appCode}
             {$i18n('security.passwordlessWithPinGeneric')}
           {:else}
             {$i18n('security.passwordlessGeneric')}
@@ -884,8 +887,8 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       <form on:submit|preventDefault={handleEmailCodeVerification}>
         <CodeInput
           bind:value={emailCode}
-          label="Verification Code"
-          placeholder="Enter 6-digit code"
+          label={$i18n('code.label')}
+          placeholder={$i18n('code.placeholder')}
           {error}
           disabled={loading}
           maxlength={6}
@@ -896,8 +899,8 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
           <AuthButton
             type="submit"
             method="email-code"
-            text="Verify Code"
-            loadingText="Verifying..."
+            text={$i18n('code.verify')}
+            loadingText={$i18n('code.verifying')}
             disabled={loading || !emailCode.trim()}
             {loading}
             supportsWebAuthn={false}
@@ -916,33 +919,14 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     </div>
 
   {:else if currentSignInState === 'signedIn'}
-    <!-- Signed In Success State -->
-    <div class="signed-in-success">
-      <AuthStateMessage
-        type="success"
-        message={$i18n('auth.signedInSuccess')}
-        showIcon={true}
+    {#if $store.user}
+      <UserManagement
+        user={$store.user}
+        onSignOut={() => store.signOut()}
+        {i18n}
+        on:navigate
       />
-      
-      {#if $store.user}
-        <div class="user-welcome">
-          <h3>Welcome back!</h3>
-          <p><strong>{$store.user.name || $store.user.email}</strong></p>
-          <p class="user-email">{$store.user.email}</p>
-        </div>
-        
-        <AuthButton
-          type="button"
-          variant="primary"
-          text="Continue to App"
-          {i18n}
-          on:click={() => dispatch('success', { 
-            user: $store.user, 
-            method: 'email-code' 
-          })}
-        />
-      {/if}
-    </div>
+    {/if}
 
   {:else if currentSignInState === 'registrationTerms'}
     <!-- Registration flow would be handled by parent or separate component -->
@@ -953,6 +937,19 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     />
   {/if}
 </div>
+{:else}
+  <div class="loading-state">
+    <p>
+      {#if !store}
+        Waiting for authentication context...
+      {:else if !authConfig}
+        Loading configuration...
+      {:else}
+        Initializing authentication...
+      {/if}
+    </p>
+  </div>
+{/if}
 
 <style>
   .sign-in-core {
@@ -1037,31 +1034,6 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     text-decoration: none;
   }
   
-  /* User welcome styling for signed-in state */
-  .user-welcome {
-    margin: 16px 0 24px 0;
-    padding: 16px;
-    background: var(--auth-success-bg, #f0f9ff);
-    border: 1px solid var(--auth-success-border, #bae6fd);
-    border-radius: 8px;
-  }
-
-  .user-welcome h3 {
-    margin: 0 0 8px 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--auth-text-primary, #111827);
-  }
-
-  .user-welcome p {
-    margin: 4px 0;
-    color: var(--auth-text-primary, #111827);
-  }
-
-  .user-email {
-    font-size: 0.875rem;
-    color: var(--auth-text-secondary, #6b7280) !important;
-  }
 
   /* Security message styling - matches thepia.com */
   .security-message {
@@ -1072,5 +1044,6 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     line-height: 1.4;
     opacity: 0.8;
   }
+
 
 </style>

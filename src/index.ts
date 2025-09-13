@@ -5,6 +5,9 @@
  * for whitelabel applications and Flow app projects.
  */
 
+// Context constants for consistency across components
+export { CONTEXT_KEYS, AUTH_CONTEXT_KEY } from './constants/context-keys';
+
 // API client
 export { AuthApiClient } from './api/auth-api';
 export { SyncApiClient } from './api/sync-api';

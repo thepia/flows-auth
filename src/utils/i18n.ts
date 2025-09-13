@@ -44,6 +44,8 @@ export const defaultTranslations = {
     'code.invalid': 'Please enter a valid 6-digit code',
     'code.expired': 'Verification code has expired',
     'code.incorrect': 'Incorrect verification code',
+    'code.verify': 'Verify Code',
+    'code.verifying': 'Verifying...',
     
     // Status messages
     'status.emailSent': 'We sent a verification code to',
@@ -148,7 +150,27 @@ export const defaultTranslations = {
     'time.minute': 'minute',
     'time.minutes': 'minutes',
     'time.second': 'second', 
-    'time.seconds': 'seconds'
+    'time.seconds': 'seconds',
+    
+    // User Management Dashboard
+    'user.welcomeBack': 'Welcome back!',
+    'user.signOut': 'Sign out',
+    
+    // Security section
+    'user.security.title': 'Security',
+    'user.security.description': 'Manage your passkeys, authentication methods, and security settings.',
+    'user.security.managePasskeys': 'Manage Passkeys',
+    
+    // Profile section
+    'user.profile.title': 'Profile',
+    'user.profile.description': 'Update your personal information and account preferences.',
+    'user.profile.editProfile': 'Edit Profile',
+    
+    // Privacy section
+    'user.privacy.title': 'Privacy & Legal',
+    'user.privacy.description': 'Review data policies, terms of service, and privacy settings.',
+    'user.privacy.dataPolicy': 'Data Policy',
+    'user.privacy.termsOfService': 'Terms of Service'
   },
   da: {
     // Email input
@@ -290,7 +312,31 @@ export const defaultTranslations = {
     'time.minute': 'minut',
     'time.minutes': 'minutter',
     'time.second': 'sekund', 
-    'time.seconds': 'sekunder'
+    'time.seconds': 'sekunder',
+    
+    // Additional code input keys
+    'code.verify': 'Bekræft kode',
+    'code.verifying': 'Bekræfter...',
+    
+    // User Management Dashboard
+    'user.welcomeBack': 'Velkommen tilbage!',
+    'user.signOut': 'Log ud',
+    
+    // Security section
+    'user.security.title': 'Sikkerhed',
+    'user.security.description': 'Administrer dine passkeys, godkendelsesmetoder og sikkerhedsindstillinger.',
+    'user.security.managePasskeys': 'Administrer Passkeys',
+    
+    // Profile section
+    'user.profile.title': 'Profil',
+    'user.profile.description': 'Opdater dine personlige oplysninger og kontopræferencer.',
+    'user.profile.editProfile': 'Rediger profil',
+    
+    // Privacy section
+    'user.privacy.title': 'Privatliv og jura',
+    'user.privacy.description': 'Gennemgå datapolitikker, servicevilkår og privatlivsindstillinger.',
+    'user.privacy.dataPolicy': 'Datapolitik',
+    'user.privacy.termsOfService': 'Servicevilkår'
   }
 } as const;
 

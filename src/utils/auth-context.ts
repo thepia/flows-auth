@@ -13,8 +13,7 @@ import { getContext, setContext } from 'svelte';
 import { createAuthStore } from '../stores/auth-store';
 import { getGlobalAuthStore, initializeAuth, assertAuthConfig, type GlobalAuthStore } from '../stores/global-auth-store';
 import type { AuthConfig } from '../types';
-
-const AUTH_CONTEXT_KEY = 'flows-auth-store';
+import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
 
 /**
  * Set the auth store in Svelte context (call in +layout.svelte)
@@ -45,9 +44,9 @@ export function setAuthContext(config: AuthConfig): GlobalAuthStore {
  * @returns The auth store or throws error if not available
  */
 export function getAuthContext(): GlobalAuthStore {
-  const authStore = getContext<GlobalAuthStore>(AUTH_CONTEXT_KEY);
+  const contextValue = getContext<GlobalAuthStore | any>(AUTH_CONTEXT_KEY);
   
-  if (!authStore) {
+  if (!contextValue) {
     // Temporary fallback to global store for migration compatibility
     // TODO: Remove this fallback in next major version
     try {
@@ -62,7 +61,24 @@ export function getAuthContext(): GlobalAuthStore {
     }
   }
   
-  return authStore;
+  // Handle writable store pattern (auth-demo uses writable(authStore))
+  if (contextValue && typeof contextValue === 'object' && 'subscribe' in contextValue && typeof contextValue.subscribe === 'function') {
+    // This is a writable store containing the auth store - get current value
+    let currentValue: GlobalAuthStore | null = null;
+    const unsubscribe = contextValue.subscribe((value: GlobalAuthStore | null) => {
+      currentValue = value;
+    });
+    unsubscribe();
+    
+    if (!currentValue) {
+      throw new Error('Auth store not yet initialized in context. Make sure auth store is created and set in the writable context.');
+    }
+    
+    return currentValue;
+  }
+  
+  // Direct auth store (setAuthContext pattern)
+  return contextValue as GlobalAuthStore;
 }
 
 /**

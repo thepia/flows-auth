@@ -4,6 +4,8 @@ import { onMount } from 'svelte';
 import { writable } from 'svelte/store';
 import { setContext } from 'svelte';
 import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
+// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
+const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import '../app.css';
 import '@thepia/flows-auth/dist/style.css';
 
@@ -19,7 +21,7 @@ let initError = null;
 
 // Create context immediately during component initialization
 const authStoreContext = writable(null);
-setContext('authStore', authStoreContext);
+setContext(AUTH_CONTEXT_KEY, authStoreContext);
 
 // Create auth store in onMount to prevent reactive loops
 onMount(() => {
@@ -46,10 +48,10 @@ onMount(() => {
     };
     console.log('⚙️ Auth config created:', authConfig);
 
-    // Create single auth store that all components will share
+    // Create auth store and update context
     authStore = createAuthStore(authConfig);
     console.log('🔧 Auth store created');
-
+    
     // Update context with the created auth store
     authStoreContext.set(authStore);
     console.log('🔄 Auth store context updated');

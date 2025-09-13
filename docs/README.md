@@ -47,6 +47,7 @@ Both scenarios use:
 - **[Development Setup](./development/README.md)** - Local development environment
 - **[API Server Architecture](./development/api-server-architecture.md)** - Backend structure
 - **[Error Reporting](./development/error-reporting-principles.md)** - Error handling patterns
+- **[Svelte 5 Migration Plan](./SVELTE_5_MIGRATION_PLAN.md)** - Framework upgrade strategy
 
 ## Key Features
 

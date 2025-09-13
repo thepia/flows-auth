@@ -63,24 +63,6 @@ describe('Library Exports', () => {
     });
   });
 
-  describe('State Machine', () => {
-    it('should export AuthActions', async () => {
-      const { AuthActions } = await import('../../src/index');
-      expect(AuthActions).toBeDefined();
-      expect(typeof AuthActions).toBe('function'); // Classes are functions
-    });
-
-    it('should export AuthGuards', async () => {
-      const { AuthGuards } = await import('../../src/index');
-      expect(AuthGuards).toBeDefined();
-      expect(typeof AuthGuards).toBe('function'); // Classes are functions
-    });
-
-    it('should export AuthStateMachine', async () => {
-      const { AuthStateMachine } = await import('../../src/index');
-      expect(AuthStateMachine).toBeDefined();
-    });
-  });
 
   describe('Store Functions', () => {
     it('should export createAuthDerivedStores', async () => {

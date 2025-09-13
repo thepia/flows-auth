@@ -33,7 +33,6 @@ export {
 } from './components/core';
 
 // State Machine
-export { AuthActions, AuthGuards, AuthStateMachine } from './stores/auth-state-machine';
 
 
 // Stores

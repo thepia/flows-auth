@@ -30,8 +30,6 @@ import type {
   AuthMethod,
   AuthEventType,
   AuthEventData,
-  AuthMachineState,
-  AuthMachineContext,
   ApplicationContext,
   StorageConfigurationUpdate,
   SessionMigrationResult,
@@ -165,7 +163,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     switch (currentState) {
       case 'emailEntry':
         if (event.type === 'USER_CHECKED') {
-          // Transition to passkeyPrompt if user has passkey, otherwise userChecked
+          // Transition to userChecked - passkey handling should be at UI level
           return 'userChecked';
         }
         break;
@@ -1344,59 +1342,6 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       });
 
       return false;
-    }
-  }
-
-  /**
-   * Update legacy store based on state machine state
-   */
-  // biome-ignore lint/correctness/noUnusedVariables: Legacy function kept for reference
-  function updateLegacyStoreFromStateMachine(state: AuthMachineState, context: AuthMachineContext): void {
-    // biome-ignore lint/correctness/noUnusedVariables: Variable used in legacy patterns
-    const currentStore = get(store);
-    
-    switch (state) {
-      case 'sessionValid':
-      case 'appLoaded':
-        if (context.sessionData) {
-          updateState({
-            state: 'authenticated',
-            user: context.user,
-            accessToken: context.sessionData.accessToken,
-            refreshToken: context.sessionData.refreshToken || null,
-            error: null
-          });
-        }
-        break;
-        
-      case 'sessionInvalid':
-      case 'combinedAuth':
-        updateState({
-          state: 'unauthenticated',
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          error: null
-        });
-        break;
-        
-      case 'checkingSession':
-      case 'loadingApp':
-        updateState({
-          // Don't change state during app loading
-          error: null
-        });
-        break;
-        
-      case 'passkeyError':
-      case 'credentialNotFound':
-      case 'userCancellation':
-      case 'credentialMismatch':
-        updateState({
-          state: 'error',
-          error: context.error
-        });
-        break;
     }
   }
 

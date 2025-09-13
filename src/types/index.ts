@@ -4,7 +4,6 @@
  */
 
 import type { AuthApiClient } from '../api/auth-api';
-import type { AuthStateMachine } from '../stores/auth-state-machine';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 // SignIn state types (keeping only the types, removed the class)
 import type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError } from './signin-state-machine';
@@ -51,68 +50,11 @@ export type RegistrationStep =
   | 'email-verification-complete'
   | 'error';
 
-// State Machine Types - Based on documented authentication state machine
-// Legacy state machine - to be deprecated in favor of dual state machines
-export type AuthMachineState =
-  | 'checkingSession'
-  | 'sessionValid'
-  | 'sessionInvalid'
-  | 'combinedAuth'
-  | 'emailCodeInput' // PIN/code entry state
-  | 'conditionalMediation'
-  | 'autofillPasskeys'
-  | 'waitForExplicit'
-  | 'explicitAuth'
-  | 'auth0UserLookup'
-  | 'directWebAuthnAuth'
-  | 'passkeyRegistration'
-  | 'newUserRegistration'
-  | 'webauthnRegister' // Registration with passkey
-  | 'authenticatedUnconfirmed' // Logged in but email not verified
-  | 'authenticatedConfirmed' // Full access after email verification
-  | 'biometricPrompt'
-  | 'auth0WebAuthnVerify'
-  | 'passkeyError'
-  | 'errorHandling'
-  | 'credentialNotFound'
-  | 'userCancellation'
-  | 'credentialMismatch'
-  | 'auth0TokenExchange'
-  | 'sessionCreated'
-  | 'loadingApp'
-  | 'appLoaded';
 
 // New dual state machine types
 // Removed: session-state-machine types - SessionStateMachine removed
 // Note: signin-state-machine types exported at top of file
 
-export type AuthMachineEvent =
-  | { type: 'CHECK_SESSION' }
-  | { type: 'VALID_SESSION'; session: SessionData }
-  | { type: 'INVALID_SESSION' }
-  | { type: 'USER_CLICKS_NEXT' }
-  | { type: 'EMAIL_TYPED'; email: string }
-  | { type: 'CONTINUE_CLICKED' }
-  | { type: 'PASSKEY_SELECTED'; credential: any }
-  | { type: 'USER_EXISTS'; hasPasskey: boolean }
-  | { type: 'USER_NOT_FOUND' }
-  | { type: 'PIN_REQUIRED' } // Transition to email code input
-  | { type: 'PIN_SUBMITTED'; code: string }
-  | { type: 'PIN_VERIFIED' }
-  | { type: 'WEBAUTHN_SUCCESS'; response: any }
-  | { type: 'WEBAUTHN_ERROR'; error: AuthError; timing: number }
-  | { type: 'TOKEN_EXCHANGE_SUCCESS'; tokens: any }
-  | { type: 'RESET_TO_COMBINED_AUTH' };
-
-export interface AuthMachineContext {
-  email: string | null;
-  user: User | null;
-  error: AuthError | null;
-  startTime: number;
-  retryCount: number;
-  sessionData: SessionData | null;
-  challengeId: string | null;
-}
 
 export interface SessionData {
   accessToken: string;

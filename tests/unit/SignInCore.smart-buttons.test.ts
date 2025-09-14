@@ -1,10 +1,10 @@
 /**
  * SignInCore Smart Button Configuration Tests
- * 
+ *
  * Tests for the new smart button configuration logic that prioritizes
  * passkey authentication when available and provides appropriate secondary actions.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthConfig } from '../../src/types';
 
 describe('SignInCore Smart Button Configuration', () => {
@@ -13,7 +13,7 @@ describe('SignInCore Smart Button Configuration', () => {
   beforeEach(() => {
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
-      clientId: 'test-client', 
+      clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
       enableMagicPins: false,
@@ -46,7 +46,7 @@ describe('SignInCore Smart Button Configuration', () => {
         primaryMethod = 'passkey';
         primaryText = 'Sign in with Passkey';
         primaryLoadingText = 'Signing in with Passkey...';
-        
+
         // Add secondary action for pin fallback if available
         if (config.appCode) {
           secondaryAction = {
@@ -88,9 +88,16 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('User with Passkeys - Smart Primary Action', () => {
     it('should prioritize passkey authentication when user has passkeys', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, true, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        mockConfig
       );
-      
+
       expect(config.primary.method).toBe('passkey');
       expect(config.primary.text).toBe('Sign in with Passkey');
       expect(config.primary.supportsWebAuthn).toBe(true);
@@ -99,9 +106,16 @@ describe('SignInCore Smart Button Configuration', () => {
 
     it('should show pin fallback as secondary when user has passkeys and appCode configured', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, true, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        mockConfig
       );
-      
+
       expect(config.secondary).not.toBeNull();
       expect(config.secondary!.method).toBe('email-code');
       expect(config.secondary!.text).toBe('Send pin by email');
@@ -109,9 +123,16 @@ describe('SignInCore Smart Button Configuration', () => {
 
     it('should show "Enter existing pin" as secondary when user has passkeys and valid pin', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, true, true, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        true,
+        mockConfig
       );
-      
+
       expect(config.secondary).not.toBeNull();
       expect(config.secondary!.method).toBe('email-code');
       expect(config.secondary!.text).toBe('Enter existing pin');
@@ -121,9 +142,16 @@ describe('SignInCore Smart Button Configuration', () => {
     it('should not show secondary action when user has passkeys but no appCode', () => {
       const configWithoutAppCode = { ...mockConfig, appCode: undefined };
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, true, false, configWithoutAppCode
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        configWithoutAppCode
       );
-      
+
       expect(config.primary.method).toBe('passkey');
       expect(config.secondary).toBeNull();
     });
@@ -132,9 +160,16 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('User without Passkeys - Pin Authentication', () => {
     it('should use pin authentication as primary when user has no passkeys', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, false, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        false,
+        false,
+        mockConfig
       );
-      
+
       expect(config.primary.method).toBe('email-code');
       expect(config.primary.text).toBe('Send pin by email');
       expect(config.primary.loadingText).toBe('Sending pin...');
@@ -143,9 +178,16 @@ describe('SignInCore Smart Button Configuration', () => {
 
     it('should show "Enter existing pin" as primary when user has no passkeys but valid pin', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, false, true, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        false,
+        true,
+        mockConfig
       );
-      
+
       expect(config.primary.method).toBe('email-code');
       expect(config.primary.text).toBe('Enter existing pin');
       expect(config.primary.loadingText).toBe('Verifying pin...');
@@ -155,16 +197,23 @@ describe('SignInCore Smart Button Configuration', () => {
 
   describe('Magic Link Fallback', () => {
     it('should use magic link when user has no passkeys and no appCode', () => {
-      const configWithMagicLinks = { 
-        ...mockConfig, 
-        appCode: undefined, 
-        enableMagicPins: true 
+      const configWithMagicLinks = {
+        ...mockConfig,
+        appCode: undefined,
+        enableMagicPins: true
       };
-      
+
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, false, false, configWithMagicLinks
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        false,
+        false,
+        configWithMagicLinks
       );
-      
+
       expect(config.primary.method).toBe('magic-link');
       expect(config.primary.text).toBe('Send Magic Link');
       expect(config.primary.loadingText).toBe('Sending magic link...');
@@ -175,25 +224,39 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('WebAuthn Not Supported - Fallback Behavior', () => {
     it('should fall back to pin when user has passkeys but WebAuthn not supported', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', false, true, true, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        true,
+        false,
+        mockConfig
       );
-      
+
       expect(config.primary.method).toBe('email-code');
       expect(config.primary.text).toBe('Send pin by email');
       expect(config.secondary).toBeNull();
     });
 
     it('should fall back to magic link when user has passkeys but WebAuthn not supported and no appCode', () => {
-      const configWithMagicLinks = { 
-        ...mockConfig, 
-        appCode: undefined, 
-        enableMagicPins: true 
+      const configWithMagicLinks = {
+        ...mockConfig,
+        appCode: undefined,
+        enableMagicPins: true
       };
-      
+
       const config = getButtonConfig(
-        'email', false, 'test@example.com', false, true, true, false, configWithMagicLinks
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        true,
+        false,
+        configWithMagicLinks
       );
-      
+
       expect(config.primary.method).toBe('magic-link');
       expect(config.primary.text).toBe('Send Magic Link');
       expect(config.secondary).toBeNull();
@@ -203,33 +266,43 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('Button State Management', () => {
     it('should disable buttons when loading', () => {
       const config = getButtonConfig(
-        'email', true, 'test@example.com', true, true, true, false, mockConfig
+        'email',
+        true,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        mockConfig
       );
-      
+
       expect(config.primary.disabled).toBe(true);
     });
 
     it('should disable buttons when email is empty', () => {
-      const config = getButtonConfig(
-        'email', false, '', true, true, true, false, mockConfig
-      );
-      
+      const config = getButtonConfig('email', false, '', true, true, true, false, mockConfig);
+
       expect(config.primary.disabled).toBe(true);
     });
 
     it('should disable buttons when email is only whitespace', () => {
-      const config = getButtonConfig(
-        'email', false, '   ', true, true, true, false, mockConfig
-      );
-      
+      const config = getButtonConfig('email', false, '   ', true, true, true, false, mockConfig);
+
       expect(config.primary.disabled).toBe(true);
     });
 
     it('should enable buttons when valid email and not loading', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, true, true, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        mockConfig
       );
-      
+
       expect(config.primary.disabled).toBe(false);
     });
   });
@@ -237,9 +310,16 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('No User Information - Default Behavior', () => {
     it('should use default configuration when user information not available', () => {
       const config = getButtonConfig(
-        'email', false, 'test@example.com', true, null, false, false, mockConfig
+        'email',
+        false,
+        'test@example.com',
+        true,
+        null,
+        false,
+        false,
+        mockConfig
       );
-      
+
       // Should use original method when no user info
       expect(config.primary.method).toBe('email');
       expect(config.primary.text).toBe('Sign In');
@@ -247,10 +327,8 @@ describe('SignInCore Smart Button Configuration', () => {
     });
 
     it('should use default configuration when email is empty', () => {
-      const config = getButtonConfig(
-        'email', false, '', true, true, true, true, mockConfig
-      );
-      
+      const config = getButtonConfig('email', false, '', true, true, true, true, mockConfig);
+
       // Should use original method when no email
       expect(config.primary.method).toBe('email');
       expect(config.primary.text).toBe('Sign In');
@@ -261,9 +339,16 @@ describe('SignInCore Smart Button Configuration', () => {
   describe('Edge Cases', () => {
     it('should handle null userExists gracefully', () => {
       const config = getButtonConfig(
-        'passkey', false, 'test@example.com', true, null, true, true, mockConfig
+        'passkey',
+        false,
+        'test@example.com',
+        true,
+        null,
+        true,
+        true,
+        mockConfig
       );
-      
+
       expect(config.primary.method).toBe('passkey');
       expect(config.secondary).toBeNull();
     });
@@ -275,11 +360,18 @@ describe('SignInCore Smart Button Configuration', () => {
         enableMagicPins: false,
         appCode: undefined
       };
-      
+
       const config = getButtonConfig(
-        'generic', false, 'test@example.com', true, true, false, false, configDisabled
+        'generic',
+        false,
+        'test@example.com',
+        true,
+        true,
+        false,
+        false,
+        configDisabled
       );
-      
+
       expect(config.primary.method).toBe('generic');
       expect(config.secondary).toBeNull();
     });

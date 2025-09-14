@@ -1,11 +1,11 @@
+import { render } from '@testing-library/svelte';
 /**
  * SignInCore Login-Only Mode Message Tests
- * 
+ *
  * Tests the conditional display of the "only registered users" message
  * when signInMode is 'login-only' and user doesn't exist.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
@@ -14,12 +14,12 @@ import type { AuthConfig } from '../../src/types';
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  startConditionalAuthentication: vi.fn(() => Promise.resolve()),
+  startConditionalAuthentication: vi.fn(() => Promise.resolve())
 }));
 
 // Mock error reporter
 vi.mock('../../src/utils/errorReporter', () => ({
-  reportError: vi.fn(),
+  reportError: vi.fn()
 }));
 
 describe('SignInCore Login-Only Mode Message', () => {
@@ -28,7 +28,7 @@ describe('SignInCore Login-Only Mode Message', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
@@ -42,7 +42,7 @@ describe('SignInCore Login-Only Mode Message', () => {
 
     // Create a mock auth store
     mockAuthStore = createAuthStore(mockConfig);
-    
+
     // Mock checkUser to simulate non-existing user
     vi.spyOn(mockAuthStore, 'checkUser').mockResolvedValue({
       exists: false,
@@ -70,10 +70,12 @@ describe('SignInCore Login-Only Mode Message', () => {
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Wait for debounced email check (500ms) and message to appear
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     // Check if the message appears
-    expect(getByText('Only registered users can sign in. Please contact support if you need access.')).toBeTruthy();
+    expect(
+      getByText('Only registered users can sign in. Please contact support if you need access.')
+    ).toBeTruthy();
   });
 
   it('should NOT show message when user exists in login-only mode', async () => {
@@ -99,10 +101,12 @@ describe('SignInCore Login-Only Mode Message', () => {
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Wait for debounced email check
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     // Message should NOT appear
-    expect(queryByText('Only registered users can sign in. Please contact support if you need access.')).toBeFalsy();
+    expect(
+      queryByText('Only registered users can sign in. Please contact support if you need access.')
+    ).toBeFalsy();
   });
 
   it('should NOT show message when signInMode is login-or-register', async () => {
@@ -125,10 +129,12 @@ describe('SignInCore Login-Only Mode Message', () => {
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Wait for debounced email check
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     // Message should NOT appear in login-or-register mode
-    expect(queryByText('Only registered users can sign in. Please contact support if you need access.')).toBeFalsy();
+    expect(
+      queryByText('Only registered users can sign in. Please contact support if you need access.')
+    ).toBeFalsy();
   });
 
   it('should show message in correct state transition: emailEntry -> userChecked', async () => {
@@ -148,11 +154,13 @@ describe('SignInCore Login-Only Mode Message', () => {
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Wait for the reactive statement to trigger checkUser and state transition
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     // Now should be in userChecked state with userExists = false
     // The message should appear
-    const message = getByText('Only registered users can sign in. Please contact support if you need access.');
+    const message = getByText(
+      'Only registered users can sign in. Please contact support if you need access.'
+    );
     expect(message).toBeTruthy();
   });
 });

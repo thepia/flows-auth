@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * Import Validation Test
@@ -12,29 +12,32 @@ test.describe('Import Validation', () => {
       try {
         // Dynamically import the auth library (as would be done in browser)
         const authModule = await import('@thepia/flows-auth');
-        
+
         const errors = [];
         const successes = [];
-        
+
         // Check for key exports that were previously failing
         const requiredExports = [
           'useAuth',
-          'quickAuthSetup', 
+          'quickAuthSetup',
           'createDefaultAuthConfig',
           'detectDefaultApiServer',
           'createAuthStore',
           'SignInForm',
           'AccountCreationForm'
         ];
-        
+
         for (const exportName of requiredExports) {
-          if (typeof authModule[exportName] === 'function' || authModule[exportName] !== undefined) {
+          if (
+            typeof authModule[exportName] === 'function' ||
+            authModule[exportName] !== undefined
+          ) {
             successes.push(exportName);
           } else {
             errors.push(`${exportName} is ${typeof authModule[exportName]}`);
           }
         }
-        
+
         return {
           success: errors.length === 0,
           errors,
@@ -50,21 +53,21 @@ test.describe('Import Validation', () => {
         };
       }
     });
-    
+
     // Log results for debugging
     console.log('📦 Import test results:', result);
-    
+
     // The test should succeed
     expect(result.success).toBe(true);
-    
+
     // Should have found the critical exports
     expect(result.successes).toContain('useAuth');
     expect(result.successes).toContain('quickAuthSetup');
     expect(result.successes).toContain('createAuthStore');
-    
+
     // Should have a reasonable number of exports
     expect(result.totalExports).toBeGreaterThan(10);
-    
+
     // Log any errors for debugging
     if (result.errors.length > 0) {
       console.log('❌ Import errors:', result.errors);

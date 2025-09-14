@@ -3,25 +3,27 @@
  * Tests for button configuration and translation key behavior based on user state
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig, CompleteAuthStore } from '../../src/types';
 import { createAuthStore } from '../../src/stores/auth-store';
+import type { AuthConfig, CompleteAuthStore } from '../../src/types';
 import * as webauthnUtils from '../../src/utils/webauthn';
 
 // Helper to create complete mock auth store
-function createMockAuthStore(initialState: Partial<{
-  signInState: string;
-  user: any;
-  error: any;
-  loading: boolean;
-  userExists: boolean | null;
-  hasPasskeys: boolean;
-  hasValidPin: boolean;
-}> = {}): CompleteAuthStore {
+function createMockAuthStore(
+  initialState: Partial<{
+    signInState: string;
+    user: any;
+    error: any;
+    loading: boolean;
+    userExists: boolean | null;
+    hasPasskeys: boolean;
+    hasValidPin: boolean;
+  }> = {}
+): CompleteAuthStore {
   const defaultState = {
     signInState: 'emailEntry',
     user: null,
@@ -32,7 +34,7 @@ function createMockAuthStore(initialState: Partial<{
     hasValidPin: false
   };
   const mockStore = writable({ ...defaultState, ...initialState });
-  
+
   return {
     ...mockStore,
     signInWithPasskey: vi.fn().mockResolvedValue({ success: false }),
@@ -47,7 +49,9 @@ function createMockAuthStore(initialState: Partial<{
     checkUser: vi.fn().mockResolvedValue({ exists: false, hasWebAuthn: false }),
     registerUser: vi.fn().mockResolvedValue({ success: false }),
     createAccount: vi.fn().mockResolvedValue({ success: false }),
-    registerIndividualUser: vi.fn().mockResolvedValue({ success: false, user: null, verificationRequired: false, message: '' }),
+    registerIndividualUser: vi
+      .fn()
+      .mockResolvedValue({ success: false, user: null, verificationRequired: false, message: '' }),
     checkUserWithInvitation: vi.fn().mockResolvedValue({ exists: false, hasWebAuthn: false }),
     determineAuthFlow: vi.fn().mockResolvedValue({ flowType: 'signin' }),
     on: vi.fn().mockReturnValue(() => {}),
@@ -164,9 +168,9 @@ describe('SignInCore Button Texts', () => {
       const mockAuthStore = createMockAuthStore({
         signInState: 'emailEntry'
       });
-      mockAuthStore.checkUser = vi.fn().mockResolvedValue({ 
-        exists: true, 
-        hasWebAuthn: false, 
+      mockAuthStore.checkUser = vi.fn().mockResolvedValue({
+        exists: true,
+        hasWebAuthn: false,
         lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
       });
 
@@ -230,8 +234,8 @@ describe('SignInCore Button Texts', () => {
         hasPasskeys: true,
         hasValidPin: true
       });
-      mockAuthStore.checkUser = vi.fn().mockResolvedValue({ 
-        exists: true, 
+      mockAuthStore.checkUser = vi.fn().mockResolvedValue({
+        exists: true,
         hasWebAuthn: true,
         lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
       });
@@ -245,7 +249,7 @@ describe('SignInCore Button Texts', () => {
         // Component shows email authentication (with pin status message if user has valid pin)
         const emailButton = screen.getByRole('button', { name: /send pin by email/i });
         expect(emailButton).toBeInTheDocument();
-        
+
         // When user has valid pin, there may be a pin entry option
         const pinButton = screen.queryByRole('button', { name: /enter pin here/i });
         // Pin button may or may not be present depending on component state
@@ -261,8 +265,8 @@ describe('SignInCore Button Texts', () => {
 
       vi.mocked(createAuthStore).mockReturnValue(mockAuthStore);
 
-      const config = { 
-        ...baseConfig, 
+      const config = {
+        ...baseConfig,
         appCode: 'demo',
         // Simulate auto-registration disabled (this would typically be a server-side setting)
         signInMode: 'existing-users-only' as any
@@ -270,11 +274,11 @@ describe('SignInCore Button Texts', () => {
       render(SignInCore, { config, initialEmail: 'nonexistent@example.com' });
 
       await tick();
-      
+
       // Button should still show email pin text but be disabled for non-existent users
       const primaryButton = screen.getByRole('button', { name: /send pin by email/i });
       expect(primaryButton).toBeInTheDocument();
-      
+
       // Note: The actual disabling logic would depend on server configuration
       // This test documents the expected behavior
     });
@@ -293,12 +297,13 @@ describe('SignInCore Button Texts', () => {
 
       // Should only have one button
       const buttons = screen.getAllByRole('button');
-      const authButtons = buttons.filter(btn => 
-        btn.textContent?.includes('pin') || 
-        btn.textContent?.includes('passkey') ||
-        btn.textContent?.includes('Sign')
+      const authButtons = buttons.filter(
+        (btn) =>
+          btn.textContent?.includes('pin') ||
+          btn.textContent?.includes('passkey') ||
+          btn.textContent?.includes('Sign')
       );
-      
+
       expect(authButtons).toHaveLength(1);
       expect(authButtons[0]).toHaveTextContent(/send pin by email/i);
     });
@@ -314,17 +319,17 @@ describe('SignInCore Button Texts', () => {
 
       vi.mocked(createAuthStore).mockReturnValue(mockAuthStore);
 
-      const config = { 
-        ...baseConfig, 
+      const config = {
+        ...baseConfig,
         appCode: 'demo',
         translations: {
           en: {
             // Test the expected equivalent translation keys
-            'emailPin': 'Send pin by email',
-            'passkeyPrompt': 'Sign in with Passkey', 
-            'applePrompt': 'Continue with Touch ID',
-            'touchIDPrompt': 'Continue with Touch ID',
-            'faceIDPrompt': 'Continue with Face ID'
+            emailPin: 'Send pin by email',
+            passkeyPrompt: 'Sign in with Passkey',
+            applePrompt: 'Continue with Touch ID',
+            touchIDPrompt: 'Continue with Touch ID',
+            faceIDPrompt: 'Continue with Face ID'
           }
         }
       };
@@ -342,10 +347,10 @@ describe('SignInCore Button Texts', () => {
       // This test documents the expected mapping between button methods and translation keys
       const expectedMappings = {
         'email-code': 'auth.sendPinByEmail', // equivalent to 'emailPin'
-        'passkey': 'auth.signInWithPasskey', // equivalent to 'passkeyPrompt'
+        passkey: 'auth.signInWithPasskey', // equivalent to 'passkeyPrompt'
         'touch-id': 'auth.continueWithTouchId', // equivalent to 'touchIDPrompt'
         'face-id': 'auth.continueWithFaceId', // equivalent to 'faceIDPrompt'
-        'biometric': 'auth.continueWithBiometric', // equivalent to 'applePrompt'
+        biometric: 'auth.continueWithBiometric' // equivalent to 'applePrompt'
       };
 
       // This is a documentation test - the actual mapping is in getButtonConfig()

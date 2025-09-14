@@ -1,6 +1,6 @@
 /**
  * Svelte Flow Fixes Regression Tests
- * 
+ *
  * Specific tests for the issues we identified and fixed:
  * 1. NaN pattern attribute errors
  * 2. userNodesStore.set undefined errors
@@ -8,10 +8,9 @@
  * 4. Viewport calculation issues
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Svelte Flow Fixes - Regression Tests', () => {
-
   describe('NaN Pattern Attribute Prevention', () => {
     it('should ensure node positions are never NaN', () => {
       // Test the coordinate calculation logic from our components
@@ -23,7 +22,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
 
       mockData.forEach(({ index, categoryIndex }) => {
         // This matches our SessionStateMachineFlow calculation
-        const x = Math.max(0, (index * 180) + (categoryIndex * 50));
+        const x = Math.max(0, index * 180 + categoryIndex * 50);
         const y = Math.max(0, categoryIndex * 100 + 50);
 
         expect(x).not.toBeNaN();
@@ -42,7 +41,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
       mockStates.forEach((_, index) => {
         const col = index % 3;
         const row = Math.floor(index / 3);
-        
+
         const x = Math.max(0, col * 200 + 50);
         const y = Math.max(0, row * 120 + 50);
 
@@ -68,7 +67,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
       edgeCases.forEach(({ value, multiplier }) => {
         const safeValue = value || 0;
         const result = Math.max(0, safeValue * multiplier);
-        
+
         expect(result).not.toBeNaN();
         expect(result).toBeGreaterThanOrEqual(0);
       });
@@ -164,7 +163,12 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
       // Simulate a second update (should not reinitialize)
       const mockFlowData2 = {
         nodes: [
-          { id: 'test', type: 'default', position: { x: 0, y: 0 }, data: { label: 'Test Updated' } },
+          {
+            id: 'test',
+            type: 'default',
+            position: { x: 0, y: 0 },
+            data: { label: 'Test Updated' }
+          },
           { id: 'test2', type: 'default', position: { x: 100, y: 0 }, data: { label: 'Test 2' } }
         ],
         edges: []
@@ -187,11 +191,16 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
     it('should validate proper prop structure for SvelteFlowProvider', () => {
       const providerProps = {
         initialNodes: [
-          { id: '1', type: 'default', position: { x: 100, y: 100 }, data: { label: 'Node 1' }, width: 140, height: 40 }
+          {
+            id: '1',
+            type: 'default',
+            position: { x: 100, y: 100 },
+            data: { label: 'Node 1' },
+            width: 140,
+            height: 40
+          }
         ],
-        initialEdges: [
-          { id: 'e1-2', source: '1', target: '2', type: 'default' }
-        ],
+        initialEdges: [{ id: 'e1-2', source: '1', target: '2', type: 'default' }],
         initialWidth: 600,
         initialHeight: 300
       };
@@ -209,7 +218,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
       expect(providerProps.initialHeight).toBeGreaterThan(0);
 
       // Validate nodes have required properties
-      providerProps.initialNodes.forEach(node => {
+      providerProps.initialNodes.forEach((node) => {
         expect(node.position.x).not.toBeNaN();
         expect(node.position.y).not.toBeNaN();
         expect(node.width).toBeGreaterThan(0);
@@ -242,7 +251,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
       expect(typeof backgroundProps.variant).toBe('string');
       expect(typeof backgroundProps.gap).toBe('number');
       expect(typeof backgroundProps.size).toBe('number');
-      
+
       expect(backgroundProps.gap).toBeGreaterThan(0);
       expect(backgroundProps.size).toBeGreaterThan(0);
       expect(backgroundProps.gap).not.toBeNaN();
@@ -275,7 +284,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
         { source: 'userChecked', target: 'signedIn', event: 'AUTO_TRANSITION' }
       ];
 
-      mockTransitions.forEach(transition => {
+      mockTransitions.forEach((transition) => {
         expect(transition).toHaveProperty('source');
         expect(transition).toHaveProperty('target');
         expect(transition).toHaveProperty('event');
@@ -301,7 +310,7 @@ describe('Svelte Flow Fixes - Regression Tests', () => {
         { operation: 'max', a: 0, b: 100, expected: 100 }
       ];
 
-      testCases.forEach(testCase => {
+      testCases.forEach((testCase) => {
         let result: number;
 
         switch (testCase.operation) {

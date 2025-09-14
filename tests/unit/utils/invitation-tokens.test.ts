@@ -3,23 +3,26 @@
  * Tests token decoding, validation, and data extraction
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   decodeInvitationToken,
-  validateInvitationToken,
+  extractRegistrationData,
   hashInvitationToken,
-  extractRegistrationData
+  validateInvitationToken
 } from '../../../src/utils/invitation-tokens';
 
 describe('invitation token utilities', () => {
   // Sample valid JWT for testing (not a real token)
-  const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImZpcnN0TmFtZSI6IkpvaG4iLCJsYXN0TmFtZSI6IkRvZSIsImNvbXBhbnkiOiJUaGVwaWEiLCJqb2JUaXRsZSI6IkhpcmluZyBNYW5hZ2VyIiwicGhvbmUiOiIrMTIzNDU2Nzg5MCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.validsignaturetoken123';
-  
-  const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImV4cCI6MTYwMDAwMDAwMCwiaWF0IjoxNTk5OTk5OTAwfQ.validsignaturetoken123';
-  
+  const validToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImZpcnN0TmFtZSI6IkpvaG4iLCJsYXN0TmFtZSI6IkRvZSIsImNvbXBhbnkiOiJUaGVwaWEiLCJqb2JUaXRsZSI6IkhpcmluZyBNYW5hZ2VyIiwicGhvbmUiOiIrMTIzNDU2Nzg5MCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.validsignaturetoken123';
+
+  const expiredToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImV4cCI6MTYwMDAwMDAwMCwiaWF0IjoxNTk5OTk5OTAwfQ.validsignaturetoken123';
+
   const invalidStructureToken = 'invalid.token';
-  
-  const missingEmailToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaXJzdE5hbWUiOiJKb2huIiwibGFzdE5hbWUiOiJEb2UifQ.validsignaturetoken123';
+
+  const missingEmailToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaXJzdE5hbWUiOiJKb2huIiwibGFzdE5hbWUiOiJEb2UifQ.validsignaturetoken123';
 
   describe('decodeInvitationToken', () => {
     it('should decode valid JWT token', () => {
@@ -40,8 +43,9 @@ describe('invitation token utilities', () => {
     });
 
     it('should handle token with name field instead of firstName/lastName', () => {
-      const nameToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsIm5hbWUiOiJKb2huIERvZSIsImNvbXBhbnlOYW1lIjoiVGhlcGlhIn0.validsignaturetoken123';
-      
+      const nameToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsIm5hbWUiOiJKb2huIERvZSIsImNvbXBhbnlOYW1lIjoiVGhlcGlhIn0.validsignaturetoken123';
+
       const result = decodeInvitationToken(nameToken);
 
       expect(result.email).toBe('test@thepia.com');
@@ -52,14 +56,20 @@ describe('invitation token utilities', () => {
     });
 
     it('should throw error for invalid token format', () => {
-      expect(() => decodeInvitationToken(invalidStructureToken)).toThrow('Failed to decode invitation token');
+      expect(() => decodeInvitationToken(invalidStructureToken)).toThrow(
+        'Failed to decode invitation token'
+      );
       expect(() => decodeInvitationToken('')).toThrow('Failed to decode invitation token');
-      expect(() => decodeInvitationToken('single.part')).toThrow('Failed to decode invitation token');
+      expect(() => decodeInvitationToken('single.part')).toThrow(
+        'Failed to decode invitation token'
+      );
     });
 
     it('should throw error for invalid base64 payload', () => {
       const badPayloadToken = 'header.!!!invalid-base64!!!.signature';
-      expect(() => decodeInvitationToken(badPayloadToken)).toThrow('Failed to decode invitation token');
+      expect(() => decodeInvitationToken(badPayloadToken)).toThrow(
+        'Failed to decode invitation token'
+      );
     });
   });
 
@@ -101,8 +111,9 @@ describe('invitation token utilities', () => {
     });
 
     it('should reject token with invalid email format', () => {
-      const invalidEmailToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5vdC1hbi1lbWFpbCJ9.validsignaturetoken123';
-      
+      const invalidEmailToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5vdC1hbi1lbWFpbCJ9.validsignaturetoken123';
+
       const result = validateInvitationToken(invalidEmailToken);
 
       expect(result.isValid).toBe(false);
@@ -110,8 +121,9 @@ describe('invitation token utilities', () => {
     });
 
     it('should reject token issued in the future', () => {
-      const futureToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImlhdCI6OTk5OTk5OTk5OX0.validsignaturetoken123';
-      
+      const futureToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSIsImlhdCI6OTk5OTk5OTk5OX0.validsignaturetoken123';
+
       const result = validateInvitationToken(futureToken);
 
       expect(result.isValid).toBe(false);
@@ -119,8 +131,9 @@ describe('invitation token utilities', () => {
     });
 
     it('should reject token with empty signature', () => {
-      const noSigToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSJ9.';
-      
+      const noSigToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAdGhlcGlhLmNvbSJ9.';
+
       const result = validateInvitationToken(noSigToken);
 
       expect(result.isValid).toBe(false);
@@ -132,7 +145,7 @@ describe('invitation token utilities', () => {
       // (signature verification not yet implemented)
       const result = validateInvitationToken(validToken);
 
-      // Without actual signature verification implementation, 
+      // Without actual signature verification implementation,
       // this should still validate structure
       expect(result.isValid).toBe(true);
     });

@@ -1,13 +1,13 @@
 /**
  * Comprehensive Test Suite for AccountCreationForm Component
- * 
+ *
  * This test suite covers all aspects of the enhanced AccountCreationForm component
  * including business fields, invitation token integration, and dynamic field behavior.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
@@ -37,7 +37,7 @@ describe('AccountCreationForm Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     defaultConfig = {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
@@ -213,9 +213,9 @@ describe('AccountCreationForm Component', () => {
   describe('Business Fields Integration', () => {
     it('should render business fields when specified', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
-          additionalFields: ['company', 'phone', 'jobTitle'] 
+        props: {
+          config: defaultConfig,
+          additionalFields: ['company', 'phone', 'jobTitle']
         }
       });
 
@@ -299,8 +299,8 @@ describe('AccountCreationForm Component', () => {
   describe('Invitation Token Integration', () => {
     it('should prefill fields from invitation token data', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData,
           additionalFields: ['company', 'phone', 'jobTitle']
         }
@@ -341,8 +341,8 @@ describe('AccountCreationForm Component', () => {
 
     it('should make email field read-only when from invitation token', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData,
           readOnlyFields: ['email']
         }
@@ -360,8 +360,8 @@ describe('AccountCreationForm Component', () => {
       };
 
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: tokenDataWithReadOnly
         }
       });
@@ -370,7 +370,7 @@ describe('AccountCreationForm Component', () => {
       const emailInput = screen.getByLabelText(/Email Address/);
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(screen.getByText(/Create Account with Passkey/));
-      
+
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
       fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
@@ -386,8 +386,8 @@ describe('AccountCreationForm Component', () => {
   describe('Dynamic Read-Only Field Support', () => {
     it('should make specified fields read-only', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           readOnlyFields: ['email'],
           initialEmail: 'readonly@test.com'
         }
@@ -405,8 +405,8 @@ describe('AccountCreationForm Component', () => {
       };
 
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: tokenDataWithReadOnly,
           readOnlyFields: ['email']
         }
@@ -418,7 +418,7 @@ describe('AccountCreationForm Component', () => {
       // Navigate to webauthn-register step
       fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.click(screen.getByText(/Create Account with Passkey/));
-      
+
       fireEvent.click(screen.getByLabelText(/Terms of Service/));
       fireEvent.click(screen.getByLabelText(/Privacy Policy/));
       fireEvent.click(screen.getByText('Accept & Create Account with Passkey'));
@@ -570,8 +570,8 @@ describe('AccountCreationForm Component', () => {
   describe('Form Reset and State Management', () => {
     it('should reset form state correctly', async () => {
       const { component } = render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           initialEmail: 'initial@test.com',
           additionalFields: ['company', 'phone', 'jobTitle']
         }
@@ -592,15 +592,15 @@ describe('AccountCreationForm Component', () => {
 
     it('should maintain invitation token data after reset', () => {
       render(AccountCreationForm, {
-        props: { 
-          config: defaultConfig, 
+        props: {
+          config: defaultConfig,
           invitationTokenData: mockInvitationTokenData
         }
       });
 
       const emailInput = screen.getByLabelText(/Email Address/) as HTMLInputElement;
       expect(emailInput.value).toBe('test@example.com');
-      
+
       // Value should remain from invitation token even after changes
       expect(emailInput.value).toBe('test@example.com');
     });

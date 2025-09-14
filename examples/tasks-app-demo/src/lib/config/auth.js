@@ -10,16 +10,16 @@ import { browser } from '$app/environment';
  */
 async function getApiBaseUrl() {
   if (!browser) return 'https://api.thepia.com';
-  
+
   // Check if we have env var
   let apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL;
-  
+
   if (!apiBaseUrl) {
     // Try local API server first
     try {
       const localResponse = await fetch('https://dev.thepia.com:8443/health', {
         method: 'GET',
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(2000)
       });
       if (localResponse.ok) {
         apiBaseUrl = 'https://dev.thepia.com:8443';
@@ -34,7 +34,7 @@ async function getApiBaseUrl() {
       console.log('💡 Note: Some features may be limited due to CORS restrictions');
     }
   }
-  
+
   return apiBaseUrl;
 }
 
@@ -44,15 +44,16 @@ async function getApiBaseUrl() {
  */
 export async function getAuthConfig() {
   const apiBaseUrl = await getApiBaseUrl();
-  
+
   // Determine if we're in development
-  const isDev = browser && typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.includes('dev.thepia.net') ||
-    window.location.hostname.includes('dev.thepia.com')
-  );
-  
+  const isDev =
+    browser &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.includes('dev.thepia.net') ||
+      window.location.hostname.includes('dev.thepia.com'));
+
   return {
     apiBaseUrl,
     clientId: 'tasks-app-demo',
@@ -70,8 +71,8 @@ export async function getAuthConfig() {
       enabled: isDev,
       debug: isDev,
       maxRetries: 3,
-      retryDelay: 1000,
-    },
+      retryDelay: 1000
+    }
   };
 }
 

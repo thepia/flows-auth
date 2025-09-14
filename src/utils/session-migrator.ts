@@ -3,8 +3,14 @@
  * Provides secure migration of session data between storage types
  */
 
-import type { SessionMigrationResult, StorageType, StorageConfigurationUpdate } from '../types';
-import { getSession, saveSession, clearSession, isSessionValid, type FlowsSessionData } from './sessionManager';
+import type { SessionMigrationResult, StorageConfigurationUpdate, StorageType } from '../types';
+import {
+  type FlowsSessionData,
+  clearSession,
+  getSession,
+  isSessionValid,
+  saveSession
+} from './sessionManager';
 
 /**
  * Session migration class for handling secure data transfers between storage types
@@ -30,18 +36,18 @@ export class SessionMigrator {
   /**
    * Migrate session data between storage types
    */
-  async migrate(fromType: StorageType, toType: StorageType, options: {
-    preserveTokens?: boolean;
-    validateTokens?: boolean;
-    performSecurityChecks?: boolean;
-  } = {}): Promise<SessionMigrationResult> {
+  async migrate(
+    fromType: StorageType,
+    toType: StorageType,
+    options: {
+      preserveTokens?: boolean;
+      validateTokens?: boolean;
+      performSecurityChecks?: boolean;
+    } = {}
+  ): Promise<SessionMigrationResult> {
     const startTime = Date.now();
-    
-    const {
-      preserveTokens = true,
-      validateTokens = true,
-      performSecurityChecks = true
-    } = options;
+
+    const { preserveTokens = true, validateTokens = true, performSecurityChecks = true } = options;
 
     if (!this.isInBrowser) {
       return this.createFailureResult(fromType, toType, 'Not in browser environment');
@@ -74,13 +80,22 @@ export class SessionMigrator {
       if (performSecurityChecks) {
         const securityResult = this.performSecurityChecks(currentSession, fromType, toType);
         if (!securityResult.allowed) {
-          return this.createFailureResult(fromType, toType, securityResult.reason || 'Security check failed');
+          return this.createFailureResult(
+            fromType,
+            toType,
+            securityResult.reason || 'Security check failed'
+          );
         }
       }
 
       // Step 4: Perform migration
-      const migrationResult = await this.performMigration(currentSession, fromType, toType, preserveTokens);
-      
+      const migrationResult = await this.performMigration(
+        currentSession,
+        fromType,
+        toType,
+        preserveTokens
+      );
+
       // Step 5: Performance check
       const duration = Date.now() - startTime;
       if (duration > 500) {
@@ -100,7 +115,7 @@ export class SessionMigrator {
       };
     } catch (error) {
       console.error('❌ Session migration failed:', error);
-      
+
       // Cleanup on failure
       try {
         clearSession();
@@ -109,11 +124,17 @@ export class SessionMigrator {
       }
 
       const duration = Date.now() - startTime;
-      this.logMigration(fromType, toType, false, duration, error instanceof Error ? error.message : 'Unknown error');
+      this.logMigration(
+        fromType,
+        toType,
+        false,
+        duration,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
 
       return this.createFailureResult(
-        fromType, 
-        toType, 
+        fromType,
+        toType,
         error instanceof Error ? error.message : 'Migration failed, sensitive data cleared'
       );
     }
@@ -122,7 +143,11 @@ export class SessionMigrator {
   /**
    * Perform security checks before migration
    */
-  private performSecurityChecks(session: FlowsSessionData, fromType: StorageType, toType: StorageType): {
+  private performSecurityChecks(
+    session: FlowsSessionData,
+    fromType: StorageType,
+    toType: StorageType
+  ): {
     allowed: boolean;
     reason?: string;
   } {
@@ -152,8 +177,8 @@ export class SessionMigrator {
    * Perform the actual migration
    */
   private async performMigration(
-    session: FlowsSessionData, 
-    fromType: StorageType, 
+    session: FlowsSessionData,
+    fromType: StorageType,
     toType: StorageType,
     preserveTokens: boolean
   ): Promise<void> {
@@ -192,8 +217,8 @@ export class SessionMigrator {
    * Create a failure result
    */
   private createFailureResult(
-    fromType: StorageType, 
-    toType: StorageType, 
+    fromType: StorageType,
+    toType: StorageType,
     error: string
   ): SessionMigrationResult {
     return {
@@ -210,15 +235,15 @@ export class SessionMigrator {
    * Log migration attempt
    */
   private logMigration(
-    fromType: StorageType, 
-    toType: StorageType, 
-    success: boolean, 
+    fromType: StorageType,
+    toType: StorageType,
+    success: boolean,
     duration: number,
     error?: string
   ): void {
     const logLevel = success ? 'log' : 'error';
     const status = success ? 'SUCCESS' : 'FAILED';
-    
+
     console[logLevel](`AUDIT: Session migration ${status}`, {
       timestamp: new Date().toISOString(),
       fromStorage: fromType,
@@ -246,7 +271,7 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
         userRole: 'admin',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
       };
-    
+
     case 'employee':
       return {
         ...baseConfig,
@@ -254,7 +279,7 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
         userRole: 'employee',
         sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
       };
-    
+
     case 'guest':
     default:
       return {
@@ -272,7 +297,7 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
 export function shouldMigrateSession(currentRole: string, targetRole: string): boolean {
   const currentConfig = getRoleBasedStorageConfig(currentRole);
   const targetConfig = getRoleBasedStorageConfig(targetRole);
-  
+
   return currentConfig.type !== targetConfig.type;
 }
 
@@ -280,7 +305,7 @@ export function shouldMigrateSession(currentRole: string, targetRole: string): b
  * Utility function to safely perform session migration
  */
 export async function migrateSessionSafely(
-  fromType: StorageType, 
+  fromType: StorageType,
   toType: StorageType,
   options?: {
     preserveTokens?: boolean;
@@ -316,7 +341,7 @@ export async function migrateForRole(
 
   const currentConfig = getRoleBasedStorageConfig(currentRole);
   const targetConfig = getRoleBasedStorageConfig(targetRole);
-  
+
   return migrateSessionSafely(currentConfig.type, targetConfig.type, options);
 }
 

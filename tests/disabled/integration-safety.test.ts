@@ -1,15 +1,15 @@
 /**
  * Safe Integration Regression Tests
- * 
+ *
  * These tests verify the fixes work in integration without making real API calls
  * or requiring external dependencies. They focus on the component behavior and
  * error handling patterns we fixed.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, waitFor, cleanup } from '@testing-library/svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/stores/auth-store';
 
 // Mock fetch to avoid real API calls
 const mockFetch = vi.fn();
@@ -29,14 +29,14 @@ describe('Integration Regression Tests (Safe)', () => {
   describe('End-to-End Error Handling Flow', () => {
     it('should handle complete unregistered user flow without technical errors', async () => {
       // Mock API responses for unregistered user
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
             exists: false,
             hasWebAuthn: false
           })
-        });
+      });
 
       const authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
@@ -62,18 +62,22 @@ describe('Integration Regression Tests (Safe)', () => {
       await fireEvent.input(emailInput, { target: { value: 'newuser@example.com' } });
       await fireEvent.click(signInButton);
 
-      await waitFor(() => {
-        // ✅ REGRESSION TEST: Should NOT show technical errors
-        expect(queryByText(/endpoint.*not found/i)).toBeNull();
-        expect(queryByText(/auth\/signin\/magic-link/)).toBeNull();
-        expect(queryByText(/404/)).toBeNull();
+      await waitFor(
+        () => {
+          // ✅ REGRESSION TEST: Should NOT show technical errors
+          expect(queryByText(/endpoint.*not found/i)).toBeNull();
+          expect(queryByText(/auth\/signin\/magic-link/)).toBeNull();
+          expect(queryByText(/404/)).toBeNull();
 
-        // ✅ Should transition to registration OR show user-friendly message
-        const hasGoodUX = queryByText(/terms of service/i) || 
-                         queryByText(/try again/i) ||
-                         queryByText(/register/i);
-        expect(hasGoodUX).toBeTruthy();
-      }, { timeout: 3000 });
+          // ✅ Should transition to registration OR show user-friendly message
+          const hasGoodUX =
+            queryByText(/terms of service/i) ||
+            queryByText(/try again/i) ||
+            queryByText(/register/i);
+          expect(hasGoodUX).toBeTruthy();
+        },
+        { timeout: 3000 }
+      );
 
       // ✅ Verify API was called correctly
       expect(mockFetch).toHaveBeenCalledWith(
@@ -112,17 +116,21 @@ describe('Integration Regression Tests (Safe)', () => {
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(signInButton);
 
-      await waitFor(() => {
-        // ✅ REGRESSION TEST: Technical error should be hidden
-        expect(queryByText('Endpoint not found')).toBeNull();
-        expect(queryByText('404')).toBeNull();
+      await waitFor(
+        () => {
+          // ✅ REGRESSION TEST: Technical error should be hidden
+          expect(queryByText('Endpoint not found')).toBeNull();
+          expect(queryByText('404')).toBeNull();
 
-        // ✅ Should show user-friendly message OR auto-transition
-        const hasUserFriendlyResponse = queryByText(/terms of service/i) ||
-                                      queryByText(/try again/i) ||
-                                      queryByText(/authentication.*failed/i);
-        expect(hasUserFriendlyResponse).toBeTruthy();
-      }, { timeout: 3000 });
+          // ✅ Should show user-friendly message OR auto-transition
+          const hasUserFriendlyResponse =
+            queryByText(/terms of service/i) ||
+            queryByText(/try again/i) ||
+            queryByText(/authentication.*failed/i);
+          expect(hasUserFriendlyResponse).toBeTruthy();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -136,13 +144,14 @@ describe('Integration Regression Tests (Safe)', () => {
 
       // Spy on auth store methods
       const checkUserSpy = vi.spyOn(authStore, 'checkUser');
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasWebAuthn: true
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasWebAuthn: true
+          })
       });
 
       const { getByText, getByPlaceholderText } = render(SignInForm, {
@@ -217,7 +226,7 @@ describe('Integration Regression Tests (Safe)', () => {
     it('should have all expected exports available', async () => {
       // ✅ REGRESSION TEST: Main exports should be available
       const exports = await import('../../src/index');
-      
+
       expect(exports.SignInForm).toBeDefined();
       expect(exports.createAuthStore).toBeDefined();
       expect(exports.RegistrationForm).toBeDefined();

@@ -103,7 +103,8 @@ export function getPasswordStrengthColor(score: number): string {
  * Validate domain format
  */
 export function isValidDomain(domain: string): boolean {
-  const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+  const domainRegex =
+    /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
   return domainRegex.test(domain);
 }
 

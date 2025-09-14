@@ -5,7 +5,30 @@
 
 export interface AuthStateEvent {
   type: 'auth-state-change';
-  event: 'login-attempt' | 'login-success' | 'login-failure' | 'webauthn-start' | 'webauthn-success' | 'webauthn-failure' | 'webauthn-register-start' | 'webauthn-register-success' | 'webauthn-register-failure' | 'magic-link-request' | 'magic-link-sent' | 'magic-link-failure' | 'magic-link-verify-start' | 'magic-link-verify-success' | 'magic-link-verify-failure' | 'sign-in-started' | 'sign-in-success' | 'sign-in-error' | 'token-refreshed' | 'sign-out' | 'registration-start' | 'registration-success' | 'registration-failure';
+  event:
+    | 'login-attempt'
+    | 'login-success'
+    | 'login-failure'
+    | 'webauthn-start'
+    | 'webauthn-success'
+    | 'webauthn-failure'
+    | 'webauthn-register-start'
+    | 'webauthn-register-success'
+    | 'webauthn-register-failure'
+    | 'magic-link-request'
+    | 'magic-link-sent'
+    | 'magic-link-failure'
+    | 'magic-link-verify-start'
+    | 'magic-link-verify-success'
+    | 'magic-link-verify-failure'
+    | 'sign-in-started'
+    | 'sign-in-success'
+    | 'sign-in-error'
+    | 'token-refreshed'
+    | 'sign-out'
+    | 'registration-start'
+    | 'registration-success'
+    | 'registration-failure';
   email?: string;
   userId?: string;
   authMethod?: 'passkey' | 'password' | 'email' | 'magic-link';
@@ -149,7 +172,7 @@ class ErrorReporter {
     }
 
     this.retryQueue = failedRetries;
-    
+
     if (this.retryQueue.length > 0) {
       this.scheduleRetry();
     }
@@ -164,7 +187,7 @@ class ErrorReporter {
     const queuedEvents = [...this.queue];
     this.queue = [];
 
-    queuedEvents.forEach(event => this.report(event));
+    queuedEvents.forEach((event) => this.report(event));
   }
 
   getQueueSize() {
@@ -177,7 +200,7 @@ let reporter: ErrorReporter | null = null;
 
 export function initializeErrorReporter(config: ErrorReporterConfig) {
   reporter = new ErrorReporter(config);
-  
+
   if (config.debug) {
     console.log('📊 [ErrorReporter] Initialized with config:', config);
   }
@@ -188,22 +211,26 @@ export function updateErrorReporterConfig(config: Partial<ErrorReporterConfig>) 
     console.warn('📊 [ErrorReporter] Not initialized. Call initializeErrorReporter first.');
     return;
   }
-  
+
   reporter.updateConfig(config);
 }
 
 export function reportAuthState(event: Omit<AuthStateEvent, 'type'>) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'auth-state-change',
     ...event
   });
 }
 
-export function reportWebAuthnError(operation: 'authentication' | 'registration', error: any, context?: Record<string, any>) {
+export function reportWebAuthnError(
+  operation: 'authentication' | 'registration',
+  error: any,
+  context?: Record<string, any>
+) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'webauthn-error',
     operation,
@@ -217,9 +244,15 @@ export function reportWebAuthnError(operation: 'authentication' | 'registration'
   });
 }
 
-export function reportApiError(url: string, method: string, status: number, message: string, context?: Record<string, any>) {
+export function reportApiError(
+  url: string,
+  method: string,
+  status: number,
+  message: string,
+  context?: Record<string, any>
+) {
   if (!reporter) return;
-  
+
   reporter.report({
     type: 'api-error',
     url,
@@ -244,9 +277,10 @@ export function getErrorReportQueueSize() {
 // NOTE: The endpoint will be properly set when auth store is initialized with config
 if (typeof window !== 'undefined') {
   // Check for development environment
-  const isDev = window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1' ||
-                window.location.hostname.endsWith('.thepia.net');
+  const isDev =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.endsWith('.thepia.net');
 
   initializeErrorReporter({
     enabled: true,

@@ -1,7 +1,7 @@
 /**
  * Simple test to verify vitest configuration
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Simple Test', () => {
   it('should pass basic assertion', () => {

@@ -1,12 +1,12 @@
 /**
  * SignInCore Configuration Reactivity Tests
- * 
+ *
  * These tests specifically target the configuration reactivity issue
  * that caused the auth demo form construction problems.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent } from '@testing-library/svelte';
+import { fireEvent, render } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 
 // Mock the auth store to focus on config reactivity
@@ -70,7 +70,7 @@ describe('SignInCore Configuration Reactivity', () => {
   describe('Configuration Change Detection', () => {
     it('should re-render button text when enablePasskeys changes', async () => {
       let config = { ...baseConfig, enablePasskeys: true, enableMagicPins: false };
-      
+
       const { component, getByRole, rerender } = render(SignInCore, {
         props: { config }
       });
@@ -100,10 +100,10 @@ describe('SignInCore Configuration Reactivity', () => {
       // Test 1: Mutate existing object (BAD - won't trigger reactivity)
       config.enablePasskeys = false;
       config.enableMagicPins = false;
-      
+
       // Wait for potential updates
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Button text should NOT have changed (this is the bug)
       expect(button.textContent).toBe(initialText);
 
@@ -117,12 +117,12 @@ describe('SignInCore Configuration Reactivity', () => {
 
     it('should update authentication method UI when config changes', async () => {
       // Start with passkey-only config
-      let config = { 
-        ...baseConfig, 
-        enablePasskeys: true, 
-        enableMagicPins: false 
+      let config = {
+        ...baseConfig,
+        enablePasskeys: true,
+        enableMagicPins: false
       };
-      
+
       const { component, container, rerender } = render(SignInCore, {
         props: { config, initialEmail: 'test@example.com' }
       });
@@ -132,10 +132,10 @@ describe('SignInCore Configuration Reactivity', () => {
       expect(emailInput.getAttribute('autocomplete')).toContain('webauthn');
 
       // Change to email-only config
-      config = { 
-        ...baseConfig, 
-        enablePasskeys: false, 
-        enableMagicPins: true 
+      config = {
+        ...baseConfig,
+        enablePasskeys: false,
+        enableMagicPins: true
       };
       await rerender({ config });
 
@@ -145,7 +145,7 @@ describe('SignInCore Configuration Reactivity', () => {
 
     it('should handle signInMode configuration changes', async () => {
       let config = { ...baseConfig, signInMode: 'login-only' };
-      
+
       const { component, rerender } = render(SignInCore, {
         props: { config }
       });
@@ -162,7 +162,7 @@ describe('SignInCore Configuration Reactivity', () => {
       // Trigger sign in for non-existing user
       const emailInput = component.container.querySelector('input[type="email"]');
       const button = component.container.querySelector('button[type="submit"]');
-      
+
       await fireEvent.input(emailInput, { target: { value: 'new@example.com' } });
       await fireEvent.click(button);
 
@@ -175,7 +175,7 @@ describe('SignInCore Configuration Reactivity', () => {
 
       // Same action should now proceed to registration
       await fireEvent.click(button);
-      
+
       // Should transition to registration step
       expect(component.container.textContent).toContain('registration');
     });
@@ -190,7 +190,7 @@ describe('SignInCore Configuration Reactivity', () => {
       const authConfig = { ...baseConfig };
       let enablePasskeys = true;
       let enableMagicPins = true;
-      let signInMode = 'login-or-register';
+      const signInMode = 'login-or-register';
 
       // Original broken pattern - direct mutation
       const updateSignInConfigBroken = () => {
@@ -220,14 +220,14 @@ describe('SignInCore Configuration Reactivity', () => {
       // Test broken pattern
       updateSignInConfigBroken();
       await rerender({ config: authConfig }); // Same object reference!
-      
+
       // Component won't detect change
       // (This would fail in a full integration test)
 
-      // Test fixed pattern  
+      // Test fixed pattern
       const newConfig = updateSignInConfigFixed();
       await rerender({ config: newConfig }); // New object reference!
-      
+
       // Component should detect change and update
       // (This passes)
     });
@@ -236,24 +236,26 @@ describe('SignInCore Configuration Reactivity', () => {
       // Test the Svelte reactive pattern we implemented
       const baseAuthConfig = { ...baseConfig };
       let enablePasskeys = true;
-      let enableMagicPins = true;
-      let signInMode = 'login-or-register';
+      const enableMagicPins = true;
+      const signInMode = 'login-or-register';
 
       // Simulate the reactive statement
       const createDynamicConfig = () => {
-        return baseAuthConfig ? {
-          ...baseAuthConfig,
-          enablePasskeys,
-          enableMagicPins,
-          signInMode
-        } : null;
+        return baseAuthConfig
+          ? {
+              ...baseAuthConfig,
+              enablePasskeys,
+              enableMagicPins,
+              signInMode
+            }
+          : null;
       };
 
       const config1 = createDynamicConfig();
-      
+
       // Change variables
       enablePasskeys = false;
-      
+
       const config2 = createDynamicConfig();
 
       // Objects should be different references
@@ -271,7 +273,7 @@ describe('SignInCore Configuration Reactivity', () => {
       });
 
       // Access internal state (in real component this would be reactive)
-      let buttonConfig = component.$$.ctx.find(item => item.method);
+      let buttonConfig = component.$$.ctx.find((item) => item.method);
       const initialMethod = buttonConfig?.method || 'unknown';
 
       // Change config
@@ -279,7 +281,7 @@ describe('SignInCore Configuration Reactivity', () => {
       await rerender({ config });
 
       // Button config should update
-      buttonConfig = component.$$.ctx.find(item => item.method);
+      buttonConfig = component.$$.ctx.find((item) => item.method);
       expect(buttonConfig?.method).not.toBe(initialMethod);
     });
 

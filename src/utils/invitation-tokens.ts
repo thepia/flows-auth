@@ -50,7 +50,7 @@ export function decodeInvitationToken(token: string): InvitationTokenData {
       jobTitle: payload.jobTitle,
       expires: payload.exp ? new Date(payload.exp * 1000) : null,
       issuedAt: payload.iat ? new Date(payload.iat * 1000) : null,
-      ...payload,
+      ...payload
     };
   } catch (error) {
     throw new Error('Failed to decode invitation token');
@@ -63,7 +63,10 @@ export function decodeInvitationToken(token: string): InvitationTokenData {
  * @param tokenData - Pre-decoded token data (optional)
  * @returns boolean indicating if token is valid
  */
-export function validateInvitationToken(token: string, tokenData?: InvitationTokenData): TokenValidationResult {
+export function validateInvitationToken(
+  token: string,
+  tokenData?: InvitationTokenData
+): TokenValidationResult {
   if (!token) {
     return { isValid: false, reason: 'invalid_structure' };
   }

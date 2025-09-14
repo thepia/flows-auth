@@ -3,7 +3,7 @@
  * Based on thepia.com implementation
  */
 
-import type { PasskeyChallenge, PasskeyCredential, AuthError } from '../types';
+import type { AuthError, PasskeyChallenge, PasskeyCredential } from '../types';
 
 /**
  * Check if WebAuthn is supported
@@ -21,7 +21,7 @@ export function isWebAuthnSupported(): boolean {
  */
 export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
   if (!isWebAuthnSupported()) return false;
-  
+
   try {
     return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   } catch {
@@ -50,10 +50,7 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 /**
@@ -69,7 +66,7 @@ export async function createPasskey(
   }
 
   try {
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: {
         challenge: base64ToArrayBuffer(challenge.challenge),
         rp: {
@@ -93,7 +90,7 @@ export async function createPasskey(
         timeout: challenge.timeout || 60000,
         attestation: 'direct'
       }
-    }) as PublicKeyCredential;
+    })) as PublicKeyCredential;
 
     if (!credential) {
       throw new Error('No credential returned');
@@ -123,15 +120,16 @@ export async function createCredential(registrationOptions: any): Promise<any> {
 
   try {
     console.log('🔧 Processing WebAuthn registration options:', registrationOptions);
-    
+
     // Convert server format to browser format
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
       challenge: base64ToArrayBuffer(registrationOptions.challenge),
       rp: registrationOptions.rp,
       user: {
-        id: typeof registrationOptions.user.id === 'string' 
-          ? base64ToArrayBuffer(registrationOptions.user.id)
-          : registrationOptions.user.id,
+        id:
+          typeof registrationOptions.user.id === 'string'
+            ? base64ToArrayBuffer(registrationOptions.user.id)
+            : registrationOptions.user.id,
         name: registrationOptions.user.name,
         displayName: registrationOptions.user.displayName
       },
@@ -147,9 +145,9 @@ export async function createCredential(registrationOptions: any): Promise<any> {
 
     console.log('🔧 Converted options for browser API:', publicKeyCredentialCreationOptions);
 
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: publicKeyCredentialCreationOptions
-    }) as PublicKeyCredential;
+    })) as PublicKeyCredential;
 
     if (!credential) {
       throw new Error('No credential returned');
@@ -184,11 +182,11 @@ export async function createCredential(registrationOptions: any): Promise<any> {
  */
 export async function isConditionalMediationSupported(): Promise<boolean> {
   if (!isWebAuthnSupported()) return false;
-  
+
   try {
     return (
       window.PublicKeyCredential.isConditionalMediationAvailable &&
-      await window.PublicKeyCredential.isConditionalMediationAvailable()
+      (await window.PublicKeyCredential.isConditionalMediationAvailable())
     );
   } catch {
     return false;
@@ -210,7 +208,7 @@ export async function authenticateWithPasskey(
     publicKey: {
       challenge: base64ToArrayBuffer(challenge.challenge),
       rpId: challenge.rpId,
-      allowCredentials: challenge.allowCredentials?.map(cred => ({
+      allowCredentials: challenge.allowCredentials?.map((cred) => ({
         ...cred,
         id: base64ToArrayBuffer(cred.id as unknown as string)
       })) as PublicKeyCredentialDescriptor[],
@@ -220,12 +218,12 @@ export async function authenticateWithPasskey(
   };
 
   // Add conditional mediation for email-triggered auth
-  if (conditional && await isConditionalMediationSupported()) {
+  if (conditional && (await isConditionalMediationSupported())) {
     (requestOptions as any).mediation = 'conditional';
   }
 
   try {
-    const credential = await navigator.credentials.get(requestOptions) as PublicKeyCredential;
+    const credential = (await navigator.credentials.get(requestOptions)) as PublicKeyCredential;
 
     if (!credential) {
       throw new Error('No credential returned');
@@ -255,49 +253,49 @@ export async function authenticateWithPasskey(
  */
 function mapWebAuthnError(error: any): AuthError {
   const message = error.message || error.name || 'Unknown error';
-  
+
   if (error.name === 'NotSupportedError') {
     return {
       code: 'passkey_not_supported',
       message: 'Passkeys are not supported on this device'
     };
   }
-  
+
   if (error.name === 'SecurityError') {
     return {
       code: 'passkey_failed',
       message: 'Security error during passkey operation'
     };
   }
-  
+
   if (error.name === 'NotAllowedError') {
     return {
       code: 'passkey_failed',
       message: 'Passkey operation was cancelled or failed'
     };
   }
-  
+
   if (error.name === 'InvalidStateError') {
     return {
       code: 'passkey_failed',
       message: 'A passkey already exists for this account'
     };
   }
-  
+
   if (error.name === 'ConstraintError') {
     return {
       code: 'passkey_failed',
       message: 'Passkey creation constraints were not met'
     };
   }
-  
+
   if (error.name === 'UnknownError') {
     return {
       code: 'passkey_failed',
       message: 'An unknown error occurred during passkey operation'
     };
   }
-  
+
   return {
     code: 'passkey_failed',
     message: `Passkey operation failed: ${message}`
@@ -319,8 +317,10 @@ export function serializeCredential(credential: PasskeyCredential): any {
       signature: arrayBufferToBase64Url(
         (credential.response as AuthenticatorAssertionResponse).signature
       ),
-      userHandle: (credential.response as AuthenticatorAssertionResponse).userHandle 
-        ? arrayBufferToBase64Url((credential.response as AuthenticatorAssertionResponse).userHandle!)
+      userHandle: (credential.response as AuthenticatorAssertionResponse).userHandle
+        ? arrayBufferToBase64Url(
+            (credential.response as AuthenticatorAssertionResponse).userHandle!
+          )
         : null
     },
     type: credential.type
@@ -341,28 +341,28 @@ export function generatePasskeyName(): string {
  */
 function getDeviceInfo(): string {
   if (typeof window === 'undefined') return 'Unknown Device';
-  
+
   const userAgent = navigator.userAgent;
-  
+
   if (/iPhone|iPad|iPod/.test(userAgent)) {
     return /iPad/.test(userAgent) ? 'iPad' : 'iPhone';
   }
-  
+
   if (/Mac/.test(userAgent)) {
     return 'Mac';
   }
-  
+
   if (/Android/.test(userAgent)) {
     return 'Android Device';
   }
-  
+
   if (/Windows/.test(userAgent)) {
     return 'Windows PC';
   }
-  
+
   if (/Linux/.test(userAgent)) {
     return 'Linux Device';
   }
-  
+
   return 'Unknown Device';
 }

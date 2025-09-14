@@ -3,8 +3,8 @@
  * Tests the actual behavior without over-mocking internal implementation
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { get } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
@@ -13,7 +13,7 @@ import type { AuthConfig, SignInResponse } from '../../src/types';
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     checkEmail: vi.fn(),
-    getPasskeyChallenge: vi.fn(), 
+    getPasskeyChallenge: vi.fn(),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
     signInWithMagicLink: vi.fn(),
@@ -31,9 +31,9 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock browser environment
-Object.defineProperty(globalThis, 'window', { 
+Object.defineProperty(globalThis, 'window', {
   value: { location: { hostname: 'localhost' } },
-  writable: true 
+  writable: true
 });
 
 const mockConfig: AuthConfig = {
@@ -57,13 +57,13 @@ describe('signInWithPasskey', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    
+
     authStore = createAuthStore(mockConfig);
-    
+
     // Get the mocked dependencies
     const { AuthApiClient } = await import('../../src/api/auth-api');
     mockApiClient = (AuthApiClient as any).mock.results[0].value;
-    
+
     const webAuthnModule = await import('../../src/utils/webauthn');
     mockWebAuthn = webAuthnModule;
   });
@@ -144,8 +144,7 @@ describe('signInWithPasskey', () => {
         hasPasskey: false
       });
 
-      await expect(authStore.signInWithPasskey('nonexistent@example.com'))
-        .rejects.toThrow();
+      await expect(authStore.signInWithPasskey('nonexistent@example.com')).rejects.toThrow();
     });
 
     it('should handle user without passkey', async () => {
@@ -176,7 +175,7 @@ describe('signInWithPasskey', () => {
         type: 'public-key'
       });
 
-      // Mock the response indicating successful authentication 
+      // Mock the response indicating successful authentication
       mockApiClient.signInWithPasskey.mockResolvedValue({
         step: 'success', // Use 'success' instead of 'passkey_created'
         message: 'Passkey created and authenticated successfully',
@@ -213,8 +212,7 @@ describe('signInWithPasskey', () => {
 
       mockWebAuthn.authenticateWithPasskey.mockRejectedValue(new Error('WebAuthn failed'));
 
-      await expect(authStore.signInWithPasskey('test@example.com'))
-        .rejects.toThrow();
+      await expect(authStore.signInWithPasskey('test@example.com')).rejects.toThrow();
     });
 
     it('should handle API authentication failure', async () => {
@@ -247,8 +245,7 @@ describe('signInWithPasskey', () => {
       // API rejects the authentication
       mockApiClient.signInWithPasskey.mockRejectedValue(new Error('Invalid credential'));
 
-      await expect(authStore.signInWithPasskey('test@example.com'))
-        .rejects.toThrow();
+      await expect(authStore.signInWithPasskey('test@example.com')).rejects.toThrow();
     });
   });
 
@@ -275,7 +272,7 @@ describe('signInWithPasskey', () => {
 
       mockWebAuthn.serializeCredential.mockReturnValue({
         id: 'credential-id',
-        rawId: 'base64-rawid', 
+        rawId: 'base64-rawid',
         response: {},
         type: 'public-key'
       });
@@ -301,7 +298,7 @@ describe('signInWithPasskey', () => {
       // Verify session was saved by checking real session manager
       const { getSession } = await import('../../src/utils/sessionManager');
       const savedSession = getSession();
-      
+
       expect(savedSession).toBeTruthy();
       expect(savedSession?.user.email).toBe('test@example.com');
       expect(savedSession?.tokens.accessToken).toBe('access-token');

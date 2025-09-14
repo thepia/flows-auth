@@ -6,7 +6,13 @@
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 // SignIn state types (keeping only the types, removed the class)
-import type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError } from './signin-state-machine';
+import type {
+  SignInContext,
+  SignInError,
+  SignInEvent,
+  SignInState,
+  WebAuthnError
+} from './signin-state-machine';
 export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
 
 // User types
@@ -50,11 +56,9 @@ export type RegistrationStep =
   | 'email-verification-complete'
   | 'error';
 
-
 // New dual state machine types
 // Removed: session-state-machine types - SessionStateMachine removed
 // Note: signin-state-machine types exported at top of file
-
 
 export interface SessionData {
   accessToken: string;
@@ -567,5 +571,5 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
 export type {
   CustomTranslations,
   TranslationKey,
-  SupportedLanguage,
+  SupportedLanguage
 } from '../utils/i18n';

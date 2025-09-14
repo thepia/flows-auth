@@ -3,7 +3,7 @@
  * Tests the getButtonConfig logic that determines button text and behavior
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('SignInCore Button Configuration Logic', () => {
   // Mock the $i18n function
@@ -23,16 +23,16 @@ describe('SignInCore Button Configuration Logic', () => {
       'status.pinValid': 'A valid pin was already sent to you, good for {minutes} minute{s}.',
       'status.pinDirectAction': 'Enter pin here'
     };
-    
+
     let translation = translations[key] || key;
-    
+
     // Handle parameter substitution
     if (params) {
       Object.entries(params).forEach(([param, value]) => {
         translation = translation.replace(`{${param}}`, String(value));
       });
     }
-    
+
     return translation;
   };
 
@@ -45,7 +45,7 @@ describe('SignInCore Button Configuration Logic', () => {
     userExists: boolean | null,
     hasPasskeys: boolean,
     hasValidPin: boolean,
-    config: { enablePasskeys?: boolean, appCode?: string, enableMagicLinks?: boolean }
+    config: { enablePasskeys?: boolean; appCode?: string; enableMagicLinks?: boolean }
   ) {
     // Smart button configuration based on discovered user state
     let primaryMethod = method;
@@ -60,7 +60,7 @@ describe('SignInCore Button Configuration Logic', () => {
         primaryMethod = 'passkey';
         primaryText = mockI18n('auth.signInWithPasskey');
         primaryLoadingText = mockI18n('auth.signingIn');
-        
+
         // Add secondary action for pin fallback if available
         if (config.appCode) {
           secondaryAction = {
@@ -99,26 +99,29 @@ describe('SignInCore Button Configuration Logic', () => {
       // This tests the separate pin status UI that appears above the buttons
       const hasValidPin = true;
       const pinRemainingMinutes = 8;
-      
+
       // The pin status message components
-      const pinStatusText = mockI18n('status.pinValid', { minutes: pinRemainingMinutes, s: pinRemainingMinutes !== 1 ? 's' : '' });
+      const pinStatusText = mockI18n('status.pinValid', {
+        minutes: pinRemainingMinutes,
+        s: pinRemainingMinutes !== 1 ? 's' : ''
+      });
       const pinDirectActionText = mockI18n('status.pinDirectAction');
-      
+
       expect(pinStatusText).toBe('A valid pin was already sent to you, good for 8 minutes.');
       expect(pinDirectActionText).toBe('Enter pin here');
-      
+
       // When this is shown, the main button still says "Send pin by email"
       const config = getButtonConfig(
         'email',
         false,
-        'test@example.com', 
+        'test@example.com',
         false,
         true,
         false,
         true, // hasValidPin
         { appCode: 'demo' }
       );
-      
+
       // Main button should still be "Send pin by email" (not "Enter existing pin")
       expect(config.primary.text).toBe('Send pin by email');
     });
@@ -159,7 +162,7 @@ describe('SignInCore Button Configuration Logic', () => {
       expect(config.primary.text).toBe('Send pin by email');
       expect(config.primary.loadingText).toBe('Sending pin...');
       expect(config.primary.method).toBe('email-code');
-      
+
       // This test will FAIL with current implementation (line 649) which incorrectly sets
       // primaryText = $i18n('auth.enterExistingPin') when hasValidPin is true
     });
@@ -211,7 +214,7 @@ describe('SignInCore Button Configuration Logic', () => {
       expect(config.primary.text).toBe('Sign in with Passkey');
       expect(config.primary.method).toBe('passkey');
       expect(config.primary.supportsWebAuthn).toBe(true);
-      
+
       expect(config.secondary).toBeTruthy();
       expect(config.secondary?.text).toBe('Send pin by email');
       expect(config.secondary?.method).toBe('email-code');
@@ -291,15 +294,33 @@ describe('SignInCore Button Configuration Logic', () => {
   describe('Translation key equivalence for different button types', () => {
     it('should map methods to correct translation keys', () => {
       // Test that the expected "equivalent" translation keys are used
-      const emailConfig = getButtonConfig('email', false, 'test@example.com', false, false, false, false, { appCode: 'demo' });
-      const passkeyConfig = getButtonConfig('passkey', false, 'test@example.com', true, true, true, false, { enablePasskeys: true, appCode: 'demo' });
-      
+      const emailConfig = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        false,
+        false,
+        false,
+        { appCode: 'demo' }
+      );
+      const passkeyConfig = getButtonConfig(
+        'passkey',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        { enablePasskeys: true, appCode: 'demo' }
+      );
+
       // emailPin equivalent -> 'auth.sendPinByEmail'
       expect(emailConfig.primary.text).toBe('Send pin by email');
-      
-      // passkeyPrompt equivalent -> 'auth.signInWithPasskey'  
+
+      // passkeyPrompt equivalent -> 'auth.signInWithPasskey'
       expect(passkeyConfig.primary.text).toBe('Sign in with Passkey');
-      
+
       // These would be the biometric-specific variations, though they aren't currently implemented
       // 'applePrompt'/'touchIDPrompt' -> 'auth.continueWithTouchId'
       // 'faceIDPrompt' -> 'auth.continueWithFaceId'
@@ -309,9 +330,27 @@ describe('SignInCore Button Configuration Logic', () => {
     });
 
     it('should use same text regardless of pin availability', () => {
-      const noPinConfig = getButtonConfig('email', false, 'test@example.com', false, true, false, false, { appCode: 'demo' });
-      const withPinConfig = getButtonConfig('email', false, 'test@example.com', false, true, false, true, { appCode: 'demo' });
-      
+      const noPinConfig = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        false,
+        false,
+        { appCode: 'demo' }
+      );
+      const withPinConfig = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        false,
+        true,
+        { appCode: 'demo' }
+      );
+
       expect(noPinConfig.primary.text).toBe('Send pin by email');
       expect(withPinConfig.primary.text).toBe('Send pin by email');
     });
@@ -319,10 +358,37 @@ describe('SignInCore Button Configuration Logic', () => {
 
   describe('Loading states and disabled conditions', () => {
     it('should show correct loading text for different methods', () => {
-      const emailConfig = getButtonConfig('email', false, 'test@example.com', false, true, false, false, { appCode: 'demo' });
-      const passkeyConfig = getButtonConfig('passkey', false, 'test@example.com', true, true, true, false, { enablePasskeys: true });
-      const pinConfig = getButtonConfig('email', false, 'test@example.com', false, true, false, true, { appCode: 'demo' });
-      
+      const emailConfig = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        false,
+        false,
+        { appCode: 'demo' }
+      );
+      const passkeyConfig = getButtonConfig(
+        'passkey',
+        false,
+        'test@example.com',
+        true,
+        true,
+        true,
+        false,
+        { enablePasskeys: true }
+      );
+      const pinConfig = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        false,
+        true,
+        { appCode: 'demo' }
+      );
+
       expect(emailConfig.primary.loadingText).toBe('Sending pin...');
       expect(passkeyConfig.primary.loadingText).toBe('Signing in...');
       expect(pinConfig.primary.loadingText).toBe('Sending pin...');
@@ -333,11 +399,13 @@ describe('SignInCore Button Configuration Logic', () => {
         { email: '', loading: false, shouldBeDisabled: true },
         { email: 'test@example.com', loading: false, shouldBeDisabled: false },
         { email: 'test@example.com', loading: true, shouldBeDisabled: true },
-        { email: '   ', loading: false, shouldBeDisabled: true }, // whitespace only
+        { email: '   ', loading: false, shouldBeDisabled: true } // whitespace only
       ];
-      
+
       configs.forEach(({ email, loading, shouldBeDisabled }) => {
-        const config = getButtonConfig('email', loading, email, false, false, false, false, { appCode: 'demo' });
+        const config = getButtonConfig('email', loading, email, false, false, false, false, {
+          appCode: 'demo'
+        });
         expect(config.primary.disabled).toBe(shouldBeDisabled);
       });
     });
@@ -350,7 +418,7 @@ describe('SignInCore Button Configuration Logic', () => {
         false,
         'test@example.com',
         false, // no webauthn
-        true, // userExists  
+        true, // userExists
         false, // no passkeys
         false,
         { enableMagicLinks: true } // no appCode, but magic links enabled

@@ -12,20 +12,20 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'https://dev.thepia.net:5177',
-    trace: 'on-first-retry',
+    trace: 'on-first-retry'
   },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+      use: { ...devices['Desktop Chrome'] }
+    }
   ],
 
   webServer: {
     command: 'pnpm run build && pnpm run preview --host dev.thepia.net --port 5177',
     port: 5177,
     host: 'dev.thepia.net',
-    reuseExistingServer: !process.env.CI,
-  },
+    reuseExistingServer: !process.env.CI
+  }
 });

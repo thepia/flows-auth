@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules/**", "dist/**", "build/**", "coverage/**", ".svelte-kit/**", "*.d.ts", "**/*.svelte"]
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      ".svelte-kit/**",
+      "*.d.ts",
+      "**/*.svelte"
+    ]
   },
   "formatter": {
     "enabled": true,

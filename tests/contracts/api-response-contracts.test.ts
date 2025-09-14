@@ -1,15 +1,14 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 /**
  * API CONTRACT TESTS
- * 
+ *
  * These tests define the exact API response formats that flows-auth MUST support.
  * Any changes to these contracts require careful consideration and migration planning.
- * 
+ *
  * BREAKING CHANGES to these contracts will break authentication flows.
  */
 describe('API Response Contracts - IMMUTABLE', () => {
-
   describe('signInWithPasskey Response Contract', () => {
     test('MUST support new response format: {success: true, tokens: {...}, user: {...}}', () => {
       // This is the EXACT format the API currently returns
@@ -17,7 +16,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
         success: true,
         tokens: {
           accessToken: 'webauthn-verified',
-          refreshToken: 'webauthn-verified', 
+          refreshToken: 'webauthn-verified',
           expiresAt: 1752790702497 // Unix timestamp
         },
         user: {
@@ -98,10 +97,10 @@ describe('API Response Contracts - IMMUTABLE', () => {
         // All failure responses must have error information
         expect(failureResponse).toHaveProperty('error');
         expect(typeof failureResponse.error).toBe('string');
-        
+
         // Success indicator must be false or step must be 'failed'
-        const isFailure = failureResponse.success === false || 
-                         (failureResponse as any).step === 'failed';
+        const isFailure =
+          failureResponse.success === false || (failureResponse as any).step === 'failed';
         expect(isFailure).toBe(true);
       }
     });
@@ -136,7 +135,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
       expect(typeof normalizedSessionFormat.refreshToken).toBe('string');
       expect(typeof normalizedSessionFormat.user.id).toBe('string');
       expect(typeof normalizedSessionFormat.user.email).toBe('string');
-      
+
       // ExpiresIn must be a number (seconds) when present
       if (normalizedSessionFormat.expiresIn !== undefined) {
         expect(typeof normalizedSessionFormat.expiresIn).toBe('number');
@@ -149,13 +148,13 @@ describe('API Response Contracts - IMMUTABLE', () => {
     test('MUST use consistent storage key across all components', () => {
       // This is the EXACT key that must be used for session storage
       const REQUIRED_STORAGE_KEY = 'thepia_auth_session';
-      
+
       // This key is used by:
       // - sessionManager.saveSession()
-      // - sessionManager.getSession() 
+      // - sessionManager.getSession()
       // - auth-state-machine.ts
       // - Any other component accessing session data
-      
+
       expect(REQUIRED_STORAGE_KEY).toBe('thepia_auth_session');
       expect(typeof REQUIRED_STORAGE_KEY).toBe('string');
       expect(REQUIRED_STORAGE_KEY.length).toBeGreaterThan(0);
@@ -165,12 +164,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
   describe('Authentication State Contract', () => {
     test('MUST maintain consistent state transitions', () => {
       // These are the EXACT states that the auth store must support
-      const REQUIRED_AUTH_STATES = [
-        'unauthenticated',
-        'loading', 
-        'authenticated',
-        'error'
-      ];
+      const REQUIRED_AUTH_STATES = ['unauthenticated', 'loading', 'authenticated', 'error'];
 
       // Validate all required states exist
       for (const state of REQUIRED_AUTH_STATES) {
@@ -180,10 +174,10 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Validate state transition rules
       const validTransitions = {
-        'unauthenticated': ['loading', 'error'],
-        'loading': ['authenticated', 'error', 'unauthenticated'],
-        'authenticated': ['loading', 'unauthenticated', 'error'],
-        'error': ['loading', 'unauthenticated']
+        unauthenticated: ['loading', 'error'],
+        loading: ['authenticated', 'error', 'unauthenticated'],
+        authenticated: ['loading', 'unauthenticated', 'error'],
+        error: ['loading', 'unauthenticated']
       };
 
       // Each state must have valid transition targets
@@ -272,7 +266,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
         },
         // Verified status
         {
-          status: 'verified', 
+          status: 'verified',
           user: {
             id: 'user-123',
             email: 'test@example.com',
@@ -293,7 +287,7 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
         // Type validation
         expect(typeof statusResponse.status).toBe('string');
-        
+
         if (statusResponse.user) {
           expect(statusResponse.user).toHaveProperty('id');
           expect(statusResponse.user).toHaveProperty('email');
@@ -325,9 +319,9 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Event payload contracts
       const eventPayloads = {
-        'sign_in_success': { user: expect.any(Object), method: expect.any(String) },
-        'sign_in_error': { error: expect.any(String), method: expect.any(String) },
-        'passkey_used': { user: expect.any(Object) }
+        sign_in_success: { user: expect.any(Object), method: expect.any(String) },
+        sign_in_error: { error: expect.any(String), method: expect.any(String) },
+        passkey_used: { user: expect.any(Object) }
       };
 
       // Validate event payload structures
@@ -343,9 +337,9 @@ describe('API Response Contracts - IMMUTABLE', () => {
       // These are the EXACT UI states that AuthSection must support
       const REQUIRED_UI_STATES = [
         'unauthenticated', // Show sign-in form
-        'authenticated',   // Show "Open Demo" button
-        'loading',         // Show loading spinner
-        'error'           // Show error message
+        'authenticated', // Show "Open Demo" button
+        'loading', // Show loading spinner
+        'error' // Show error message
       ];
 
       // Validate all required UI states
@@ -356,25 +350,25 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // UI state behavior contracts
       const uiStateBehaviors = {
-        'unauthenticated': {
+        unauthenticated: {
           showSignInForm: true,
           showOpenDemoButton: false,
           showUserEmail: false,
           allowAutoRedirect: false
         },
-        'authenticated': {
+        authenticated: {
           showSignInForm: false,
           showOpenDemoButton: true,
           showUserEmail: true,
           allowAutoRedirect: false // No automatic redirect from landing page
         },
-        'loading': {
+        loading: {
           showSignInForm: false,
           showOpenDemoButton: false,
           showUserEmail: false,
           allowAutoRedirect: false
         },
-        'error': {
+        error: {
           showSignInForm: true, // Allow retry
           showOpenDemoButton: false,
           showUserEmail: false,

@@ -1,23 +1,23 @@
 /**
  * BDD Tests: flows-auth API Consumption
- * 
+ *
  * Tests that flows-auth correctly consumes API responses from thepia.com server,
  * ensuring perfect alignment between client expectations and server responses.
- * 
+ *
  * These tests validate the flows-auth library from a user perspective,
  * using real API calls to ensure actual integration works.
- * 
+ *
  * Moved from tests/bdd/ to tests/integration/ for proper organization.
  */
 
-import { describe, it, beforeAll, afterEach, expect, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src';
 import type { AuthStore } from '../../src/types';
 
 // Test configuration
 interface TestConfig {
   apiBaseUrl: string;
-  appCode: string; 
+  appCode: string;
   provider: 'workos' | 'auth0';
   domain: string;
 }
@@ -25,11 +25,11 @@ interface TestConfig {
 // Detect which API server to test against
 async function detectApiServer(): Promise<string> {
   const servers = ['https://dev.thepia.com:8443', 'https://api.thepia.com'];
-  
+
   for (const server of servers) {
     try {
-      const response = await fetch(`${server}/health`, { 
-        signal: AbortSignal.timeout(3000) 
+      const response = await fetch(`${server}/health`, {
+        signal: AbortSignal.timeout(3000)
       });
       if (response.ok) {
         console.log(`🔗 flows-auth testing against API server: ${server}`);
@@ -39,14 +39,14 @@ async function detectApiServer(): Promise<string> {
       // Server not available, try next
     }
   }
-  
+
   throw new Error('No API server available for flows-auth testing');
 }
 
 describe('BDD: flows-auth API Consumption', () => {
   let apiBaseUrl: string;
   let testConfig: TestConfig;
-  
+
   beforeAll(async () => {
     apiBaseUrl = await detectApiServer();
     testConfig = {
@@ -74,7 +74,7 @@ describe('BDD: flows-auth API Consumption', () => {
       expect(typeof authStore.checkUser).toBe('function');
       expect(typeof authStore.sendEmailCode).toBe('function');
       expect(typeof authStore.verifyEmailCode).toBe('function');
-      
+
       // And: Should have correct configuration
       expect(authStore.api).toBeDefined();
     });
@@ -109,7 +109,7 @@ describe('BDD: flows-auth API Consumption', () => {
     });
 
     it('should check user existence and return proper flows-auth format', async () => {
-      // Given: A test email address  
+      // Given: A test email address
       const testEmail = `flows-auth-bdd-${Date.now()}@example.com`;
 
       // When: flows-auth calls checkUser
@@ -199,7 +199,7 @@ describe('BDD: flows-auth API Consumption', () => {
 
       // Then: Should reject with proper error structure
       await expect(verificationPromise).rejects.toThrow();
-      
+
       try {
         await verificationPromise;
       } catch (error: any) {
@@ -223,7 +223,7 @@ describe('BDD: flows-auth API Consumption', () => {
 
       // Then: Should reflect backend capabilities correctly
       expect(userCheck.hasWebAuthn).toBe(false); // No passkeys for WorkOS
-      
+
       // And: Email auth should be available
       await expect(authStore.sendEmailCode(testEmail)).resolves.toBeDefined();
     });
@@ -266,7 +266,7 @@ describe('BDD: flows-auth API Consumption', () => {
       // And: Should not expose raw API response structure
       expect(checkResult).not.toHaveProperty('organization');
       expect(checkResult).not.toHaveProperty('success');
-      expect(sendResult).not.toHaveProperty('organization'); 
+      expect(sendResult).not.toHaveProperty('organization');
       expect(sendResult).not.toHaveProperty('success');
     });
 
@@ -279,7 +279,7 @@ describe('BDD: flows-auth API Consumption', () => {
 
       // Then: Should convert API error to flows-auth error format
       await expect(checkPromise).rejects.toThrow();
-      
+
       try {
         await checkPromise;
       } catch (error: any) {
@@ -333,7 +333,7 @@ describe('BDD: flows-auth API Consumption', () => {
 
       // Then: Should reflect actual backend capabilities
       expect(userCheck.hasWebAuthn).toBe(false);
-      
+
       // And: Should still provide email authentication
       await expect(authStore.sendEmailCode(testEmail)).resolves.toBeDefined();
     });
@@ -385,7 +385,7 @@ describe('BDD: flows-auth API Consumption', () => {
 
       // Then: Should fail with network error
       await expect(checkPromise).rejects.toThrow();
-      
+
       try {
         await checkPromise;
       } catch (error: any) {
@@ -408,7 +408,7 @@ describe('BDD: flows-auth API Consumption', () => {
       // Then: Should have all documented API methods
       const requiredMethods = [
         'checkUser',
-        'sendEmailCode', 
+        'sendEmailCode',
         'verifyEmailCode',
         'signOut',
         'refreshTokens'

@@ -3,42 +3,53 @@
  * Svelte store for managing authentication state
  */
 
-import { writable, derived, get } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 
 // Check if running in browser
 const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
-import { authenticateWithPasskey, serializeCredential, isWebAuthnSupported, isConditionalMediationSupported } from '../utils/webauthn';
-import { initializeErrorReporter, reportAuthState, reportWebAuthnError, reportApiError, updateErrorReporterConfig } from '../utils/errorReporter';
-import {
-  saveSession,
-  clearSession,
-  getSession,
-  isSessionValid,
-  generateInitials,
-  configureSessionStorage,
-  getOptimalSessionConfig,
-  type FlowsSessionData
-} from '../utils/sessionManager';
 import type {
+  ApplicationContext,
   AuthConfig,
+  AuthError,
+  AuthEventData,
+  AuthEventType,
+  AuthMethod,
   AuthStore,
   CompleteAuthStore,
-  AuthError,
-  SignInResponse,
-  RegistrationResponse,
-  AuthMethod,
-  AuthEventType,
-  AuthEventData,
-  ApplicationContext,
-  StorageConfigurationUpdate,
-  SessionMigrationResult,
-  StorageType,
-  User,
   InvitationTokenData,
+  RegistrationResponse,
+  SessionMigrationResult,
+  SignInEvent,
+  SignInResponse,
   SignInState,
-  SignInEvent
+  StorageConfigurationUpdate,
+  StorageType,
+  User
 } from '../types';
+import {
+  initializeErrorReporter,
+  reportApiError,
+  reportAuthState,
+  reportWebAuthnError,
+  updateErrorReporterConfig
+} from '../utils/errorReporter';
+import {
+  type FlowsSessionData,
+  clearSession,
+  configureSessionStorage,
+  generateInitials,
+  getOptimalSessionConfig,
+  getSession,
+  isSessionValid,
+  saveSession
+} from '../utils/sessionManager';
+import {
+  authenticateWithPasskey,
+  isConditionalMediationSupported,
+  isWebAuthnSupported,
+  serializeCredential
+} from '../utils/webauthn';
 
 // Legacy localStorage migration (remove old localStorage entries if they exist)
 const LEGACY_STORAGE_KEYS = {
@@ -67,17 +78,17 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     if (config.appCode === false || config.appCode === null || config.appCode === undefined) {
       return undefined;
     }
-    
+
     // If appCode is explicitly set to a string, use that
     if (typeof config.appCode === 'string') {
       return config.appCode;
     }
-    
+
     // If appCode is set to true, use default 'app' appCode
     if (config.appCode === true) {
       return 'app';
     }
-    
+
     // Default to undefined for backward compatibility
     return undefined;
   };
@@ -125,7 +136,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   function emit(type: AuthEventType, data: AuthEventData = {}) {
     const handlers = eventHandlers.get(type) || [];
-    handlers.forEach(handler => handler(data));
+    handlers.forEach((handler) => handler(data));
   }
 
   /**
@@ -153,7 +164,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    * Update store state
    */
   function updateState(updates: Partial<AuthStore>) {
-    store.update(state => ({ ...state, ...updates }));
+    store.update((state) => ({ ...state, ...updates }));
   }
 
   /**
@@ -167,37 +178,37 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           return 'userChecked';
         }
         break;
-      
+
       case 'userChecked':
         if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry'; // Transition to PIN entry after email sent
         if (event.type === 'RESET') return 'emailEntry';
         break;
-        
+
       case 'passkeyPrompt':
         if (event.type === 'PASSKEY_SUCCESS') return 'signedIn';
         if (event.type === 'PASSKEY_FAILED') return 'generalError';
         break;
-        
+
       case 'pinEntry':
         if (event.type === 'PIN_VERIFIED') return 'signedIn';
         if (event.type === 'EMAIL_VERIFICATION_REQUIRED') return 'emailVerification';
         if (event.type === 'RESET') return 'emailEntry';
         break;
-        
+
       case 'emailVerification':
         if (event.type === 'EMAIL_VERIFIED') return 'signedIn';
         break;
-        
+
       case 'signedIn':
         if (event.type === 'REGISTER_PASSKEY') return 'passkeyRegistration';
         if (event.type === 'RESET') return 'emailEntry';
         break;
-        
+
       case 'passkeyRegistration':
         if (event.type === 'PASSKEY_REGISTERED') return 'signedIn';
         if (event.type === 'RESET') return 'emailEntry';
         break;
-        
+
       case 'generalError':
         if (event.type === 'RESET') return 'emailEntry';
         break;
@@ -211,7 +222,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   function sendSignInEvent(event: SignInEvent): SignInState {
     let newSignInState: SignInState = 'emailEntry'; // Initialize with default
-    store.update(s => {
+    store.update((s) => {
       newSignInState = processSignInTransition(s.signInState, event);
       const updatedStore = { ...s, signInState: newSignInState };
       return updatedStore;
@@ -223,13 +234,16 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    * Update signInState directly
    */
   function updateSignInState(newSignInState: SignInState) {
-    store.update(s => ({ ...s, signInState: newSignInState }));
+    store.update((s) => ({ ...s, signInState: newSignInState }));
   }
 
   /**
    * Save authentication session to sessionStorage
    */
-  function saveAuthSession(response: SignInResponse, authMethod: 'passkey' | 'password' | 'email-code' = 'passkey') {
+  function saveAuthSession(
+    response: SignInResponse,
+    authMethod: 'passkey' | 'password' | 'email-code' = 'passkey'
+  ) {
     if (!browser || !response.user || !response.accessToken) return;
 
     const sessionData: FlowsSessionData = {
@@ -244,7 +258,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       tokens: {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken || '',
-        expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)
+        expiresAt: response.expiresIn
+          ? Date.now() + response.expiresIn * 1000
+          : Date.now() + 24 * 60 * 60 * 1000
       },
       authMethod,
       lastActivity: Date.now()
@@ -296,7 +312,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
               tokens: {
                 accessToken: legacyToken,
                 refreshToken: legacyRefreshToken || '',
-                expiresAt: legacyExpiresAt ? parseInt(legacyExpiresAt) : Date.now() + (24 * 60 * 60 * 1000)
+                expiresAt: legacyExpiresAt
+                  ? Number.parseInt(legacyExpiresAt)
+                  : Date.now() + 24 * 60 * 60 * 1000
               },
               authMethod: 'passkey', // Default assumption
               lastActivity: Date.now()
@@ -311,7 +329,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       }
 
       // Always clean up legacy localStorage entries
-      Object.values(LEGACY_STORAGE_KEYS).forEach(key => {
+      Object.values(LEGACY_STORAGE_KEYS).forEach((key) => {
         localStorage.removeItem(key);
       });
 
@@ -337,7 +355,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     if (!currentState.expiresAt || !currentState.refreshToken) return;
 
     const timeUntilExpiry = currentState.expiresAt - Date.now();
-    const refreshTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000); // 5 minutes before expiry
+    const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 1000); // 5 minutes before expiry
 
     setTimeout(async () => {
       try {
@@ -352,7 +370,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   async function signInWithPasskey(email: string, conditional = false): Promise<SignInResponse> {
     const startTime = Date.now();
-    
+
     console.log('🔍 auth-store signInWithPasskey called with:', { email, conditional });
 
     if (!isWebAuthnSupported()) {
@@ -375,7 +393,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       console.log('🔍 Getting userId from email...');
       const userCheck = await api.checkEmail(email);
       console.log('🔍 userCheck result:', userCheck);
-      
+
       if (!userCheck.exists || !userCheck.userId) {
         throw new Error('User not found or missing userId');
       }
@@ -396,7 +414,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         userId: userCheck.userId,
         authResponse: 'serialized credential object'
       });
-      
+
       const response = await api.signInWithPasskey({
         email: email,
         credential: serializedCredential,
@@ -409,7 +427,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
       try {
         // Handle both old format (step: 'success') and new format (success: true)
-        const isSuccess = (response.step === 'success') || (response as any).success;
+        const isSuccess = response.step === 'success' || (response as any).success;
         const accessToken = response.accessToken || (response as any).tokens?.accessToken;
         const refreshToken = response.refreshToken || (response as any).tokens?.refreshToken;
         const expiresAt = (response as any).tokens?.expiresAt;
@@ -429,41 +447,45 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         });
 
         if (isSuccess && response.user && accessToken) {
-        console.log('💾 Processing successful passkey authentication');
+          console.log('💾 Processing successful passkey authentication');
 
-        // Create normalized response in SignInResponse format
-        const normalizedResponse: SignInResponse = {
-          step: 'success',
-          user: response.user,
-          accessToken,
-          refreshToken,
-          expiresIn: expiresAt ? Math.floor((expiresAt - Date.now()) / 1000) : undefined
-        };
+          // Create normalized response in SignInResponse format
+          const normalizedResponse: SignInResponse = {
+            step: 'success',
+            user: response.user,
+            accessToken,
+            refreshToken,
+            expiresIn: expiresAt ? Math.floor((expiresAt - Date.now()) / 1000) : undefined
+          };
 
-        saveAuthSession(normalizedResponse, 'passkey');
-        updateState({
-          state: 'authenticated',
-          user: response.user,
-          accessToken,
-          refreshToken,
-          expiresAt: expiresAt || (normalizedResponse.expiresIn ? Date.now() + (normalizedResponse.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000)),
-          error: null
-        });
-        scheduleTokenRefresh();
-        emit('sign_in_success', { user: response.user, method: 'passkey' });
-        emit('passkey_used', { user: response.user });
-        
-        // Send SignInEvent for state transition to 'signedIn'
-        sendSignInEvent({ type: 'PASSKEY_SUCCESS', credential: credential });
+          saveAuthSession(normalizedResponse, 'passkey');
+          updateState({
+            state: 'authenticated',
+            user: response.user,
+            accessToken,
+            refreshToken,
+            expiresAt:
+              expiresAt ||
+              (normalizedResponse.expiresIn
+                ? Date.now() + normalizedResponse.expiresIn * 1000
+                : Date.now() + 24 * 60 * 60 * 1000),
+            error: null
+          });
+          scheduleTokenRefresh();
+          emit('sign_in_success', { user: response.user, method: 'passkey' });
+          emit('passkey_used', { user: response.user });
 
-        reportAuthState({
-          event: 'webauthn-success',
-          email,
-          userId: response.user.id,
-          authMethod: 'passkey',
-          duration: Date.now() - startTime,
-          context: { conditional }
-        });
+          // Send SignInEvent for state transition to 'signedIn'
+          sendSignInEvent({ type: 'PASSKEY_SUCCESS', credential: credential });
+
+          reportAuthState({
+            event: 'webauthn-success',
+            email,
+            userId: response.user.id,
+            authMethod: 'passkey',
+            duration: Date.now() - startTime,
+            context: { conditional }
+          });
         } else {
           console.error('❌ Passkey authentication failed - missing required fields:', {
             isSuccess,
@@ -497,10 +519,10 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         updateState({ state: 'error', error: authError });
         emit('sign_in_error', { error: authError, method: 'passkey' });
       }
-      
+
       // Send SignInEvent for passkey failure
-      sendSignInEvent({ 
-        type: 'PASSKEY_FAILED', 
+      sendSignInEvent({
+        type: 'PASSKEY_FAILED',
         error: {
           name: (error as any)?.name || 'PasskeyError',
           message: authError.message,
@@ -508,21 +530,20 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           type: 'credential-not-found'
         }
       });
-      
+
       throw authError;
     }
   }
-
 
   /**
    * Sign in with magic link
    */
   async function signInWithMagicLink(email: string): Promise<SignInResponse> {
     const startTime = Date.now();
-    
+
     updateState({ error: null }); // Clear errors but don't change state
     emit('sign_in_started', { method: 'magic-link' });
-    
+
     reportAuthState({
       event: 'magic-link-request',
       email,
@@ -531,23 +552,23 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
     try {
       const response = await api.signInWithMagicLink({ email });
-      
+
       updateState({ state: 'unauthenticated', error: null });
-      
+
       reportAuthState({
         event: 'magic-link-sent',
         email,
         authMethod: 'email',
         duration: Date.now() - startTime
       });
-      
+
       return response;
     } catch (error: unknown) {
       const authError: AuthError = {
         code: (error as any)?.code || 'unknown_error',
         message: (error as any)?.message || 'Magic link request failed'
       };
-      
+
       reportAuthState({
         event: 'magic-link-failure',
         email,
@@ -555,7 +576,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         error: authError.message,
         duration: Date.now() - startTime
       });
-      
+
       updateState({ state: 'error', error: authError });
       emit('sign_in_error', { error: authError, method: 'magic-link' });
       throw authError;
@@ -567,7 +588,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   async function signOut(): Promise<void> {
     const currentState = get(store);
-    
+
     try {
       if (currentState.accessToken) {
         await api.signOut({
@@ -602,22 +623,24 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
     try {
       const response = await api.refreshToken({ refreshToken: currentState.refreshToken });
-      
+
       if (response.accessToken) {
         // Update session with new tokens
         const session = getSession();
         if (session) {
           session.tokens.accessToken = response.accessToken;
           session.tokens.refreshToken = response.refreshToken || session.tokens.refreshToken;
-          session.tokens.expiresAt = response.expiresIn ? Date.now() + (response.expiresIn * 1000) : session.tokens.expiresAt;
+          session.tokens.expiresAt = response.expiresIn
+            ? Date.now() + response.expiresIn * 1000
+            : session.tokens.expiresAt;
           session.lastActivity = Date.now();
           saveSession(session);
         }
-        
+
         updateState({
           accessToken: response.accessToken,
           refreshToken: response.refreshToken || currentState.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
           error: null
         });
         scheduleTokenRefresh();
@@ -675,15 +698,15 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         invitationTokenHash: result.invitationTokenHash,
         lastPinExpiry: result.lastPinExpiry as any
       };
-      
+
       // Send USER_CHECKED event with user data
-      sendSignInEvent({ 
-        type: 'USER_CHECKED', 
-        email, 
-        exists: result.exists, 
-        hasPasskey: !!result.hasPasskey 
+      sendSignInEvent({
+        type: 'USER_CHECKED',
+        email,
+        exists: result.exists,
+        hasPasskey: !!result.hasPasskey
       });
-      
+
       return userData;
     } catch (error: unknown) {
       console.error('Error checking user:', error);
@@ -711,7 +734,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { 
+        context: {
           operation: 'registerUser',
           hasInvitationToken: !!userData.invitationToken
         }
@@ -726,7 +749,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
           error: null
         });
         scheduleTokenRefresh();
@@ -793,11 +816,11 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       console.log('✅ User account created:', registrationResponse.user.id);
 
       const magicLinkResponse = await api.startPasswordlessAuthentication(userData.email);
-      
+
       if (!magicLinkResponse.success) {
         throw new Error('Failed to send verification email');
       }
-      
+
       console.log('✅ Verification email sent');
 
       updateState({
@@ -810,14 +833,14 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         success: true,
         user: registrationResponse.user,
         verificationRequired: true,
-        message: "Registration successful! Check your email and click the verification link to complete setup."
+        message:
+          'Registration successful! Check your email and click the verification link to complete setup.'
       };
-
     } catch (error: unknown) {
       console.error('❌ Individual user registration failed:', error);
       const authError = error instanceof Error ? error.message : 'Registration failed';
-      updateState({ 
-        state: 'error', 
+      updateState({
+        state: 'error',
         error: authError as any // Fix type issue
       });
       throw error;
@@ -845,7 +868,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { 
+        context: {
           operation: 'createAccount',
           hasInvitationToken: !!userData.invitationToken,
           webauthnRequired: false
@@ -864,22 +887,22 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
       // Don't authenticate immediately, return the response for further processing
       // The calling component will handle the next steps (e.g., email verification)
-      
+
       reportAuthState({
         event: 'registration-success',
         email: userData.email,
         userId: registrationResponse.user.id,
         duration: Date.now() - startTime,
-        context: { 
+        context: {
           operation: 'createAccount',
           authenticated: false,
           requiresEmailVerification: true
         }
       });
 
-      emit('registration_success', { 
+      emit('registration_success', {
         user: registrationResponse.user,
-        requiresVerification: true 
+        requiresVerification: true
       });
 
       return registrationResponse;
@@ -894,7 +917,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         email: userData.email,
         error: authError.message,
         duration: Date.now() - startTime,
-        context: { 
+        context: {
           operation: 'createAccount',
           errorCode: (error as any)?.code
         }
@@ -928,18 +951,24 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     try {
       // Check WebAuthn support first
       if (!isWebAuthnSupported()) {
-        throw new Error('Passkey authentication is not supported on this device. Please use a device with biometric authentication.');
+        throw new Error(
+          'Passkey authentication is not supported on this device. Please use a device with biometric authentication.'
+        );
       }
 
-      const platformAvailable = browser ? await (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
+      const platformAvailable = browser
+        ? await (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable()
+        : false;
       if (!platformAvailable) {
-        throw new Error('No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.');
+        throw new Error(
+          'No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.'
+        );
       }
 
       reportAuthState({
         event: 'registration-start',
         email: userData.email,
-        context: { 
+        context: {
           operation: 'createAccount',
           hasInvitationToken: !!userData.invitationToken,
           webauthnSupported: true,
@@ -1018,7 +1047,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           email: userData.email,
           userId: user.id,
           duration: Date.now() - startTime,
-          context: { 
+          context: {
             operation: 'createAccount',
             passkeyCreated: true,
             deviceLinked: true,
@@ -1026,9 +1055,13 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           }
         });
 
-        console.log('✅ Account creation completed with WebAuthn device registration and session saved');
+        console.log(
+          '✅ Account creation completed with WebAuthn device registration and session saved'
+        );
       } else {
-        console.warn('⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved');
+        console.warn(
+          '⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved'
+        );
         // Still update state but without authentication
         updateState({
           state: 'unauthenticated',
@@ -1045,7 +1078,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           email: userData.email,
           userId: user.id,
           duration: Date.now() - startTime,
-          context: { 
+          context: {
             operation: 'createAccount',
             passkeyCreated: true,
             deviceLinked: true,
@@ -1064,13 +1097,17 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
       // Enhanced error handling for WebAuthn-specific errors
       if ((error as any)?.name === 'NotAllowedError') {
-        authError.message = 'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
+        authError.message =
+          'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
       } else if ((error as any)?.name === 'NotSupportedError') {
-        authError.message = 'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
+        authError.message =
+          'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
       } else if ((error as any)?.name === 'SecurityError') {
-        authError.message = 'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
+        authError.message =
+          'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
       } else if ((error as any)?.name === 'InvalidStateError') {
-        authError.message = 'A passkey for this account may already exist. Please try signing in instead.';
+        authError.message =
+          'A passkey for this account may already exist. Please try signing in instead.';
       }
 
       reportAuthState({
@@ -1078,7 +1115,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         email: userData.email,
         error: authError.message,
         duration: Date.now() - startTime,
-        context: { 
+        context: {
           operation: 'createAccount',
           errorName: (error as any)?.name,
           errorCode: (error as any)?.code
@@ -1100,11 +1137,15 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    */
   async function checkUserWithInvitation(
     email: string,
-    invitationOptions?: { token: string; tokenData?: InvitationTokenData; skipTokenValidation?: boolean }
+    invitationOptions?: {
+      token: string;
+      tokenData?: InvitationTokenData;
+      skipTokenValidation?: boolean;
+    }
   ) {
     try {
       const result = await api.checkEmail(email);
-      
+
       // Base user check result
       const userCheck = {
         exists: result.exists,
@@ -1127,7 +1168,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         if (result.invitationTokenHash && !invitationOptions.skipTokenValidation) {
           const { hashInvitationToken } = await import('../utils/invitation-tokens');
           const currentTokenHash = await hashInvitationToken(invitationOptions.token);
-          
+
           if (currentTokenHash !== result.invitationTokenHash) {
             console.warn('🔒 Token hash mismatch - token may not be valid for this user');
             return {
@@ -1136,7 +1177,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
             };
           }
         }
-        
+
         return {
           ...userCheck,
           requiresPasskeySetup: true,
@@ -1173,7 +1214,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   async function determineAuthFlow(email: string, invitationToken?: string) {
     try {
       // Import utilities for token handling
-      const { decodeInvitationToken, validateInvitationToken, extractRegistrationData } = await import('../utils/invitation-tokens');
+      const { decodeInvitationToken, validateInvitationToken, extractRegistrationData } =
+        await import('../utils/invitation-tokens');
 
       let tokenData = null;
       let prefillData = null;
@@ -1183,7 +1225,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
         try {
           tokenData = decodeInvitationToken(invitationToken);
           const validation = validateInvitationToken(invitationToken, tokenData);
-          
+
           if (!validation.isValid) {
             console.warn('Invalid invitation token:', validation.reason);
             return {
@@ -1204,11 +1246,16 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       }
 
       // Check user status with invitation context
-      const userCheck = await checkUserWithInvitation(email, invitationToken ? {
-        token: invitationToken,
-        tokenData: tokenData || undefined,
-        skipTokenValidation: false
-      } : undefined);
+      const userCheck = await checkUserWithInvitation(
+        email,
+        invitationToken
+          ? {
+              token: invitationToken,
+              tokenData: tokenData || undefined,
+              skipTokenValidation: false
+            }
+          : undefined
+      );
 
       // Return appropriate flow based on user status
       switch (userCheck.registrationMode) {
@@ -1218,19 +1265,20 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
             prefillData: prefillData || undefined,
             message: 'Welcome! Please complete your registration.'
           };
-        
+
         case 'complete_passkey':
           return {
             mode: 'complete_passkey' as const,
             prefillData: prefillData || undefined,
-            message: 'Your account exists but needs a passkey for secure access. Please create your passkey.'
+            message:
+              'Your account exists but needs a passkey for secure access. Please create your passkey.'
           };
-        
+
         case 'sign_in':
         default:
           return {
             mode: 'sign_in' as const,
-            message: userCheck.hasPasskey 
+            message: userCheck.hasPasskey
               ? 'Welcome back! Please sign in with your passkey.'
               : 'Please sign in to your account.'
           };
@@ -1258,7 +1306,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       console.log('🔍 Starting conditional WebAuthn authentication for:', email);
 
       // Check if conditional mediation is supported
-      if (!await isConditionalMediationSupported()) {
+      if (!(await isConditionalMediationSupported())) {
         console.log('⚠️ Conditional mediation not supported');
         return false;
       }
@@ -1308,7 +1356,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
           error: null
         });
         scheduleTokenRefresh();
@@ -1330,7 +1378,10 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       return false;
     } catch (error: unknown) {
       // Conditional auth should fail silently for most errors
-      console.log('⚠️ Conditional authentication failed (this is expected if no passkeys exist):', (error as any)?.message);
+      console.log(
+        '⚠️ Conditional authentication failed (this is expected if no passkeys exist):',
+        (error as any)?.message
+      );
 
       reportAuthState({
         event: 'login-failure',
@@ -1357,10 +1408,12 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
    * Get current application context
    */
   function getApplicationContext(): ApplicationContext | null {
-    return config.applicationContext || {
-      userType: 'mixed',
-      forceGuestMode: true
-    };
+    return (
+      config.applicationContext || {
+        userType: 'mixed',
+        forceGuestMode: true
+      }
+    );
   }
 
   /**
@@ -1415,7 +1468,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       if (update.migrateExistingSession) {
         const fromStorage = 'sessionStorage' as StorageType;
         const toStorage = update.type as StorageType;
-        
+
         if (fromStorage !== toStorage) {
           await migrateSession(fromStorage, toStorage);
         }
@@ -1431,7 +1484,10 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   /**
    * Migrate session data between storage types
    */
-  async function migrateSession(fromType: StorageType, toType: StorageType): Promise<SessionMigrationResult> {
+  async function migrateSession(
+    fromType: StorageType,
+    toType: StorageType
+  ): Promise<SessionMigrationResult> {
     if (!browser) {
       return {
         success: false,
@@ -1444,7 +1500,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     }
 
     const startTime = Date.now();
-    
+
     try {
       // Get current session data
       const currentSession = getSession();
@@ -1501,7 +1557,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       saveSession(currentSession);
 
       const duration = Date.now() - startTime;
-      
+
       // Performance check
       if (duration > 500) {
         console.warn(`⚠️ Session migration took ${duration}ms (requirement: <500ms)`);
@@ -1522,7 +1578,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       };
     } catch (error: unknown) {
       console.error('❌ Session migration failed:', error);
-      
+
       // Clear sensitive data on failure
       try {
         clearSession();
@@ -1572,29 +1628,32 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       });
 
       const response = await api.sendAppEmailCode(email);
-      
-      emit('app_email_sent', { 
-        email, 
+
+      emit('app_email_sent', {
+        email,
         success: response.success,
-        timestamp: response.timestamp 
+        timestamp: response.timestamp
       });
-      
+
       updateState({ state: 'unauthenticated', error: null });
-      
+
       return response;
     } catch (error: unknown) {
       console.error('App email sign-in failed:', error);
-      
+
       const authError: AuthError = {
         code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN_ERROR',
         message: error instanceof Error ? error.message : 'Failed to send email code',
         timestamp: new Date().toISOString()
       };
-      
+
       updateState({ state: 'error', error: authError });
       emit('app_email_error', { error: authError, email });
-      reportApiError(`/${getEffectiveAppCode()}/send-email`, 'POST', 0, authError.message, { email, appCode: getEffectiveAppCode() });
-      
+      reportApiError(`/${getEffectiveAppCode()}/send-email`, 'POST', 0, authError.message, {
+        email,
+        appCode: getEffectiveAppCode()
+      });
+
       throw error;
     }
   }
@@ -1606,7 +1665,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
   async function verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     // If appCode is not configured, this shouldn't be called since sendEmailCode would use magic link
     if (!getEffectiveAppCode()) {
-      throw new Error('Email code verification is only available with organization configuration. This email uses magic link authentication instead.');
+      throw new Error(
+        'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
+      );
     }
 
     updateState({ error: null }); // Clear errors but don't change state
@@ -1620,7 +1681,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       });
 
       const response = await api.verifyAppEmailCode(email, code);
-      
+
       if (response.step === 'success' && response.user && response.accessToken) {
         saveAuthSession(response, 'email-code');
         updateState({
@@ -1628,16 +1689,16 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
           user: response.user,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
+          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
           error: null
         });
         scheduleTokenRefresh();
-        emit('app_email_verify_success', { 
-          user: response.user, 
+        emit('app_email_verify_success', {
+          user: response.user,
           method: 'email-code',
-          appCode: getEffectiveAppCode() 
+          appCode: getEffectiveAppCode()
         });
-        
+
         // Convert SignInResponse to SessionData format for EMAIL_VERIFIED event
         const sessionData = {
           accessToken: response.accessToken || '',
@@ -1648,28 +1709,35 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
             name: response.user.name || '',
             emailVerified: response.user.emailVerified || false
           },
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000), // Default 24h
+          expiresAt: response.expiresIn
+            ? Date.now() + response.expiresIn * 1000
+            : Date.now() + 24 * 60 * 60 * 1000, // Default 24h
           lastActivity: Date.now()
         };
         sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
-        
+
         return response;
       } else {
         throw new Error('Invalid response from email code verification');
       }
     } catch (error: unknown) {
       console.error('Organization email code verification failed:', error);
-      
+
       const authError: AuthError = {
-        code: error instanceof Error && 'code' in error ? (error as any).code : 'VERIFICATION_FAILED',
+        code:
+          error instanceof Error && 'code' in error ? (error as any).code : 'VERIFICATION_FAILED',
         message: error instanceof Error ? error.message : 'Failed to verify email code',
         timestamp: new Date().toISOString()
       };
-      
+
       updateState({ state: 'error', error: authError });
       emit('app_email_verify_error', { error: authError, email });
-      reportApiError(`/${getEffectiveAppCode()}/verify-email`, 'POST', 0, authError.message, { email, appCode: getEffectiveAppCode(), code: '***' });
-      
+      reportApiError(`/${getEffectiveAppCode()}/verify-email`, 'POST', 0, authError.message, {
+        email,
+        appCode: getEffectiveAppCode(),
+        code: '***'
+      });
+
       throw error;
     }
   }
@@ -1702,7 +1770,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
     // SignIn flow control methods
     notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
-    notifyPinVerified: (sessionData: any) => sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
+    notifyPinVerified: (sessionData: any) =>
+      sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
     sendSignInEvent, // Expose for components to send custom events
 
     // Email-based authentication methods (transparently uses app endpoints if configured)
@@ -1731,18 +1800,18 @@ export { createAuthStore };
 export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthStore>) {
   return {
     // Legacy derived stores
-    user: derived(authStore, $auth => $auth.user),
-    isAuthenticated: derived(authStore, $auth => $auth.state === 'authenticated'),
+    user: derived(authStore, ($auth) => $auth.user),
+    isAuthenticated: derived(authStore, ($auth) => $auth.state === 'authenticated'),
     isLoading: derived(authStore, () => false), // No loading state exists
-    error: derived(authStore, $auth => $auth.error),
-    
+    error: derived(authStore, ($auth) => $auth.error),
+
     // Sign-in state derived stores
-    signInState: derived(authStore, $auth => $auth.signInState),
-    isEmailEntry: derived(authStore, $auth => $auth.signInState === 'emailEntry'),
-    isUserChecked: derived(authStore, $auth => $auth.signInState === 'userChecked'),
-    isPasskeyPrompt: derived(authStore, $auth => $auth.signInState === 'passkeyPrompt'),
-    isPinEntry: derived(authStore, $auth => $auth.signInState === 'pinEntry'),
-    isSignedIn: derived(authStore, $auth => $auth.signInState === 'signedIn'),
-    hasSignInError: derived(authStore, $auth => $auth.signInState === 'generalError')
+    signInState: derived(authStore, ($auth) => $auth.signInState),
+    isEmailEntry: derived(authStore, ($auth) => $auth.signInState === 'emailEntry'),
+    isUserChecked: derived(authStore, ($auth) => $auth.signInState === 'userChecked'),
+    isPasskeyPrompt: derived(authStore, ($auth) => $auth.signInState === 'passkeyPrompt'),
+    isPinEntry: derived(authStore, ($auth) => $auth.signInState === 'pinEntry'),
+    isSignedIn: derived(authStore, ($auth) => $auth.signInState === 'signedIn'),
+    hasSignInError: derived(authStore, ($auth) => $auth.signInState === 'generalError')
   };
 }

@@ -80,7 +80,7 @@ global.window.localStorage = global.localStorage;
 global.window.indexedDB = global.indexedDB;
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn(callback => setTimeout(callback, 16));
+global.requestAnimationFrame = vi.fn((callback) => setTimeout(callback, 16));
 global.cancelAnimationFrame = vi.fn();
 
 // Mock ResizeObserver
@@ -105,7 +105,7 @@ global.MessageChannel = vi.fn().mockImplementation(() => ({
     close: vi.fn()
   },
   port2: {
-    onmessage: null, 
+    onmessage: null,
     postMessage: vi.fn(),
     close: vi.fn()
   }

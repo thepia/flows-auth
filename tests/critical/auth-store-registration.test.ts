@@ -1,13 +1,13 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
 /**
  * CRITICAL AUTH STORE REGISTRATION TESTS
- * 
+ *
  * These tests validate the core auth store registration functionality
  * that was completely missing from the original test suite.
- * 
+ *
  * THESE TESTS MUST PASS for production readiness.
  */
 

@@ -20,7 +20,8 @@ export const mockTasks = [
   {
     id: 'task-001',
     title: 'Complete employee handbook review',
-    description: 'Please review the updated employee handbook and acknowledge completion. Pay special attention to:\n• New remote work policy (Section 4)\n• Updated benefits information (Section 7)\n• Code of conduct updates (Section 2)',
+    description:
+      'Please review the updated employee handbook and acknowledge completion. Pay special attention to:\n• New remote work policy (Section 4)\n• Updated benefits information (Section 7)\n• Code of conduct updates (Section 2)',
     status: 'assigned',
     priority: 'high',
     assignedBy: 'HR Team',
@@ -32,7 +33,8 @@ export const mockTasks = [
   {
     id: 'task-002',
     title: 'Return company equipment',
-    description: 'Please return all company equipment to the IT department:\n• Laptop (Serial: LT-2024-0156)\n• Monitor (Serial: MON-2024-0089)\n• Keyboard and mouse\n• Power adapters\n\nLocation: IT Desk, 3rd Floor\nContact: tech-support@company.com',
+    description:
+      'Please return all company equipment to the IT department:\n• Laptop (Serial: LT-2024-0156)\n• Monitor (Serial: MON-2024-0089)\n• Keyboard and mouse\n• Power adapters\n\nLocation: IT Desk, 3rd Floor\nContact: tech-support@company.com',
     status: 'assigned',
     priority: 'medium',
     assignedBy: 'IT Department',
@@ -44,7 +46,8 @@ export const mockTasks = [
   {
     id: 'task-003',
     title: 'Submit final project documentation',
-    description: 'Submit all project documentation and deliverables for the Q4 Marketing Campaign project:\n• Final presentation slides\n• Campaign analytics report\n• Budget reconciliation\n• Lessons learned document',
+    description:
+      'Submit all project documentation and deliverables for the Q4 Marketing Campaign project:\n• Final presentation slides\n• Campaign analytics report\n• Budget reconciliation\n• Lessons learned document',
     status: 'in_progress',
     priority: 'high',
     assignedBy: 'Project Manager',
@@ -56,7 +59,8 @@ export const mockTasks = [
   {
     id: 'task-004',
     title: 'Update emergency contact information',
-    description: 'Please verify and update your emergency contact information in the HR system. Ensure all details are current and accurate.',
+    description:
+      'Please verify and update your emergency contact information in the HR system. Ensure all details are current and accurate.',
     status: 'completed_pending',
     priority: 'medium',
     assignedBy: 'HR Team',
@@ -69,7 +73,8 @@ export const mockTasks = [
   {
     id: 'task-005',
     title: 'Complete cybersecurity training',
-    description: 'Complete the mandatory cybersecurity awareness training module. This includes:\n• Phishing awareness quiz\n• Password security best practices\n• Data handling guidelines\n• Incident reporting procedures',
+    description:
+      'Complete the mandatory cybersecurity awareness training module. This includes:\n• Phishing awareness quiz\n• Password security best practices\n• Data handling guidelines\n• Incident reporting procedures',
     status: 'confirmed',
     priority: 'high',
     assignedBy: 'Security Team',
@@ -83,7 +88,8 @@ export const mockTasks = [
   {
     id: 'task-006',
     title: 'Schedule knowledge transfer session',
-    description: 'Schedule and conduct knowledge transfer sessions with your replacement team members. Cover:\n• Current project status\n• Key contacts and relationships\n• Process documentation\n• Access credentials handover',
+    description:
+      'Schedule and conduct knowledge transfer sessions with your replacement team members. Cover:\n• Current project status\n• Key contacts and relationships\n• Process documentation\n• Access credentials handover',
     status: 'overdue',
     priority: 'high',
     assignedBy: 'Team Lead',
@@ -221,17 +227,18 @@ export const mockNotifications = [
 
 // Helper functions
 export const getTasksByStatus = (status) => {
-  return mockTasks.filter(task => task.status === status);
+  return mockTasks.filter((task) => task.status === status);
 };
 
 export const getPendingTasks = () => {
-  return mockTasks.filter(task => 
-    task.status === 'assigned' || task.status === 'in_progress' || task.status === 'overdue'
+  return mockTasks.filter(
+    (task) =>
+      task.status === 'assigned' || task.status === 'in_progress' || task.status === 'overdue'
   );
 };
 
 export const getUnreadNotifications = () => {
-  return mockNotifications.filter(notif => !notif.read);
+  return mockNotifications.filter((notif) => !notif.read);
 };
 
 export const formatFileSize = (bytes) => {
@@ -239,19 +246,19 @@ export const formatFileSize = (bytes) => {
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 export const formatDate = (date) => {
   const now = new Date();
   const diffTime = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
   if (diffDays === -1) return 'Yesterday';
   if (diffDays > 0) return `In ${diffDays} days`;
   if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
-  
+
   return date.toLocaleDateString();
 };

@@ -1,17 +1,17 @@
 /**
  * SignInCore Logic Tests
- * 
+ *
  * Unit tests for SignInCore component logic without rendering.
  * Tests the authentication method determination and button configuration logic.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthConfig } from '../../src/types';
 import * as webauthnUtils from '../../src/utils/webauthn';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(),
-  isPlatformAuthenticatorAvailable: vi.fn(),
+  isPlatformAuthenticatorAvailable: vi.fn()
 }));
 
 const mockIsWebAuthnSupported = webauthnUtils.isWebAuthnSupported as any;
@@ -22,7 +22,7 @@ describe('SignInCore Logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsWebAuthnSupported.mockReturnValue(true);
-    
+
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
@@ -35,7 +35,10 @@ describe('SignInCore Logic', () => {
 
   describe('Authentication Method Determination Logic', () => {
     // Simulate the getAuthMethodForUI logic from SignInCore
-    function getAuthMethodForUI(config: AuthConfig, supportsWebAuthn: boolean): 'passkey' | 'email' | 'generic' {
+    function getAuthMethodForUI(
+      config: AuthConfig,
+      supportsWebAuthn: boolean
+    ): 'passkey' | 'email' | 'generic' {
       if (config.enablePasskeys && supportsWebAuthn) return 'passkey';
       if (config.enableMagicPins) return 'email';
       return 'generic';
@@ -99,7 +102,12 @@ describe('SignInCore Logic', () => {
 
   describe('Button Configuration Logic', () => {
     // Simulate the button configuration logic from SignInCore
-    function getButtonConfig(authMethod: 'passkey' | 'email' | 'generic', loading: boolean, email: string, supportsWebAuthn: boolean) {
+    function getButtonConfig(
+      authMethod: 'passkey' | 'email' | 'generic',
+      loading: boolean,
+      email: string,
+      supportsWebAuthn: boolean
+    ) {
       return {
         method: authMethod,
         supportsWebAuthn,
@@ -109,32 +117,32 @@ describe('SignInCore Logic', () => {
 
     it('should enable button when valid email is provided and not loading', () => {
       const config = getButtonConfig('email', false, 'test@example.com', false);
-      
+
       expect(config.disabled).toBe(false);
       expect(config.method).toBe('email');
     });
 
     it('should disable button when email is empty', () => {
       const config = getButtonConfig('email', false, '', false);
-      
+
       expect(config.disabled).toBe(true);
     });
 
     it('should disable button when email is only whitespace', () => {
       const config = getButtonConfig('email', false, '   ', false);
-      
+
       expect(config.disabled).toBe(true);
     });
 
     it('should disable button during loading state even with valid email', () => {
       const config = getButtonConfig('email', true, 'test@example.com', false);
-      
+
       expect(config.disabled).toBe(true);
     });
 
     it('should configure passkey method when passkeys are supported', () => {
       const config = getButtonConfig('passkey', false, 'test@example.com', true);
-      
+
       expect(config.method).toBe('passkey');
       expect(config.supportsWebAuthn).toBe(true);
       expect(config.disabled).toBe(false);
@@ -209,8 +217,8 @@ describe('SignInCore Logic', () => {
   describe('Authentication Method Determination for Existing Users', () => {
     // Simulate the determineAuthMethod logic from SignInCore
     function determineAuthMethod(
-      userCheck: { hasWebAuthn: boolean }, 
-      config: AuthConfig, 
+      userCheck: { hasWebAuthn: boolean },
+      config: AuthConfig,
       supportsWebAuthn: boolean
     ): 'passkey-only' | 'passkey-with-fallback' | 'email-only' | 'none' {
       const hasPasskeys = userCheck.hasWebAuthn;
@@ -218,7 +226,7 @@ describe('SignInCore Logic', () => {
       if (hasPasskeys && supportsWebAuthn && config.enablePasskeys) {
         return config.enableMagicPins ? 'passkey-with-fallback' : 'passkey-only';
       }
-      
+
       if (config.enableMagicPins) {
         return 'email-only';
       }

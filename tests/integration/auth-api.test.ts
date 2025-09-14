@@ -1,9 +1,9 @@
 /**
  * Auth API Client Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import type { AuthConfig, SignInResponse, AuthError } from '../../src/types';
+import type { AuthConfig, AuthError, SignInResponse } from '../../src/types';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -37,10 +37,10 @@ describe('AuthApiClient', () => {
       // Default to rejecting unknown URLs
       return Promise.reject(new Error(`Unmocked URL: ${url}`));
     };
-    
+
     mockFetch = vi.fn(baseMockImplementation);
     global.fetch = mockFetch;
-    
+
     apiClient = new AuthApiClient(mockConfig);
     localStorage.clear();
   });
@@ -56,7 +56,7 @@ describe('AuthApiClient', () => {
         ...mockConfig,
         apiBaseUrl: 'https://api.test.com/'
       };
-      
+
       const client = new AuthApiClient(configWithTrailingSlash);
       expect(client).toBeInstanceOf(AuthApiClient);
     });
@@ -87,7 +87,7 @@ describe('AuthApiClient', () => {
 
     it('should include authorization header when authenticated', async () => {
       localStorage.setItem('auth_access_token', 'test-token');
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({})
@@ -99,7 +99,7 @@ describe('AuthApiClient', () => {
         'https://api.test.com/auth/profile',
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token'
           })
         })
       );
@@ -158,9 +158,7 @@ describe('AuthApiClient', () => {
         json: () => Promise.resolve(errorResponse)
       });
 
-      await expect(
-        apiClient.signInWithMagicLink({ email: 'test@example.com' })
-      ).rejects.toEqual({
+      await expect(apiClient.signInWithMagicLink({ email: 'test@example.com' })).rejects.toEqual({
         code: 'invalid_credentials',
         message: 'Invalid email or password'
       });
@@ -174,9 +172,7 @@ describe('AuthApiClient', () => {
         json: () => Promise.reject(new Error('Failed to parse JSON'))
       });
 
-      await expect(
-        apiClient.signIn({ email: 'test@example.com' })
-      ).rejects.toEqual({
+      await expect(apiClient.signIn({ email: 'test@example.com' })).rejects.toEqual({
         code: 'network_error',
         message: 'HTTP 500: Internal Server Error'
       });
@@ -189,9 +185,7 @@ describe('AuthApiClient', () => {
         json: () => Promise.resolve({})
       });
 
-      await expect(
-        apiClient.signIn({ email: 'test@example.com' })
-      ).rejects.toEqual({
+      await expect(apiClient.signIn({ email: 'test@example.com' })).rejects.toEqual({
         code: 'unknown_error',
         message: 'An unknown error occurred'
       });
@@ -201,9 +195,9 @@ describe('AuthApiClient', () => {
   describe('Authentication Methods', () => {
     it('should reject basic sign in with deprecated endpoint error', async () => {
       // The signIn method now throws an error since the endpoint doesn't exist
-      await expect(
-        apiClient.signIn({ email: 'test@example.com' })
-      ).rejects.toThrow('The /auth/signin endpoint is not available. Please use passwordless authentication methods.');
+      await expect(apiClient.signIn({ email: 'test@example.com' })).rejects.toThrow(
+        'The /auth/signin endpoint is not available. Please use passwordless authentication methods.'
+      );
     });
 
     it('should handle password sign in', async () => {
@@ -353,7 +347,7 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token'
           }),
           body: JSON.stringify({
             accessToken: 'test-token',
@@ -414,7 +408,7 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token'
           }),
           body: JSON.stringify({ credential: mockCredential })
         })
@@ -447,7 +441,7 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token'
           })
         })
       );
@@ -468,7 +462,7 @@ describe('AuthApiClient', () => {
         expect.objectContaining({
           method: 'DELETE',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token'
+            Authorization: 'Bearer test-token'
           })
         })
       );

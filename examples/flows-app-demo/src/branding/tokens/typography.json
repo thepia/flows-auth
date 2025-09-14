@@ -5,13 +5,7 @@
       "$description": "Font family definitions for demo company typography",
       "brand": {
         "lead": {
-          "value": [
-            "Bembo",
-            "EB Garamond", 
-            "New York",
-            "Times",
-            "serif"
-          ],
+          "value": ["Bembo", "EB Garamond", "New York", "Times", "serif"],
           "type": "fontFamily",
           "$description": "Lead font for headings and titles"
         },
@@ -51,7 +45,7 @@
       "bold": { "value": "700", "type": "fontWeight", "$description": "Bold weight" }
     },
     "size": {
-      "$description": "Font size values matching existing design system", 
+      "$description": "Font size values matching existing design system",
       "xs": { "value": "0.75rem", "type": "dimension", "$description": "12px - extra small" },
       "sm": { "value": "0.875rem", "type": "dimension", "$description": "14px - small" },
       "base": { "value": "1rem", "type": "dimension", "$description": "16px - base size" },

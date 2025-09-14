@@ -1,6 +1,6 @@
 /**
  * Error Reporting Configuration for Flows App Demo
- * 
+ *
  * Purpose: Configures flows-auth error reporting to use the local demo server endpoint
  * Context: This enables debugging of authentication flows and WebAuthn issues during development
  * Safe to remove: Yes, this is only used during development
@@ -26,7 +26,7 @@ const ERROR_REPORTING_ENDPOINTS = {
  */
 function getLocalDemoEndpoint() {
   if (!browser) return null;
-  
+
   const { protocol, hostname, port } = window.location;
   return `${protocol}//${hostname}:${port}/dev/error-reports`;
 }
@@ -36,11 +36,11 @@ function getLocalDemoEndpoint() {
  */
 async function checkServerHealth(endpoint) {
   if (!endpoint) return false;
-  
+
   try {
     const response = await fetch(endpoint, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' }
+      headers: { Accept: 'application/json' }
     });
     return response.ok;
   } catch (error) {
@@ -60,19 +60,21 @@ async function detectEnvironmentAndServers() {
       fallbackDisabled: true
     };
   }
-  
-  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  const isDev =
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const environment = isDev ? 'development' : 'production';
-  
+
   // Check local demo server (current dev server)
   const localDemoEndpoint = getLocalDemoEndpoint();
-  const useLocalDemo = localDemoEndpoint && await checkServerHealth(localDemoEndpoint);
-  
+  const useLocalDemo = localDemoEndpoint && (await checkServerHealth(localDemoEndpoint));
+
   // Check local API server (fallback)
-  const useLocalApi = !useLocalDemo && await checkServerHealth(ERROR_REPORTING_ENDPOINTS.localApi);
-  
+  const useLocalApi =
+    !useLocalDemo && (await checkServerHealth(ERROR_REPORTING_ENDPOINTS.localApi));
+
   const fallbackDisabled = !useLocalDemo && !useLocalApi;
-  
+
   return {
     environment,
     useLocalDemo,
@@ -85,12 +87,13 @@ async function detectEnvironmentAndServers() {
  * Get error reporting configuration with smart server detection
  */
 export async function getErrorReportingConfig() {
-  const { environment, useLocalDemo, useLocalApi, fallbackDisabled } = await detectEnvironmentAndServers();
+  const { environment, useLocalDemo, useLocalApi, fallbackDisabled } =
+    await detectEnvironmentAndServers();
   const isDev = environment === 'development';
-  
+
   let endpoint;
   let serverType;
-  
+
   if (isDev && useLocalDemo) {
     endpoint = getLocalDemoEndpoint();
     serverType = 'Local Demo Server (/dev/error-reports)';
@@ -100,9 +103,11 @@ export async function getErrorReportingConfig() {
   } else {
     // Production frontend error reporting not implemented yet
     endpoint = null;
-    serverType = fallbackDisabled ? 'Disabled (no local servers available)' : 'Disabled (dev-only feature)';
+    serverType = fallbackDisabled
+      ? 'Disabled (no local servers available)'
+      : 'Disabled (dev-only feature)';
   }
-  
+
   return {
     enabled: !!endpoint,
     endpoint,
@@ -122,19 +127,19 @@ export async function getErrorReportingConfig() {
  */
 export async function initializeFlowsErrorReporting() {
   if (!browser) return false;
-  
+
   try {
     const { initializeErrorReporter } = await import('@thepia/flows-auth');
     const config = await getErrorReportingConfig();
-    
+
     await initializeErrorReporter(config);
-    
+
     console.log('[Flows App] Error reporting initialized:', {
       endpoint: config.endpoint,
       serverType: config.serverType,
       enabled: config.enabled
     });
-    
+
     return true;
   } catch (error) {
     console.error('[Flows App] Failed to initialize error reporting:', error);
@@ -147,12 +152,12 @@ export async function initializeFlowsErrorReporting() {
  */
 export function enableGlobalErrorReporting() {
   if (!browser) return;
-  
+
   // Global error handler
   window.addEventListener('error', (event) => {
     console.error('[Flows App] Unhandled error:', event.error);
   });
-  
+
   // Unhandled promise rejection handler
   window.addEventListener('unhandledrejection', (event) => {
     console.error('[Flows App] Unhandled promise rejection:', event.reason);
@@ -164,10 +169,10 @@ export function enableGlobalErrorReporting() {
  */
 export async function reportFlowsAuthError(operation, error, context = {}) {
   if (!browser) return;
-  
+
   try {
     const { reportWebAuthnError } = await import('@thepia/flows-auth');
-    
+
     await reportWebAuthnError(operation, error, {
       flowsApp: true,
       ...context
@@ -182,7 +187,7 @@ export async function reportFlowsAuthError(operation, error, context = {}) {
  */
 export async function flushFlowsErrorReports() {
   if (!browser) return;
-  
+
   try {
     const { flushErrorReports } = await import('@thepia/flows-auth');
     await flushErrorReports();

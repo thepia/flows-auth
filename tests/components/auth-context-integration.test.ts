@@ -1,14 +1,14 @@
 /**
  * Auth Context Integration Tests
- * 
+ *
  * Tests the complete integration of auth store context sharing between
  * SignInForm and SignInCore, ensuring single source of truth and proper
  * state synchronization.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
@@ -95,7 +95,7 @@ describe('Auth Context Integration', () => {
     it('should demonstrate that SignInCore gets auth store from context', () => {
       // Test that SignInCore properly gets and uses auth store from context
       // This validates the clean architecture where SignInCore doesn't accept config props
-      
+
       render(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
@@ -105,17 +105,17 @@ describe('Auth Context Integration', () => {
 
       // SignInCore should get config from context store
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
-      
+
       // SignInCore should subscribe to store updates
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      
+
       // Should not show loading state when store and config are available
       expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });
 
     it('should demonstrate SignInForm uses context for logo display only', () => {
       // SignInForm should only use context for logo display, not auth logic
-      
+
       const { container } = render(SignInForm, {
         props: {
           showLogo: true,
@@ -129,10 +129,10 @@ describe('Auth Context Integration', () => {
       // SignInForm should handle presentation concerns
       expect(container.querySelector('.auth-form--popup')).toBeInTheDocument();
       expect(container.querySelector('.auth-form--large')).toBeInTheDocument();
-      
+
       // SignInCore should be rendered inside for logic
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-      
+
       // Auth store should be accessed for logo display
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
     });
@@ -142,20 +142,20 @@ describe('Auth Context Integration', () => {
     it('should use the same AUTH_CONTEXT_KEY constant across components', () => {
       // This test verifies that both components use the same key
       expect(AUTH_CONTEXT_KEY).toBe('flows-auth-store');
-      
+
       // Both components should work with the same context key
       const { unmount: unmount1 } = render(SignInForm, {
         props: { initialEmail: 'test@example.com' },
         context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
       });
-      
+
       const { unmount: unmount2 } = render(SignInCore, {
         props: { initialEmail: 'test@example.com' },
         context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
       });
 
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
-      
+
       unmount1();
       unmount2();
     });
@@ -190,12 +190,12 @@ describe('Auth Context Integration', () => {
 
     it('should handle multiple subscribers correctly (future extensibility)', () => {
       // Test that multiple SignInCore instances can subscribe to the same store
-      
+
       const { unmount: unmount1 } = render(SignInCore, {
         props: { initialEmail: 'test1@example.com' },
         context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
       });
-      
+
       const { unmount: unmount2 } = render(SignInCore, {
         props: { initialEmail: 'test2@example.com' },
         context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
@@ -204,7 +204,7 @@ describe('Auth Context Integration', () => {
       // Should handle multiple subscriptions
       expect(mockAuthStore.subscribe).toHaveBeenCalledTimes(2);
       expect(authStoreSubscribers).toHaveLength(2);
-      
+
       unmount1();
       unmount2();
     });
@@ -214,7 +214,7 @@ describe('Auth Context Integration', () => {
     it('should handle missing auth store gracefully', () => {
       // Test reactive pattern with null store initially
       const authStoreContext = writable(null);
-      
+
       render(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
@@ -249,17 +249,17 @@ describe('Auth Context Integration', () => {
       // SignInForm presentation layer
       expect(container.querySelector('.auth-form--inline')).toBeInTheDocument();
       expect(container.querySelector('.auth-container')).toBeInTheDocument();
-      
+
       // SignInCore logic layer
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-      
+
       // Auth store accessed by both layers
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
     });
 
     it('should prevent component isolation by using shared context', () => {
       // Test that components use shared context store, not isolated instances
-      
+
       render(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
@@ -270,7 +270,7 @@ describe('Auth Context Integration', () => {
       // Verify that component uses shared context store
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      
+
       // Component successfully renders without creating its own store
       expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });

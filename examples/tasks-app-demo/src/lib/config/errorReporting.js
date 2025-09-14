@@ -22,7 +22,7 @@ const ERROR_REPORTING_ENDPOINTS = {
  */
 function getLocalDemoEndpoint() {
   if (!browser) return null;
-  
+
   const { protocol, hostname, port } = window.location;
   return `${protocol}//${hostname}:${port}/dev/error-reports`;
 }
@@ -32,11 +32,11 @@ function getLocalDemoEndpoint() {
  */
 async function isLocalDemoAvailable() {
   if (!browser) return false;
-  
+
   try {
     const endpoint = getLocalDemoEndpoint();
     if (!endpoint) return false;
-    
+
     const healthEndpoint = endpoint.replace('/dev/error-reports', '/health');
     const response = await fetch(healthEndpoint, {
       method: 'GET',
@@ -53,7 +53,7 @@ async function isLocalDemoAvailable() {
  */
 async function isLocalApiAvailable() {
   if (!browser) return false;
-  
+
   try {
     const response = await fetch('https://dev.thepia.com:8443/health', {
       method: 'GET',
@@ -70,20 +70,21 @@ async function isLocalApiAvailable() {
  */
 async function detectEnvironmentAndServers() {
   if (!browser) return { environment: 'development', useLocalDemo: false, useLocalApi: false };
-  
+
   const hostname = window.location.hostname;
-  
+
   // Check if we're in development environment
-  const isDevelopment = hostname === 'localhost' || 
-                       hostname === '127.0.0.1' || 
-                       hostname.includes('dev.thepia.net') ||
-                       hostname.includes('dev.thepia.com');
-  
+  const isDevelopment =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.includes('dev.thepia.net') ||
+    hostname.includes('dev.thepia.com');
+
   if (isDevelopment) {
     // In development, prefer local demo server, fallback to local API server
     const localDemoAvailable = await isLocalDemoAvailable();
-    const localApiAvailable = !localDemoAvailable && await isLocalApiAvailable();
-    
+    const localApiAvailable = !localDemoAvailable && (await isLocalApiAvailable());
+
     return {
       environment: 'development',
       useLocalDemo: localDemoAvailable,
@@ -91,7 +92,7 @@ async function detectEnvironmentAndServers() {
       fallbackDisabled: !localDemoAvailable && !localApiAvailable
     };
   }
-  
+
   return { environment: 'production', useLocalDemo: false, useLocalApi: false };
 }
 
@@ -99,12 +100,13 @@ async function detectEnvironmentAndServers() {
  * Get error reporting configuration with smart server detection
  */
 export async function getErrorReportingConfig() {
-  const { environment, useLocalDemo, useLocalApi, fallbackDisabled } = await detectEnvironmentAndServers();
+  const { environment, useLocalDemo, useLocalApi, fallbackDisabled } =
+    await detectEnvironmentAndServers();
   const isDev = environment === 'development';
-  
+
   let endpoint;
   let serverType;
-  
+
   if (isDev && useLocalDemo) {
     endpoint = getLocalDemoEndpoint();
     serverType = 'Local Demo Server (/dev/error-reports)';
@@ -114,9 +116,11 @@ export async function getErrorReportingConfig() {
   } else {
     // Production frontend error reporting not implemented yet
     endpoint = null;
-    serverType = fallbackDisabled ? 'Disabled (no local servers available)' : 'Disabled (dev-only feature)';
+    serverType = fallbackDisabled
+      ? 'Disabled (no local servers available)'
+      : 'Disabled (dev-only feature)';
   }
-  
+
   return {
     enabled: !!endpoint, // Only enable when we have a valid endpoint
     endpoint,
@@ -139,13 +143,13 @@ export async function getErrorReportingConfig() {
  */
 export async function initializeTasksErrorReporting() {
   if (!browser) return;
-  
+
   try {
     const { initializeErrorReporter } = await import('@thepia/flows-auth');
     const config = await getErrorReportingConfig();
-    
+
     await initializeErrorReporter(config);
-    
+
     if (config.debug) {
       console.log('[Tasks App] Error reporting initialized:', {
         environment: config.environment,
@@ -157,14 +161,14 @@ export async function initializeTasksErrorReporting() {
         fallbackDisabled: config.fallbackDisabled
       });
     }
-    
+
     // Always log in development for verification
     if (config.environment === 'development') {
       console.log('🔧 Error Reporting Status:', config.enabled ? 'ENABLED' : 'DISABLED');
       console.log('📡 Target:', config.serverType);
       console.log('🎯 Endpoint:', config.endpoint || 'None');
     }
-    
+
     return true;
   } catch (error) {
     console.error('[Tasks App] Failed to initialize error reporting:', error);
@@ -178,10 +182,10 @@ export async function initializeTasksErrorReporting() {
  */
 export async function initializeTasksErrorReportingProduction() {
   if (!browser) return;
-  
+
   try {
     const { initializeErrorReporter } = await import('@thepia/flows-auth');
-    
+
     const config = {
       enabled: false, // Production frontend error reporting not implemented yet
       endpoint: null,
@@ -194,15 +198,15 @@ export async function initializeTasksErrorReportingProduction() {
       appName: 'tasks-app-demo',
       appVersion: '0.0.1'
     };
-    
+
     await initializeErrorReporter(config);
-    
+
     console.log('[Tasks App] Error reporting initialized (production forced):', {
       endpoint: config.endpoint,
       serverType: config.serverType,
       enabled: config.enabled
     });
-    
+
     return true;
   } catch (error) {
     console.error('[Tasks App] Failed to initialize production error reporting:', error);
@@ -215,10 +219,10 @@ export async function initializeTasksErrorReportingProduction() {
  */
 export async function reportTaskError(operation, error, context = {}) {
   if (!browser) return;
-  
+
   try {
     const { reportApiError } = await import('@thepia/flows-auth');
-    
+
     await reportApiError(
       context.url || 'tasks-app',
       context.method || 'TASK_OPERATION',
@@ -240,10 +244,10 @@ export async function reportTaskError(operation, error, context = {}) {
  */
 export async function reportSyncError(operation, error, context = {}) {
   if (!browser) return;
-  
+
   try {
     const { reportApiError } = await import('@thepia/flows-auth');
-    
+
     await reportApiError(
       context.url || 'service-worker-sync',
       context.method || 'SYNC_OPERATION',
@@ -266,10 +270,10 @@ export async function reportSyncError(operation, error, context = {}) {
  */
 export async function reportTasksAuthError(operation, error, context = {}) {
   if (!browser) return;
-  
+
   try {
     const { reportWebAuthnError } = await import('@thepia/flows-auth');
-    
+
     await reportWebAuthnError(operation, error, {
       taskApp: true,
       ...context
@@ -284,7 +288,7 @@ export async function reportTasksAuthError(operation, error, context = {}) {
  */
 export async function flushTasksErrorReports() {
   if (!browser) return;
-  
+
   try {
     const { flushErrorReports } = await import('@thepia/flows-auth');
     await flushErrorReports();
@@ -298,9 +302,9 @@ export async function flushTasksErrorReports() {
  */
 export async function testErrorReporting() {
   if (!browser) return;
-  
+
   console.log('🧪 Testing error reporting...');
-  
+
   try {
     await reportTaskError('test.manual', new Error('Manual test error'), {
       context: 'Manual test triggered by user',
@@ -317,45 +321,57 @@ export async function testErrorReporting() {
  */
 export function enableGlobalErrorReporting() {
   if (!browser) return;
-  
+
   const originalError = console.error;
-  
-  console.error = function(...args) {
+
+  console.error = (...args) => {
     // Call original console.error
     originalError.apply(console, args);
-    
+
     // Report error if it looks like an Error object
     const firstArg = args[0];
     if (firstArg instanceof Error || (typeof firstArg === 'string' && args.length > 0)) {
-      reportTaskError('console.error', {
-        message: String(firstArg),
-        stack: firstArg.stack || 'No stack trace'
-      }, {
-        consoleArgs: args.slice(1)
-      });
+      reportTaskError(
+        'console.error',
+        {
+          message: String(firstArg),
+          stack: firstArg.stack || 'No stack trace'
+        },
+        {
+          consoleArgs: args.slice(1)
+        }
+      );
     }
   };
-  
+
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    reportTaskError('unhandledRejection', {
-      message: event.reason?.message || String(event.reason),
-      stack: event.reason?.stack || 'No stack trace'
-    }, {
-      promise: true
-    });
+    reportTaskError(
+      'unhandledRejection',
+      {
+        message: event.reason?.message || String(event.reason),
+        stack: event.reason?.stack || 'No stack trace'
+      },
+      {
+        promise: true
+      }
+    );
   });
-  
+
   // Handle uncaught errors
   window.addEventListener('error', (event) => {
-    reportTaskError('uncaughtError', {
-      message: event.message,
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-      stack: event.error?.stack || 'No stack trace'
-    }, {
-      global: true
-    });
+    reportTaskError(
+      'uncaughtError',
+      {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        stack: event.error?.stack || 'No stack trace'
+      },
+      {
+        global: true
+      }
+    );
   });
 }

@@ -1,8 +1,8 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 /**
  * SignInForm Component Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import type { AuthConfig } from '../../src/types';
 
@@ -107,9 +107,9 @@ describe('SignInForm Component', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com') as HTMLInputElement;
-      
+
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      
+
       expect(emailInput.value).toBe('test@example.com');
     });
 
@@ -165,9 +165,9 @@ describe('SignInForm Component', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
-      
+
       await fireEvent.input(emailInput, { target: { value: 'invalid-email' } });
-      
+
       // The form should show an error for invalid email format
       const form = emailInput.closest('form');
       expect(form).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('SignInForm Component', () => {
   describe('Form Submission', () => {
     it('should emit success event on successful authentication', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(SignInForm, {
         props: { config: mockConfig }
       });
@@ -191,24 +191,27 @@ describe('SignInForm Component', () => {
       await fireEvent.click(continueButton);
 
       // Wait for the mock timeout to complete
-      await waitFor(() => {
-        expect(successHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: {
-              user: expect.objectContaining({
-                email: 'test@example.com',
-                name: 'Test User'
-              }),
-              method: expect.stringMatching(/passkey|magic-link/)
-            }
-          })
-        );
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(successHandler).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: {
+                user: expect.objectContaining({
+                  email: 'test@example.com',
+                  name: 'Test User'
+                }),
+                method: expect.stringMatching(/passkey|magic-link/)
+              }
+            })
+          );
+        },
+        { timeout: 2000 }
+      );
     });
 
     it('should not submit with empty email', async () => {
       const successHandler = vi.fn();
-      
+
       const { component } = render(SignInForm, {
         props: { config: mockConfig }
       });
@@ -216,7 +219,7 @@ describe('SignInForm Component', () => {
       component.$on('success', successHandler);
 
       const continueButton = screen.getByRole('button');
-      
+
       await fireEvent.click(continueButton);
 
       expect(successHandler).not.toHaveBeenCalled();
@@ -229,15 +232,15 @@ describe('SignInForm Component', () => {
 
       const form = document.querySelector('form');
       const submitHandler = vi.fn();
-      
+
       if (form) {
         form.addEventListener('submit', submitHandler);
-        
+
         const emailInput = screen.getByPlaceholderText('your.email@company.com');
         await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-        
+
         await fireEvent.submit(form);
-        
+
         expect(submitHandler).toHaveBeenCalled();
         expect(submitHandler.mock.calls[0][0].defaultPrevented).toBe(true);
       }
@@ -264,7 +267,7 @@ describe('SignInForm Component', () => {
 
       const emailInput = screen.getByPlaceholderText('your.email@company.com');
       expect(emailInput.getAttribute('id')).toBe('email');
-      
+
       const label = screen.getByText('Email address');
       expect(label.getAttribute('for')).toBe('email');
     });
@@ -294,11 +297,11 @@ describe('SignInForm Component', () => {
       // Check if mobile responsive styles are present
       const form = container.querySelector('.auth-form');
       expect(form).toBeInTheDocument();
-      
+
       // The actual mobile styles are CSS-based, so we just verify the structure exists
       const logo = container.querySelector('.auth-logo');
       const formContainer = container.querySelector('.auth-container');
-      
+
       expect(logo).toBeInTheDocument();
       expect(formContainer).toBeInTheDocument();
     });

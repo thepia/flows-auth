@@ -1,7 +1,7 @@
 /**
  * IndexedDB Local Storage Wrapper
  * Privacy-first local storage for workflow data
- * 
+ *
  * SPIKE: Experimental IndexedDB implementation for service worker sync
  */
 
@@ -163,7 +163,11 @@ export class LocalStorageDB {
   /**
    * Update workflow sync status
    */
-  async updateSyncStatus(uid: string, status: 'pending' | 'synced' | 'failed', error?: string): Promise<void> {
+  async updateSyncStatus(
+    uid: string,
+    status: 'pending' | 'synced' | 'failed',
+    error?: string
+  ): Promise<void> {
     await this.ensureInitialized();
 
     const workflow = await this.getWorkflow(uid);
@@ -210,11 +214,13 @@ export class LocalStorageDB {
       request.onerror = () => reject(new Error('Failed to get sync metadata'));
       request.onsuccess = () => {
         const result = request.result;
-        resolve(result || {
-          lastSyncTimestamp: 0,
-          pendingUploads: 0,
-          syncInProgress: false
-        });
+        resolve(
+          result || {
+            lastSyncTimestamp: 0,
+            pendingUploads: 0,
+            syncInProgress: false
+          }
+        );
       };
     });
   }
@@ -273,7 +279,7 @@ export class LocalStorageDB {
 
       clearWorkflows.onerror = () => reject(new Error('Failed to clear workflows'));
       clearWorkflows.onsuccess = checkComplete;
-      
+
       clearMetadata.onerror = () => reject(new Error('Failed to clear metadata'));
       clearMetadata.onsuccess = checkComplete;
     });

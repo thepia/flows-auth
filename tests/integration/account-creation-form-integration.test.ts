@@ -1,6 +1,6 @@
 /**
  * Integration Tests for AccountCreationForm with Auto-Sign-In
- * 
+ *
  * These tests verify the complete registration flow including:
  * - WebAuthn registration with real API calls
  * - Immediate authentication after registration
@@ -8,8 +8,8 @@
  * - Session management integration
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, fireEvent, waitFor, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
@@ -75,39 +75,41 @@ describe('AccountCreationForm Integration Tests', () => {
           json: () => Promise.resolve({ exists: false })
         });
       }
-      
+
       if (url.includes('/auth/webauthn/register-challenge')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            challenge: 'mock-challenge',
-            user: { id: 'user-123', name: 'test@example.com' },
-            rp: { name: 'Test Company' },
-            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-            timeout: 60000
-          })
+          json: () =>
+            Promise.resolve({
+              challenge: 'mock-challenge',
+              user: { id: 'user-123', name: 'test@example.com' },
+              rp: { name: 'Test Company' },
+              pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+              timeout: 60000
+            })
         });
       }
-      
+
       if (url.includes('/auth/webauthn/register-verify')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            tokens: {
-              accessToken: 'mock-access-token',
-              refreshToken: 'mock-refresh-token',
-              expiresAt: Date.now() + 3600000
-            },
-            user: {
-              id: 'user-123',
-              email: 'test@example.com',
-              emailVerified: true
-            }
-          })
+          json: () =>
+            Promise.resolve({
+              success: true,
+              tokens: {
+                accessToken: 'mock-access-token',
+                refreshToken: 'mock-refresh-token',
+                expiresAt: Date.now() + 3600000
+              },
+              user: {
+                id: 'user-123',
+                email: 'test@example.com',
+                emailVerified: true
+              }
+            })
         });
       }
-      
+
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({})
@@ -123,7 +125,7 @@ describe('AccountCreationForm Integration Tests', () => {
     it('should complete registration and emit appAccess event', async () => {
       const appAccessHandler = vi.fn();
       const successHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
@@ -153,18 +155,21 @@ describe('AccountCreationForm Integration Tests', () => {
       await fireEvent.click(screen.getByText(/Register with Passkey/));
 
       // Wait for registration to complete
-      await waitFor(() => {
-        expect(appAccessHandler).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: {
-              user: expect.objectContaining({
-                id: 'user-123',
-                email: 'test@example.com'
-              })
-            }
-          })
-        );
-      }, { timeout: 5000 });
+      await waitFor(
+        () => {
+          expect(appAccessHandler).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: {
+                user: expect.objectContaining({
+                  id: 'user-123',
+                  email: 'test@example.com'
+                })
+              }
+            })
+          );
+        },
+        { timeout: 5000 }
+      );
 
       // Verify success event was also emitted
       expect(successHandler).toHaveBeenCalledWith(
@@ -182,10 +187,10 @@ describe('AccountCreationForm Integration Tests', () => {
 
     it('should handle registration with business fields', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
-        props: { 
-          config: authConfig, 
+        props: {
+          config: authConfig,
           additionalFields: ['company', 'phone', 'jobTitle']
         }
       });
@@ -211,7 +216,9 @@ describe('AccountCreationForm Integration Tests', () => {
 
       // Fill business fields
       await fireEvent.input(screen.getByLabelText('Company'), { target: { value: 'Test Corp' } });
-      await fireEvent.input(screen.getByLabelText('Phone Number'), { target: { value: '+1-555-9999' } });
+      await fireEvent.input(screen.getByLabelText('Phone Number'), {
+        target: { value: '+1-555-9999' }
+      });
       await fireEvent.input(screen.getByLabelText('Job Title'), { target: { value: 'Developer' } });
 
       // Complete registration
@@ -233,10 +240,10 @@ describe('AccountCreationForm Integration Tests', () => {
 
     it('should handle invitation token registration', async () => {
       const appAccessHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
-        props: { 
-          config: authConfig, 
+        props: {
+          config: authConfig,
           invitationTokenData,
           invitationToken: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test-token',
           additionalFields: ['company', 'phone', 'jobTitle'],
@@ -397,7 +404,7 @@ describe('AccountCreationForm Integration Tests', () => {
       (navigator.credentials.create as any).mockRejectedValue(new Error('WebAuthn failed'));
 
       const errorHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
@@ -453,7 +460,7 @@ describe('AccountCreationForm Integration Tests', () => {
       });
 
       const errorHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
@@ -489,7 +496,7 @@ describe('AccountCreationForm Integration Tests', () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
 
       const errorHandler = vi.fn();
-      
+
       const { component } = render(AccountCreationForm, {
         props: { config: authConfig }
       });
@@ -549,9 +556,9 @@ describe('AccountCreationForm Integration Tests', () => {
 
       const emailInput = screen.getByLabelText('Email address');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      
+
       const continueButton = screen.getByText('Continue');
-      
+
       // Rapid clicks should not cause multiple API calls
       await fireEvent.click(continueButton);
       await fireEvent.click(continueButton);
@@ -562,8 +569,8 @@ describe('AccountCreationForm Integration Tests', () => {
       });
 
       // Should only make one API call
-      const emailCheckCalls = mockFetch.mock.calls.filter(
-        call => call[0].includes('/auth/check-email')
+      const emailCheckCalls = mockFetch.mock.calls.filter((call) =>
+        call[0].includes('/auth/check-email')
       );
       expect(emailCheckCalls).toHaveLength(1);
     });
@@ -572,7 +579,7 @@ describe('AccountCreationForm Integration Tests', () => {
       // Mock slow API response
       mockFetch.mockImplementation((url: string) => {
         if (url.includes('/auth/check-email')) {
-          return new Promise(resolve => {
+          return new Promise((resolve) => {
             setTimeout(() => {
               resolve({
                 ok: true,
@@ -597,14 +604,17 @@ describe('AccountCreationForm Integration Tests', () => {
 
       // Form should show loading state
       expect(screen.getByText('Checking email...')).toBeInTheDocument();
-      
+
       // Input should be disabled during loading
       expect(emailInput).toBeDisabled();
 
       // Wait for completion
-      await waitFor(() => {
-        expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('Terms & Privacy')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
 
       // Form should be responsive again
       expect(screen.getByLabelText(/Terms of Service/)).toBeEnabled();

@@ -1,11 +1,11 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 /**
  * CRITICAL WEBAUTHN FLOW VALIDATION TESTS
- * 
+ *
  * These tests validate the actual WebAuthn passkey creation and validation
  * that was completely missing from the original test suite.
- * 
+ *
  * THESE TESTS MUST PASS to ensure passkeys actually work in production.
  */
 

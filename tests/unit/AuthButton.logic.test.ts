@@ -1,12 +1,12 @@
 /**
  * AuthButton Logic Unit Tests
- * 
+ *
  * Tests the logic functions and prop combinations for AuthButton
  * without requiring full Svelte component rendering
  */
 
-import { describe, it, expect, vi } from 'vitest';
 import { writable } from 'svelte/store';
+import { describe, expect, it, vi } from 'vitest';
 import type { TranslationKey } from '../../src/utils/i18n';
 
 // Mock the getDisplayText logic from AuthButton
@@ -21,23 +21,28 @@ function getDisplayText(
 ): string {
   if (loading && loadingText) return loadingText;
   if (text) return text;
-  
+
   // Method-specific text using i18n
   if (loading) {
     switch (method) {
-      case 'passkey': return i18n('auth.signingIn');
-      case 'email': 
-      case 'email-code': return i18n('auth.sendingPin');
-      case 'magic-link': return i18n('auth.sendingMagicLink');
+      case 'passkey':
+        return i18n('auth.signingIn');
+      case 'email':
+      case 'email-code':
+        return i18n('auth.sendingPin');
+      case 'magic-link':
+        return i18n('auth.sendingMagicLink');
       case 'continue-touchid':
       case 'continue-faceid':
-      case 'continue-biometric': return i18n('auth.signingIn');
-      default: return i18n('auth.loading');
+      case 'continue-biometric':
+        return i18n('auth.signingIn');
+      default:
+        return i18n('auth.loading');
     }
   }
-  
+
   switch (method) {
-    case 'passkey': 
+    case 'passkey':
       return supportsWebAuthn ? i18n('auth.signInWithPasskey') : i18n('auth.signIn');
     case 'email':
       // AppCode-aware: use pin or magic link text
@@ -52,29 +57,31 @@ function getDisplayText(
       return i18n('auth.continueWithFaceId');
     case 'continue-biometric':
       return i18n('auth.continueWithBiometric');
-    default: 
+    default:
       return i18n('action.continue');
   }
 }
 
 // Mock the getDisplayIcon logic from AuthButton
-function getDisplayIcon(
-  method: string,
-  loading: boolean,
-  icon: string
-): string {
+function getDisplayIcon(method: string, loading: boolean, icon: string): string {
   if (loading) return '';
   if (icon) return icon;
-  
+
   switch (method) {
-    case 'passkey': return '🔑';
-    case 'email': 
+    case 'passkey':
+      return '🔑';
+    case 'email':
     case 'email-code':
-    case 'magic-link': return '✉️';
-    case 'continue-touchid': return '👆';
-    case 'continue-faceid': return '😊';
-    case 'continue-biometric': return '🔐';
-    default: return '';
+    case 'magic-link':
+      return '✉️';
+    case 'continue-touchid':
+      return '👆';
+    case 'continue-faceid':
+      return '😊';
+    case 'continue-biometric':
+      return '🔐';
+    default:
+      return '';
   }
 }
 
@@ -108,7 +115,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Sign in with Passkey');
     });
 
@@ -122,7 +129,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Sign in');
     });
 
@@ -136,7 +143,7 @@ describe('AuthButton Logic', () => {
         true, // isAppCodeBased
         mockI18n
       );
-      
+
       expect(text).toBe('Send pin to email');
     });
 
@@ -150,49 +157,25 @@ describe('AuthButton Logic', () => {
         false, // isAppCodeBased
         mockI18n
       );
-      
+
       expect(text).toBe('Send Magic Link');
     });
 
     it('should display Touch ID text', () => {
-      const text = getDisplayText(
-        'continue-touchid',
-        false,
-        '',
-        '',
-        false,
-        false,
-        mockI18n
-      );
-      
+      const text = getDisplayText('continue-touchid', false, '', '', false, false, mockI18n);
+
       expect(text).toBe('Continue with Touch ID');
     });
 
     it('should display Face ID text', () => {
-      const text = getDisplayText(
-        'continue-faceid',
-        false,
-        '',
-        '',
-        false,
-        false,
-        mockI18n
-      );
-      
+      const text = getDisplayText('continue-faceid', false, '', '', false, false, mockI18n);
+
       expect(text).toBe('Continue with Face ID');
     });
 
     it('should display biometric text', () => {
-      const text = getDisplayText(
-        'continue-biometric',
-        false,
-        '',
-        '',
-        false,
-        false,
-        mockI18n
-      );
-      
+      const text = getDisplayText('continue-biometric', false, '', '', false, false, mockI18n);
+
       expect(text).toBe('Continue with Touch ID/Face ID');
     });
   });
@@ -208,7 +191,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Signing in...');
     });
 
@@ -222,7 +205,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Sending pin...');
     });
 
@@ -236,7 +219,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Sending magic link...');
     });
 
@@ -250,7 +233,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Custom loading...');
     });
   });
@@ -266,7 +249,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Custom Button Text');
     });
 
@@ -280,7 +263,7 @@ describe('AuthButton Logic', () => {
         false,
         mockI18n
       );
-      
+
       expect(text).toBe('Custom Loading...');
     });
   });

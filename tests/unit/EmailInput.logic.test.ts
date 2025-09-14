@@ -1,12 +1,12 @@
 /**
  * EmailInput Logic Unit Tests
- * 
+ *
  * Tests the logic functions and event handling for EmailInput component
  * without requiring full Svelte component rendering
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TranslationKey } from '../../src/utils/i18n';
 
 // Mock the email validation logic from EmailInput
@@ -22,10 +22,10 @@ class EmailInputLogic {
   private debounceMs: number;
   private disabled: boolean;
   private onConditionalAuth: (email: string) => void;
-  
+
   constructor(
-    enableWebAuthn = true, 
-    debounceMs = 1000, 
+    enableWebAuthn = true,
+    debounceMs = 1000,
     disabled = false,
     onConditionalAuth = () => {}
   ) {
@@ -34,7 +34,7 @@ class EmailInputLogic {
     this.disabled = disabled;
     this.onConditionalAuth = onConditionalAuth;
   }
-  
+
   handleEmailChange(value: string): void {
     // Clear previous timeout
     if (this.emailChangeTimeout) {
@@ -50,7 +50,7 @@ class EmailInputLogic {
       }, this.debounceMs);
     }
   }
-  
+
   cleanup(): void {
     if (this.emailChangeTimeout) {
       clearTimeout(this.emailChangeTimeout);
@@ -65,7 +65,7 @@ function getDisplayText(
   customText = ''
 ): string {
   if (customText) return customText;
-  
+
   switch (type) {
     case 'placeholder':
       return i18n('email.placeholder');
@@ -100,7 +100,7 @@ describe('EmailInput Logic', () => {
         'user123@test-domain.org'
       ];
 
-      validEmails.forEach(email => {
+      validEmails.forEach((email) => {
         expect(isValidEmail(email)).toBe(true);
       });
     });
@@ -116,7 +116,7 @@ describe('EmailInput Logic', () => {
         ''
       ];
 
-      invalidEmails.forEach(email => {
+      invalidEmails.forEach((email) => {
         expect(isValidEmail(email)).toBe(false);
       });
     });
@@ -128,7 +128,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(true, 1000, false, mockConditionalAuth);
 
       emailLogic.handleEmailChange('user@example.com');
-      
+
       // Should not trigger immediately
       expect(mockConditionalAuth).not.toHaveBeenCalled();
 
@@ -144,7 +144,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(true, 1000, false, mockConditionalAuth);
 
       emailLogic.handleEmailChange('invalid-email');
-      
+
       vi.advanceTimersByTime(1000);
       expect(mockConditionalAuth).not.toHaveBeenCalled();
 
@@ -156,7 +156,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(false, 1000, false, mockConditionalAuth);
 
       emailLogic.handleEmailChange('user@example.com');
-      
+
       vi.advanceTimersByTime(1000);
       expect(mockConditionalAuth).not.toHaveBeenCalled();
 
@@ -168,7 +168,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(true, 1000, true, mockConditionalAuth);
 
       emailLogic.handleEmailChange('user@example.com');
-      
+
       vi.advanceTimersByTime(1000);
       expect(mockConditionalAuth).not.toHaveBeenCalled();
 
@@ -244,9 +244,9 @@ describe('EmailInput Logic', () => {
     it('should return base classes without error', () => {
       const getInputClasses = (error: string | null): string => {
         if (error) {
-          return "input-brand error";
+          return 'input-brand error';
         }
-        return "input-brand";
+        return 'input-brand';
       };
 
       expect(getInputClasses(null)).toBe('input-brand');
@@ -255,9 +255,9 @@ describe('EmailInput Logic', () => {
     it('should return error classes with error', () => {
       const getInputClasses = (error: string | null): string => {
         if (error) {
-          return "input-brand error";
+          return 'input-brand error';
         }
-        return "input-brand";
+        return 'input-brand';
       };
 
       expect(getInputClasses('Invalid email')).toBe('input-brand error');
@@ -299,7 +299,7 @@ describe('EmailInput Logic', () => {
   describe('Input Properties', () => {
     it('should generate correct autocomplete attribute', () => {
       const getAutocomplete = (enableWebAuthn: boolean): string => {
-        return enableWebAuthn ? "email webauthn" : "email";
+        return enableWebAuthn ? 'email webauthn' : 'email';
       };
 
       expect(getAutocomplete(true)).toBe('email webauthn');
@@ -328,7 +328,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(true, customDebounce, false, mockConditionalAuth);
 
       emailLogic.handleEmailChange('user@example.com');
-      
+
       // Should not trigger before custom debounce
       vi.advanceTimersByTime(400);
       expect(mockConditionalAuth).not.toHaveBeenCalled();
@@ -345,7 +345,7 @@ describe('EmailInput Logic', () => {
       const emailLogic = new EmailInputLogic(true, 0, false, mockConditionalAuth);
 
       emailLogic.handleEmailChange('user@example.com');
-      
+
       // Should trigger immediately with zero debounce
       vi.advanceTimersByTime(0);
       expect(mockConditionalAuth).toHaveBeenCalledWith('user@example.com');

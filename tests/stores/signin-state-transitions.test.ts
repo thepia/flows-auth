@@ -3,10 +3,10 @@
  * Verifies that SignInEvent processing works correctly
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInState, SignInEvent } from '../../src/types';
+import type { AuthConfig, SignInEvent, SignInState } from '../../src/types';
 
 describe('SignIn State Transitions', () => {
   let authStore: ReturnType<typeof createAuthStore>;
@@ -46,7 +46,7 @@ describe('SignIn State Transitions', () => {
       // Simulate EMAIL_VERIFIED event (this should happen in verifyEmailCode)
       // We need to test the internal sendSignInEvent function
       // For now, let's test the state transition logic directly
-      
+
       // The issue is that EMAIL_VERIFIED event is being sent from emailEntry state
       // But processSignInTransition doesn't handle EMAIL_VERIFIED from emailEntry
     });
@@ -54,10 +54,10 @@ describe('SignIn State Transitions', () => {
     it('should transition from emailVerification to signedIn on EMAIL_VERIFIED', () => {
       // First transition to emailVerification state
       // This is the expected path for EMAIL_VERIFIED events
-      
+
       const initialState = get(authStore);
       expect(initialState.signInState).toBe('emailEntry');
-      
+
       // TODO: Need to simulate proper state progression:
       // emailEntry -> userChecked -> pinEntry -> emailVerification -> signedIn
     });
@@ -66,7 +66,7 @@ describe('SignIn State Transitions', () => {
       // This should work correctly based on current processSignInTransition
       const initialState = get(authStore);
       expect(initialState.signInState).toBe('emailEntry');
-      
+
       // TODO: Test PIN_VERIFIED transition from pinEntry
     });
   });
@@ -80,7 +80,7 @@ describe('SignIn State Transitions', () => {
     it('should stay in current state for unhandled events', () => {
       const initialState = get(authStore);
       expect(initialState.signInState).toBe('emailEntry');
-      
+
       // Sending an event that doesn't have a valid transition should keep current state
       // This tests the fallback: return currentState;
     });
@@ -90,15 +90,14 @@ describe('SignIn State Transitions', () => {
     it('should follow proper email code authentication flow', () => {
       // Expected flow:
       // 1. emailEntry (user enters email)
-      // 2. USER_EXISTS event -> userChecked  
+      // 2. USER_EXISTS event -> userChecked
       // 3. User clicks "Send PIN" -> pinEntry
       // 4. PIN sent -> EMAIL_SENT event (if needed)
       // 5. User enters PIN -> PIN_VERIFIED event -> signedIn
-      
       // OR alternative flow:
-      // 1. emailEntry (user enters email) 
+      // 1. emailEntry (user enters email)
       // 2. USER_EXISTS event -> userChecked
-      // 3. User clicks "Send PIN" -> pinEntry  
+      // 3. User clicks "Send PIN" -> pinEntry
       // 4. PIN requires verification -> EMAIL_VERIFICATION_REQUIRED -> emailVerification
       // 5. User verifies -> EMAIL_VERIFIED -> signedIn
     });

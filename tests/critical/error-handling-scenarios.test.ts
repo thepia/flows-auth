@@ -1,12 +1,12 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 /**
  * CRITICAL ERROR HANDLING SCENARIO TESTS
- * 
+ *
  * These tests validate error handling across all components and flows.
  * They ensure the application handles failures gracefully and provides
  * good user experience even when things go wrong.
- * 
+ *
  * THESE TESTS MUST PASS to ensure production reliability.
  */
 

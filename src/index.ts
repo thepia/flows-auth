@@ -25,20 +25,19 @@ export { default as SignInStateMachineFlow } from './components/SignInStateMachi
 export { default as TestFlow } from './components/TestFlow.svelte'; // Simple test component
 
 // Core granular components
-export { 
+export {
   EmailInput,
-  AuthButton, 
+  AuthButton,
   AuthStateMessage,
   SignInCore
 } from './components/core';
 
 // State Machine
 
-
 // Stores
 export {
   createAuthDerivedStores,
-  createAuthStore,
+  createAuthStore
 } from './stores/auth-store';
 
 // Global Auth Store Singleton (recommended approach)
@@ -77,7 +76,7 @@ export type { StorageConfig } from './types';
 export type {
   AuthFlowResult,
   EnhancedUserCheck,
-  InvitationAuthOptions,
+  InvitationAuthOptions
 } from './types/enhanced-auth';
 
 export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
@@ -85,9 +84,9 @@ export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
 export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
 
 // Internationalization
-export { 
-  createI18n, 
-  detectUserLanguage, 
+export {
+  createI18n,
+  detectUserLanguage,
   getSupportedLanguages,
   isLanguageSupported,
   defaultTranslations,
@@ -107,7 +106,7 @@ export type { InvitationProcessingResult } from './utils/invitation-processing';
 // Invitation Processing Utilities
 export {
   extractRegistrationDataFromToken,
-  processInvitationToken,
+  processInvitationToken
 } from './utils/invitation-processing';
 
 export type { InvitationTokenData, TokenValidationResult } from './utils/invitation-tokens';
@@ -116,7 +115,7 @@ export {
   decodeInvitationToken,
   extractRegistrationData,
   hashInvitationToken,
-  validateInvitationToken,
+  validateInvitationToken
 } from './utils/invitation-tokens';
 
 export * from './utils/local-storage';
@@ -129,7 +128,7 @@ export {
   migrateSessionSafely,
   SessionMigrator,
   sessionMigrator,
-  shouldMigrateSession,
+  shouldMigrateSession
 } from './utils/session-migrator';
 
 export type { FlowsSessionData } from './utils/sessionManager';
@@ -144,10 +143,10 @@ export {
   isAuthenticated as isAuthenticatedFromSession,
   isSessionValid,
   saveSession,
-  supportsPersistentSessions,
+  supportsPersistentSessions
 } from './utils/sessionManager';
 // WebAuthn utilities - exported individually to avoid static import issues
-export { 
+export {
   isWebAuthnSupported,
   isPlatformAuthenticatorAvailable,
   createPasskey,
@@ -164,7 +163,7 @@ export const VERSION = '1.0.4';
 // Default Configuration Utilities (NEW - eliminates app-level duplication)
 export {
   detectDefaultApiServer,
-  isDevelopmentEnvironment, 
+  isDevelopmentEnvironment,
   createDefaultAuthConfig,
   quickAuthSetup,
   getCachedDefaultConfig,
@@ -176,7 +175,7 @@ export function createDefaultConfig(
   overrides: Partial<import('./types').AuthConfig> = {}
 ): import('./types').AuthConfig {
   console.warn('createDefaultConfig is deprecated. Use createDefaultAuthConfig instead.');
-  
+
   const defaults = {
     apiBaseUrl: '',
     clientId: '',
@@ -185,8 +184,8 @@ export function createDefaultConfig(
     enableMagicLinks: true,
     branding: {
       companyName: 'Your Company',
-      showPoweredBy: true,
-    },
+      showPoweredBy: true
+    }
   };
 
   return {
@@ -194,7 +193,7 @@ export function createDefaultConfig(
     ...overrides,
     branding: {
       ...defaults.branding,
-      ...overrides.branding,
-    },
+      ...overrides.branding
+    }
   };
 }

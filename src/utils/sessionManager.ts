@@ -11,8 +11,12 @@
  * - Role-based storage strategy
  */
 
-import { getStorageManager, initializeStorageManager, getOptimalStorageConfig } from './storageManager';
 import type { StorageConfig } from '../types';
+import {
+  getOptimalStorageConfig,
+  getStorageManager,
+  initializeStorageManager
+} from './storageManager';
 
 export interface FlowsSessionData {
   user: {
@@ -84,12 +88,17 @@ export function saveSession(sessionData: FlowsSessionData): void {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(
         new CustomEvent('sessionUpdate', {
-          detail: { session: sessionData },
+          detail: { session: sessionData }
         })
       );
     }
 
-    console.log('💾 Session saved to', storage.getConfig().type, 'for user:', sessionData.user.email);
+    console.log(
+      '💾 Session saved to',
+      storage.getConfig().type,
+      'for user:',
+      sessionData.user.email
+    );
   } catch (error) {
     console.error('Failed to save session:', error);
   }
@@ -104,7 +113,7 @@ export function clearSession(): void {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(
         new CustomEvent('sessionUpdate', {
-          detail: { session: null },
+          detail: { session: null }
         })
       );
     }
@@ -177,7 +186,7 @@ export function saveLastUser(sessionData: FlowsSessionData): void {
       email: sessionData.user.email,
       name: sessionData.user.name,
       authMethod: sessionData.authMethod,
-      lastLoginAt: Date.now(),
+      lastLoginAt: Date.now()
     };
 
     localStorage.setItem(LAST_USER_KEY, JSON.stringify(lastUserData));

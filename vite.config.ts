@@ -9,21 +9,21 @@ export default defineConfig({
     svelte({
       preprocess: sveltePreprocess(),
       compilerOptions: {
-        dev: false,
+        dev: false
       },
-      emitCss: true,
+      emitCss: true
     }),
     dts({
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'tests/**/*'],
-    }),
+      exclude: ['src/**/*.test.ts', 'tests/**/*']
+    })
   ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'ThepiaAuthLibrary',
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
-      formats: ['es', 'cjs'],
+      formats: ['es', 'cjs']
     },
     rollupOptions: {
       external: ['svelte', 'svelte/store', 'svelte/internal', 'd3'],
@@ -32,12 +32,12 @@ export default defineConfig({
           svelte: 'Svelte',
           'svelte/store': 'SvelteStore',
           'svelte/internal': 'SvelteInternal',
-          d3: 'D3',
-        },
-      },
+          d3: 'D3'
+        }
+      }
     },
     sourcemap: true,
     target: 'es2020',
-    minify: false,
-  },
+    minify: false
+  }
 });

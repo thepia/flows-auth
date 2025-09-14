@@ -1,8 +1,8 @@
 /**
  * Configurable Storage Manager for flows-auth
- * 
+ *
  * Supports both sessionStorage and localStorage based on configuration.
- * Default is sessionStorage for security, but can be configured for 
+ * Default is sessionStorage for security, but can be configured for
  * long-running employee sessions.
  */
 
@@ -92,7 +92,7 @@ export class ConfigurableStorageManager {
   constructor(config?: StorageConfig) {
     this.config = this.getDefaultConfig(config);
     this.adapter = this.createAdapter();
-    
+
     console.log('🗄️ Storage manager initialized:', {
       type: this.config.type,
       sessionTimeout: this.config.sessionTimeout,
@@ -186,7 +186,7 @@ export class ConfigurableStorageManager {
   updateConfig(newConfig: Partial<StorageConfig>): void {
     const oldType = this.config.type;
     this.config = { ...this.config, ...newConfig };
-    
+
     // If storage type changed, create new adapter
     if (this.config.type !== oldType) {
       this.adapter = this.createAdapter();

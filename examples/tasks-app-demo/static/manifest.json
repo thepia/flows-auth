@@ -18,7 +18,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png", 
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -32,7 +32,7 @@
       "form_factor": "narrow"
     },
     {
-      "src": "/screenshot-desktop.png", 
+      "src": "/screenshot-desktop.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
@@ -55,7 +55,7 @@
   ],
   "features": [
     "WebAuthn authentication",
-    "Offline capability", 
+    "Offline capability",
     "Background sync",
     "Privacy-focused"
   ],

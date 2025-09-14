@@ -1,15 +1,14 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 /**
  * CRITICAL UI/UX INTEGRATION TESTS
- * 
+ *
  * These tests validate the UI/UX integration requirements (FR9) to ensure
  * proper behavior of AuthSection and landing page interactions.
- * 
+ *
  * These tests MUST PASS to ensure correct user experience.
  */
 describe('UI/UX Integration Requirements - CRITICAL', () => {
-
   // Helper function to simulate auth state
   function createMockAuthState(isAuthenticated: boolean, user?: any) {
     return {
@@ -21,7 +20,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   }
 
   // Helper function to simulate AuthSection behavior
-  function simulateAuthSection(authState: any, hasInvitationToken: boolean = false) {
+  function simulateAuthSection(authState: any, hasInvitationToken = false) {
     const isAuthenticated = authState.state === 'authenticated';
     const user = authState.user;
 
@@ -94,7 +93,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // CRITICAL: Should show UI, not redirect
     expect(authSectionUI.showOpenDemoButton).toBe(true);
     expect(authSectionUI.showSignInForm).toBe(false);
-    
+
     // The component should render UI, not perform automatic redirect
     // (This test validates that we removed the automatic redirect behavior)
   });
@@ -138,7 +137,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
   test('FR9.6: Invitation flow (?token= present) MAY redirect to /app after authentication', () => {
     // This test validates that invitation flow can redirect
     // The actual implementation may choose to redirect or show button
-    
+
     const authenticatedState = createMockAuthState(true, {
       id: 'user-123',
       email: 'test@example.com'
@@ -146,16 +145,16 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
 
     // Simulate invitation token present
     const hasInvitationToken = true;
-    
+
     // Both behaviors are acceptable for invitation flow:
     // 1. Show "Open Demo" button (consistent with normal flow)
     // 2. Automatic redirect (special invitation behavior)
-    
+
     const authSectionUI = simulateAuthSection(authenticatedState, hasInvitationToken);
-    
+
     // At minimum, user should be able to access the app
     const canAccessApp = authSectionUI.showOpenDemoButton && authSectionUI.buttonAction === '/app';
-    
+
     expect(canAccessApp).toBe(true);
   });
 
@@ -179,7 +178,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
       id: 'user-123',
       email: 'test@example.com'
     });
-    
+
     const unauthenticatedState = createMockAuthState(false);
 
     const authenticatedUI = simulateAuthSection(authenticatedState);
@@ -210,7 +209,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // Should show sign-in form
     expect(initialAuthSection.showSignInForm).toBe(true);
     expect(initialAuthSection.showOpenDemoButton).toBe(false);
-    
+
     // Open button should scroll to auth section
     expect(initialOpenButton.action).toBe('scroll');
     expect(initialOpenButton.destination).toBe('AuthSection');
@@ -228,7 +227,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     expect(authenticatedAuthSection.showOpenDemoButton).toBe(true);
     expect(authenticatedAuthSection.buttonAction).toBe('/app');
     expect(authenticatedAuthSection.showUserEmail).toBe(true);
-    
+
     // Open button should navigate to app
     expect(authenticatedOpenButton.action).toBe('navigate');
     expect(authenticatedOpenButton.destination).toBe('/app');
@@ -255,7 +254,7 @@ describe('UI/UX Integration Requirements - CRITICAL', () => {
     // Helper function to simulate registration success message
     function simulateRegistrationSuccessMessage(
       emailVerifiedViaInvitation: boolean,
-      hasInvitationToken: boolean = false
+      hasInvitationToken = false
     ) {
       const registrationResult = {
         step: 'success',

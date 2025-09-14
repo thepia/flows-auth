@@ -4,7 +4,11 @@
  */
 
 import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens';
-import { decodeInvitationToken, validateInvitationToken, hashInvitationToken } from './invitation-tokens';
+import {
+  decodeInvitationToken,
+  hashInvitationToken,
+  validateInvitationToken
+} from './invitation-tokens';
 
 /**
  * Result of invitation token processing
@@ -46,7 +50,7 @@ export async function processInvitationToken(
   } = {}
 ): Promise<InvitationProcessingResult> {
   const { errorReporter, enableDebugLogging = false } = options;
-  
+
   try {
     // Step 1: Decode the invitation token
     const tokenData = decodeInvitationToken(invitationToken);
@@ -57,7 +61,7 @@ export async function processInvitationToken(
     // Step 2: Validate the token
     const tokenValidationResult = validateInvitationToken(invitationToken, tokenData);
     const tokenValid = tokenValidationResult.isValid;
-    
+
     if (enableDebugLogging) {
       console.log('Token validation result:', tokenValidationResult);
     }
@@ -66,7 +70,9 @@ export async function processInvitationToken(
       return {
         success: false,
         action: 'error',
-        error: tokenValidationResult.reason || 'Invalid or expired invitation token. Please contact support for a new invitation.',
+        error:
+          tokenValidationResult.reason ||
+          'Invalid or expired invitation token. Please contact support for a new invitation.',
         userExists: false,
         hasPasskey: false,
         tokenData,
@@ -82,7 +88,7 @@ export async function processInvitationToken(
 
     // Step 3: Check if user exists
     const userCheck = await authStore.checkUser(tokenData.email);
-    
+
     if (enableDebugLogging) {
       console.log('User exists, checking passkey status:', userCheck);
       console.log('🔍 DEBUG: userCheck properties:', {
@@ -106,7 +112,7 @@ export async function processInvitationToken(
 
     // Check for passkey using both possible property names (API inconsistency)
     const hasPasskey = userCheck.hasPasskey || userCheck.hasWebAuthn;
-    
+
     if (userCheck.exists) {
       // User exists - determine next action
       if (!hasPasskey && tokenValid) {
@@ -120,7 +126,7 @@ export async function processInvitationToken(
         if (userCheck.invitationTokenHash) {
           const currentTokenHash = await hashInvitationToken(invitationToken);
           tokenHashMatches = currentTokenHash === userCheck.invitationTokenHash;
-          
+
           if (enableDebugLogging) {
             console.log('Token hash verification:', {
               stored: userCheck.invitationTokenHash?.substring(0, 8) + '...',
@@ -128,7 +134,7 @@ export async function processInvitationToken(
               matches: tokenHashMatches
             });
           }
-          
+
           // Send hash comparison data to error reporter
           if (errorReporter) {
             errorReporter('Token hash verification', {
@@ -139,7 +145,7 @@ export async function processInvitationToken(
               hashesMatch: tokenHashMatches
             });
           }
-          
+
           if (!tokenHashMatches) {
             if (enableDebugLogging) {
               console.warn('🔒 Token hash mismatch - token may not be valid for this user');
@@ -147,7 +153,8 @@ export async function processInvitationToken(
             return {
               success: false,
               action: 'error',
-              error: 'Invalid invitation token for this user. Please use the original invitation link.',
+              error:
+                'Invalid invitation token for this user. Please use the original invitation link.',
               userExists: true,
               hasPasskey: false,
               tokenData,
@@ -161,15 +168,17 @@ export async function processInvitationToken(
               }
             };
           }
-          
+
           if (enableDebugLogging) {
             console.log('✅ Token hash verified - resuming passkey registration');
           }
         } else {
           if (enableDebugLogging) {
-            console.warn('⚠️ No stored token hash found - allowing registration without token verification');
+            console.warn(
+              '⚠️ No stored token hash found - allowing registration without token verification'
+            );
           }
-          
+
           // Send missing hash data to error reporter
           if (errorReporter) {
             errorReporter('Missing invitation token hash', {
@@ -227,7 +236,7 @@ export async function processInvitationToken(
           }
         };
       }
-      
+
       // User exists but no passkey and no valid token - show error
       if (enableDebugLogging) {
         console.log('User exists but no passkey and no valid token');
@@ -280,7 +289,7 @@ export async function processInvitationToken(
     if (enableDebugLogging) {
       console.error('Failed to process invitation token:', error);
     }
-    
+
     return {
       success: false,
       action: 'error',

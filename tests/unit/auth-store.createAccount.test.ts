@@ -1,9 +1,9 @@
+import { get } from 'svelte/store';
 /**
  * Tests for createAccount function without WebAuthn
  * Ensures basic account creation works without passkey requirements
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { get } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
@@ -31,9 +31,9 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock browser environment
-Object.defineProperty(globalThis, 'window', { 
+Object.defineProperty(globalThis, 'window', {
   value: { location: { hostname: 'localhost' } },
-  writable: true 
+  writable: true
 });
 
 const mockConfig: AuthConfig = {
@@ -55,15 +55,16 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Get the mocked API client constructor
     const { AuthApiClient } = await import('../../src/api/auth-api');
     const MockedAuthApiClient = AuthApiClient as any;
-    
+
     authStore = createAuthStore(mockConfig);
-    
+
     // Get the mocked API client instance
-    mockApiClient = MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
+    mockApiClient =
+      MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
   });
 
   describe('Successful account creation', () => {
@@ -210,7 +211,9 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
         acceptedPrivacy: true
       };
 
-      await expect(authStore.createAccount(userData)).rejects.toThrow('Failed to create user account');
+      await expect(authStore.createAccount(userData)).rejects.toThrow(
+        'Failed to create user account'
+      );
     });
   });
 
@@ -274,7 +277,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
       // Set an existing error state
       const state = get(authStore);
       authStore['updateState']({ error: { code: 'previous_error', message: 'Previous error' } });
-      
+
       expect(get(authStore).error).toBeTruthy();
 
       const mockResponse: SignInResponse = {

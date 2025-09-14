@@ -6,8 +6,8 @@
  * Safe to remove: No - critical for preventing authentication regressions
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { get } from 'svelte/store';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
@@ -41,7 +41,9 @@ describe('Auth Store Integration Tests', () => {
     try {
       const response = await fetch(`${API_BASE}/health`);
       apiServerRunning = response.ok;
-      console.log(`🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`);
+      console.log(
+        `🔗 API Server at ${API_BASE}: ${apiServerRunning ? 'RUNNING' : 'NOT AVAILABLE'}`
+      );
     } catch (error) {
       console.warn('Local API server not available - skipping integration tests');
       apiServerRunning = false;
@@ -58,7 +60,7 @@ describe('Auth Store Integration Tests', () => {
       authStore = createAuthStore(testConfig);
 
       // Wait for initial state machine setup
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   });
 
@@ -91,7 +93,7 @@ describe('Auth Store Integration Tests', () => {
       const response = await fetch(`${API_BASE}/auth/check-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'connectivity-test@example.com' }),
+        body: JSON.stringify({ email: 'connectivity-test@example.com' })
       });
 
       expect(response.status).toBeDefined();
@@ -110,7 +112,7 @@ describe('Auth Store Integration Tests', () => {
       const response = await fetch(`${API_BASE}/auth/check-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: testEmail }),
+        body: JSON.stringify({ email: testEmail })
       });
 
       expect(response.status).toBe(200);
@@ -138,7 +140,7 @@ describe('Auth Store Integration Tests', () => {
       const response = await fetch(`${API_BASE}/auth/webauthn/challenge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: testEmail }),
+        body: JSON.stringify({ email: testEmail })
       });
 
       expect(response.status).toBe(200);
@@ -152,7 +154,7 @@ describe('Auth Store Integration Tests', () => {
 
     it('should handle API errors gracefully during email check', async () => {
       const invalidEmail = 'invalid-email-format';
-      
+
       try {
         await authStore.api.checkEmail(invalidEmail);
         // Should not reach here if validation works
@@ -166,10 +168,10 @@ describe('Auth Store Integration Tests', () => {
   describe('Registration Flow Integration', () => {
     it('should complete user registration with passkey', async () => {
       const newUserEmail = `test-registration-${Date.now()}@thepia.net`;
-      
+
       // Mock WebAuthn for registration
       WebAuthnMocker.mockSuccess('new-credential-id');
-      
+
       try {
         const registrationData = {
           email: newUserEmail,
@@ -182,11 +184,11 @@ describe('Auth Store Integration Tests', () => {
 
         // FIXED: Use createAccount for full WebAuthn registration flow
         const result = await authStore.createAccount(registrationData);
-        
+
         if (result.step === 'success') {
           expect(result.user).toBeDefined();
           expect(result.user?.email).toBe(newUserEmail);
-          
+
           const state = get(authStore);
           expect(state.state).toBe('authenticated');
           expect(state.user?.email).toBe(newUserEmail);
@@ -221,17 +223,17 @@ describe('Auth Store Integration Tests', () => {
   describe('Sign-In Flow Integration', () => {
     it('should attempt passkey authentication for existing user', async () => {
       const existingEmail = TEST_ACCOUNTS.existingWithPasskey.email;
-      
+
       // Mock successful WebAuthn
       WebAuthnMocker.mockSuccess('existing-credential-id');
-      
+
       try {
         const result = await authStore.signInWithPasskey(existingEmail);
-        
+
         if (result.step === 'success') {
           expect(result.user).toBeDefined();
           expect(result.user?.email).toBe(existingEmail);
-          
+
           const state = get(authStore);
           expect(state.state).toBe('authenticated');
         } else {
@@ -247,13 +249,13 @@ describe('Auth Store Integration Tests', () => {
 
     it('should handle magic link authentication', async () => {
       const existingEmail = TEST_ACCOUNTS.existingWithoutPasskey.email;
-      
+
       try {
         const result = await authStore.signInWithMagicLink(existingEmail);
-        
+
         expect(result.step).toBe('magic_link_sent');
         expect(result.magicLinkSent).toBe(true);
-        
+
         const state = get(authStore);
         expect(state.state).toBe('unauthenticated'); // Still waiting for magic link click
       } catch (error: any) {
@@ -271,9 +273,9 @@ describe('Auth Store Integration Tests', () => {
         ...testConfig,
         apiBaseUrl: 'https://invalid-api-url.example.com'
       };
-      
+
       const invalidAuthStore = createAuthStore(invalidConfig);
-      
+
       try {
         await invalidAuthStore.api.checkEmail('test@example.com');
         expect(false).toBe(true); // Should not reach here
@@ -288,54 +290,56 @@ describe('Auth Store Integration Tests', () => {
 
     it('should handle rate limiting', async () => {
       const rateLimitEmail = TEST_ACCOUNTS.rateLimitTest.email;
-      
+
       // Make multiple requests with delays to avoid rate limiting
-      const requests = Array(5).fill(0).map((_, index) => 
-        new Promise(resolve => 
-          setTimeout(() => 
-            authStore.api.checkEmail(rateLimitEmail)
-              .then(resolve)
-              .catch(resolve),
-            index * 500 // 500ms delay between requests
-          )
-        )
-      );
-      
+      const requests = Array(5)
+        .fill(0)
+        .map(
+          (_, index) =>
+            new Promise((resolve) =>
+              setTimeout(
+                () => authStore.api.checkEmail(rateLimitEmail).then(resolve).catch(resolve),
+                index * 500 // 500ms delay between requests
+              )
+            )
+        );
+
       const results = await Promise.all(requests);
-      
+
       // At least one should be rate limited (or all should succeed)
-      const hasRateLimit = results.some(result => 
-        result instanceof Error && result.message.includes('rate')
+      const hasRateLimit = results.some(
+        (result) => result instanceof Error && result.message.includes('rate')
       );
-      
+
       // Rate limiting might not be configured in test environment
       expect(typeof hasRateLimit).toBe('boolean');
     });
 
     it('should handle concurrent authentication attempts', async () => {
       const email = TEST_ACCOUNTS.existingWithPasskey.email;
-      
+
       WebAuthnMocker.mockSuccess();
-      
+
       // Start multiple sign-in attempts with delays to avoid rate limiting
-      const attempts = Array(3).fill(0).map((_, index) => 
-        new Promise(resolve => 
-          setTimeout(() => 
-            authStore.signInWithPasskey(email)
-              .then(resolve)
-              .catch(resolve),
-            index * 1000 // 1 second delay between attempts
-          )
-        )
-      );
-      
+      const attempts = Array(3)
+        .fill(0)
+        .map(
+          (_, index) =>
+            new Promise((resolve) =>
+              setTimeout(
+                () => authStore.signInWithPasskey(email).then(resolve).catch(resolve),
+                index * 1000 // 1 second delay between attempts
+              )
+            )
+        );
+
       const results = await Promise.all(attempts);
-      
+
       // Should handle concurrent attempts gracefully
       expect(results.length).toBe(3);
-      
+
       // At most one should succeed, others should be handled gracefully
-      const successCount = results.filter(r => r.step === 'success').length;
+      const successCount = results.filter((r) => r.step === 'success').length;
       expect(successCount).toBeLessThanOrEqual(1);
     });
   });
@@ -346,28 +350,28 @@ describe('Auth Store Integration Tests', () => {
       const mockUser = TestUtils.createMockUser({
         email: 'persistent-test@thepia.net'
       });
-      
+
       const mockSession = TestUtils.createMockSession(mockUser);
-      
+
       // Manually set localStorage to simulate previous session
       localStorage.setItem('auth_access_token', mockSession.accessToken);
       localStorage.setItem('auth_refresh_token', mockSession.refreshToken);
       localStorage.setItem('auth_expires_at', (Date.now() + 3600000).toString());
       localStorage.setItem('auth_user', JSON.stringify(mockUser));
-      
+
       // Create new auth store - should restore state
       const restoredStore = createAuthStore(testConfig);
-      
-      await TestUtils.waitFor(() => 
-        restoredStore.stateMachine.currentState() !== 'checkingSession',
+
+      await TestUtils.waitFor(
+        () => restoredStore.stateMachine.currentState() !== 'checkingSession',
         3000
       );
-      
+
       const state = get(restoredStore);
       expect(state.state).toBe('authenticated');
       expect(state.user?.email).toBe(mockUser.email);
       expect(state.accessToken).toBe(mockSession.accessToken);
-      
+
       if (restoredStore?.destroy) {
         restoredStore.destroy();
       }
@@ -378,19 +382,19 @@ describe('Auth Store Integration Tests', () => {
       localStorage.setItem('auth_user', 'invalid-json');
       localStorage.setItem('auth_access_token', 'expired-token');
       localStorage.setItem('auth_expires_at', '0'); // Expired
-      
+
       const corruptedStore = createAuthStore(testConfig);
-      
-      await TestUtils.waitFor(() => 
-        corruptedStore.stateMachine.currentState() !== 'checkingSession',
+
+      await TestUtils.waitFor(
+        () => corruptedStore.stateMachine.currentState() !== 'checkingSession',
         3000
       );
-      
+
       const state = get(corruptedStore);
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
       expect(state.accessToken).toBeNull();
-      
+
       if (corruptedStore?.destroy) {
         corruptedStore.destroy();
       }
@@ -404,32 +408,35 @@ describe('Auth Store Integration Tests', () => {
         // Step 1: Register user account
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({
-            step: 'success',
-            user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
-            accessToken: 'access-token',
-            refreshToken: 'refresh-token'
-          })
+          json: () =>
+            Promise.resolve({
+              step: 'success',
+              user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
+              accessToken: 'access-token',
+              refreshToken: 'refresh-token'
+            })
         })
         // Step 2: Get WebAuthn registration options
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({
-            challenge: 'mock-challenge',
-            rp: { name: 'Test App', id: 'test.com' },
-            user: { id: 'user-123', name: 'test@example.com', displayName: 'Test User' },
-            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-            timeout: 60000,
-            attestation: 'direct'
-          })
+          json: () =>
+            Promise.resolve({
+              challenge: 'mock-challenge',
+              rp: { name: 'Test App', id: 'test.com' },
+              user: { id: 'user-123', name: 'test@example.com', displayName: 'Test User' },
+              pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+              timeout: 60000,
+              attestation: 'direct'
+            })
         })
         // Step 3: Verify WebAuthn registration
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            credentialId: 'mock-credential-id'
-          })
+          json: () =>
+            Promise.resolve({
+              success: true,
+              credentialId: 'mock-credential-id'
+            })
         });
 
       const registrationData = {
@@ -447,7 +454,8 @@ describe('Auth Store Integration Tests', () => {
       expect(mockFetch).toHaveBeenCalledTimes(3);
 
       // Verify Step 1: User registration
-      expect(mockFetch).toHaveBeenNthCalledWith(1,
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
         expect.stringContaining('/auth/register'),
         expect.objectContaining({
           method: 'POST',
@@ -456,7 +464,8 @@ describe('Auth Store Integration Tests', () => {
       );
 
       // Verify Step 2: WebAuthn registration options
-      expect(mockFetch).toHaveBeenNthCalledWith(2,
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
         expect.stringContaining('/auth/webauthn/register/options'),
         expect.objectContaining({
           method: 'POST'
@@ -464,7 +473,8 @@ describe('Auth Store Integration Tests', () => {
       );
 
       // Verify Step 3: WebAuthn registration verification
-      expect(mockFetch).toHaveBeenNthCalledWith(3,
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        3,
         expect.stringContaining('/auth/webauthn/register/verify'),
         expect.objectContaining({
           method: 'POST'
@@ -490,8 +500,9 @@ describe('Auth Store Integration Tests', () => {
       };
 
       // CRITICAL: Should fail with appropriate error
-      await expect(authStore.createAccount(registrationData))
-        .rejects.toThrow(/passkey authentication is not supported/i);
+      await expect(authStore.createAccount(registrationData)).rejects.toThrow(
+        /passkey authentication is not supported/i
+      );
     });
 
     it('should handle platform authenticator not available error', async () => {
@@ -507,8 +518,9 @@ describe('Auth Store Integration Tests', () => {
       };
 
       // CRITICAL: Should fail with appropriate error
-      await expect(authStore.createAccount(registrationData))
-        .rejects.toThrow(/no biometric authentication available/i);
+      await expect(authStore.createAccount(registrationData)).rejects.toThrow(
+        /no biometric authentication available/i
+      );
     });
   });
 });

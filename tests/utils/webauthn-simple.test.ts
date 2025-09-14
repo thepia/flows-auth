@@ -1,11 +1,8 @@
 /**
  * WebAuthn Utilities Tests (Simplified)
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  isWebAuthnSupported,
-  generatePasskeyName
-} from '../../src/utils/webauthn';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { generatePasskeyName, isWebAuthnSupported } from '../../src/utils/webauthn';
 
 describe('WebAuthn Utilities (Simplified)', () => {
   beforeEach(() => {
@@ -16,7 +13,7 @@ describe('WebAuthn Utilities (Simplified)', () => {
     it('should detect WebAuthn support when available', () => {
       // Mock PublicKeyCredential
       Object.defineProperty(global, 'PublicKeyCredential', {
-        value: function() {},
+        value: () => {},
         writable: true,
         configurable: true
       });

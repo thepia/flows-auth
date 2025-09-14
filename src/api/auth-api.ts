@@ -3,28 +3,28 @@
  * Handles all authentication API calls
  */
 
-import { reportApiError } from '../utils/errorReporter';
-import { globalClientRateLimiter } from '../utils/client-rate-limiter';
-import { globalUserCache } from '../utils/user-cache';
 import type {
   AuthConfig,
+  AuthError,
+  LogoutRequest,
+  MagicLinkRequest,
+  PasskeyChallenge,
+  PasskeyCredential,
+  PasskeyRequest,
+  RefreshTokenRequest,
+  RegistrationResponse,
   SignInRequest,
   SignInResponse,
-  PasskeyRequest,
-  PasskeyCredential,
-  MagicLinkRequest,
-  RefreshTokenRequest,
-  LogoutRequest,
-  PasskeyChallenge,
-  AuthError,
   User,
-  UserProfile,
   UserPasskey,
+  UserProfile,
   WebAuthnRegistrationOptions,
   WebAuthnRegistrationResponse,
-  WebAuthnVerificationResult,
-  RegistrationResponse
+  WebAuthnVerificationResult
 } from '../types';
+import { globalClientRateLimiter } from '../utils/client-rate-limiter';
+import { reportApiError } from '../utils/errorReporter';
+import { globalUserCache } from '../utils/user-cache';
 
 export class AuthApiClient {
   private config: AuthConfig;
@@ -34,11 +34,11 @@ export class AuthApiClient {
   constructor(config: AuthConfig) {
     this.config = config;
     this.baseUrl = config.apiBaseUrl.replace(/\/$/, '');
-    
+
     // Create a promise that resolves to the effective base URL
     // This allows for async API detection while keeping the constructor synchronous
     this.effectiveBaseUrl = this.detectEffectiveBaseUrl();
-    
+
     // Rate limiting is now handled by the intelligent client rate limiter
     // No configuration needed - uses 5 req/sec default with server backoff
   }
@@ -60,7 +60,7 @@ export class AuthApiClient {
         console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
       }
     }
-    
+
     // Use the configured URL as-is
     return this.baseUrl;
   }
@@ -70,20 +70,24 @@ export class AuthApiClient {
    */
   private getEffectiveAppCode(): string | null {
     // If appCode is explicitly set to false/null/undefined, use legacy endpoints
-    if (this.config.appCode === false || this.config.appCode === null || this.config.appCode === undefined) {
+    if (
+      this.config.appCode === false ||
+      this.config.appCode === null ||
+      this.config.appCode === undefined
+    ) {
       return null;
     }
-    
+
     // If appCode is explicitly set to a string, use that
     if (typeof this.config.appCode === 'string') {
       return this.config.appCode;
     }
-    
+
     // If appCode is set to true, use default 'app' appCode
     if (this.config.appCode === true) {
       return 'app';
     }
-    
+
     // Default to null for backward compatibility
     return null;
   }
@@ -99,10 +103,10 @@ export class AuthApiClient {
     // Resolve the effective base URL (will use cached promise result after first call)
     const effectiveUrl = await this.effectiveBaseUrl;
     const url = `${effectiveUrl}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers as Record<string, string>
+      ...(options.headers as Record<string, string>)
     };
 
     if (includeAuth) {
@@ -114,25 +118,23 @@ export class AuthApiClient {
 
     // Use intelligent client rate limiter (5 req/sec with server backoff)
     const response = await globalClientRateLimiter.executeRequest(
-      () => fetch(url, {
-        ...options,
-        headers
-      }),
+      () =>
+        fetch(url, {
+          ...options,
+          headers
+        }),
       endpoint
     );
 
     if (!response || !response.ok) {
       const error = await this.handleErrorResponse(response);
-      
+
       // Report API error
-      reportApiError(
-        url,
-        options.method || 'GET',
-        response.status,
-        error.message,
-        { endpoint, includeAuth }
-      );
-      
+      reportApiError(url, options.method || 'GET', response.status, error.message, {
+        endpoint,
+        includeAuth
+      });
+
       throw error;
     }
 
@@ -157,7 +159,7 @@ export class AuthApiClient {
   private async handleErrorResponse(response: Response): Promise<AuthError> {
     try {
       const errorData = await response.json();
-      
+
       // Enhanced error handling for rate limits
       if (response.status === 429 || errorData.error === 'too_many_requests') {
         return {
@@ -166,7 +168,7 @@ export class AuthApiClient {
           details: errorData.details
         };
       }
-      
+
       // Handle new error format { step: "error", error: { code, message } }
       if (errorData.step === 'error' && errorData.error) {
         return {
@@ -175,7 +177,7 @@ export class AuthApiClient {
           details: errorData.error.details
         };
       }
-      
+
       // Handle legacy error format for backward compatibility
       return {
         code: errorData.code || 'unknown_error',
@@ -190,7 +192,7 @@ export class AuthApiClient {
           message: 'Too many requests. Please try again in a moment.'
         };
       }
-      
+
       return {
         code: 'network_error',
         message: `HTTP ${response.status}: ${response.statusText}`
@@ -209,17 +211,20 @@ export class AuthApiClient {
   /**
    * Store authentication session
    */
-  storeSession(user: {
-    id: string;
-    email: string;
-    emailVerified: boolean;
-  }, token?: string): void {
+  storeSession(
+    user: {
+      id: string;
+      email: string;
+      emailVerified: boolean;
+    },
+    token?: string
+  ): void {
     if (typeof window === 'undefined') return;
-    
+
     localStorage.setItem('userEmail', user.email);
     localStorage.setItem('userId', user.id);
     localStorage.setItem('emailConfirmed', user.emailVerified ? 'true' : 'false');
-    
+
     if (token) {
       localStorage.setItem('authToken', token);
       localStorage.setItem('auth_access_token', token); // Store in both places for compatibility
@@ -231,7 +236,7 @@ export class AuthApiClient {
    */
   clearSession(): void {
     if (typeof window === 'undefined') return;
-    
+
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userId');
     localStorage.removeItem('emailConfirmed');
@@ -252,7 +257,7 @@ export class AuthApiClient {
     if (typeof window === 'undefined') {
       return { emailConfirmed: false };
     }
-    
+
     return {
       email: localStorage.getItem('userEmail') || undefined,
       userId: localStorage.getItem('userId') || undefined,
@@ -268,8 +273,12 @@ export class AuthApiClient {
    */
   async signIn(request: SignInRequest): Promise<SignInResponse> {
     // The /auth/signin endpoint doesn't exist - redirect to passwordless
-    console.warn('⚠️ signIn() method called but /auth/signin endpoint does not exist. Use startPasswordlessAuthentication() instead.');
-    throw new Error('The /auth/signin endpoint is not available. Please use passwordless authentication methods.');
+    console.warn(
+      '⚠️ signIn() method called but /auth/signin endpoint does not exist. Use startPasswordlessAuthentication() instead.'
+    );
+    throw new Error(
+      'The /auth/signin endpoint is not available. Please use passwordless authentication methods.'
+    );
   }
 
   /**
@@ -285,7 +294,7 @@ export class AuthApiClient {
       hasCredential: 'credential' in request,
       fullRequest: JSON.stringify(request, null, 2)
     });
-    
+
     return this.request<SignInResponse>('/auth/webauthn/verify', {
       method: 'POST',
       body: JSON.stringify({
@@ -295,18 +304,19 @@ export class AuthApiClient {
     });
   }
 
-
   /**
    * Request magic link
    * Note: Uses the unified passwordless endpoint
    */
   async signInWithMagicLink(request: MagicLinkRequest): Promise<SignInResponse> {
     // The /auth/signin/magic-link endpoint doesn't exist - use startPasswordlessAuthentication
-    console.warn('⚠️ signInWithMagicLink() called - redirecting to startPasswordlessAuthentication()');
-    
+    console.warn(
+      '⚠️ signInWithMagicLink() called - redirecting to startPasswordlessAuthentication()'
+    );
+
     // Use the unified passwordless endpoint instead
     const result = await this.startPasswordlessAuthentication(request.email);
-    
+
     // Convert the passwordless response to SignInResponse format
     return {
       step: result.success ? 'email-sent' : 'error',
@@ -340,19 +350,27 @@ export class AuthApiClient {
    * Sign out
    */
   async signOut(request: LogoutRequest): Promise<void> {
-    await this.request<void>('/auth/signout', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    }, true);
+    await this.request<void>(
+      '/auth/signout',
+      {
+        method: 'POST',
+        body: JSON.stringify(request)
+      },
+      true
+    );
   }
 
   /**
    * Get user profile
    */
   async getProfile(): Promise<UserProfile> {
-    return this.request<UserProfile>('/auth/profile', {
-      method: 'GET'
-    }, true);
+    return this.request<UserProfile>(
+      '/auth/profile',
+      {
+        method: 'GET'
+      },
+      true
+    );
   }
 
   /**
@@ -388,15 +406,16 @@ export class AuthApiClient {
     if (cachedResult) {
       return cachedResult;
     }
-    
+
     // Enhanced logging for debugging
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
-    
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
+
     // Use app-specific endpoint if appCode is configured, otherwise use default
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/check-user` : '/auth/check-user';
     const requestUrl = `${this.baseUrl}${endpoint}`;
-    
+
     console.log(`[AuthApiClient] Making check-user request:`, {
       email,
       requestUrl,
@@ -408,7 +427,7 @@ export class AuthApiClient {
     });
 
     // Use rate-limited request with Origin header for RPID determination
-    // TODO: Change to GET method once API server supports it  
+    // TODO: Change to GET method once API server supports it
     const response = await this.rateLimitedRequest<{
       exists: boolean;
       hasWebAuthn: boolean;
@@ -420,17 +439,17 @@ export class AuthApiClient {
       method: 'POST',
       body: JSON.stringify({ email }),
       headers: {
-        'Origin': origin
+        Origin: origin
       }
     });
-    
+
     console.log(`[AuthApiClient] Raw API response:`, {
       email,
       requestUrl,
       response: response,
       timestamp: new Date().toISOString()
     });
-    
+
     // Map API response to expected format
     const result = {
       exists: response.exists,
@@ -440,13 +459,12 @@ export class AuthApiClient {
       invitationTokenHash: response.invitationTokenHash,
       lastPinExpiry: response.lastPinExpiry
     };
-    
+
     // Cache the result
     globalUserCache.set(email, result);
-    
+
     return result;
   }
-
 
   /**
    * Request password reset
@@ -472,28 +490,40 @@ export class AuthApiClient {
    * Create passkey
    */
   async createPasskey(credential: PasskeyCredential): Promise<void> {
-    await this.request<void>('/auth/passkey/create', {
-      method: 'POST',
-      body: JSON.stringify({ credential })
-    }, true);
+    await this.request<void>(
+      '/auth/passkey/create',
+      {
+        method: 'POST',
+        body: JSON.stringify({ credential })
+      },
+      true
+    );
   }
 
   /**
    * List user's passkeys
    */
   async listPasskeys(): Promise<UserPasskey[]> {
-    return this.request<UserPasskey[]>('/auth/passkeys', {
-      method: 'GET'
-    }, true);
+    return this.request<UserPasskey[]>(
+      '/auth/passkeys',
+      {
+        method: 'GET'
+      },
+      true
+    );
   }
 
   /**
    * Delete passkey
    */
   async deletePasskey(credentialId: string): Promise<void> {
-    await this.request<void>(`/auth/passkeys/${credentialId}`, {
-      method: 'DELETE'
-    }, true);
+    await this.request<void>(
+      `/auth/passkeys/${credentialId}`,
+      {
+        method: 'DELETE'
+      },
+      true
+    );
   }
 
   /**
@@ -522,7 +552,7 @@ export class AuthApiClient {
       method: 'POST',
       body: JSON.stringify(userData),
       headers: {
-        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+        Origin: typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
     });
 
@@ -553,7 +583,10 @@ export class AuthApiClient {
    * This creates a new user if they don't exist, or signs them in if they do
    * Used for simple email confirmation flows without passkeys
    */
-  async registerOrSignIn(email: string, clientId: string = 'app'): Promise<{
+  async registerOrSignIn(
+    email: string,
+    clientId = 'app'
+  ): Promise<{
     success: boolean;
     user?: {
       id: string;
@@ -565,7 +598,7 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
-    
+
     return this.request<{
       success: boolean;
       user?: {
@@ -577,12 +610,12 @@ export class AuthApiClient {
       message?: string;
     }>(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         email: email.trim(),
-        clientId 
+        clientId
       }),
       headers: {
-        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+        Origin: typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
     });
   }
@@ -609,7 +642,10 @@ export class AuthApiClient {
   /**
    * Get WebAuthn registration options for new passkey
    */
-  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<WebAuthnRegistrationOptions> {
+  async getWebAuthnRegistrationOptions(data: {
+    email: string;
+    userId: string;
+  }): Promise<WebAuthnRegistrationOptions> {
     return this.request<WebAuthnRegistrationOptions>('/auth/webauthn/register-options', {
       method: 'POST',
       body: JSON.stringify(data)
@@ -650,10 +686,12 @@ export class AuthApiClient {
       apiBaseUrl: this.config.apiBaseUrl,
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
-    
+
     const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/start-passwordless';
-    
+    const endpoint = effectiveAppCode
+      ? `/${effectiveAppCode}/send-email`
+      : '/auth/start-passwordless';
+
     return this.request<{
       success: boolean;
       timestamp: number;
@@ -677,13 +715,16 @@ export class AuthApiClient {
    * This replaces registerUser, registerOrSignIn, and startPasswordlessAuthentication
    * with a single, clear function that handles both new user registration and existing user signin
    */
-  async sendEmailSignin(email: string, options?: {
-    firstName?: string;
-    lastName?: string;
-    acceptedTerms?: boolean;
-    acceptedPrivacy?: boolean;
-    invitationToken?: string;
-  }): Promise<{
+  async sendEmailSignin(
+    email: string,
+    options?: {
+      firstName?: string;
+      lastName?: string;
+      acceptedTerms?: boolean;
+      acceptedPrivacy?: boolean;
+      invitationToken?: string;
+    }
+  ): Promise<{
     success: boolean;
     step: 'email-sent' | 'user-created' | 'error';
     message?: string;
@@ -696,7 +737,7 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
-    
+
     console.log('📧 Sending email signin:', {
       email,
       endpoint,
@@ -725,7 +766,7 @@ export class AuthApiClient {
       method: 'POST',
       body: JSON.stringify(requestBody),
       headers: {
-        'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
+        Origin: typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
     });
   }
@@ -733,7 +774,10 @@ export class AuthApiClient {
   /**
    * Check passwordless authentication status by checking Auth0 user state
    */
-  async checkPasswordlessStatus(email: string, timestamp: number): Promise<{
+  async checkPasswordlessStatus(
+    email: string,
+    timestamp: number
+  ): Promise<{
     status: 'pending' | 'verified' | 'expired';
     user?: {
       id: string;
@@ -764,7 +808,9 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
     if (!effectiveAppCode) {
-      throw new Error('App code is required for app-based email authentication. Set appCode in config.');
+      throw new Error(
+        'App code is required for app-based email authentication. Set appCode in config.'
+      );
     }
 
     console.log('📧 Sending app email code:', {
@@ -792,7 +838,9 @@ export class AuthApiClient {
   async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
     if (!effectiveAppCode) {
-      throw new Error('App code is required for app-based email authentication. Set appCode in config.');
+      throw new Error(
+        'App code is required for app-based email authentication. Set appCode in config.'
+      );
     }
 
     console.log('🔍 Verifying app email code:', {

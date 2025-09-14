@@ -1,6 +1,6 @@
 /**
  * Regression Tests for Error Handling Fixes
- * 
+ *
  * These tests guard against the specific bugs we fixed:
  * 1. Technical error exposure to users
  * 2. Incorrect API configuration architecture
@@ -8,10 +8,10 @@
  * 4. Missing automatic registration flow
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/stores/auth-store';
 
 describe('Error Handling Regression Tests', () => {
   let mockAuthStore: any;
@@ -59,11 +59,12 @@ describe('Error Handling Regression Tests', () => {
         expect(queryByText('Endpoint not found')).toBeNull();
         expect(queryByText('404')).toBeNull();
         expect(queryByText('not found')).toBeNull();
-        
+
         // ✅ Should show user-friendly message OR auto-transition to registration
-        const hasUserFriendlyError = queryByText(/authentication.*failed/i) || 
-                                   queryByText(/try again/i) ||
-                                   queryByText(/Terms of Service/i); // Registration step
+        const hasUserFriendlyError =
+          queryByText(/authentication.*failed/i) ||
+          queryByText(/try again/i) ||
+          queryByText(/Terms of Service/i); // Registration step
         expect(hasUserFriendlyError).toBeTruthy();
       });
     });
@@ -107,7 +108,7 @@ describe('Error Handling Regression Tests', () => {
         await waitFor(() => {
           // ✅ Should show user-friendly message
           const errorElements = document.querySelectorAll('[class*="error"], [role="alert"]');
-          const hasUserFriendlyMessage = Array.from(errorElements).some(el => 
+          const hasUserFriendlyMessage = Array.from(errorElements).some((el) =>
             testCase.expectedPattern.test(el.textContent || '')
           );
           expect(hasUserFriendlyMessage).toBeTruthy();
@@ -146,7 +147,7 @@ describe('Error Handling Regression Tests', () => {
         // ✅ REGRESSION TEST: Should auto-transition to registration
         expect(queryByText('Terms of Service')).toBeTruthy();
         expect(queryByText('Privacy Policy')).toBeTruthy();
-        
+
         // ✅ Should NOT show error message for unregistered user
         expect(queryByText(/authentication.*failed/i)).toBeNull();
         expect(queryByText(/no.*passkey.*found/i)).toBeNull();
@@ -182,11 +183,12 @@ describe('Error Handling Regression Tests', () => {
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should NOT show "what's wrong" without solution
         expect(queryByText(/no passkey found.*register/i)).toBeNull();
-        
+
         // ✅ Should either auto-transition or provide clear action
-        const hasActionableFlow = queryByText(/magic link/i) || 
-                                queryByText(/Terms of Service/i) ||
-                                queryByText(/check.*email/i);
+        const hasActionableFlow =
+          queryByText(/magic link/i) ||
+          queryByText(/Terms of Service/i) ||
+          queryByText(/check.*email/i);
         expect(hasActionableFlow).toBeTruthy();
       });
     });
@@ -220,7 +222,7 @@ describe('Error Handling Regression Tests', () => {
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should use authStore.checkUser()
         expect(mockCheckUser).toHaveBeenCalledWith('test@example.com');
-        
+
         // ✅ Should NOT call API directly
         expect(mockAuthStore.api.checkEmail).not.toHaveBeenCalled();
       });

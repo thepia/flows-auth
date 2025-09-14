@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AuthConfig, User } from '../../src/types';
 
 // Set up global mocks before any imports
@@ -37,7 +37,6 @@ vi.mock('../../src/api/auth-api', () => ({
   })
 }));
 
-
 // Import after mocks are set up
 import { createAuthStore } from '../../src/stores/auth-store';
 
@@ -51,7 +50,6 @@ import { createAuthStore } from '../../src/stores/auth-store';
  * This test MUST PASS to prevent the sessionManager consistency bug from recurring.
  */
 describe('API Response Format Compatibility - CRITICAL', () => {
-
   let authStore: any;
   let mockWebAuthn: any;
   let mockSessionManager: any;
@@ -147,13 +145,15 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const authMethod = savedSessionCall[1];
 
     expect(authMethod).toBe('passkey');
-    expect(savedSession).toEqual(expect.objectContaining({
-      step: 'success',
-      user: mockUser,
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
-      expiresIn: expect.any(Number)
-    }));
+    expect(savedSession).toEqual(
+      expect.objectContaining({
+        step: 'success',
+        user: mockUser,
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+        expiresIn: expect.any(Number)
+      })
+    );
 
     // 4. CRITICAL: Verify store state was updated to authenticated
     const storeState = authStore.getState();

@@ -1,14 +1,14 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
 /**
  * CRITICAL REAL FLOW TESTS for createAccountBroken method
- * 
+ *
  * These tests validate the ACTUAL createAccountBroken method that components use,
  * not the deprecated registerUser method. They test real business logic
  * with minimal mocking to catch actual production issues.
- * 
+ *
  * THESE TESTS MUST PASS for production readiness.
  */
 
@@ -63,48 +63,51 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
       // Step 1: User registration
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          step: 'success',
-          user: { 
-            id: 'user-123', 
-            email: 'test@example.com', 
-            emailVerified: false 
-          },
-          accessToken: 'temp-access-token',
-          refreshToken: 'temp-refresh-token',
-          emailVerifiedViaInvitation: false
-        })
+        json: () =>
+          Promise.resolve({
+            step: 'success',
+            user: {
+              id: 'user-123',
+              email: 'test@example.com',
+              emailVerified: false
+            },
+            accessToken: 'temp-access-token',
+            refreshToken: 'temp-refresh-token',
+            emailVerifiedViaInvitation: false
+          })
       })
       // Step 2: WebAuthn registration options
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          challenge: 'mock-challenge-base64',
-          rp: { name: 'Test App', id: 'test.com' },
-          user: { 
-            id: 'user-123-base64', 
-            name: 'test@example.com', 
-            displayName: 'Test User' 
-          },
-          pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-          timeout: 60000,
-          attestation: 'direct'
-        })
+        json: () =>
+          Promise.resolve({
+            challenge: 'mock-challenge-base64',
+            rp: { name: 'Test App', id: 'test.com' },
+            user: {
+              id: 'user-123-base64',
+              name: 'test@example.com',
+              displayName: 'Test User'
+            },
+            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+            timeout: 60000,
+            attestation: 'direct'
+          })
       })
       // Step 3: WebAuthn registration verification
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          credentialId: 'mock-credential-id',
-          user: {
-            id: 'user-123',
-            email: 'test@example.com',
-            emailVerified: false
-          },
-          accessToken: 'final-access-token',
-          refreshToken: 'final-refresh-token'
-        })
+        json: () =>
+          Promise.resolve({
+            success: true,
+            credentialId: 'mock-credential-id',
+            user: {
+              id: 'user-123',
+              email: 'test@example.com',
+              emailVerified: false
+            },
+            accessToken: 'final-access-token',
+            refreshToken: 'final-refresh-token'
+          })
       });
 
     // Mock WebAuthn credential creation
@@ -131,9 +134,10 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
 
     // Verify the complete flow was executed
     expect(mockFetch).toHaveBeenCalledTimes(3);
-    
+
     // Verify Step 1: User registration API call
-    expect(mockFetch).toHaveBeenNthCalledWith(1, 
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
       'https://api.test.com/auth/register',
       expect.objectContaining({
         method: 'POST',
@@ -145,23 +149,25 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     );
 
     // Verify Step 2: WebAuthn options API call
-    expect(mockFetch).toHaveBeenNthCalledWith(2,
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
       'https://api.test.com/auth/webauthn/register/options',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          'Authorization': 'Bearer temp-access-token'
+          Authorization: 'Bearer temp-access-token'
         })
       })
     );
 
     // Verify Step 3: WebAuthn verification API call
-    expect(mockFetch).toHaveBeenNthCalledWith(3,
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      3,
       'https://api.test.com/auth/webauthn/register/verify',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          'Authorization': 'Bearer temp-access-token'
+          Authorization: 'Bearer temp-access-token'
         })
       })
     );
@@ -180,10 +186,12 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
 
     // Verify successful result
     expect(result.step).toBe('success');
-    expect(result.user).toEqual(expect.objectContaining({
-      id: 'user-123',
-      email: 'test@example.com'
-    }));
+    expect(result.user).toEqual(
+      expect.objectContaining({
+        id: 'user-123',
+        email: 'test@example.com'
+      })
+    );
     expect(result.accessToken).toBe('final-access-token');
   });
 
@@ -192,44 +200,47 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          step: 'success',
-          user: { 
-            id: 'user-456', 
-            email: 'invited@example.com', 
-            emailVerified: true // Already verified via invitation
-          },
-          accessToken: 'invitation-access-token',
-          refreshToken: 'invitation-refresh-token',
-          emailVerifiedViaInvitation: true // CRITICAL: This field must be present
-        })
+        json: () =>
+          Promise.resolve({
+            step: 'success',
+            user: {
+              id: 'user-456',
+              email: 'invited@example.com',
+              emailVerified: true // Already verified via invitation
+            },
+            accessToken: 'invitation-access-token',
+            refreshToken: 'invitation-refresh-token',
+            emailVerifiedViaInvitation: true // CRITICAL: This field must be present
+          })
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          challenge: 'invitation-challenge',
-          rp: { name: 'Test App', id: 'test.com' },
-          user: { 
-            id: 'user-456-base64', 
-            name: 'invited@example.com', 
-            displayName: 'Invited User' 
-          },
-          pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
-        })
+        json: () =>
+          Promise.resolve({
+            challenge: 'invitation-challenge',
+            rp: { name: 'Test App', id: 'test.com' },
+            user: {
+              id: 'user-456-base64',
+              name: 'invited@example.com',
+              displayName: 'Invited User'
+            },
+            pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
+          })
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          credentialId: 'invitation-credential-id',
-          user: {
-            id: 'user-456',
-            email: 'invited@example.com',
-            emailVerified: true
-          },
-          accessToken: 'final-invitation-token',
-          refreshToken: 'final-invitation-refresh'
-        })
+        json: () =>
+          Promise.resolve({
+            success: true,
+            credentialId: 'invitation-credential-id',
+            user: {
+              id: 'user-456',
+              email: 'invited@example.com',
+              emailVerified: true
+            },
+            accessToken: 'final-invitation-token',
+            refreshToken: 'final-invitation-refresh'
+          })
       });
 
     mockCredentialCreate.mockResolvedValue({
@@ -268,21 +279,23 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     // Mock successful user registration
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        step: 'success',
-        user: { id: 'user-789', email: 'error@example.com' },
-        accessToken: 'error-access-token'
-      })
+      json: () =>
+        Promise.resolve({
+          step: 'success',
+          user: { id: 'user-789', email: 'error@example.com' },
+          accessToken: 'error-access-token'
+        })
     });
 
     // Mock WebAuthn options
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        challenge: 'error-challenge',
-        rp: { name: 'Test App', id: 'test.com' },
-        user: { id: 'user-789', name: 'error@example.com' }
-      })
+      json: () =>
+        Promise.resolve({
+          challenge: 'error-challenge',
+          rp: { name: 'Test App', id: 'test.com' },
+          user: { id: 'user-789', name: 'error@example.com' }
+        })
     });
 
     // Mock WebAuthn credential creation failure
@@ -297,12 +310,13 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     };
 
     // CRITICAL: Should handle WebAuthn errors gracefully
-    await expect(authStore.createAccountBroken(registrationData))
-      .rejects.toThrow(/User cancelled WebAuthn/);
+    await expect(authStore.createAccountBroken(registrationData)).rejects.toThrow(
+      /User cancelled WebAuthn/
+    );
 
     // Verify user registration still happened
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    
+
     // Verify WebAuthn verification was NOT called (due to credential creation failure)
     expect(mockFetch).not.toHaveBeenCalledWith(
       expect.stringContaining('/auth/webauthn/register/verify'),
@@ -319,8 +333,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     };
 
     // CRITICAL: Should validate required fields before API calls
-    await expect(authStore.createAccountBroken(invalidRegistrationData))
-      .rejects.toThrow();
+    await expect(authStore.createAccountBroken(invalidRegistrationData)).rejects.toThrow();
 
     // Verify no API calls were made
     expect(mockFetch).not.toHaveBeenCalled();
@@ -340,8 +353,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     };
 
     // CRITICAL: Should handle network errors gracefully
-    await expect(authStore.createAccountBroken(registrationData))
-      .rejects.toThrow(/Network error/);
+    await expect(authStore.createAccountBroken(registrationData)).rejects.toThrow(/Network error/);
 
     // Verify only one API call was attempted
     expect(mockFetch).toHaveBeenCalledTimes(1);

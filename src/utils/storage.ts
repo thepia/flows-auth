@@ -23,7 +23,7 @@ export function isBrowser(): boolean {
  */
 export function getStorageItem(key: string): string | null {
   if (!isBrowser()) return null;
-  
+
   try {
     return localStorage.getItem(key);
   } catch (error) {
@@ -37,7 +37,7 @@ export function getStorageItem(key: string): string | null {
  */
 export function setStorageItem(key: string, value: string): boolean {
   if (!isBrowser()) return false;
-  
+
   try {
     localStorage.setItem(key, value);
     return true;
@@ -52,7 +52,7 @@ export function setStorageItem(key: string, value: string): boolean {
  */
 export function removeStorageItem(key: string): boolean {
   if (!isBrowser()) return false;
-  
+
   try {
     localStorage.removeItem(key);
     return true;
@@ -66,7 +66,7 @@ export function removeStorageItem(key: string): boolean {
  * Clear all auth-related storage
  */
 export function clearAuthStorage(): void {
-  Object.values(STORAGE_KEYS).forEach(key => {
+  Object.values(STORAGE_KEYS).forEach((key) => {
     removeStorageItem(key);
   });
 }
@@ -77,7 +77,7 @@ export function clearAuthStorage(): void {
 export function getStorageJSON<T>(key: string): T | null {
   const value = getStorageItem(key);
   if (!value) return null;
-  
+
   try {
     return JSON.parse(value);
   } catch (error) {
@@ -104,7 +104,7 @@ export function setStorageJSON(key: string, value: any): boolean {
  */
 export function isStorageAvailable(): boolean {
   if (!isBrowser()) return false;
-  
+
   try {
     const testKey = '__thepia_storage_test__';
     localStorage.setItem(testKey, 'test');
@@ -120,9 +120,9 @@ export function isStorageAvailable(): boolean {
  */
 export function getStorageSize(): number {
   if (!isBrowser()) return 0;
-  
+
   let total = 0;
-  for (let key in localStorage) {
+  for (const key in localStorage) {
     if (localStorage.hasOwnProperty(key)) {
       total += localStorage[key].length + key.length;
     }
@@ -133,17 +133,19 @@ export function getStorageSize(): number {
 /**
  * Storage event listener for cross-tab sync
  */
-export function onStorageChange(callback: (key: string, newValue: string | null, oldValue: string | null) => void): () => void {
+export function onStorageChange(
+  callback: (key: string, newValue: string | null, oldValue: string | null) => void
+): () => void {
   if (!isBrowser()) return () => {};
-  
+
   const handler = (event: StorageEvent) => {
     if (event.storageArea === localStorage && event.key) {
       callback(event.key, event.newValue, event.oldValue);
     }
   };
-  
+
   window.addEventListener('storage', handler);
-  
+
   return () => {
     window.removeEventListener('storage', handler);
   };
@@ -156,24 +158,25 @@ export const authStorage = {
   getAccessToken: () => getStorageItem(STORAGE_KEYS.ACCESS_TOKEN),
   setAccessToken: (token: string) => setStorageItem(STORAGE_KEYS.ACCESS_TOKEN, token),
   removeAccessToken: () => removeStorageItem(STORAGE_KEYS.ACCESS_TOKEN),
-  
+
   getRefreshToken: () => getStorageItem(STORAGE_KEYS.REFRESH_TOKEN),
   setRefreshToken: (token: string) => setStorageItem(STORAGE_KEYS.REFRESH_TOKEN, token),
   removeRefreshToken: () => removeStorageItem(STORAGE_KEYS.REFRESH_TOKEN),
-  
+
   getExpiresAt: () => {
     const value = getStorageItem(STORAGE_KEYS.EXPIRES_AT);
-    return value ? parseInt(value) : null;
+    return value ? Number.parseInt(value) : null;
   },
-  setExpiresAt: (timestamp: number) => setStorageItem(STORAGE_KEYS.EXPIRES_AT, timestamp.toString()),
+  setExpiresAt: (timestamp: number) =>
+    setStorageItem(STORAGE_KEYS.EXPIRES_AT, timestamp.toString()),
   removeExpiresAt: () => removeStorageItem(STORAGE_KEYS.EXPIRES_AT),
-  
+
   getUser: () => getStorageJSON(STORAGE_KEYS.USER),
   setUser: (user: any) => setStorageJSON(STORAGE_KEYS.USER, user),
   removeUser: () => removeStorageItem(STORAGE_KEYS.USER),
-  
+
   getPreferences: () => getStorageJSON(STORAGE_KEYS.PREFERENCES) || {},
   setPreferences: (prefs: any) => setStorageJSON(STORAGE_KEYS.PREFERENCES, prefs),
-  
+
   clear: clearAuthStorage
 };

@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [
     svelte({
       preprocess: sveltePreprocess(),
-      hot: !process.env.VITEST,
-    }),
+      hot: !process.env.VITEST
+    })
   ],
   test: {
     globals: true,
@@ -18,13 +18,13 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/examples/**/tests/**',
-      '**/examples/**/*.test.js',
+      '**/examples/**/*.test.js'
     ],
-    testTimeout: 10000,
+    testTimeout: 10000
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
+      '@': resolve(__dirname, './src')
+    }
+  }
 });

@@ -1,6 +1,6 @@
 /**
  * SignInForm Tests - Presentational Wrapper Component
- * 
+ *
  * Tests for SignInForm as a pure presentational wrapper around SignInCore.
  * SignInForm should handle:
  * - Visual presentation (borders, popups, sizing)
@@ -9,12 +9,12 @@
  * - NO auth logic or store management
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { setContext } from 'svelte';
 import { writable } from 'svelte/store';
-import SignInForm from '../SignInForm.svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
+import SignInForm from '../SignInForm.svelte';
 
 // Mock SignInCore since we're testing the wrapper only
 vi.mock('../core/SignInCore.svelte', () => ({
@@ -37,7 +37,7 @@ describe('SignInForm - Presentational Wrapper', () => {
 
   const mockAuthStore = {
     getConfig: vi.fn(() => mockAuthConfig),
-    subscribe: vi.fn(),
+    subscribe: vi.fn()
     // Mock other auth store methods as needed
   };
 
@@ -276,7 +276,7 @@ describe('SignInForm - Presentational Wrapper', () => {
       // Simulate SignInCore dispatching success event
       const mockUser = { email: 'test@example.com', id: '123' };
       const mockMethod = 'passkey';
-      
+
       // In a real test, we'd simulate the SignInCore component dispatching this
       // For now, we test that the event handler is set up correctly
       expect(component).toBeDefined();
@@ -330,7 +330,7 @@ describe('SignInForm - Presentational Wrapper', () => {
 
       // SignInForm should only call getConfig for logo display, not for auth logic
       expect(mockAuthStore.getConfig).toHaveBeenCalledTimes(1);
-      
+
       // Should not call auth store methods like signIn, signOut, etc.
       // (In a real implementation, we'd mock these methods and verify they're not called)
     });
@@ -347,7 +347,7 @@ describe('SignInForm - Presentational Wrapper', () => {
 
       // Should render SignInCore even without auth context (SignInCore handles its own context)
       expect(screen.getByTestId('signin-core')).toBeInTheDocument();
-      
+
       // Should not show logo without auth context
       expect(screen.queryByAltText('Logo')).not.toBeInTheDocument();
     });

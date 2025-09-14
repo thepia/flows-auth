@@ -1,11 +1,11 @@
 /**
  * BDD Tests for AppCode-based Endpoint Routing
- * 
+ *
  * These tests prove that authentication functions use the correct endpoints
  * based on the appCode configuration.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 
 // Mock fetch globally

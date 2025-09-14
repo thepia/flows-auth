@@ -63,7 +63,6 @@ describe('Library Exports', () => {
     });
   });
 
-
   describe('Store Functions', () => {
     it('should export createAuthDerivedStores', async () => {
       const { createAuthDerivedStores } = await import('../../src/index');

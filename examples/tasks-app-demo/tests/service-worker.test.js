@@ -2,9 +2,9 @@
  * Service Worker Integration Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Service Worker Integration', () => {
   beforeEach(() => {
@@ -31,13 +31,12 @@ describe('Service Worker Integration', () => {
     try {
       manifestContent = readFileSync(join(process.cwd(), 'static', 'manifest.json'), 'utf-8');
       const manifest = JSON.parse(manifestContent);
-      
+
       expect(manifest.name).toBe('Tasks App - Flows Auth Demo');
       expect(manifest.short_name).toBe('Tasks App');
       expect(manifest.start_url).toBe('/');
       expect(manifest.display).toBe('standalone');
       expect(manifest.theme_color).toBe('#007bff');
-      
     } catch (error) {
       throw new Error('Manifest file not found or invalid JSON');
     }
@@ -72,7 +71,7 @@ describe('Service Worker Integration', () => {
 
     // Simulate registration
     const registration = global.navigator.serviceWorker.register('/sw.js');
-    
+
     expect(mockRegister).toHaveBeenCalledWith('/sw.js');
     expect(registration).resolves.toMatchObject({
       scope: '/'
@@ -93,7 +92,7 @@ describe('Service Worker Integration', () => {
   it('should handle IndexedDB mock for local storage', () => {
     expect(global.indexedDB).toBeDefined();
     expect(typeof global.indexedDB.open).toBe('function');
-    
+
     // Test that opening a database works with our mock
     const dbRequest = global.indexedDB.open('test-db', 1);
     expect(dbRequest).resolves.toBeDefined();
@@ -102,23 +101,23 @@ describe('Service Worker Integration', () => {
   it('should handle offline scenarios', () => {
     // Test offline/online state changes
     const originalOnLine = global.navigator.onLine;
-    
+
     // Set offline
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
       value: false
     });
-    
+
     expect(global.navigator.onLine).toBe(false);
-    
+
     // Set back online
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
       value: true
     });
-    
+
     expect(global.navigator.onLine).toBe(true);
-    
+
     // Restore original
     Object.defineProperty(global.navigator, 'onLine', {
       writable: true,
@@ -134,7 +133,7 @@ describe('Service Worker Integration', () => {
     };
 
     const messageChannel = new global.MessageChannel();
-    
+
     expect(messageChannel.port1).toBeDefined();
     expect(messageChannel.port2).toBeDefined();
     expect(typeof messageChannel.port1.postMessage).toBe('function');
@@ -142,14 +141,9 @@ describe('Service Worker Integration', () => {
   });
 
   it('should export required functions from tasks store', async () => {
-    const { 
-      initTasks, 
-      addTask, 
-      updateTask, 
-      deleteTask, 
-      toggleTask, 
-      requestSync 
-    } = await import('../src/lib/stores/tasks.js');
+    const { initTasks, addTask, updateTask, deleteTask, toggleTask, requestSync } = await import(
+      '../src/lib/stores/tasks.js'
+    );
 
     // Verify all sync-related functions are available
     expect(typeof initTasks).toBe('function');

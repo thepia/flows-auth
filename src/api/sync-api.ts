@@ -1,12 +1,12 @@
 /**
  * Sync API Client - Service Worker Spike
  * Handles workflow data synchronization between local and central storage
- * 
+ *
  * SPIKE: This is experimental code that can be easily removed
  */
 
-import { reportApiError } from '../utils/errorReporter';
 import type { AuthConfig } from '../types';
+import { reportApiError } from '../utils/errorReporter';
 
 export interface WorkflowMetadata {
   uid: string;
@@ -46,15 +46,12 @@ export class SyncApiClient {
   /**
    * Make authenticated sync API request
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}/sync${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers as Record<string, string>
+      ...(options.headers as Record<string, string>)
     };
 
     // Always include auth for sync operations
@@ -70,15 +67,12 @@ export class SyncApiClient {
 
     if (!response.ok) {
       const error = await this.handleErrorResponse(response);
-      
-      reportApiError(
-        url,
-        options.method || 'GET',
-        response.status,
-        error.message,
-        { endpoint, syncOperation: true }
-      );
-      
+
+      reportApiError(url, options.method || 'GET', response.status, error.message, {
+        endpoint,
+        syncOperation: true
+      });
+
       throw error;
     }
 
@@ -167,7 +161,7 @@ export class SyncApiClient {
       pendingUploads: number;
       pendingDownloads: number;
     }>('/status', {
-      method: 'GET'            
+      method: 'GET'
     });
   }
 }

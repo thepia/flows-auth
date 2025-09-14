@@ -14,7 +14,7 @@ export function isBrowser(): boolean {
  */
 export function isMobile(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
@@ -23,7 +23,7 @@ export function isMobile(): boolean {
  */
 export function isIOS(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
@@ -32,7 +32,7 @@ export function isIOS(): boolean {
  */
 export function isAndroid(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /Android/.test(navigator.userAgent);
 }
 
@@ -41,7 +41,7 @@ export function isAndroid(): boolean {
  */
 export function isMacOS(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /Mac/.test(navigator.userAgent) && !isIOS();
 }
 
@@ -50,7 +50,7 @@ export function isMacOS(): boolean {
  */
 export function isWindows(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /Win/.test(navigator.userAgent);
 }
 
@@ -59,7 +59,7 @@ export function isWindows(): boolean {
  */
 export function isLinux(): boolean {
   if (!isBrowser()) return false;
-  
+
   return /Linux/.test(navigator.userAgent) && !isAndroid();
 }
 
@@ -70,17 +70,17 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 export function getDeviceType(): DeviceType {
   if (!isBrowser()) return 'desktop';
-  
+
   const userAgent = navigator.userAgent;
-  
+
   if (/iPad/.test(userAgent) || (/Android/.test(userAgent) && !/Mobile/.test(userAgent))) {
     return 'tablet';
   }
-  
+
   if (isMobile()) {
     return 'mobile';
   }
-  
+
   return 'desktop';
 }
 
@@ -91,13 +91,13 @@ export type OperatingSystem = 'ios' | 'android' | 'macos' | 'windows' | 'linux' 
 
 export function getOperatingSystem(): OperatingSystem {
   if (!isBrowser()) return 'unknown';
-  
+
   if (isIOS()) return 'ios';
   if (isAndroid()) return 'android';
   if (isMacOS()) return 'macos';
   if (isWindows()) return 'windows';
   if (isLinux()) return 'linux';
-  
+
   return 'unknown';
 }
 
@@ -108,9 +108,9 @@ export type BrowserName = 'chrome' | 'firefox' | 'safari' | 'edge' | 'opera' | '
 
 export function getBrowserName(): BrowserName {
   if (!isBrowser()) return 'unknown';
-  
+
   const userAgent = navigator.userAgent;
-  
+
   if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
     return 'chrome';
   }
@@ -126,7 +126,7 @@ export function getBrowserName(): BrowserName {
   if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
     return 'opera';
   }
-  
+
   return 'unknown';
 }
 
@@ -135,10 +135,12 @@ export function getBrowserName(): BrowserName {
  */
 export function isTouchDevice(): boolean {
   if (!isBrowser()) return false;
-  
-  return ('ontouchstart' in window) || 
-         (navigator.maxTouchPoints > 0) || 
-         ((navigator as any).msMaxTouchPoints > 0);
+
+  return (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    (navigator as any).msMaxTouchPoints > 0
+  );
 }
 
 /**
@@ -146,7 +148,7 @@ export function isTouchDevice(): boolean {
  */
 export function getDevicePixelRatio(): number {
   if (!isBrowser()) return 1;
-  
+
   return window.devicePixelRatio || 1;
 }
 
@@ -155,9 +157,11 @@ export function getDevicePixelRatio(): number {
  */
 export function isStandalone(): boolean {
   if (!isBrowser()) return false;
-  
-  return window.matchMedia('(display-mode: standalone)').matches ||
-         (window.navigator as any).standalone === true;
+
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
 }
 
 /**
@@ -167,9 +171,9 @@ export type ScreenSize = 'small' | 'medium' | 'large' | 'xlarge';
 
 export function getScreenSize(): ScreenSize {
   if (!isBrowser()) return 'large';
-  
+
   const width = window.innerWidth;
-  
+
   if (width < 640) return 'small';
   if (width < 1024) return 'medium';
   if (width < 1440) return 'large';
@@ -181,7 +185,7 @@ export function getScreenSize(): ScreenSize {
  */
 export function prefersReducedMotion(): boolean {
   if (!isBrowser()) return false;
-  
+
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
@@ -190,7 +194,7 @@ export function prefersReducedMotion(): boolean {
  */
 export function prefersDarkMode(): boolean {
   if (!isBrowser()) return false;
-  
+
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
@@ -231,22 +235,22 @@ export function getDeviceInfo(): DeviceInfo {
 export function getPasskeyInstructions(): string {
   const os = getOperatingSystem();
   const deviceType = getDeviceType();
-  
+
   switch (os) {
     case 'ios':
-      return deviceType === 'mobile' 
+      return deviceType === 'mobile'
         ? 'Use Face ID, Touch ID, or your device passcode'
         : 'Use Touch ID or enter your device passcode';
-    
+
     case 'android':
       return 'Use your fingerprint, face unlock, or screen lock';
-    
+
     case 'macos':
       return 'Use Touch ID or enter your Mac password';
-    
+
     case 'windows':
       return 'Use Windows Hello, PIN, or security key';
-    
+
     default:
       return 'Use your biometric authentication or security key';
   }
@@ -259,9 +263,9 @@ export function generateDeviceName(): string {
   const os = getOperatingSystem();
   const deviceType = getDeviceType();
   const browser = getBrowserName();
-  
+
   let deviceName = '';
-  
+
   // Operating system part
   switch (os) {
     case 'ios':
@@ -282,7 +286,7 @@ export function generateDeviceName(): string {
     default:
       deviceName = deviceType === 'mobile' ? 'Mobile Device' : 'Computer';
   }
-  
+
   // Add browser if it's distinctive
   if (browser !== 'unknown' && browser !== 'chrome') {
     const browserNames = {
@@ -293,6 +297,6 @@ export function generateDeviceName(): string {
     };
     deviceName += ` (${browserNames[browser] || browser})`;
   }
-  
+
   return deviceName;
 }

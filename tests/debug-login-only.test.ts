@@ -1,9 +1,9 @@
+import { render } from '@testing-library/svelte';
 /**
  * Debug test for login-only message visibility
  * This test will help identify exactly why the message isn't showing
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../src/components/core/SignInCore.svelte';
 import { createAuthStore } from '../src/stores/auth-store';
 import type { AuthConfig } from '../src/types';
@@ -12,12 +12,12 @@ import type { AuthConfig } from '../src/types';
 vi.mock('../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  startConditionalAuthentication: vi.fn(() => Promise.resolve()),
+  startConditionalAuthentication: vi.fn(() => Promise.resolve())
 }));
 
 // Mock error reporter
 vi.mock('../src/utils/errorReporter', () => ({
-  reportError: vi.fn(),
+  reportError: vi.fn()
 }));
 
 describe('Debug Login-Only Message', () => {
@@ -34,7 +34,7 @@ describe('Debug Login-Only Message', () => {
     };
 
     const mockAuthStore = createAuthStore(mockConfig);
-    
+
     // Mock checkUser to return non-existing user
     vi.spyOn(mockAuthStore, 'checkUser').mockResolvedValue({
       exists: false,
@@ -62,7 +62,7 @@ describe('Debug Login-Only Message', () => {
     emailInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     // Wait for debounced check
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     console.log('🐛 After email entry and wait:');
     console.log('Container HTML:', container.innerHTML);
@@ -70,7 +70,7 @@ describe('Debug Login-Only Message', () => {
     // Look for any auth-message elements
     const messageElements = container.querySelectorAll('.auth-message');
     console.log('🐛 Found auth-message elements:', messageElements.length);
-    
+
     messageElements.forEach((el, index) => {
       console.log(`🐛 Message ${index}:`, el.outerHTML);
     });
@@ -80,7 +80,9 @@ describe('Debug Login-Only Message', () => {
     console.log('🐛 Contains specific text:', specificText);
 
     // Look for any elements with the translation key
-    const translationElements = container.querySelectorAll('[data-i18n], [aria-label*="only"], [title*="only"]');
+    const translationElements = container.querySelectorAll(
+      '[data-i18n], [aria-label*="only"], [title*="only"]'
+    );
     console.log('🐛 Translation-related elements:', translationElements.length);
 
     // Check the current state of component variables by looking at data attributes or classes
@@ -90,7 +92,7 @@ describe('Debug Login-Only Message', () => {
     // Let's also check if there are any hidden or display:none elements
     const allElements = container.querySelectorAll('*');
     let hiddenElements = 0;
-    allElements.forEach(el => {
+    allElements.forEach((el) => {
       const styles = window.getComputedStyle(el);
       if (styles.display === 'none' || styles.visibility === 'hidden') {
         hiddenElements++;

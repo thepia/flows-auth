@@ -1,6 +1,6 @@
 /**
  * SignInCore Tests - Clean Architecture
- * 
+ *
  * Tests for SignInCore as a pure auth logic component that gets everything
  * from auth store context. SignInCore should:
  * - Get auth store from context only (no props)
@@ -10,12 +10,12 @@
  * - Never create or manage auth stores directly
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { setContext } from 'svelte';
 import { writable } from 'svelte/store';
-import SignInCore from '../SignInCore.svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUTH_CONTEXT_KEY } from '../../../constants/context-keys';
+import SignInCore from '../SignInCore.svelte';
 
 // Mock dependencies
 vi.mock('../../../utils/webauthn', () => ({
@@ -49,11 +49,11 @@ describe('SignInCore - Clean Architecture', () => {
     getConfig: vi.fn(() => mockAuthConfig),
     subscribe: vi.fn((callback) => {
       // Mock subscription that calls callback with initial state
-      callback({ 
-        state: 'unauthenticated', 
+      callback({
+        state: 'unauthenticated',
         signInState: 'emailEntry',
-        user: null, 
-        error: null 
+        user: null,
+        error: null
       });
       return vi.fn(); // Return unsubscribe function
     }),
@@ -84,10 +84,10 @@ describe('SignInCore - Clean Architecture', () => {
 
       // Should call getConfig to get configuration from store
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
-      
+
       // Should subscribe to store for state updates
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      
+
       // Should render the component (not showing loading state)
       expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });
@@ -101,7 +101,7 @@ describe('SignInCore - Clean Architecture', () => {
 
       // Should show waiting message when no context
       expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
-      
+
       // Should not try to access store methods
       expect(mockAuthStore.getConfig).not.toHaveBeenCalled();
     });
@@ -141,7 +141,7 @@ describe('SignInCore - Clean Architecture', () => {
 
       // Should use config from store, not from props
       expect(mockAuthStore.getConfig).toHaveBeenCalled();
-      
+
       // Should render successfully (config from store is used)
       expect(screen.queryByText('Loading configuration...')).not.toBeInTheDocument();
     });
@@ -150,7 +150,7 @@ describe('SignInCore - Clean Architecture', () => {
   describe('Reactive Context Updates', () => {
     it('should react to auth store being added to context', async () => {
       const authStoreContext = writable(null);
-      
+
       const TestWrapper = () => {
         setContext(AUTH_CONTEXT_KEY, authStoreContext);
         return SignInCore;
@@ -218,7 +218,7 @@ describe('SignInCore - Clean Architecture', () => {
 
       // Should have access to auth store methods
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      
+
       // In a real test, we'd simulate user interactions and verify
       // that the correct store methods are called (signInWithMagicLink, etc.)
     });
@@ -234,7 +234,7 @@ describe('SignInCore - Clean Architecture', () => {
 
       // Verify subscription was set up
       expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      
+
       // In the real implementation, the subscription callback would update
       // component state based on auth store state changes
     });

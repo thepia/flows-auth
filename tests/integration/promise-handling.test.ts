@@ -3,18 +3,18 @@
  * These tests ensure promise rejections are properly handled to prevent unhandled promise rejections
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import { createDefaultConfig } from '../../src/index';
 
 describe('Promise Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock fetch with rejection
     global.fetch = vi.fn();
-    
+
     // Reset WebAuthn mocks
     Object.defineProperty(navigator, 'credentials', {
       value: {
@@ -68,10 +68,11 @@ describe('Promise Handling', () => {
     // Mock successful email check with passkey
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
-        exists: true,
-        hasPasskey: true
-      })
+      json: () =>
+        Promise.resolve({
+          exists: true,
+          hasPasskey: true
+        })
     });
 
     // Mock WebAuthn to reject
@@ -110,13 +111,15 @@ describe('Promise Handling', () => {
     });
 
     // Mock successful email check, then reject magic link
-    global.fetch = vi.fn()
+    global.fetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: false
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: false
+          })
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
 
@@ -153,13 +156,15 @@ describe('Promise Handling', () => {
     });
 
     // Mock successful email check with passkey
-    global.fetch = vi.fn()
+    global.fetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          exists: true,
-          hasPasskey: true
-        })
+        json: () =>
+          Promise.resolve({
+            exists: true,
+            hasPasskey: true
+          })
       })
       .mockRejectedValueOnce(new Error('Magic link service unavailable'));
 

@@ -1,10 +1,10 @@
+import { fireEvent, render, waitFor } from '@testing-library/svelte';
+import { writable } from 'svelte/store';
 /**
  * Tests for SignInCore registration flow with fullName validation
  * Ensures sign-in button is properly disabled when fullName is invalid for new users
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import type { AuthConfig } from '../../src/types';
 
@@ -26,7 +26,7 @@ const mockAuthStore = () => {
     sendSignInEvent: vi.fn((event) => {
       // Update the store state based on the event
       if (event.type === 'USER_CHECKED') {
-        store.update(s => ({ ...s, signInState: 'userChecked' }));
+        store.update((s) => ({ ...s, signInState: 'userChecked' }));
         return 'userChecked';
       }
       return 'emailEntry';
@@ -51,7 +51,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authStore = mockAuthStore();
-    
+
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
@@ -72,7 +72,6 @@ describe('SignInCore - Registration with FullName Validation', () => {
         hasWebAuthn: false,
         lastPinExpiry: null
       });
-
     });
 
     it('should disable sign-in button when fullName is empty for new users', async () => {
@@ -90,8 +89,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -124,8 +123,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -161,8 +160,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -205,8 +204,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -254,8 +253,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -276,7 +275,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
   describe('Login-only mode', () => {
     beforeEach(() => {
       mockConfig.signInMode = 'login-only';
-      
+
       // Mock checkUser to return user doesn't exist
       authStore.checkUser.mockResolvedValue({
         exists: false,
@@ -300,8 +299,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       });
 
       // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({ 
-        type: 'USER_CHECKED', 
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
         email: 'newuser@example.com',
         exists: false,
         hasPasskey: false
@@ -312,7 +311,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
         // Check that fullName input is NOT shown
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeFalsy();
-        
+
         // Check that login-only message is shown
         const authMessage = container.querySelector('.auth-message');
         expect(authMessage).toBeTruthy();

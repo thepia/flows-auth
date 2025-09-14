@@ -1,12 +1,12 @@
 /**
  * CodeInput Logic Unit Tests
- * 
+ *
  * Tests the logic functions and input handling for CodeInput component
  * without requiring full Svelte component rendering
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TranslationKey } from '../../src/utils/i18n';
 
 // Mock the numeric input filtering logic from CodeInput
@@ -16,7 +16,7 @@ function filterNumericInput(value: string): string {
 
 // Mock the CSS classes logic
 function getInputClasses(error: string | null): string {
-  const baseClasses = "input-brand text-center text-lg font-mono tracking-widest";
+  const baseClasses = 'input-brand text-center text-lg font-mono tracking-widest';
   if (error) {
     return `${baseClasses} error`;
   }
@@ -30,7 +30,7 @@ function getDisplayText(
   customText = ''
 ): string {
   if (customText) return customText;
-  
+
   switch (type) {
     case 'placeholder':
       return i18n('code.placeholder');
@@ -132,7 +132,7 @@ describe('CodeInput Logic', () => {
 
     it('should handle different error types', () => {
       const errorTypes = ['Too short', 'Invalid format', 'Expired code', ''];
-      errorTypes.forEach(error => {
+      errorTypes.forEach((error) => {
         const classes = getInputClasses(error || null);
         if (error) {
           expect(classes).toContain('error');
@@ -223,7 +223,7 @@ describe('CodeInput Logic', () => {
 
     it('should handle different maxlength values', () => {
       const maxLengths = [4, 6, 8, 10];
-      maxLengths.forEach(length => {
+      maxLengths.forEach((length) => {
         expect(typeof length).toBe('number');
         expect(length).toBeGreaterThan(0);
       });

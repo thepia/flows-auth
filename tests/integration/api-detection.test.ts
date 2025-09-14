@@ -3,8 +3,8 @@
  * Tests various network conditions and fallback scenarios
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { detectApiServer, DEFAULT_API_CONFIG } from '../../../src/utils/api-detection';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_API_CONFIG, detectApiServer } from '../../../src/utils/api-detection';
 
 describe('detectApiServer', () => {
   // Mock fetch
@@ -87,9 +87,7 @@ describe('detectApiServer', () => {
   describe('timeout handling', () => {
     it('should timeout after specified duration', async () => {
       // Mock slow response
-      mockFetch.mockImplementationOnce(() => 
-        new Promise((resolve) => setTimeout(resolve, 5000))
-      );
+      mockFetch.mockImplementationOnce(() => new Promise((resolve) => setTimeout(resolve, 5000)));
 
       const config = {
         ...DEFAULT_API_CONFIG,
@@ -216,7 +214,9 @@ describe('detectApiServer', () => {
     it('should handle malformed health check responses', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => { throw new Error('Invalid JSON'); }
+        json: async () => {
+          throw new Error('Invalid JSON');
+        }
       });
 
       const result = await detectApiServer(DEFAULT_API_CONFIG);

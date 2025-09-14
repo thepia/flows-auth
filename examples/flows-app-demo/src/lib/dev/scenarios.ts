@@ -44,7 +44,7 @@ export const DEV_BRANDINGS: DevBranding[] = [
   },
   {
     name: 'Emerald Corp',
-    className: 'brand-emerald', 
+    className: 'brand-emerald',
     colors: { primary: '#059669', accent: '#f59e0b' },
     companyName: 'Emerald Corporation',
     description: 'Green primary with amber accent'
@@ -194,9 +194,10 @@ class DevScenarioManager {
           apiBaseUrl: this.resolvedApiUrl,
           errorReporting: {
             ...this.currentScenario.config.errorReporting,
-            endpoint: this.currentScenario.config.errorReporting?.endpoint === 'auto-detect'
-              ? `${this.resolvedApiUrl}/api/error-reports`
-              : this.currentScenario.config.errorReporting?.endpoint
+            endpoint:
+              this.currentScenario.config.errorReporting?.endpoint === 'auto-detect'
+                ? `${this.resolvedApiUrl}/api/error-reports`
+                : this.currentScenario.config.errorReporting?.endpoint
           }
         }
       };
@@ -211,7 +212,7 @@ class DevScenarioManager {
   }
 
   setScenario(scenarioId: string): void {
-    const scenario = DEV_SCENARIOS.find(s => s.id === scenarioId);
+    const scenario = DEV_SCENARIOS.find((s) => s.id === scenarioId);
     if (scenario) {
       this.currentScenario = scenario;
       this.resolvedApiUrl = null; // Clear cached API URL when switching scenarios
@@ -222,9 +223,9 @@ class DevScenarioManager {
 
   private applyBranding(branding: DevBranding): void {
     // Apply branding class to document
-    document.body.className = document.body.className
-      .replace(/brand-\w+/g, '') + ` ${branding.className}`;
-    
+    document.body.className =
+      document.body.className.replace(/brand-\w+/g, '') + ` ${branding.className}`;
+
     // Update CSS custom properties
     document.documentElement.style.setProperty('--brand-primary-override', branding.colors.primary);
     document.documentElement.style.setProperty('--brand-accent-override', branding.colors.accent);
@@ -241,41 +242,44 @@ class DevScenarioManager {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(callback => callback(this.currentScenario));
+    this.listeners.forEach((callback) => callback(this.currentScenario));
   }
 
   // Simulate different authentication states
   triggerScenario(type: 'new-user' | 'existing-user' | 'error' | 'network-error'): void {
     console.log(`🎭 Dev Scenario: ${type}`);
-    
+
     switch (type) {
       case 'new-user':
         localStorage.removeItem('auth_access_token');
         localStorage.removeItem('auth_user');
         console.log('👤 Simulating new user (cleared auth)');
         break;
-        
+
       case 'existing-user':
         localStorage.setItem('auth_access_token', 'demo-token');
-        localStorage.setItem('auth_user', JSON.stringify({
-          id: 'demo-user',
-          email: 'demo@example.com',
-          name: 'Demo User',
-          emailVerified: true,
-          createdAt: new Date().toISOString()
-        }));
+        localStorage.setItem(
+          'auth_user',
+          JSON.stringify({
+            id: 'demo-user',
+            email: 'demo@example.com',
+            name: 'Demo User',
+            emailVerified: true,
+            createdAt: new Date().toISOString()
+          })
+        );
         console.log('👤 Simulating existing user (set auth)');
         break;
-        
+
       case 'error':
         console.log('❌ Simulating auth error (check network tab)');
         break;
-        
+
       case 'network-error':
         console.log('📶 Simulating network error');
         break;
     }
-    
+
     // Trigger page reload to apply changes
     window.location.reload();
   }

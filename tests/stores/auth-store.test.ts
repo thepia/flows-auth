@@ -1,8 +1,8 @@
+import { get } from 'svelte/store';
 /**
  * Auth Store Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { get } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
@@ -30,9 +30,9 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock browser environment check
-Object.defineProperty(globalThis, 'window', { 
+Object.defineProperty(globalThis, 'window', {
   value: { location: { hostname: 'localhost' } },
-  writable: true 
+  writable: true
 });
 
 const mockConfig: AuthConfig = {
@@ -56,21 +56,22 @@ describe('Auth Store', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Get the mocked API client constructor
     const { AuthApiClient } = await import('../../src/api/auth-api');
     const MockedAuthApiClient = AuthApiClient as any;
-    
+
     authStore = createAuthStore(mockConfig);
-    
+
     // Get the mocked API client instance
-    mockApiClient = MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
+    mockApiClient =
+      MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
   });
 
   describe('Initial State', () => {
     it('should initialize with unauthenticated state', () => {
       const state = get(authStore);
-      
+
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
       expect(state.accessToken).toBeNull();
@@ -81,7 +82,7 @@ describe('Auth Store', () => {
     it('should restore state from session if valid session exists', async () => {
       // Set up a valid session in localStorage (using real session manager)
       const { saveSession } = await import('../../src/utils/sessionManager');
-      
+
       const sessionData = {
         user: {
           id: '123',
@@ -99,16 +100,16 @@ describe('Auth Store', () => {
         lastActivity: Date.now(),
         createdAt: Date.now()
       };
-      
+
       // Save session using real session manager
       saveSession(sessionData);
 
       // Create new auth store that should restore from session
       const restoredStore = createAuthStore(mockConfig);
-      
+
       // Give state machine time to initialize
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       const state = get(restoredStore);
 
       expect(state.state).toBe('authenticated');
@@ -151,9 +152,9 @@ describe('Auth Store', () => {
 
       mockApiClient.signInWithMagicLink.mockRejectedValue(mockError);
 
-      await expect(
-        authStore.signInWithMagicLink('test@example.com')
-      ).rejects.toThrow('Invalid credentials');
+      await expect(authStore.signInWithMagicLink('test@example.com')).rejects.toThrow(
+        'Invalid credentials'
+      );
 
       const state = get(authStore);
       expect(state.state).toBe('error');
@@ -204,7 +205,7 @@ describe('Auth Store', () => {
       // Verify session was saved by checking localStorage (real session manager behavior)
       const { getSession } = await import('../../src/utils/sessionManager');
       const savedSession = getSession();
-      
+
       expect(savedSession).toBeTruthy();
       expect(savedSession?.user.email).toBe('test@example.com');
       expect(savedSession?.tokens.accessToken).toBe('access-token');
@@ -214,8 +215,19 @@ describe('Auth Store', () => {
       // Set up authenticated state first
       const { saveSession } = await import('../../src/utils/sessionManager');
       const sessionData = {
-        user: { id: '123', email: 'test@example.com', name: 'Test User', initials: 'TU', avatar: null, preferences: {} },
-        tokens: { accessToken: 'access-token', refreshToken: 'refresh-token', expiresAt: Date.now() + 3600000 },
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          initials: 'TU',
+          avatar: null,
+          preferences: {}
+        },
+        tokens: {
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
+          expiresAt: Date.now() + 3600000
+        },
         lastActivity: Date.now(),
         createdAt: Date.now()
       };
@@ -228,7 +240,7 @@ describe('Auth Store', () => {
       // Verify session was cleared by checking localStorage (real session manager behavior)
       const { getSession } = await import('../../src/utils/sessionManager');
       const clearedSession = getSession();
-      
+
       expect(clearedSession).toBeNull();
 
       const state = get(authStore);
@@ -272,7 +284,7 @@ describe('Auth Store', () => {
 
       const state = get(authStore);
       expect(state.accessToken).toBe('new-access-token');
-      
+
       // Verify session was updated with new tokens
       const { getSession } = await import('../../src/utils/sessionManager');
       const updatedSession = getSession();
@@ -334,8 +346,19 @@ describe('Auth Store', () => {
       // Set up some authenticated session state first
       const { saveSession } = await import('../../src/utils/sessionManager');
       const sessionData = {
-        user: { id: '123', email: 'test@example.com', name: 'Test User', initials: 'TU', avatar: null, preferences: {} },
-        tokens: { accessToken: 'token', refreshToken: 'refresh-token', expiresAt: Date.now() + 3600000 },
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          initials: 'TU',
+          avatar: null,
+          preferences: {}
+        },
+        tokens: {
+          accessToken: 'token',
+          refreshToken: 'refresh-token',
+          expiresAt: Date.now() + 3600000
+        },
         lastActivity: Date.now(),
         createdAt: Date.now()
       };
@@ -421,7 +444,7 @@ describe('Auth Store', () => {
   describe('Dynamic Role Configuration', () => {
     it('should start with guest configuration by default', () => {
       const authStore = createAuthStore(mockConfig);
-      
+
       // Should start with conservative guest defaults
       expect(authStore.getApplicationContext()).toEqual({
         userType: 'mixed',
@@ -439,7 +462,7 @@ describe('Auth Store', () => {
       };
 
       const authStore = createAuthStore(configWithContext);
-      
+
       expect(authStore.getApplicationContext()).toEqual({
         userType: 'all_employees',
         domain: 'internal.company.com'
@@ -448,11 +471,11 @@ describe('Auth Store', () => {
 
     it('should handle storage configuration updates', async () => {
       const authStore = createAuthStore(mockConfig);
-      
+
       // Mock the updateStorageConfiguration method (will be implemented later)
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
-      
+
       const update = {
         type: 'localStorage' as const,
         userRole: 'employee' as const,
@@ -462,13 +485,13 @@ describe('Auth Store', () => {
       };
 
       await authStore.updateStorageConfiguration(update);
-      
+
       expect(mockUpdateStorageConfiguration).toHaveBeenCalledWith(update);
     });
 
     it('should handle session migration', async () => {
       const authStore = createAuthStore(mockConfig);
-      
+
       // Mock the migrateSession method (will be implemented later)
       const mockMigrateSession = vi.fn().mockResolvedValue({
         success: true,
@@ -478,9 +501,9 @@ describe('Auth Store', () => {
         tokensPreserved: true
       });
       (authStore as any).migrateSession = mockMigrateSession;
-      
+
       const result = await authStore.migrateSession('sessionStorage', 'localStorage');
-      
+
       expect(mockMigrateSession).toHaveBeenCalledWith('sessionStorage', 'localStorage');
       expect(result.success).toBe(true);
       expect(result.dataPreserved).toBe(true);
@@ -497,9 +520,9 @@ describe('Auth Store', () => {
         ...mockConfig,
         appCode: 'test-app'
       };
-      
+
       const authStore = createAuthStore(configWithApp);
-      
+
       const mockEmailCodeResponse = {
         success: true,
         message: 'Email code sent',
@@ -520,9 +543,9 @@ describe('Auth Store', () => {
         enableMagicLinks: true
       };
       delete (configWithoutApp as any).appCode;
-      
+
       const authStore = createAuthStore(configWithoutApp);
-      
+
       const mockMagicLinkResponse: SignInResponse = {
         step: 'magic-link',
         magicLinkSent: true
@@ -542,9 +565,9 @@ describe('Auth Store', () => {
         ...mockConfig,
         appCode: 'test-app'
       };
-      
+
       const authStore = createAuthStore(configWithApp);
-      
+
       const mockVerifyResponse: SignInResponse = {
         step: 'success',
         user: {
@@ -563,9 +586,13 @@ describe('Auth Store', () => {
 
       const result = await authStore.verifyEmailCode('test@example.com', '123456');
 
-      expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith('test-app', 'test@example.com', '123456');
+      expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith(
+        'test-app',
+        'test@example.com',
+        '123456'
+      );
       expect(result).toEqual(mockVerifyResponse);
-      
+
       // Check that user is authenticated
       const state = get(authStore);
       expect(state.state).toBe('authenticated');
@@ -577,12 +604,12 @@ describe('Auth Store', () => {
         ...mockConfig
       };
       delete (configWithoutApp as any).appCode;
-      
+
       const authStore = createAuthStore(configWithoutApp);
 
-      await expect(
-        authStore.verifyEmailCode('test@example.com', '123456')
-      ).rejects.toThrow('Email code verification is only available with organization configuration');
+      await expect(authStore.verifyEmailCode('test@example.com', '123456')).rejects.toThrow(
+        'Email code verification is only available with organization configuration'
+      );
     });
 
     it('should handle email code send errors gracefully', async () => {
@@ -590,15 +617,13 @@ describe('Auth Store', () => {
         ...mockConfig,
         appCode: 'test-app'
       };
-      
+
       const authStore = createAuthStore(configWithApp);
-      
+
       const mockError = new Error('Network error');
       mockApiClient.sendAppEmailCode.mockRejectedValue(mockError);
 
-      await expect(
-        authStore.sendEmailCode('test@example.com')
-      ).rejects.toThrow('Network error');
+      await expect(authStore.sendEmailCode('test@example.com')).rejects.toThrow('Network error');
 
       const state = get(authStore);
       expect(state.state).toBe('error');
@@ -609,15 +634,15 @@ describe('Auth Store', () => {
         ...mockConfig,
         appCode: 'test-app'
       };
-      
+
       const authStore = createAuthStore(configWithApp);
-      
+
       const mockError = new Error('Invalid code');
       mockApiClient.verifyAppEmailCode.mockRejectedValue(mockError);
 
-      await expect(
-        authStore.verifyEmailCode('test@example.com', '123456')
-      ).rejects.toThrow('Invalid code');
+      await expect(authStore.verifyEmailCode('test@example.com', '123456')).rejects.toThrow(
+        'Invalid code'
+      );
 
       const state = get(authStore);
       expect(state.state).toBe('error');

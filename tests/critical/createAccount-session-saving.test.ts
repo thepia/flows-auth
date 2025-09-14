@@ -1,9 +1,9 @@
 /**
  * Critical Test: createAccount API Contract
- * 
+ *
  * Tests the expected behavior of createAccount based on API contract requirements,
  * not implementation details.
- * 
+ *
  * API Contract Expectation:
  * - createAccount(userData) should return complete authentication response
  * - User should be automatically signed in after successful registration
@@ -11,10 +11,15 @@
  * - Authentication state should be immediately available
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
-import { getSession, isAuthenticated, getCurrentUser, getAccessToken } from '../../src/utils/sessionManager';
 import type { AuthConfig, RegistrationRequest } from '../../src/types';
+import {
+  getAccessToken,
+  getCurrentUser,
+  getSession,
+  isAuthenticated
+} from '../../src/utils/sessionManager';
 
 // Mock sessionManager (we verify calls but don't control implementation)
 vi.mock('../../src/utils/sessionManager', () => ({
@@ -120,7 +125,7 @@ describe('createAccount API Contract', () => {
 
       // Verify authentication state
       expect(authStore.isAuthenticated()).toBe(true);
-      
+
       // Verify access token is available
       const token = authStore.getAccessToken();
       expect(token).toBeTruthy();
@@ -172,7 +177,7 @@ describe('createAccount API Contract', () => {
   describe('API Contract: Error Handling', () => {
     it('MUST handle registration failures gracefully', async () => {
       // API Contract Expectation: Failures should not leave user in broken state
-      
+
       // Mock registration failure for this specific test
       const mockError = new Error('Registration failed');
       authStore.createAccount = vi.fn().mockRejectedValue(mockError);
@@ -180,8 +185,9 @@ describe('createAccount API Contract', () => {
       authStore.getAccessToken = vi.fn().mockReturnValue(null);
 
       // Verify error is thrown
-      await expect(authStore.createAccount(validRegistrationData))
-        .rejects.toThrow('Registration failed');
+      await expect(authStore.createAccount(validRegistrationData)).rejects.toThrow(
+        'Registration failed'
+      );
 
       // Verify user remains unauthenticated after failure
       expect(authStore.isAuthenticated()).toBe(false);
@@ -190,14 +196,15 @@ describe('createAccount API Contract', () => {
 
     it('MUST handle WebAuthn not supported gracefully', async () => {
       // API Contract Expectation: Graceful degradation for unsupported devices
-      
+
       // Mock WebAuthn not supported for this specific test
       const mockError = new Error('Passkey authentication is not supported on this device');
       authStore.createAccount = vi.fn().mockRejectedValue(mockError);
 
       // Verify appropriate error is thrown
-      await expect(authStore.createAccount(validRegistrationData))
-        .rejects.toThrow('Passkey authentication is not supported on this device');
+      await expect(authStore.createAccount(validRegistrationData)).rejects.toThrow(
+        'Passkey authentication is not supported on this device'
+      );
     });
   });
 
@@ -243,7 +250,7 @@ describe('createAccount API Contract', () => {
 
     it('MUST handle standard registration with email verification pending', async () => {
       // API Contract Expectation: Standard registration requires email verification
-      
+
       // Use default mock (no emailVerifiedViaInvitation)
       const result = await authStore.createAccount(validRegistrationData);
 

@@ -1,9 +1,9 @@
 /**
  * SignInCore User Flow Tests
- * 
+ *
  * Tests for user flow scenarios and event handling in SignInCore
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthConfig } from '../../src/types';
 
 describe('SignInCore User Flow Logic', () => {
@@ -31,21 +31,21 @@ describe('SignInCore User Flow Logic', () => {
     it('should transition to email-code-input when pin is requested', () => {
       const step = 'email-code-input';
       const emailCodeSent = true;
-      
+
       expect(step).toBe('email-code-input');
       expect(emailCodeSent).toBe(true);
     });
 
     it('should transition to magic-link-sent when magic link is sent', () => {
       const step = 'magic-link-sent';
-      
+
       expect(step).toBe('magic-link-sent');
     });
 
     it('should transition to registration-terms for non-existing users when registration allowed', () => {
       const step = 'registration-terms';
       const signInMode = 'login-or-register';
-      
+
       expect(step).toBe('registration-terms');
       expect(signInMode).toBe('login-or-register');
     });
@@ -57,7 +57,8 @@ describe('SignInCore User Flow Logic', () => {
       if (!userExists) {
         if (signInMode === 'login-only') {
           return {
-            error: 'No account found for this email address. Please check your email or create an account.',
+            error:
+              'No account found for this email address. Please check your email or create an account.',
             step: 'email-input'
           };
         } else {
@@ -72,21 +73,23 @@ describe('SignInCore User Flow Logic', () => {
 
     it('should show error for non-existing user in login-only mode', () => {
       const result = handleUserExistence(false, 'login-only');
-      
-      expect(result.error).toBe('No account found for this email address. Please check your email or create an account.');
+
+      expect(result.error).toBe(
+        'No account found for this email address. Please check your email or create an account.'
+      );
       expect(result.step).toBe('email-input');
     });
 
     it('should transition to registration for non-existing user when registration allowed', () => {
       const result = handleUserExistence(false, 'login-or-register');
-      
+
       expect(result.error).toBeNull();
       expect(result.step).toBe('registration-terms');
     });
 
     it('should continue with authentication for existing user', () => {
       const result = handleUserExistence(true, 'login-only');
-      
+
       expect(result.error).toBeNull();
       expect(result.step).toBeNull();
     });
@@ -107,12 +110,12 @@ describe('SignInCore User Flow Logic', () => {
         const hasEmailFallback = config.appCode || config.enableMagicPins;
         return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
       }
-      
+
       // If app-based email authentication is available
       if (config.appCode) {
         return 'email-code';
       }
-      
+
       // If user doesn't have passkeys but we have magic links enabled
       if (config.enableMagicPins) {
         return 'email-only';
@@ -125,14 +128,14 @@ describe('SignInCore User Flow Logic', () => {
     it('should select passkey-with-fallback for user with passkeys when email methods available', () => {
       const userCheck = { hasWebAuthn: true };
       const result = selectAuthenticationMethod(userCheck, mockConfig, true);
-      
+
       expect(result).toBe('passkey-with-fallback');
     });
 
     it('should select email-code for user without passkeys when appCode configured', () => {
       const userCheck = { hasWebAuthn: false };
       const result = selectAuthenticationMethod(userCheck, mockConfig, true);
-      
+
       expect(result).toBe('email-code');
     });
 
@@ -140,27 +143,30 @@ describe('SignInCore User Flow Logic', () => {
       const userCheck = { hasWebAuthn: false };
       const configMagicOnly = { ...mockConfig, appCode: undefined, enableMagicPins: true };
       const result = selectAuthenticationMethod(userCheck, configMagicOnly, true);
-      
+
       expect(result).toBe('email-only');
     });
 
     it('should select none when no authentication methods are available', () => {
       const userCheck = { hasWebAuthn: false };
-      const configNone = { 
-        ...mockConfig, 
-        appCode: undefined, 
+      const configNone = {
+        ...mockConfig,
+        appCode: undefined,
         enableMagicPins: false,
-        enablePasskeys: false 
+        enablePasskeys: false
       };
       const result = selectAuthenticationMethod(userCheck, configNone, true);
-      
+
       expect(result).toBe('none');
     });
   });
 
   describe('Pin Status Message Logic', () => {
     // Simulate pin status message display logic
-    function shouldShowPinStatusMessage(hasValidPin: boolean, pinRemainingMinutes: number): boolean {
+    function shouldShowPinStatusMessage(
+      hasValidPin: boolean,
+      pinRemainingMinutes: number
+    ): boolean {
       return hasValidPin && pinRemainingMinutes > 0;
     }
 
@@ -199,7 +205,7 @@ describe('SignInCore User Flow Logic', () => {
     // Simulate the direct pin action from status message
     function handleDirectPinAction(hasValidPin: boolean) {
       if (!hasValidPin) return null;
-      
+
       return {
         step: 'email-code-input',
         emailCodeSent: true,
@@ -209,7 +215,7 @@ describe('SignInCore User Flow Logic', () => {
 
     it('should transition to pin input when direct pin action is triggered', () => {
       const result = handleDirectPinAction(true);
-      
+
       expect(result).not.toBeNull();
       expect(result!.step).toBe('email-code-input');
       expect(result!.emailCodeSent).toBe(true);
@@ -269,8 +275,10 @@ describe('SignInCore User Flow Logic', () => {
 
   describe('Loading State Management', () => {
     // Simulate loading state management
-    function getLoadingState(action: string): { loading: boolean, buttonDisabled: boolean } {
-      const isAsyncAction = ['signin', 'send-pin', 'verify-pin', 'send-magic-link'].includes(action);
+    function getLoadingState(action: string): { loading: boolean; buttonDisabled: boolean } {
+      const isAsyncAction = ['signin', 'send-pin', 'verify-pin', 'send-magic-link'].includes(
+        action
+      );
       return {
         loading: isAsyncAction,
         buttonDisabled: isAsyncAction
@@ -296,11 +304,19 @@ describe('SignInCore User Flow Logic', () => {
       const message = err.message || '';
       const status = err.status || 0;
 
-      if (message.includes('not found') || message.includes('404') || message.includes('endpoint')) {
+      if (
+        message.includes('not found') ||
+        message.includes('404') ||
+        message.includes('endpoint')
+      ) {
         return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
       }
 
-      if (message.includes('/auth/webauthn/authenticate') || message.includes('/auth/webauthn/challenge') || status === 404) {
+      if (
+        message.includes('/auth/webauthn/authenticate') ||
+        message.includes('/auth/webauthn/challenge') ||
+        status === 404
+      ) {
         return 'Authentication service temporarily unavailable. Please try again in a moment.';
       }
 
@@ -326,36 +342,42 @@ describe('SignInCore User Flow Logic', () => {
     it('should format passkey not found errors user-friendly', () => {
       const error = { message: 'Passkey not found for user' };
       const result = getUserFriendlyErrorMessage(error);
-      
-      expect(result).toBe('No passkey found for this email. Please register a new passkey or use a different sign-in method.');
+
+      expect(result).toBe(
+        'No passkey found for this email. Please register a new passkey or use a different sign-in method.'
+      );
     });
 
     it('should format WebAuthn service errors user-friendly', () => {
       const error = { message: 'Error at /auth/webauthn/authenticate' };
       const result = getUserFriendlyErrorMessage(error);
-      
-      expect(result).toBe('Authentication service temporarily unavailable. Please try again in a moment.');
+
+      expect(result).toBe(
+        'Authentication service temporarily unavailable. Please try again in a moment.'
+      );
     });
 
     it('should format user cancellation errors user-friendly', () => {
       const error = { message: 'NotAllowedError: User cancelled' };
       const result = getUserFriendlyErrorMessage(error);
-      
+
       expect(result).toBe('Authentication was cancelled. Please try again.');
     });
 
     it('should format unsupported device errors user-friendly', () => {
       const error = { message: 'NotSupportedError: Device not supported' };
       const result = getUserFriendlyErrorMessage(error);
-      
+
       expect(result).toBe('Passkey authentication is not supported on this device.');
     });
 
     it('should use generic message for unknown errors', () => {
       const error = { message: 'Unknown error occurred' };
       const result = getUserFriendlyErrorMessage(error);
-      
-      expect(result).toBe('Authentication failed. Please try again or use a different sign-in method.');
+
+      expect(result).toBe(
+        'Authentication failed. Please try again or use a different sign-in method.'
+      );
     });
   });
 });

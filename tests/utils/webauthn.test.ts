@@ -1,16 +1,16 @@
 /**
  * WebAuthn Utilities Tests
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  isWebAuthnSupported,
-  isPlatformAuthenticatorAvailable,
-  createPasskey,
-  authenticateWithPasskey,
-  serializeCredential,
-  generatePasskeyName
-} from '../../src/utils/webauthn';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PasskeyChallenge } from '../../src/types';
+import {
+  authenticateWithPasskey,
+  createPasskey,
+  generatePasskeyName,
+  isPlatformAuthenticatorAvailable,
+  isWebAuthnSupported,
+  serializeCredential
+} from '../../src/utils/webauthn';
 
 // Mock WebAuthn APIs
 const mockCredential = {
@@ -43,7 +43,7 @@ describe('WebAuthn Utilities', () => {
   describe('Feature Detection', () => {
     it('should detect WebAuthn support when available', () => {
       Object.defineProperty(window, 'PublicKeyCredential', {
-        value: function() {},
+        value: () => {},
         configurable: true
       });
 
@@ -61,8 +61,10 @@ describe('WebAuthn Utilities', () => {
 
     it('should check platform authenticator availability', async () => {
       // Mock both the constructor and the static method
-      const mockPublicKeyCredential = function() {};
-      mockPublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = vi.fn().mockResolvedValue(true);
+      const mockPublicKeyCredential = () => {};
+      mockPublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = vi
+        .fn()
+        .mockResolvedValue(true);
 
       Object.defineProperty(window, 'PublicKeyCredential', {
         value: mockPublicKeyCredential,
@@ -76,7 +78,9 @@ describe('WebAuthn Utilities', () => {
     it('should handle platform authenticator check failure', async () => {
       Object.defineProperty(window, 'PublicKeyCredential', {
         value: {
-          isUserVerifyingPlatformAuthenticatorAvailable: vi.fn().mockRejectedValue(new Error('Not available'))
+          isUserVerifyingPlatformAuthenticatorAvailable: vi
+            .fn()
+            .mockRejectedValue(new Error('Not available'))
         },
         configurable: true
       });
@@ -95,7 +99,7 @@ describe('WebAuthn Utilities', () => {
 
     beforeEach(() => {
       Object.defineProperty(window, 'PublicKeyCredential', {
-        value: function() {},
+        value: () => {},
         configurable: true
       });
 
@@ -193,7 +197,7 @@ describe('WebAuthn Utilities', () => {
 
     beforeEach(() => {
       Object.defineProperty(window, 'PublicKeyCredential', {
-        value: function() {},
+        value: () => {},
         configurable: true
       });
 
@@ -229,7 +233,7 @@ describe('WebAuthn Utilities', () => {
 
     it('should handle authentication without allowCredentials', async () => {
       const challengeWithoutCredentials = { ...mockChallenge, allowCredentials: undefined };
-      
+
       await authenticateWithPasskey(challengeWithoutCredentials);
 
       expect(navigator.credentials.get).toHaveBeenCalledWith({
@@ -256,7 +260,7 @@ describe('WebAuthn Utilities', () => {
   describe('Error Mapping', () => {
     beforeEach(() => {
       Object.defineProperty(window, 'PublicKeyCredential', {
-        value: function() {},
+        value: () => {},
         configurable: true
       });
     });

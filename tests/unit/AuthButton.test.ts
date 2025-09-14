@@ -1,6 +1,6 @@
 /**
  * AuthButton Component Unit Tests
- * 
+ *
  * Comprehensive tests for the AuthButton component covering:
  * - Different authentication methods
  * - i18n support
@@ -10,9 +10,9 @@
  * - Click events
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, fireEvent } from '@testing-library/svelte';
+import { fireEvent, render } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthButton from '../../src/components/core/AuthButton.svelte';
 import type { TranslationKey } from '../../src/utils/i18n';
 
@@ -50,7 +50,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Sign in with Passkey');
     });
@@ -63,7 +63,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Sign in');
     });
@@ -76,7 +76,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Send pin to email');
     });
@@ -89,7 +89,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Send Magic Link');
     });
@@ -101,7 +101,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Continue with Touch ID');
     });
@@ -113,7 +113,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Continue with Face ID');
     });
@@ -125,7 +125,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Continue with Touch ID/Face ID');
     });
@@ -140,10 +140,10 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
-      
+
       // Check for spinner
       const spinner = container.querySelector('.spinner');
       expect(spinner).toBeTruthy();
@@ -157,7 +157,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Sending pin...');
     });
@@ -170,7 +170,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Sending magic link...');
     });
@@ -184,7 +184,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Custom loading...');
     });
@@ -199,7 +199,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('Custom Button Text');
     });
@@ -213,7 +213,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('🚀');
     });
@@ -226,7 +226,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).toContain('🔑');
     });
@@ -239,7 +239,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.textContent).not.toContain('🔑');
     });
@@ -253,7 +253,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('auth-btn-primary');
     });
@@ -265,7 +265,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('auth-btn-secondary');
     });
@@ -277,7 +277,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('auth-btn-ghost');
     });
@@ -291,7 +291,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('px-3');
       expect(button.className).toContain('py-1.5');
@@ -305,7 +305,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('px-4');
       expect(button.className).toContain('py-2');
@@ -319,7 +319,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('px-5');
       expect(button.className).toContain('py-3');
@@ -335,7 +335,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.disabled).toBe(true);
       expect(button.className).toContain('cursor-not-allowed');
@@ -349,7 +349,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.className).toContain('cursor-not-allowed');
       expect(button.className).toContain('opacity-50');
@@ -362,7 +362,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).toContain('w-full');
     });
@@ -374,7 +374,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.className).not.toContain('w-full');
     });
@@ -383,19 +383,19 @@ describe('AuthButton Component', () => {
   describe('Click Events', () => {
     it('should dispatch click event with method', async () => {
       const handleClick = vi.fn();
-      
+
       const { getByRole, component } = render(AuthButton, {
         props: {
           method: 'passkey',
           i18n: i18nStore
         }
       });
-      
+
       component.$on('click', handleClick);
-      
+
       const button = getByRole('button');
       await fireEvent.click(button);
-      
+
       expect(handleClick).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: { method: 'passkey' }
@@ -405,7 +405,7 @@ describe('AuthButton Component', () => {
 
     it('should not dispatch click event when disabled', async () => {
       const handleClick = vi.fn();
-      
+
       const { getByRole, component } = render(AuthButton, {
         props: {
           method: 'passkey',
@@ -413,18 +413,18 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       component.$on('click', handleClick);
-      
+
       const button = getByRole('button');
       await fireEvent.click(button);
-      
+
       expect(handleClick).not.toHaveBeenCalled();
     });
 
     it('should not dispatch click event when loading', async () => {
       const handleClick = vi.fn();
-      
+
       const { getByRole, component } = render(AuthButton, {
         props: {
           method: 'passkey',
@@ -432,12 +432,12 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       component.$on('click', handleClick);
-      
+
       const button = getByRole('button');
       await fireEvent.click(button);
-      
+
       expect(handleClick).not.toHaveBeenCalled();
     });
   });
@@ -464,7 +464,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.type).toBe('submit');
     });
@@ -476,7 +476,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.type).toBe('button');
     });
@@ -491,7 +491,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.getAttribute('aria-label')).toBe('Sign in with Passkey');
     });
@@ -503,7 +503,7 @@ describe('AuthButton Component', () => {
           i18n: i18nStore
         }
       });
-      
+
       const button = getByRole('button');
       expect(button.getAttribute('aria-label')).toBe('Custom Action');
     });

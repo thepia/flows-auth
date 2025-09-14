@@ -3,9 +3,14 @@
  * Comprehensive test scenarios for the complete authentication flow with dynamic role upgrades
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse, ApplicationContext, StorageConfigurationUpdate } from '../../src/types';
+import type {
+  ApplicationContext,
+  AuthConfig,
+  SignInResponse,
+  StorageConfigurationUpdate
+} from '../../src/types';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({
@@ -49,7 +54,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       const context = authStore.getApplicationContext();
       expect(context?.userType).toBe('mixed');
       expect(context?.forceGuestMode).toBe(true);
-      
+
       // Should start with sessionStorage for security
       // (This test assumes the implementation uses sessionStorage by default)
     });
@@ -156,7 +161,7 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       const context = authStore.getApplicationContext();
       expect(context?.userType).toBe('all_employees');
       expect(context?.domain).toBe('internal.company.com');
-      
+
       // Should still start with sessionStorage for security-first approach
     });
 
@@ -346,9 +351,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       mockApi.signInWithMagicLink.mockResolvedValue(employeeAuthResponse);
 
       // Mock storage configuration update failure
-      const mockUpdateStorageConfiguration = vi.fn().mockRejectedValue(
-        new Error('Storage configuration update failed')
-      );
+      const mockUpdateStorageConfiguration = vi
+        .fn()
+        .mockRejectedValue(new Error('Storage configuration update failed'));
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
       // Authenticate

@@ -1,9 +1,9 @@
 /**
  * Unified Response Types for flows-auth
- * 
+ *
  * This module provides flows-auth specific types that align with the unified
  * API response structure from thepia.com/src/api/types/unified-responses.ts
- * 
+ *
  * These types maintain backward compatibility while moving toward the unified structure.
  */
 
@@ -52,20 +52,15 @@ export interface AuthTokens {
   expiresAt?: number;
 }
 
-export type AuthStep = 
-  | 'email-sent' 
-  | 'code-required' 
-  | 'authenticated' 
-  | 'passkey-required' 
+export type AuthStep =
+  | 'email-sent'
+  | 'code-required'
+  | 'authenticated'
+  | 'passkey-required'
   | 'registration-required'
   | 'magic-link-sent';
 
-export type AuthMethod = 
-  | 'email' 
-  | 'passkey' 
-  | 'magic-link' 
-  | 'password'
-  | 'email-code'; // flows-auth specific
+export type AuthMethod = 'email' | 'passkey' | 'magic-link' | 'password' | 'email-code'; // flows-auth specific
 
 export interface AuthState {
   step: AuthStep;
@@ -94,15 +89,16 @@ export interface OrganizationContext {
  * New unified SignInResponse (v2) - replaces legacy SignInResponse
  * Maintains backward compatibility through optional fields
  */
-export interface SignInResponseV2 extends ApiResponse<{
-  user: AuthUser;
-  tokens?: AuthTokens;
-  state: AuthState;
-  context?: {
-    organization?: OrganizationContext;
-    capabilities?: AuthCapabilities;
-  };
-}> {}
+export interface SignInResponseV2
+  extends ApiResponse<{
+    user: AuthUser;
+    tokens?: AuthTokens;
+    state: AuthState;
+    context?: {
+      organization?: OrganizationContext;
+      capabilities?: AuthCapabilities;
+    };
+  }> {}
 
 /**
  * Backward compatible SignInResponse (legacy)
@@ -121,22 +117,24 @@ export interface SignInResponse {
   emailVerifiedViaInvitation?: boolean;
 }
 
-export interface CheckUserResponseV2 extends ApiResponse<{
-  exists: boolean;
-  user?: Pick<AuthUser, 'id' | 'email' | 'emailVerified'>;
-  capabilities: AuthCapabilities;
-  context?: {
-    organization: OrganizationContext;
-  };
-}> {}
+export interface CheckUserResponseV2
+  extends ApiResponse<{
+    exists: boolean;
+    user?: Pick<AuthUser, 'id' | 'email' | 'emailVerified'>;
+    capabilities: AuthCapabilities;
+    context?: {
+      organization: OrganizationContext;
+    };
+  }> {}
 
-export interface EmailSendResponseV2 extends ApiResponse<{
-  state: Pick<AuthState, 'step' | 'method'>;
-  context?: {
-    organization: OrganizationContext;
-    expiresAt?: number;
-  };
-}> {}
+export interface EmailSendResponseV2
+  extends ApiResponse<{
+    state: Pick<AuthState, 'step' | 'method'>;
+    context?: {
+      organization: OrganizationContext;
+      expiresAt?: number;
+    };
+  }> {}
 
 // ============================================================================
 // Migration Utilities
@@ -153,33 +151,38 @@ export function migrateToUnifiedSignInResponse(legacy: SignInResponse): SignInRe
       name: legacy.user?.name,
       emailVerified: legacy.user?.emailVerified || false,
       isNewUser: legacy.user?.isNewUser,
-      metadata: legacy.user?.metadata,
+      metadata: legacy.user?.metadata
     },
     state: {
       step: legacy.step,
-      method: (legacy.requiresPasskey ? 'passkey' : 
-               legacy.magicLinkSent ? 'magic-link' : 'email') as AuthMethod,
-      requiresAdditionalAuth: legacy.requiresPasskey,
-    },
+      method: (legacy.requiresPasskey
+        ? 'passkey'
+        : legacy.magicLinkSent
+          ? 'magic-link'
+          : 'email') as AuthMethod,
+      requiresAdditionalAuth: legacy.requiresPasskey
+    }
   };
 
   // Add tokens if present
-  const tokens: AuthTokens | undefined = legacy.accessToken ? {
-    accessToken: legacy.accessToken,
-    refreshToken: legacy.refreshToken,
-    idToken: legacy.idToken,
-    expiresIn: legacy.expiresIn,
-  } : undefined;
+  const tokens: AuthTokens | undefined = legacy.accessToken
+    ? {
+        accessToken: legacy.accessToken,
+        refreshToken: legacy.refreshToken,
+        idToken: legacy.idToken,
+        expiresIn: legacy.expiresIn
+      }
+    : undefined;
 
   return {
     success: true,
     data: {
       ...authData,
-      tokens,
+      tokens
     },
     meta: {
-      timestamp: new Date().toISOString(),
-    },
+      timestamp: new Date().toISOString()
+    }
   };
 }
 
@@ -202,7 +205,7 @@ export function migratFromUnifiedSignInResponse(unified: SignInResponseV2): Sign
     step: state.step,
     requiresPasskey: state.method === 'passkey',
     magicLinkSent: state.method === 'magic-link',
-    emailVerifiedViaInvitation: false, // Legacy field
+    emailVerifiedViaInvitation: false // Legacy field
   };
 }
 
@@ -211,18 +214,18 @@ export function migratFromUnifiedSignInResponse(unified: SignInResponseV2): Sign
 // ============================================================================
 
 export function isUnifiedSignInResponse(response: any): response is SignInResponseV2 {
-  return typeof response === 'object' && 
-         'success' in response && 
-         'data' in response &&
-         response.data &&
-         'user' in response.data &&
-         'state' in response.data;
+  return (
+    typeof response === 'object' &&
+    'success' in response &&
+    'data' in response &&
+    response.data &&
+    'user' in response.data &&
+    'state' in response.data
+  );
 }
 
 export function isLegacySignInResponse(response: any): response is SignInResponse {
-  return typeof response === 'object' && 
-         'step' in response &&
-         typeof response.step === 'string';
+  return typeof response === 'object' && 'step' in response && typeof response.step === 'string';
 }
 
 // ============================================================================
@@ -235,42 +238,40 @@ export const FLOWS_AUTH_ERROR_CODES = {
   WEBAUTHN_NOT_AVAILABLE: 'WEBAUTHN_NOT_AVAILABLE',
   USER_CANCELLED: 'USER_CANCELLED',
   INVALID_CONFIGURATION: 'INVALID_CONFIGURATION',
-  
+
   // Auth flow errors
   EMAIL_VERIFICATION_FAILED: 'EMAIL_VERIFICATION_FAILED',
   CODE_VERIFICATION_FAILED: 'CODE_VERIFICATION_FAILED',
   PASSKEY_REGISTRATION_FAILED: 'PASSKEY_REGISTRATION_FAILED',
   MAGIC_LINK_GENERATION_FAILED: 'MAGIC_LINK_GENERATION_FAILED',
-  
+
   // API communication errors
   API_UNREACHABLE: 'API_UNREACHABLE',
   NETWORK_ERROR: 'NETWORK_ERROR',
   TIMEOUT: 'TIMEOUT',
-  
+
   // State management errors
   INVALID_STATE: 'INVALID_STATE',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
-  STORAGE_ERROR: 'STORAGE_ERROR',
+  STORAGE_ERROR: 'STORAGE_ERROR'
 } as const;
 
-export type FlowsAuthErrorCode = typeof FLOWS_AUTH_ERROR_CODES[keyof typeof FLOWS_AUTH_ERROR_CODES];
+export type FlowsAuthErrorCode =
+  (typeof FLOWS_AUTH_ERROR_CODES)[keyof typeof FLOWS_AUTH_ERROR_CODES];
 
 // ============================================================================
 // Response Creation Helpers
 // ============================================================================
 
-export function createFlowsAuthSuccess<T>(
-  data: T,
-  message?: string
-): ApiResponse<T> {
+export function createFlowsAuthSuccess<T>(data: T, message?: string): ApiResponse<T> {
   return {
     success: true,
     data,
     message,
     meta: {
       timestamp: new Date().toISOString(),
-      version: '2.0', // flows-auth v2 with unified responses
-    },
+      version: '2.0' // flows-auth v2 with unified responses
+    }
   };
 }
 
@@ -284,11 +285,11 @@ export function createFlowsAuthError(
     error: {
       code,
       message,
-      details,
+      details
     },
     meta: {
       timestamp: new Date().toISOString(),
-      version: '2.0',
-    },
+      version: '2.0'
+    }
   };
 }

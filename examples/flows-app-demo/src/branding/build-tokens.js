@@ -5,9 +5,9 @@
  * Generates CSS custom properties from JSON token files
  */
 
-import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tokensDir = path.join(__dirname, 'tokens');
@@ -17,10 +17,10 @@ const tokensDir = path.join(__dirname, 'tokens');
  */
 async function loadTokens() {
   const tokens = {};
-  
+
   try {
     const files = ['colors.json', 'typography.json', 'sizes.json'];
-    
+
     for (const file of files) {
       const filePath = path.join(tokensDir, file);
       try {
@@ -35,7 +35,7 @@ async function loadTokens() {
     console.error('Error loading tokens:', error.message);
     process.exit(1);
   }
-  
+
   return tokens;
 }
 
@@ -143,7 +143,7 @@ async function generateCSS(tokens) {
   }
 
   lines.push('');
-  
+
   // Legacy compatibility aliases for old typography naming
   lines.push('  /* Legacy compatibility aliases for old typography naming */');
   lines.push('  --typography-fontFamily-brand-primary: var(--font-fontFamily-brand-body);');
@@ -151,7 +151,7 @@ async function generateCSS(tokens) {
   lines.push('  --font-family-brand-lead: var(--font-fontFamily-brand-lead);');
   lines.push('  --font-family-brand-mono: var(--font-fontFamily-brand-mono);');
   lines.push('');
-  
+
   // Additional legacy font variables
   lines.push('  /* Legacy font variables */');
   lines.push('  --font-size-xs: var(--font-size-xs);');
@@ -206,7 +206,7 @@ async function generateCSS(tokens) {
 
   const outputPath = path.join(__dirname, 'design-tokens.css');
   await fs.writeFile(outputPath, lines.join('\n'));
-  
+
   console.log('✓ Generated design-tokens.css from JSON tokens');
 }
 
@@ -217,16 +217,16 @@ async function main() {
   try {
     console.log('🔄 Loading design tokens...');
     const rawTokens = await loadTokens();
-    
+
     console.log('🔄 Cleaning metadata...');
     const cleanTokens = removeMetadata(rawTokens);
-    
+
     console.log('🔄 Resolving token references...');
     const resolvedTokens = resolveReferences(cleanTokens);
-    
+
     console.log('🔄 Generating CSS...');
     await generateCSS(resolvedTokens);
-    
+
     console.log('✅ Build complete!');
   } catch (error) {
     console.error('❌ Build failed:', error.message);

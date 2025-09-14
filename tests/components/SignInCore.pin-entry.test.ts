@@ -1,13 +1,13 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { writable } from 'svelte/store';
 /**
  * SignInCore PIN Entry Tests
  * Tests the "Enter pin here" button functionality and SENT_PIN_EMAIL event
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig, CompleteAuthStore } from '../../src/types';
 import { createAuthStore } from '../../src/stores/auth-store';
+import type { AuthConfig, CompleteAuthStore } from '../../src/types';
 
 // Mock the auth store
 vi.mock('../../src/stores/auth-store', () => ({
@@ -33,40 +33,44 @@ const mockConfig: AuthConfig = {
   }
 };
 
-function createMockAuthStore(initialState = {
-  signInState: 'emailEntry',
-  user: null,
-  error: null,
-  loading: false,
-  userExists: null,
-  hasPasskeys: false,
-  hasValidPin: false
-}): CompleteAuthStore {
+function createMockAuthStore(
+  initialState = {
+    signInState: 'emailEntry',
+    user: null,
+    error: null,
+    loading: false,
+    userExists: null,
+    hasPasskeys: false,
+    hasValidPin: false
+  }
+): CompleteAuthStore {
   const mockStoreState = writable(initialState);
-  
+
   return {
     ...mockStoreState,
     sendSignInEvent: vi.fn((event) => {
       console.log('Mock sendSignInEvent called with:', event);
       // Simulate state machine transitions
       if (event.type === 'EMAIL_SUBMITTED') {
-        mockStoreState.update(s => ({ ...s, signInState: 'userChecked' }));
+        mockStoreState.update((s) => ({ ...s, signInState: 'userChecked' }));
         return 'userChecked';
       }
       if (event.type === 'SENT_PIN_EMAIL') {
-        mockStoreState.update(s => ({ ...s, signInState: 'pinEntry' }));
+        mockStoreState.update((s) => ({ ...s, signInState: 'pinEntry' }));
         return 'pinEntry';
       }
       return initialState.signInState;
     }),
-    checkUser: vi.fn().mockResolvedValue({ 
-      exists: true, 
+    checkUser: vi.fn().mockResolvedValue({
+      exists: true,
       hasWebAuthn: false,
       lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
     }),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
-    sendEmailCode: vi.fn().mockResolvedValue({ success: true, message: 'Sent', timestamp: Date.now() }),
+    sendEmailCode: vi
+      .fn()
+      .mockResolvedValue({ success: true, message: 'Sent', timestamp: Date.now() }),
     verifyEmailCode: vi.fn(),
     notifyPinSent: vi.fn(),
     notifyPinVerified: vi.fn(),
@@ -103,16 +107,16 @@ describe('SignInCore PIN Entry', () => {
   });
 
   it('should render "Enter pin here" button when user has valid PIN', async () => {
-    const { component } = render(SignInCore, { 
-      config: mockConfig, 
-      initialEmail: 'test@example.com' 
+    const { component } = render(SignInCore, {
+      config: mockConfig,
+      initialEmail: 'test@example.com'
     });
 
     // Wait for component to initialize and check user
     await waitFor(() => {
       // Look for the "Enter pin here" button - it should appear when hasValidPin is true
       const pinButton = screen.queryByText('Enter pin here');
-      
+
       // The button might not be visible initially, so let's check the mock was called
       expect(mockAuthStore.checkUser).toHaveBeenCalledWith('test@example.com');
     });
@@ -130,12 +134,12 @@ describe('SignInCore PIN Entry', () => {
       hasPasskeys: false,
       hasValidPin: true // This should make the button appear
     });
-    
+
     vi.mocked(createAuthStore).mockReturnValue(mockStoreWithValidPin);
 
-    render(SignInCore, { 
-      config: mockConfig, 
-      initialEmail: 'test@example.com' 
+    render(SignInCore, {
+      config: mockConfig,
+      initialEmail: 'test@example.com'
     });
 
     // Wait for the component to render
@@ -145,13 +149,13 @@ describe('SignInCore PIN Entry', () => {
       if (pinButton) {
         // Click the button
         fireEvent.click(pinButton);
-        
+
         // Verify that sendSignInEvent was called with EMAIL_SUBMITTED first
         expect(mockStoreWithValidPin.sendSignInEvent).toHaveBeenCalledWith({
           type: 'EMAIL_SUBMITTED',
           email: 'test@example.com'
         });
-        
+
         // And then with SENT_PIN_EMAIL
         expect(mockStoreWithValidPin.sendSignInEvent).toHaveBeenCalledWith({
           type: 'SENT_PIN_EMAIL'
@@ -171,12 +175,12 @@ describe('SignInCore PIN Entry', () => {
       hasPasskeys: false,
       hasValidPin: false // No valid PIN
     });
-    
+
     vi.mocked(createAuthStore).mockReturnValue(mockStoreNoValidPin);
 
-    render(SignInCore, { 
-      config: mockConfig, 
-      initialEmail: 'test@example.com' 
+    render(SignInCore, {
+      config: mockConfig,
+      initialEmail: 'test@example.com'
     });
 
     // In this case, the "Enter pin here" button should not be visible or functional
@@ -184,11 +188,11 @@ describe('SignInCore PIN Entry', () => {
       const pinButton = screen.queryByText('Enter pin here');
       // The button might not be rendered at all, or if it exists and is clicked,
       // it should not send the event due to the hasValidPin check
-      
+
       if (pinButton) {
         fireEvent.click(pinButton);
       }
-      
+
       // Verify that sendSignInEvent was NOT called with SENT_PIN_EMAIL
       expect(mockStoreNoValidPin.sendSignInEvent).not.toHaveBeenCalledWith({
         type: 'SENT_PIN_EMAIL'
@@ -201,17 +205,17 @@ describe('SignInCore PIN Entry', () => {
       signInState: 'emailEntry',
       hasValidPin: true
     });
-    
+
     vi.mocked(createAuthStore).mockReturnValue(mockStoreWithValidPin);
 
-    render(SignInCore, { 
-      config: mockConfig, 
-      initialEmail: 'test@example.com' 
+    render(SignInCore, {
+      config: mockConfig,
+      initialEmail: 'test@example.com'
     });
 
     // Simulate the button click by directly calling the mock
     const newState = mockStoreWithValidPin.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
-    
+
     // Verify the state transition
     expect(newState).toBe('pinEntry');
     expect(mockStoreWithValidPin.sendSignInEvent).toHaveBeenCalledWith({

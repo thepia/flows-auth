@@ -2,9 +2,9 @@
  * Basic sanity tests for Tasks App Demo
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { tasks, syncStatus } from '../src/lib/stores/tasks.js';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { syncStatus, tasks } from '../src/lib/stores/tasks.js';
 
 describe('Tasks Store', () => {
   beforeEach(() => {
@@ -45,17 +45,17 @@ describe('Tasks Store', () => {
 
     // Test that we can set tasks
     tasks.set(mockTasks);
-    
+
     // Test that we can get the current value using get()
     let currentValue;
-    const unsubscribe = tasks.subscribe(value => {
+    const unsubscribe = tasks.subscribe((value) => {
       currentValue = value;
     });
-    
+
     expect(currentValue).toHaveLength(1);
     expect(currentValue[0].title).toBe('Test Task');
     expect(currentValue[0].completed).toBe(false);
-    
+
     unsubscribe();
   });
 
@@ -68,31 +68,26 @@ describe('Tasks Store', () => {
     };
 
     syncStatus.set(newSyncStatus);
-    
+
     let currentValue;
-    const unsubscribe = syncStatus.subscribe(value => {
+    const unsubscribe = syncStatus.subscribe((value) => {
       currentValue = value;
     });
-    
+
     expect(currentValue.isOnline).toBe(false);
     expect(currentValue.pendingCount).toBe(5);
     expect(currentValue.syncing).toBe(true);
     expect(currentValue.lastSync).toBeDefined();
-    
+
     unsubscribe();
   });
 });
 
 describe('Task Manager Functions', () => {
   it('should export required functions', async () => {
-    const { 
-      initTasks, 
-      addTask, 
-      updateTask, 
-      deleteTask, 
-      toggleTask, 
-      requestSync 
-    } = await import('../src/lib/stores/tasks.js');
+    const { initTasks, addTask, updateTask, deleteTask, toggleTask, requestSync } = await import(
+      '../src/lib/stores/tasks.js'
+    );
 
     expect(typeof initTasks).toBe('function');
     expect(typeof addTask).toBe('function');
@@ -145,7 +140,7 @@ describe('Service Worker Integration', () => {
       syncing: false
     });
 
-    syncStatus.subscribe(value => {
+    syncStatus.subscribe((value) => {
       expect(value.isOnline).toBe(false);
       expect(value.pendingCount).toBeGreaterThan(0);
     });
@@ -157,7 +152,7 @@ describe('Auth Integration', () => {
     // Test that auth components can be dynamically imported
     try {
       const authModule = await import('@thepia/flows-auth');
-      
+
       // These should be available but might not work in test environment
       expect(typeof authModule.getLocalStorageDB).toBe('function');
       expect(typeof authModule.getServiceWorkerManager).toBe('function');
@@ -171,7 +166,7 @@ describe('Auth Integration', () => {
 describe('Build and Export Validation', () => {
   it('should have valid package.json configuration', async () => {
     const pkg = await import('../package.json');
-    
+
     expect(pkg.name).toBe('tasks-app-demo');
     expect(pkg.scripts.dev).toContain('vite dev');
     expect(pkg.scripts.build).toContain('vite build');
@@ -180,14 +175,11 @@ describe('Build and Export Validation', () => {
 
   it('should have required static files', () => {
     // These files should exist for PWA functionality
-    const requiredFiles = [
-      'manifest.json',
-      'sw.js'
-    ];
+    const requiredFiles = ['manifest.json', 'sw.js'];
 
     // In a real test, we would check that these files exist
     // For now, just test that the paths are defined
-    requiredFiles.forEach(file => {
+    requiredFiles.forEach((file) => {
       expect(file).toBeDefined();
       expect(typeof file).toBe('string');
     });

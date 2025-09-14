@@ -2,7 +2,7 @@
  * API Server Detection Utility
  * Detects and selects the best available API server for authentication
  * Extracted from flows.thepia.net for common usage across Flows apps
- * 
+ *
  * PERFORMANCE OPTIMIZATION:
  * - Production domains (non-dev.*): Skip local check, use production API immediately (0ms)
  * - Development domains (dev.*): Check local server first, fallback to production (0-3000ms)
@@ -38,12 +38,12 @@ export const DEFAULT_API_CONFIG: ApiServerConfig = {
 
 /**
  * Detects the best available API server based on health checks
- * 
+ *
  * PERFORMANCE OPTIMIZATION: Domain-based routing for zero-delay production
  * - flows.thepia.net, *.thepia.net, *.thepia.com: Use production API immediately (0ms)
  * - dev.thepia.net, dev.thepia.com: Check local server first, fallback to production (0-3000ms)
  * - localhost: Check local server first, fallback to production (0-3000ms)
- * 
+ *
  * @param config - Configuration for API server detection
  * @param location - Optional location object for testing (defaults to window.location)
  * @returns Promise resolving to the selected API server info
@@ -54,9 +54,13 @@ export async function detectApiServer(
 ): Promise<ApiServerInfo> {
   // Use provided location or window.location
   const currentLocation = location || (typeof window !== 'undefined' ? window.location : null);
-  
+
   // Check for ngrok domains - treat as development and try local server first
-  if (currentLocation?.hostname && (currentLocation.hostname.includes('ngrok') || currentLocation.hostname.includes('ngrok-free.app'))) {
+  if (
+    currentLocation?.hostname &&
+    (currentLocation.hostname.includes('ngrok') ||
+      currentLocation.hostname.includes('ngrok-free.app'))
+  ) {
     console.log(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
     // Continue to local server detection below
   }
@@ -67,7 +71,9 @@ export async function detectApiServer(
   }
   // Check for production domains - skip local server check for performance
   else if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
-    console.log(`🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`);
+    console.log(
+      `🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`
+    );
     return {
       url: config.productionUrl,
       type: 'production',
@@ -89,12 +95,12 @@ export async function detectApiServer(
   // Try local development server first - exact implementation
   try {
     const localResponse = await fetch(`${config.localUrl}/health`, {
-      signal: AbortSignal.timeout(config.healthTimeout || 3000),
+      signal: AbortSignal.timeout(config.healthTimeout || 3000)
     });
-    
+
     if (localResponse.ok) {
       console.log(`🔧 Using local API server: ${config.localUrl}`);
-      
+
       // Try to parse server info
       let serverInfo: ApiServerInfo['serverInfo'];
       try {
@@ -106,7 +112,7 @@ export async function detectApiServer(
       } catch {
         // Ignore JSON parsing errors
       }
-      
+
       return {
         url: config.localUrl,
         type: 'local',

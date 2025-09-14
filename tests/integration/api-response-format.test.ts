@@ -37,17 +37,6 @@ vi.mock('../../src/api/auth-api', () => ({
   })
 }));
 
-vi.mock('../../src/stores/auth-state-machine', () => ({
-  AuthStateMachine: vi.fn().mockImplementation(() => ({
-    getState: vi.fn().mockReturnValue({ state: 'unauthenticated' }),
-    updateState: vi.fn(),
-    subscribe: vi.fn(),
-    emit: vi.fn(),
-    onTransition: vi.fn().mockReturnValue(() => {}), // Returns unsubscribe function
-    start: vi.fn(),
-    signInWithPasskey: vi.fn()
-  }))
-}));
 
 // Import after mocks are set up
 import { createAuthStore } from '../../src/stores/auth-store';

@@ -33,11 +33,9 @@ export const defaultTranslations = {
     'auth.sendPinByEmail': 'Send pin by email',
     'auth.sendPinToEmail': 'Send pin to email',
     'auth.sendMagicLink': 'Send Magic Link',
-    'auth.enterExistingPin': 'Enter existing pin',
     'auth.loading': 'Loading...',
     'auth.signingIn': 'Signing in...',
     'auth.sendingPin': 'Sending pin...',
-    'auth.verifyingPin': 'Verifying pin...',
     'auth.sendingMagicLink': 'Sending magic link...',
     
     // PIN/Code input
@@ -46,6 +44,8 @@ export const defaultTranslations = {
     'code.invalid': 'Please enter a valid 6-digit code',
     'code.expired': 'Verification code has expired',
     'code.incorrect': 'Incorrect verification code',
+    'code.verify': 'Verify Code',
+    'code.verifying': 'Verifying...',
     
     // Status messages
     'status.emailSent': 'We sent a verification code to',
@@ -63,6 +63,13 @@ export const defaultTranslations = {
     'error.invalidCredentials': 'Invalid email or authentication failed',
     'error.serviceUnavailable': 'Service is temporarily unavailable',
     'error.unknown': 'An unexpected error occurred',
+    
+    // Auth state messages
+    'auth.onlyRegisteredUsers': 'Only registered users can sign in. Please contact support if you need access.',
+    'auth.fullName': 'Full Name',
+    'auth.fullNamePlaceholder': 'Enter your full name',
+    'auth.newUserTermsNotice': 'As a new user you will have to review and confirm the terms of service after signing-in via e-mail.',
+    'auth.signedInSuccess': 'Successfully signed in!',
     
     // WebAuthn
     'webauthn.ready': '🔐 WebAuthn ready - Touch ID/Face ID will appear automatically',
@@ -143,7 +150,27 @@ export const defaultTranslations = {
     'time.minute': 'minute',
     'time.minutes': 'minutes',
     'time.second': 'second', 
-    'time.seconds': 'seconds'
+    'time.seconds': 'seconds',
+    
+    // User Management Dashboard
+    'user.welcomeBack': 'Welcome back!',
+    'user.signOut': 'Sign out',
+    
+    // Security section
+    'user.security.title': 'Security',
+    'user.security.description': 'Manage your passkeys, authentication methods, and security settings.',
+    'user.security.managePasskeys': 'Manage Passkeys',
+    
+    // Profile section
+    'user.profile.title': 'Profile',
+    'user.profile.description': 'Update your personal information and account preferences.',
+    'user.profile.editProfile': 'Edit Profile',
+    
+    // Privacy section
+    'user.privacy.title': 'Privacy & Legal',
+    'user.privacy.description': 'Review data policies, terms of service, and privacy settings.',
+    'user.privacy.dataPolicy': 'Data Policy',
+    'user.privacy.termsOfService': 'Terms of Service'
   },
   da: {
     // Email input
@@ -170,11 +197,9 @@ export const defaultTranslations = {
     'auth.sendPinByEmail': 'Send pin via e-mail',
     'auth.sendPinToEmail': 'Send pin til e-mail',
     'auth.sendMagicLink': 'Send Magisk Link',
-    'auth.enterExistingPin': 'Indtast eksisterende pin',
     'auth.loading': 'Indlæser...',
     'auth.signingIn': 'Logger ind...',
     'auth.sendingPin': 'Sender pin...',
-    'auth.verifyingPin': 'Verificerer pin...',
     'auth.sendingMagicLink': 'Sender magisk link...',
     
     // PIN/Code input
@@ -200,6 +225,13 @@ export const defaultTranslations = {
     'error.invalidCredentials': 'Ugyldig e-mail eller godkendelse mislykkedes',
     'error.serviceUnavailable': 'Tjenesten er midlertidigt utilgængelig',
     'error.unknown': 'Der opstod en uventet fejl',
+    
+    // Auth state messages
+    'auth.onlyRegisteredUsers': 'Kun registrerede brugere kan logge ind. Kontakt support hvis du har brug for adgang.',
+    'auth.fullName': 'Fulde Navn',
+    'auth.fullNamePlaceholder': 'Indtast dit fulde navn',
+    'auth.newUserTermsNotice': 'Som ny bruger skal du gennemgå og bekræfte servicevilkårene efter login via e-mail.',
+    'auth.signedInSuccess': 'Du er nu logget ind!',
     
     // WebAuthn
     'webauthn.ready': '🔐 WebAuthn klar - Touch ID/Face ID vises automatisk',
@@ -280,7 +312,31 @@ export const defaultTranslations = {
     'time.minute': 'minut',
     'time.minutes': 'minutter',
     'time.second': 'sekund', 
-    'time.seconds': 'sekunder'
+    'time.seconds': 'sekunder',
+    
+    // Additional code input keys
+    'code.verify': 'Bekræft kode',
+    'code.verifying': 'Bekræfter...',
+    
+    // User Management Dashboard
+    'user.welcomeBack': 'Velkommen tilbage!',
+    'user.signOut': 'Log ud',
+    
+    // Security section
+    'user.security.title': 'Sikkerhed',
+    'user.security.description': 'Administrer dine passkeys, godkendelsesmetoder og sikkerhedsindstillinger.',
+    'user.security.managePasskeys': 'Administrer Passkeys',
+    
+    // Profile section
+    'user.profile.title': 'Profil',
+    'user.profile.description': 'Opdater dine personlige oplysninger og kontopræferencer.',
+    'user.profile.editProfile': 'Rediger profil',
+    
+    // Privacy section
+    'user.privacy.title': 'Privatliv og jura',
+    'user.privacy.description': 'Gennemgå datapolitikker, servicevilkår og privatlivsindstillinger.',
+    'user.privacy.dataPolicy': 'Datapolitik',
+    'user.privacy.termsOfService': 'Servicevilkår'
   }
 } as const;
 
@@ -400,7 +456,7 @@ export function setI18nContext(config: {
 export function getI18n(config?: {
   language?: string;
   translations?: CustomTranslations;
-  fallbackLanguage?: SupportedLanguage;
+  fallbackLanguage?: string;
 }) {
   // Try to get from context first (app-wide configuration)
   const contextI18n = getContext<ReturnType<typeof createI18n>>(I18N_CONTEXT_KEY);
@@ -419,7 +475,7 @@ export function getI18n(config?: {
   return createI18n(
     config?.language || detectUserLanguage(['en'], 'en'),
     config?.translations || {},
-    config?.fallbackLanguage || 'en'
+    config?.fallbackLanguage as unknown as SupportedLanguage || 'en'
   );
 }
 

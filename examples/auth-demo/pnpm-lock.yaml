@@ -13,10 +13,10 @@ importers:
         version: file:../../../branding(typescript@5.9.2)
       '@thepia/flows-auth':
         specifier: file:../..
-        version: file:../..(@xyflow/svelte@1.2.4(svelte@4.2.20))(d3@7.9.0)(svelte@4.2.20)
+        version: file:../..(@xyflow/svelte@0.1.30(svelte@4.2.20))(d3@7.9.0)(svelte@4.2.20)
       '@xyflow/svelte':
-        specifier: ^1.2.4
-        version: 1.2.4(svelte@4.2.20)
+        specifier: 0.1.30
+        version: 0.1.30(svelte@4.2.20)
       d3:
         specifier: ^7.9.0
         version: 7.9.0
@@ -361,10 +361,10 @@ packages:
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
-  '@svelte-put/shortcut@4.1.0':
-    resolution: {integrity: sha512-wImNEIkbxAIWFqlfuhcbC+jRPDeRa/uJGIXHMEVVD+jqL9xCwWNnkGQJ6Qb2XVszuRLHlb8SGZDL3Io/h3vs8w==}
+  '@svelte-put/shortcut@3.1.1':
+    resolution: {integrity: sha512-2L5EYTZXiaKvbEelVkg5znxqvfZGZai3m97+cAiUBhLZwXnGtviTDpHxOoZBsqz41szlfRMcamW/8o0+fbW3ZQ==}
     peerDependencies:
-      svelte: ^5.1.0
+      svelte: ^3.55.0 || ^4.0.0 || ^5.0.0
 
   '@sveltejs/acorn-typescript@1.0.5':
     resolution: {integrity: sha512-IwQk4yfwLdibDlrXVE04jTZYlLnwsTT2PIOQQGNLWfjavGifnk1JD1LcZjZaBTRcxZu2FfPfNLOE04DSu9lqtQ==}
@@ -504,9 +504,9 @@ packages:
     resolution: {directory: ../.., type: directory}
     engines: {node: '>=18.0.0', pnpm: '>=8.0.0'}
     peerDependencies:
-      '@xyflow/svelte': ^1.0.0
+      '@xyflow/svelte': 0.1.30
       d3: ^7.0.0
-      svelte: ^4.0.0 || ^5.0.0
+      svelte: ^4.0.0
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
@@ -613,13 +613,13 @@ packages:
   '@types/pug@2.0.10':
     resolution: {integrity: sha512-Sk/uYFOBAB7mb74XcpizmH0KOR2Pv3D2Hmrh1Dmy5BmK3MpdSa5kqZcg6EKBdklU0bFXX9gCfzvpnyUehrPIuA==}
 
-  '@xyflow/svelte@1.2.4':
-    resolution: {integrity: sha512-CygKmc3t+KevPdx9VEWa6Q0O7DegJ6qzYrOH5dQo5zp9Inm2cYAZpkUuk64ry9Djw/gwy7EvrJTjyXetuvBGOg==}
+  '@xyflow/svelte@0.1.30':
+    resolution: {integrity: sha512-RlbXaIQyk9LJt9mWpSCFJccLu9/pVDJ4Rq7z7Rc4JFChiiSLMsSjYipT1laoXEkGC0vXMw8xNyCb07bQauy4Aw==}
     peerDependencies:
-      svelte: ^5.25.0
+      svelte: ^3.0.0 || ^4.0.0 || ^5.0.0
 
-  '@xyflow/system@0.0.68':
-    resolution: {integrity: sha512-QDG2wxIG4qX+uF8yzm1ULVZrcXX3MxPBoxv7O52FWsX87qIImOqifUhfa/TwsvLdzn7ic2DDBH1uI8TKbdNTYA==}
+  '@xyflow/system@0.0.51':
+    resolution: {integrity: sha512-cYnuM3oWQQjx2Rdz0LdZCnbUaWZdZDiik20kPDYsa5SIlq++ZDIcKiDF6a93ncfMv9Ej5GWfDkouE7bObrdRqQ==}
 
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
@@ -682,6 +682,9 @@ packages:
   chownr@3.0.0:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
     engines: {node: '>=18'}
+
+  classcat@5.0.5:
+    resolution: {integrity: sha512-JhZUT7JFcQy/EzW605k/ktHtncoo9vnyW/2GspNYwFlN1C/WmjuV/xtS04e9SOkL2sTdw0VAZ2UGCcQ9lR6p6w==}
 
   code-red@1.0.4:
     resolution: {integrity: sha512-7qJWqItLA8/VPVlKJlFXU+NBlo/qyfs39aJcuMT/2ere32ZqvF5OSxgdM5xOfJJ7O429gg2HM47y8v9P+9wrNw==}
@@ -1523,7 +1526,7 @@ snapshots:
 
   '@standard-schema/spec@1.0.0': {}
 
-  '@svelte-put/shortcut@4.1.0(svelte@4.2.20)':
+  '@svelte-put/shortcut@3.1.1(svelte@4.2.20)':
     dependencies:
       svelte: 4.2.20
 
@@ -1657,11 +1660,11 @@ snapshots:
       kleur: 4.1.5
       typescript: 5.9.2
 
-  '@thepia/flows-auth@file:../..(@xyflow/svelte@1.2.4(svelte@4.2.20))(d3@7.9.0)(svelte@4.2.20)':
+  '@thepia/flows-auth@file:../..(@xyflow/svelte@0.1.30(svelte@4.2.20))(d3@7.9.0)(svelte@4.2.20)':
     dependencies:
       '@dagrejs/dagre': 1.1.5
       '@simplewebauthn/browser': 13.1.2
-      '@xyflow/svelte': 1.2.4(svelte@4.2.20)
+      '@xyflow/svelte': 0.1.30(svelte@4.2.20)
       base64url: 3.0.1
       d3: 7.9.0
       svelte: 4.2.20
@@ -1791,21 +1794,20 @@ snapshots:
 
   '@types/pug@2.0.10': {}
 
-  '@xyflow/svelte@1.2.4(svelte@4.2.20)':
+  '@xyflow/svelte@0.1.30(svelte@4.2.20)':
     dependencies:
-      '@svelte-put/shortcut': 4.1.0(svelte@4.2.20)
-      '@xyflow/system': 0.0.68
+      '@svelte-put/shortcut': 3.1.1(svelte@4.2.20)
+      '@xyflow/system': 0.0.51
+      classcat: 5.0.5
       svelte: 4.2.20
 
-  '@xyflow/system@0.0.68':
+  '@xyflow/system@0.0.51':
     dependencies:
       '@types/d3-drag': 3.0.7
-      '@types/d3-interpolate': 3.0.4
       '@types/d3-selection': 3.0.11
       '@types/d3-transition': 3.0.9
       '@types/d3-zoom': 3.0.8
       d3-drag: 3.0.0
-      d3-interpolate: 3.0.1
       d3-selection: 3.0.0
       d3-zoom: 3.0.0
 
@@ -1869,6 +1871,8 @@ snapshots:
       fsevents: 2.3.3
 
   chownr@3.0.0: {}
+
+  classcat@5.0.5: {}
 
   code-red@1.0.4:
     dependencies:

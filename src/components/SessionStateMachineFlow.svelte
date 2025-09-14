@@ -1,80 +1,61 @@
 <!--
-  SessionStateMachineFlow - Session State Machine visualization with Dagre layout
-  
-  Props:
-  - dualState: DualAuthState for current state highlighting
-  - sessionMachine: Session state machine instance for dynamic extraction
-  - compact: Boolean for layout density
-  - width: Container width
-  - height: Container height
-  - direction: 'TB' (top-bottom) or 'LR' (left-right)
-  - enableZoom: Boolean for zoom controls
-  - responsive: Boolean for responsive sizing
-  - onStateClick: Callback when a state is clicked
+  SessionStateMachineFlow - Auth State visualization using Svelte Flow
 -->
 <script>
-  import { createEventDispatcher, onMount } from 'svelte';
-  import dagre from '@dagrejs/dagre';
+  import { writable } from 'svelte/store';
+  import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
+  import '@xyflow/svelte/dist/style.css';
+  import { createEventDispatcher } from 'svelte';
 
-  // Props
-  export let dualState = null;
-  export let sessionMachine = null;
-  export let compact = false;
+  export let authState = 'unauthenticated';
   export let width = 600;
   export let height = 300;
-  export let direction = 'TB';
-  export let enableZoom = true;
-  export let responsive = false;
   export let onStateClick = null;
 
   const dispatch = createEventDispatcher();
 
-  // Zoom and pan state
-  let scale = 1;
-  let translateX = 0;
-  let translateY = 0;
-  let containerEl = null;
-  let isPanning = false;
-  let startX = 0;
-  let startY = 0;
-
-  // Session state categories
-  const sessionStateCategories = {
+  const authStateCategories = {
     lifecycle: {
       color: '#3b82f6',
-      states: ['initializing', 'unauthenticated', 'authenticated']
+      states: ['unauthenticated', 'authenticated']
     },
-    maintenance: {
+    verification: {
       color: '#8b5cf6', 
-      states: ['expired', 'refreshing', 'error']
+      states: ['authenticated-unconfirmed', 'authenticated-confirmed']
+    },
+    errors: {
+      color: '#ef4444',
+      states: ['error']
     }
   };
 
-  // Session state transitions
-  const sessionTransitions = [
-    { source: 'initializing', target: 'unauthenticated' },
-    { source: 'unauthenticated', target: 'authenticated' },
-    { source: 'authenticated', target: 'expired' },
-    { source: 'expired', target: 'refreshing' },
-    { source: 'refreshing', target: 'authenticated' },
-    { source: 'refreshing', target: 'error' },
-    { source: 'error', target: 'unauthenticated' }
+  // Simplified transitions without loading state
+  const authStateTransitions = [
+    // Direct authentication transitions
+    { source: 'unauthenticated', target: 'authenticated', event: 'SIGN_IN_SUCCESS' },
+    { source: 'unauthenticated', target: 'authenticated-unconfirmed', event: 'SIGN_IN_UNVERIFIED' },
+    { source: 'unauthenticated', target: 'error', event: 'SIGN_IN_ERROR' },
+    
+    // From authenticated states  
+    { source: 'authenticated', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-confirmed', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-unconfirmed', target: 'unauthenticated', event: 'SIGN_OUT' },
+    { source: 'authenticated-unconfirmed', target: 'authenticated-confirmed', event: 'EMAIL_VERIFIED' },
+    
+    // Error recovery
+    { source: 'error', target: 'unauthenticated', event: 'RESET' }
   ];
 
-  let nodes = [];
-  let stateCategories = sessionStateCategories;
-
-  // Format state name for display
-  function formatStateName(stateName) {
-    return stateName
+  function formatStateName(state) {
+    return state
+      .replace(/-/g, ' ')
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
   }
 
-  // Get category for state
   function getCategoryForState(stateName) {
-    for (const [category, config] of Object.entries(stateCategories)) {
+    for (const [category, config] of Object.entries(authStateCategories)) {
       if (config.states.includes(stateName)) {
         return { category, ...config };
       }
@@ -82,362 +63,288 @@
     return { category: 'unknown', color: '#64748b', states: [] };
   }
 
-  // Dagre layout function
-  function getLayoutedElements(nodes, edges, layoutDirection = 'TB') {
-    const g = new dagre.graphlib.Graph();
-    g.setDefaultEdgeLabel(() => ({}));
-    g.setGraph({ 
-      rankdir: layoutDirection || direction,
-      nodesep: compact ? 40 : 60,
-      ranksep: compact ? 30 : 50,
-      marginx: 20,
-      marginy: 20
-    });
+  function createStaticFlowData() {
+    const flowNodes = Object.entries(authStateCategories)
+      .flatMap(([categoryName, config]) => 
+        config.states.map((state, index) => {
+          const categoryIndex = Object.keys(authStateCategories).indexOf(categoryName);
+          
+          return {
+            id: state,
+            type: 'default',
+            position: { 
+              x: Math.max(0, (index * 160) + (categoryIndex * 40)), 
+              y: Math.max(0, categoryIndex * 80 + 50)
+            },
+            data: { 
+              label: formatStateName(state)
+            },
+            className: 'auth-node' // Static class for all nodes
+          };
+        })
+      );
 
-    nodes.forEach((node) => {
-      g.setNode(node.id, { 
-        width: compact ? 85 : 110, 
-        height: compact ? 28 : 36 
-      });
-    });
+    const flowEdges = authStateTransitions.map((transition, index) => ({
+      id: `edge-${transition.source}-${transition.target}-${index}`,
+      source: transition.source,
+      target: transition.target,
+      type: 'default',
+      label: transition.event,
+      labelStyle: {
+        fontSize: '10px',
+        fill: '#374151',
+        fontWeight: '500'
+      },
+      labelBgStyle: {
+        fill: 'white',
+        fillOpacity: 0.8
+      }
+    }));
 
-    edges.forEach((edge) => {
-      g.setEdge(edge.source, edge.target);
-    });
-
-    dagre.layout(g);
-
-    const layoutedNodes = nodes.map((node) => {
-      const nodeWithPosition = g.node(node.id);
-      return {
-        ...node,
-        x: nodeWithPosition.x - (compact ? 42.5 : 55),
-        y: nodeWithPosition.y - (compact ? 14 : 18)
-      };
-    });
-
-    return { nodes: layoutedNodes, edges };
+    return { nodes: flowNodes, edges: flowEdges };
   }
 
-  // Create flow nodes
-  function createFlowNodes() {
-    const currentState = dualState?.session?.state || 'initializing';
-    
-    // Get all unique states from categories
-    const allStates = Object.values(stateCategories)
-      .flatMap(category => category.states);
+  // Create complete state machine data using bind pattern
+  function createFlowData() {
+    const flowNodes = Object.entries(authStateCategories)
+      .flatMap(([categoryName, config]) => 
+        config.states.map((state, index) => {
+          const categoryIndex = Object.keys(authStateCategories).indexOf(categoryName);
+          
+          return {
+            id: state,
+            type: 'default',
+            position: { 
+              x: Math.max(0, (index * 160) + (categoryIndex * 40)), 
+              y: Math.max(0, categoryIndex * 80 + 50)
+            },
+            data: { 
+              label: formatStateName(state)
+            },
+            className: 'auth-node'
+          };
+        })
+      );
 
-    return allStates.map(stateName => {
-      const categoryInfo = getCategoryForState(stateName);
-      return {
-        id: stateName,
-        label: formatStateName(stateName),
-        category: categoryInfo.category,
-        color: categoryInfo.color,
-        isCurrentState: stateName === currentState
-      };
-    });
+    const flowEdges = authStateTransitions.map((transition, index) => ({
+      id: `edge-${transition.source}-${transition.target}-${index}`,
+      source: transition.source,
+      target: transition.target,
+      type: 'default',
+      label: transition.event,
+      labelStyle: {
+        fontSize: '10px',
+        fill: '#374151',
+        fontWeight: '500'
+      },
+      labelBgStyle: {
+        fill: 'white',
+        fillOpacity: 0.8
+      }
+    }));
+
+    return { nodes: flowNodes, edges: flowEdges };
   }
 
-  // Zoom controls
-  function zoomIn() {
-    scale = Math.min(scale * 1.2, 3);
+  // Create stores for v0.1.30 API
+  const flowData = createFlowData();
+  const nodes = writable(flowData.nodes);
+  const edges = writable(flowData.edges);
+
+  // Update nodes when authState changes
+  $: {
+    const updatedFlowData = createFlowData();
+    nodes.set(updatedFlowData.nodes);
+    edges.set(updatedFlowData.edges);
   }
 
-  function zoomOut() {
-    scale = Math.max(scale / 1.2, 0.1);
-  }
-
-  function resetZoom() {
-    scale = 1;
-    translateX = 0;
-    translateY = 0;
-  }
-
-  function fitToView() {
-    if (nodes.length === 0) return;
-    
-    const bounds = nodes.reduce(
-      (acc, node) => ({
-        minX: Math.min(acc.minX, node.x),
-        maxX: Math.max(acc.maxX, node.x + (compact ? 85 : 110)),
-        minY: Math.min(acc.minY, node.y),
-        maxY: Math.max(acc.maxY, node.y + (compact ? 28 : 36))
-      }),
-      { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
-    );
-
-    const contentWidth = bounds.maxX - bounds.minX;
-    const contentHeight = bounds.maxY - bounds.minY;
-    const containerWidth = containerEl?.clientWidth || width;
-    const containerHeight = containerEl?.clientHeight || height;
-
-    const scaleX = (containerWidth - 40) / contentWidth;
-    const scaleY = (containerHeight - 40) / contentHeight;
-    scale = Math.min(scaleX, scaleY, 1);
-
-    translateX = (containerWidth - contentWidth * scale) / 2 - bounds.minX * scale;
-    translateY = (containerHeight - contentHeight * scale) / 2 - bounds.minY * scale;
-  }
-
-  // Mouse event handlers for panning
-  function handleMouseDown(e) {
-    if (e.target.classList.contains('flow-node')) return;
-    isPanning = true;
-    startX = e.clientX - translateX;
-    startY = e.clientY - translateY;
-    e.preventDefault();
-  }
-
-  function handleMouseMove(e) {
-    if (!isPanning) return;
-    translateX = e.clientX - startX;
-    translateY = e.clientY - startY;
-    e.preventDefault();
-  }
-
-  function handleMouseUp() {
-    isPanning = false;
-  }
-
-  function handleWheel(e) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.min(Math.max(scale * delta, 0.1), 3);
-    
-    if (newScale !== scale) {
-      const rect = containerEl.getBoundingClientRect();
-      const centerX = e.clientX - rect.left;
-      const centerY = e.clientY - rect.top;
-      
-      translateX = centerX - (centerX - translateX) * (newScale / scale);
-      translateY = centerY - (centerY - translateY) * (newScale / scale);
-      scale = newScale;
-    }
-  }
-
-  // Handle node clicks
-  function handleNodeClick(nodeId) {
-    console.log('Session state clicked:', nodeId);
+  function handleNodeClick(event) {
+    const nodeId = event.detail.node.id;
+    console.log('Auth state clicked:', nodeId);
     if (onStateClick) {
       onStateClick(nodeId);
     }
     dispatch('stateClick', { state: nodeId });
   }
 
-  // Reactive statements
-  $: {
-    // Trigger re-layout when key props change
-    direction; compact; dualState;
-    nodes = createFlowNodes();
-    
-    if (nodes.length > 0) {
-      const { nodes: layoutedNodes } = getLayoutedElements(nodes, sessionTransitions, direction);
-      nodes = layoutedNodes;
-    }
-  }
-
-  onMount(() => {
-    if (nodes.length > 0) {
-      setTimeout(fitToView, 100);
-    }
-  });
+  $: currentStateClass = `current-state-${authState}`;
 </script>
 
-<div class="session-machine-flow" 
-  style="width: {responsive ? '100%' : width + 'px'}; {responsive ? '' : 'height: ' + height + 'px;'}"
-  bind:this={containerEl}
->
-  {#if enableZoom}
-    <div class="zoom-controls">
-      <button class="zoom-btn" on:click={zoomIn} title="Zoom In">+</button>
-      <button class="zoom-btn" on:click={zoomOut} title="Zoom Out">−</button>
-      <button class="zoom-btn" on:click={resetZoom} title="Reset">⟲</button>
-      <button class="zoom-btn" on:click={fitToView} title="Fit to View">⊡</button>
-      <span class="zoom-level">{Math.round(scale * 100)}%</span>
+<div class="auth-state-flow" style="width: {width}px; height: {height}px;">
+  <div class="header">
+    <h3>Authentication State</h3>
+    <div class="current-state">
+      Current: <span class="state-value">{authState}</span>
     </div>
-  {/if}
-  
-  <div class="machine-header">
-    <h4>Session State Machine</h4>
-    <span class="current-state">Current: {dualState?.session?.state || 'initializing'}</span>
   </div>
 
-  <div class="flow-container"
-    style="transform: translate({translateX}px, {translateY}px) scale({scale}); transform-origin: 0 0;"
-    on:mousedown={handleMouseDown}
-    on:mousemove={handleMouseMove}
-    on:mouseup={handleMouseUp}
-    on:mouseleave={handleMouseUp}
-    on:wheel={handleWheel}
-    role="application"
-    aria-label="Session state machine diagram"
-  >
-    <!-- Session nodes -->
-    {#each nodes as node}
-      <div 
-        class="flow-node session-node"
-        class:current-state={node.isCurrentState}
-        style="
-          position: absolute;
-          left: {node.x}px;
-          top: {node.y}px;
-          background-color: {node.isCurrentState ? node.color : node.color + '99'};
-          border: 2px solid {node.isCurrentState ? '#f59e0b' : node.color};
-          color: white;
-          font-weight: {node.isCurrentState ? '600' : '500'};
-          font-size: {compact ? '10px' : '13px'};
-          padding: {compact ? '6px 10px' : '10px 14px'};
-          border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          min-width: {compact ? '85px' : '110px'};
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        "
-        on:click={() => handleNodeClick(node.id)}
-        on:keydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleNodeClick(node.id);
-          }
-        }}
-        role="button"
-        tabindex="0"
-        title="{node.label} ({node.category})"
-      >
-        {node.label}
-      </div>
-    {/each}
-    
-    <!-- Session transitions -->
-    <svg class="connections-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-      {#each sessionTransitions as transition}
-        {@const sourceNode = nodes.find(n => n.id === transition.source)}
-        {@const targetNode = nodes.find(n => n.id === transition.target)}
-        {#if sourceNode && targetNode}
-          <line
-            x1={sourceNode.x + (compact ? 42.5 : 55)}
-            y1={sourceNode.y + (compact ? 14 : 18)}
-            x2={targetNode.x + (compact ? 42.5 : 55)}
-            y2={targetNode.y + (compact ? 14 : 18)}
-            stroke="#3b82f6"
-            stroke-width="2"
-            opacity="0.7"
-            marker-end="url(#arrowhead-session)"
-          />
-        {/if}
-      {/each}
-      <defs>
-        <marker id="arrowhead-session" markerWidth="10" markerHeight="7" 
-                refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" opacity="0.7" />
-        </marker>
-      </defs>
-    </svg>
+  <div class="flow-container {currentStateClass}" style="height: {height - 60}px;">
+    <SvelteFlow 
+      {nodes}
+      {edges}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable={true}
+      fitView={true}
+      on:nodeclick={handleNodeClick}
+    >
+      <Controls />
+      <Background variant="dots" gap={20} size={1} />
+    </SvelteFlow>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-color lifecycle"></div>
+      <span>Core States</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color verification"></div>
+      <span>Email Verification</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color errors"></div>
+      <span>Error States</span>
+    </div>
   </div>
 </div>
 
 <style>
-  .session-machine-flow {
-    border: 1px solid #3b82f6;
-    border-radius: 8px;
-    overflow: auto;
-    background: #fafafa;
+  .auth-state-flow {
     position: relative;
-    user-select: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
   }
 
-  .machine-header {
-    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  .header {
     padding: 12px 16px;
-    border-bottom: 1px solid #3b82f6;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 8px 8px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 60px;
   }
 
-  .machine-header h4 {
+  .header h3 {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
-    color: #1e40af;
+    color: #1f2937;
   }
 
-  .machine-header .current-state {
+  .current-state {
+    font-size: 14px;
+    color: #6b7280;
+  }
+
+  .state-value {
+    font-weight: 600;
+    color: #3b82f6;
+    padding: 2px 8px;
+    background: #dbeafe;
+    border-radius: 12px;
     font-size: 12px;
-    color: #1e40af;
-    background: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    border: 1px solid #3b82f6;
   }
 
   .flow-container {
-    min-height: 200px;
+    width: 100%;
     position: relative;
-    background: #fefefe;
-    overflow: visible;
-    padding: 20px;
   }
 
-  .zoom-controls {
+  .legend {
     position: absolute;
-    top: 60px;
-    right: 10px;
+    bottom: 10px;
+    left: 10px;
     display: flex;
-    gap: 4px;
-    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: #6b7280;
     background: white;
-    border: 1px solid #3b82f6;
+    padding: 8px 12px;
     border-radius: 6px;
-    padding: 4px;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  .zoom-btn {
-    width: 28px;
-    height: 28px;
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  .legend-color.lifecycle {
+    background-color: #3b82f6;
+  }
+
+  .legend-color.verification {
+    background-color: #8b5cf6;
+  }
+
+  .legend-color.errors {
+    background-color: #ef4444;
+  }
+
+  /* Svelte Flow node styling */
+  :global(.svelte-flow__node.auth-node) {
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 8px;
+    width: 120px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
-    border: 1px solid #bfdbfe;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.2s;
-    color: #1e40af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 2px solid transparent;
   }
 
-  .zoom-btn:hover {
-    background: #dbeafe;
-    border-color: #3b82f6;
+  /* Dynamic state highlighting using CSS selectors */
+  .current-state-unauthenticated :global(.svelte-flow__node[data-id="unauthenticated"]),
+  .current-state-loading :global(.svelte-flow__node[data-id="loading"]),  
+  .current-state-authenticated :global(.svelte-flow__node[data-id="authenticated"]),
+  .current-state-authenticated-unconfirmed :global(.svelte-flow__node[data-id="authenticated-unconfirmed"]),
+  .current-state-authenticated-confirmed :global(.svelte-flow__node[data-id="authenticated-confirmed"]),
+  .current-state-error :global(.svelte-flow__node[data-id="error"]) {
+    border: 2px solid #fbbf24 !important;
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+    animation: pulse 2s infinite;
   }
 
-  .zoom-btn:active {
-    background: #bfdbfe;
+  :global(.svelte-flow__edge path) {
+    stroke: #94a3b8;
+    stroke-width: 2;
   }
 
-  .zoom-level {
-    margin-left: 4px;
-    font-size: 12px;
-    color: #1e40af;
-    font-weight: 500;
+  :global(.svelte-flow__edge .svelte-flow__edge-path) {
+    stroke: #94a3b8;
+    stroke-width: 2;
   }
 
-  .flow-node.session-node {
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  :global(.svelte-flow__arrowhead) {
+    fill: #94a3b8;
   }
 
-  .flow-node.current-state {
-    animation: pulse-session 2s infinite;
-  }
-
-  @keyframes pulse-session {
-    0% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
-    50% { box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4); }
-    100% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
+  @keyframes pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.6), 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
   }
 </style>

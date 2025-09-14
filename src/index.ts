@@ -5,6 +5,9 @@
  * for whitelabel applications and Flow app projects.
  */
 
+// Context constants for consistency across components
+export { CONTEXT_KEYS, AUTH_CONTEXT_KEY } from './constants/context-keys';
+
 // API client
 export { AuthApiClient } from './api/auth-api';
 export { SyncApiClient } from './api/sync-api';
@@ -17,10 +20,9 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 
 // Development components
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
-export { default as StateMachineFlow } from './components/StateMachineFlow.svelte';
-export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte';
-export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte';
-export { default as ProfessionalStateMachine } from './components/ProfessionalStateMachine.svelte';
+export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte'; // AuthState visualization
+export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte'; // SignInState visualization
+export { default as TestFlow } from './components/TestFlow.svelte'; // Simple test component
 
 // Core granular components
 export { 
@@ -31,13 +33,7 @@ export {
 } from './components/core';
 
 // State Machine
-export { AuthActions, AuthGuards, AuthStateMachine } from './stores/auth-state-machine';
 
-// New dual state machines
-export { SessionStateMachine } from './stores/session-state-machine';
-export { SignInStateMachine } from './stores/signin-state-machine';
-export { DualAuthMachine } from './stores/dual-auth-machine';
-export type { DualAuthState } from './stores/dual-auth-machine';
 
 // Stores
 export {
@@ -186,7 +182,7 @@ export function createDefaultConfig(
     clientId: '',
     domain: '',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: true,
     branding: {
       companyName: 'Your Company',
       showPoweredBy: true,

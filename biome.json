@@ -7,14 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": [
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      "coverage/**",
-      ".svelte-kit/**",
-      "*.d.ts"
-    ]
+    "ignore": ["node_modules/**", "dist/**", "build/**", "coverage/**", ".svelte-kit/**", "*.d.ts", "**/*.svelte"]
   },
   "formatter": {
     "enabled": true,
@@ -103,7 +96,7 @@
     "formatter": {
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
-      "trailingCommas": "es5",
+      "trailingCommas": "none",
       "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSpacing": true,
@@ -112,16 +105,5 @@
       "attributePosition": "auto"
     }
   },
-  "overrides": [
-    {
-      "include": ["*.svelte"],
-      "linter": {
-        "rules": {
-          "style": {
-            "useImportType": "off"
-          }
-        }
-      }
-    }
-  ]
+  "overrides": []
 }

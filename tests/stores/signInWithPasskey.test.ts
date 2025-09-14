@@ -15,7 +15,7 @@ vi.mock('../../src/api/auth-api', () => ({
     checkEmail: vi.fn(),
     getPasskeyChallenge: vi.fn(), 
     signInWithPasskey: vi.fn(),
-    signInWithPassword: vi.fn(),
+    signInWithMagicLink: vi.fn(),
     signInWithMagicLink: vi.fn(),
     refreshToken: vi.fn(),
     signOut: vi.fn()

@@ -5,11 +5,14 @@
   import DevSidebar from '$lib/components/DevSidebar.svelte';
   import { devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
   import type { User } from '@thepia/flows-auth';
+  import { getGlobalAuthStore } from '@thepia/flows-auth/global-auth-store';
   import { onMount } from 'svelte';
   
   let currentScenario: DevScenario;
   let currentUser: User | null = null;
-  let unsubscribe: (() => void) | null = null;
+  let authStore: ReturnType<typeof getGlobalAuthStore> | null = null;
+  let unsubscribeScenario: (() => void) | null = null;
+  let unsubscribeAuth: (() => void) | null = null;
   
   onMount(() => {
     if (!browser) return;
@@ -18,48 +21,43 @@
     currentScenario = devScenarioManager.getCurrentScenario();
     
     // Subscribe to scenario changes
-    unsubscribe = devScenarioManager.subscribe((scenario) => {
+    unsubscribeScenario = devScenarioManager.subscribe((scenario) => {
       currentScenario = scenario;
     });
     
-    // Listen for auth events
-    const handleAuthSuccess = (event: CustomEvent) => {
-      currentUser = event.detail.user;
-    };
-    
-    const handleAuthSignOut = () => {
+    // Get global auth store and subscribe to its state
+    try {
+      authStore = getGlobalAuthStore();
+      console.log('🔐 Auth store retrieved using proper pattern');
+      
+      // Subscribe to auth store changes
+      unsubscribeAuth = authStore.subscribe(($authState) => {
+        console.log('📊 Auth state update:', { state: $authState.state, user: !!$authState.user });
+        
+        if ($authState.state === 'authenticated' && $authState.user) {
+          currentUser = $authState.user;
+        } else {
+          currentUser = null;
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to get global auth store:', error);
+      // Fallback to null - user will need to sign in
       currentUser = null;
-    };
+    }
     
-    window.addEventListener('auth:success', handleAuthSuccess as EventListener);
-    window.addEventListener('auth:signout', handleAuthSignOut as EventListener);
-    
-    // Check initial auth state
-    checkInitialAuthState();
+    console.log('✅ Demo page initialization complete');
     
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
+      if (unsubscribeScenario) {
+        unsubscribeScenario();
       }
-      window.removeEventListener('auth:success', handleAuthSuccess as EventListener);
-      window.removeEventListener('auth:signout', handleAuthSignOut as EventListener);
+      if (unsubscribeAuth) {
+        unsubscribeAuth();
+      }
     };
   });
   
-  function checkInitialAuthState() {
-    if (!browser) return;
-    
-    try {
-      const token = localStorage.getItem('auth_access_token');
-      const userStr = localStorage.getItem('auth_user');
-      
-      if (token && userStr) {
-        currentUser = JSON.parse(userStr);
-      }
-    } catch (error) {
-      console.error('Error checking initial auth state:', error);
-    }
-  }
 
   function handleOpenAuth(event: CustomEvent<{ switchUser?: boolean }>) {
     // Dispatch the openAuthModal event that AuthModalManager listens for

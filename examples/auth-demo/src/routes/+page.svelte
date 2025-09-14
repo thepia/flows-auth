@@ -1,26 +1,49 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
+// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
+const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus } from '@thepia/flows-auth';
 
-// Use singleton auth store pattern
-let authStoreFromContext = null;
-let authConfigFromSingleton = null;
+// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
+export let isAuthenticated = false;
+export let user = null;
 
-// Component state
+// Get authStore from context instead of props
+const authStoreContext = getContext(AUTH_CONTEXT_KEY);
 let authStore = null;
-let authConfig = null;
+
+// Initialize authStore from context once
+if (authStoreContext && browser) {
+  authStore = $authStoreContext;
+  console.log('📦 Auth store from context:', { authStore: !!authStore, isAuthenticated, user: !!user });
+}
+
+// Optional SvelteKit props
+export let params = {};
+
+// Component state  
 let currentUser = null;
-let isAuthenticated = false;
-let authState = 'loading';
+let authState = 'unauthenticated'; // Start with unauthenticated, not loading
 let stateMachineState = null;
 let stateMachineContext = null;
+let authSubscribed = false;
 
-// State Machine components
-let ProfessionalStateMachineComponent = null;
+// Auth config will be retrieved from the auth store (created in layout)
+let authConfig = null;
+
+// Get authConfig from authStore when available
+$: if (authStore && authStore.getConfig) {
+  authConfig = authStore.getConfig();
+  console.log('⚙️ Auth config from authStore:', authConfig);
+}
+
+// State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = null;
 let SignInStateMachineComponent = null;
+let SignInFormComponent = null;
+let SignInCoreComponent = null;
 
 // Demo controls
 let selectedDemo = 'overview';
@@ -46,7 +69,7 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
-let enableMagicPins = true;
+let enableMagicLinks = true;
 
 // New size and variant options
 let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
@@ -54,15 +77,42 @@ let formVariant = 'inline'; // 'inline', 'popup'
 let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
 let useSignInForm = false; // Toggle between SignInCore and SignInForm
 
-// State machine diagram options
-let diagramCompact = false;
-let diagramDirection = 'TB'; // 'TB' (top-bottom) or 'LR' (left-right)
-let dualAuthMachine = null; // For dynamic state machine extraction
-let dualState = null; // Current dual auth state
+// Simplified: Use auth store state directly instead of complex dual machine  
+// These will be computed reactively from the auth store
+// Note: authState already exists above
+
+// Declare reactive variables first
+let signInState = 'emailEntry';
+let hasValidPinStatus = false;
+let pinRemainingMinutes = 0;
+
+// Reactive computations from auth store - simplified debugging
+let lastLoggedState = null;
+$: {
+  if (authStore) {
+    const storeValue = $authStore;
+
+    // Only log when state actually changes to prevent spam
+    if (storeValue.state !== lastLoggedState) {
+      console.log('🔄 [Sidebar] Auth state changed:', {
+        state: storeValue.state,
+        signInState: storeValue.signInState,
+        hasUser: !!storeValue.user,
+        timestamp: new Date().toISOString()
+      });
+      lastLoggedState = storeValue.state;
+    }
+
+    // Update our local variables
+    signInState = storeValue.signInState || 'emailEntry';
+    hasValidPinStatus = hasValidPin(storeValue);
+    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
+  }
+}
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
-let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'custom'
+let selectedClientVariant = 'default'; // 'default', 'acme', 'techcorp', 'healthcare', 'app.thepia.net', 'custom'
 let customTranslationOverrides = {}; // User-defined translation overrides
 let customTranslationsJson = '{}'; // JSON string for custom translations
 let customTranslationError = null; // Error message for invalid JSON
@@ -110,8 +160,29 @@ const clientVariants = {
       'auth.sendPinByEmail': 'Send secure medical verification'
     }
   },
+  'app.thepia.net': {
+    name: 'app.thepia.net',
+    companyName: 'Task Coordination',
+    translations: {
+      'signIn.title': 'Receiving Requests',
+      'signIn.description': 'Receive task lists and work requests directly from the coordinator.',
+      'signIn.descriptionGeneric': 'Receive task lists and work requests directly from the coordinator.',
+      'email.label': 'Personal e-mail',
+      'email.placeholder': 'Enter your personal email address',
+      'status.emailSent': "We'll send you a confirmation email to verify this address.",
+      'status.checkEmail': 'Check your email',
+      'auth.sendPinByEmail': 'Send Confirmation',
+      'auth.signIn': 'Send Confirmation',
+      'auth.loading': 'Sending...',
+      'auth.sendingPin': 'Sending confirmation...',
+      'status.signInSuccess': 'Confirmation sent successfully!',
+      'webauthn.ready': '🔐 Secure authentication ready',
+      'security.passwordlessExplanation': '🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email confirmation for enhanced security.',
+      'auth.signInWithPasskey': 'Continue with Touch ID/Face ID'
+    }
+  },
   custom: {
-    name: 'Custom Configuration',
+    name: 'Custom Configuration', 
     companyName: 'Your Company',
     translations: {} // Will be populated from textarea
   }
@@ -128,81 +199,50 @@ let registrationLoading = false;
 const demoSections = [
   { id: 'overview', title: 'Overview', icon: Activity },
   { id: 'signin', title: 'Sign In Flow', icon: User },
+  { id: 'signin-machine', title: 'Interactive SignIn Machine', icon: Shield },
   { id: 'register', title: 'Registration', icon: Mail },
   { id: 'passkey', title: 'Passkey Auth', icon: Key },
   { id: 'state-machine', title: 'State Machine', icon: Settings },
 ];
 
-// Load StateMachineFlow as soon as possible
 onMount(async () => {
   if (!browser) return;
   
   console.log('🎯 Demo page initializing...');
   
-  // Load state machine components for immediate rendering
-  const loadComponentPromise = import('@thepia/flows-auth').then((module) => {
-    const { SessionStateMachineFlow, SignInStateMachineFlow, ProfessionalStateMachine } = module;
+  try {
+    // Single dynamic import for all components
+    const authModule = await import('@thepia/flows-auth');
+    const {
+      SessionStateMachineFlow,
+      SignInStateMachineFlow,
+      SignInForm,
+      SignInCore
+    } = authModule;
+    
+    // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
-    ProfessionalStateMachineComponent = ProfessionalStateMachine;
-    console.log('State machine components loaded including new Professional component');
-  });
-  
-  try {
-    // Load components and auth store in parallel
-    const { getGlobalAuthStore, getGlobalAuthConfig, DualAuthMachine } = await import('@thepia/flows-auth');
+    SignInFormComponent = SignInForm;
+    SignInCoreComponent = SignInCore;
     
-    // Create dual auth machine for visualization (independent of global auth store)
-    dualAuthMachine = new DualAuthMachine(
-      {
-        apiBaseUrl: 'https://api.thepia.com',
-        domain: 'thepia.net',
-        enablePasskeys: enablePasskeys,
-        enableMagicPins: enableMagicPins
-      }
-    );
-    console.log('✅ DualAuthMachine created successfully for visualization');
+    console.log('✅ Auth components loaded dynamically');
     
-    // Subscribe to dual state changes
-    if (dualAuthMachine) {
-      dualAuthMachine.onStateChange((state) => {
-        dualState = state;
-        console.log('📊 Dual auth state update:', state);
-      });
-    }
-    
-    // Separately wait for layout to initialize the global auth store (for demo UI)
-    let attempts = 0;
-    while (!authStore && attempts < 10) {
-      try {
-        authStore = getGlobalAuthStore();
-        break; // Success - exit loop
-      } catch (error) {
-        // Auth store not yet initialized, wait and try again
-        await new Promise(resolve => setTimeout(resolve, 25));
-        attempts++;
-      }
-    }
-    
-    if (!authStore) {
-      console.warn('⚠️ Global auth store not available, but dualAuthMachine is ready for visualization');
-      // Don't throw error - dualAuthMachine is independent and ready for visualization
-    }
-    
-    // Only configure global auth store if it's available
+    // Use auth store passed from layout (explicit prop passing pattern per ADR 0004)
     if (authStore) {
-      console.log('🔐 Auth store retrieved using proper pattern');
-      
-      // Get config from global singleton
-      authConfig = getGlobalAuthConfig();
-      console.log('⚙️ Auth config retrieved from singleton');
+      console.log('🔐 Auth store available from props');
       
       // Subscribe to auth state changes
       authStore.subscribe((state) => {
-        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
         currentUser = state.user;
         authState = state.state;
-        console.log('📊 Auth state update:', { state: state.state, user: !!state.user });
+        console.log('📊 Auth state update:', { 
+          state: state.state, 
+          signInState: state.signInState,
+          hasValidPin: hasValidPin(state),
+          pinRemainingMinutes: getPinTimeRemaining(state) || 0,
+          user: !!state.user 
+        });
       });
       
       // Subscribe to state machine updates if available
@@ -213,8 +253,10 @@ onMount(async () => {
           console.log('🔧 State machine update:', { state: sm.state });
         });
       }
+      
+      console.log('✅ Auth store subscriptions configured');
     } else {
-      console.log('📝 Demo initialized with visualization-only mode (no global auth store)');
+      console.log('⏳ Auth store not yet available - will be provided by layout');
     }
     
     console.log('✅ Demo page initialization complete');
@@ -224,19 +266,10 @@ onMount(async () => {
   }
 });
 
-// Demo actions
-async function testSignIn() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('🧪 Testing sign in with:', emailInput);
-    const result = await authStore.signIn(emailInput);
-    console.log('✅ Sign in result:', result);
-  } catch (error) {
-    console.error('❌ Sign in failed:', error);
-  }
-}
+// Note: Auth store subscriptions are handled in the reactive block above
+// to avoid creating duplicate subscriptions
 
+// Demo actions
 async function testPasskeySignIn() {
   if (!authStore || !emailInput.trim()) return;
   
@@ -365,9 +398,8 @@ function selectDemo(sectionId) {
 }
 
 async function updateDomain() {
-  if (!authConfig) return;
-  
   // Update the auth config with new domain
+  // TODO use the store to modify the domain used for passkeys. Config cannot be edited directly.
   authConfig.domain = currentDomain;
   console.log('🌐 Updated domain to:', currentDomain);
   
@@ -489,6 +521,129 @@ function getRecommendedAction(state) {
   if (!state.emailVerified) return 'resend-verification';
   if (!state.hasWebAuthn) return 'passkey-setup';
   return 'use-signin';
+}
+
+// Handle clicks on the SignIn state machine diagram
+function handleSignInStateClick(clickedState) {
+  console.log('🎯 State machine clicked:', clickedState, 'Current state:', signInState);
+  
+  if (!authStore) {
+    console.warn('No auth store available for state transition - store is still initializing');
+    console.log('Auth store status:', { authStore, isAuthenticated, user });
+    return;
+  }
+
+  try {
+    // Determine appropriate event based on clicked state and current state
+    let event = null;
+    
+    switch (clickedState) {
+      case 'emailEntry':
+        // Reset to email entry
+        event = { type: 'RESET' };
+        break;
+        
+      case 'userChecked':
+        // If we're in emailEntry, simulate user check
+        if (signInState === 'emailEntry') {
+          event = { 
+            type: 'USER_CHECKED', 
+            email: testEmail || emailInput || 'demo@example.com',
+            exists: true, 
+            hasPasskey: false 
+          };
+        }
+        break;
+        
+      case 'passkeyPrompt':
+        // Simulate transition to passkey prompt (user exists with passkey)
+        if (signInState === 'emailEntry') {
+          event = { 
+            type: 'USER_CHECKED', 
+            email: testEmail || emailInput || 'demo@example.com',
+            exists: true, 
+            hasPasskey: true 
+          };
+        }
+        break;
+        
+      case 'emailVerification':
+        // If we're in userChecked, simulate needing email verification
+        if (signInState === 'userChecked') {
+          event = { type: 'EMAIL_VERIFICATION_REQUIRED' };
+        }
+        break;
+        
+      case 'pinEntry':
+        // Simulate PIN email sent
+        if (signInState === 'emailVerification') {
+          event = { type: 'EMAIL_SENT' };
+        } else if (signInState === 'userChecked') {
+          // Direct path to PIN entry via email sent
+          event = { type: 'SENT_PIN_EMAIL' };
+        }
+        break;
+        
+      case 'signedIn':
+        // Simulate successful authentication
+        if (signInState === 'pinEntry') {
+          event = { 
+            type: 'PIN_VERIFIED', 
+            session: {
+              accessToken: 'demo_token_' + Date.now(),
+              user: { 
+                id: 'demo_user',
+                email: testEmail || emailInput || 'demo@example.com',
+                name: 'Demo User' 
+              }
+            }
+          };
+        } else if (signInState === 'passkeyPrompt') {
+          event = { 
+            type: 'PASSKEY_SUCCESS', 
+            credential: {
+              accessToken: 'demo_token_' + Date.now(),
+              user: { 
+                id: 'demo_user',
+                email: testEmail || emailInput || 'demo@example.com',
+                name: 'Demo User' 
+              }
+            }
+          };
+        }
+        break;
+        
+      case 'passkeyRegistration':
+        // Start passkey registration
+        if (signInState === 'signedIn') {
+          event = { type: 'REGISTER_PASSKEY' };
+        }
+        break;
+        
+      case 'generalError':
+        // Simulate error
+        event = { 
+          type: 'ERROR', 
+          error: {
+            code: 'DEMO_ERROR',
+            message: 'Demo error triggered from state machine click',
+            type: 'demo',
+            retryable: true
+          }
+        };
+        break;
+    }
+    
+    if (event) {
+      console.log('🚀 Sending event to auth store:', event);
+      const newState = authStore.sendSignInEvent(event);
+      console.log('✅ State transition complete:', signInState, '->', newState);
+    } else {
+      console.log('⚠️ No valid transition from', signInState, 'to', clickedState);
+    }
+  } catch (error) {
+    console.error('❌ Error in state transition:', error);
+  }
 }
 
 function hasValidPin(state) {
@@ -700,90 +855,6 @@ function handleSignInClose() {
   // For demo purposes, we'll just log it
 }
 
-// Auth Store State Mocking Functions
-function mockUnauthenticated() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking unauthenticated state');
-  // Clear the store state to simulate logged out user
-  authStore.update(state => ({
-    ...state,
-    state: 'unauthenticated',
-    user: null,
-    accessToken: null,
-    refreshToken: null,
-    expiresAt: null,
-    loading: false,
-    error: null
-  }));
-}
-
-function mockAuthenticated() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking authenticated state');
-  // Create mock user and tokens
-  const mockUser = {
-    id: 'mock-user-123',
-    email: emailInput || 'demo@example.com',
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  authStore.update(state => ({
-    ...state,
-    state: 'authenticated',
-    user: mockUser,
-    accessToken: 'mock-access-token-' + Date.now(),
-    refreshToken: 'mock-refresh-token-' + Date.now(),
-    expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
-    loading: false,
-    error: null
-  }));
-}
-
-function mockLoading() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking loading state');
-  authStore.update(state => ({
-    ...state,
-    state: 'loading',
-    loading: true,
-    error: null
-  }));
-  
-  // Automatically clear loading after 3 seconds for demo purposes
-  setTimeout(() => {
-    if (authStore) {
-      authStore.update(state => ({
-        ...state,
-        state: 'unauthenticated', 
-        loading: false
-      }));
-    }
-  }, 3000);
-}
-
-function mockError() {
-  if (!authStore) return;
-  
-  console.log('🔄 Mocking error state');
-  const mockError = {
-    code: 'MOCK_ERROR',
-    message: 'This is a mock error for testing purposes',
-    details: 'Simulated error state from demo controls'
-  };
-  
-  authStore.update(state => ({
-    ...state,
-    state: 'error',
-    error: mockError,
-    loading: false
-  }));
-}
-
 // Handle custom translation updates
 function updateCustomTranslations() {
   try {
@@ -815,7 +886,7 @@ $: combinedTranslations = selectedClientVariant === 'custom'
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicPins, 
+  enableMagicLinks, 
   signInMode,
   // i18n configuration
   language: selectedLanguage,
@@ -828,17 +899,7 @@ $: dynamicAuthConfig = authConfig ? {
   }
 } : null;
 
-// Log changes for debugging
-$: if (dynamicAuthConfig) {
-  console.log('⚙️ SignInCore config updated:', {
-    signInMode: dynamicAuthConfig.signInMode,
-    enablePasskeys: dynamicAuthConfig.enablePasskeys,
-    enableMagicPins: dynamicAuthConfig.enableMagicPins,
-    language: dynamicAuthConfig.language,
-    clientVariant: selectedClientVariant,
-    translationCount: Object.keys(combinedTranslations).length
-  });
-}
+// Note: Config logging removed to prevent console spam
 </script>
 
 <div class="demo-container">
@@ -941,60 +1002,45 @@ $: if (dynamicAuthConfig) {
             <h3>🔧 Interactive State Machine</h3>
             <p class="text-secondary">Live visualization of the authentication flow - current state: <strong>{stateMachineState || 'checkingSession'}</strong></p>
           </div>
-          <div class="card-body">
-            <!-- Diagram Controls -->
-            <div class="diagram-controls">
-              <label class="control-item">
-                <input type="checkbox" bind:checked={diagramCompact} />
-                <span>Compact Mode</span>
-              </label>
-              <div class="control-item">
-                <label for="diagram-direction">Layout Direction:</label>
-                <select id="diagram-direction" bind:value={diagramDirection} class="form-select">
-                  <option value="TB">Top to Bottom</option>
-                  <option value="LR">Left to Right</option>
-                </select>
-              </div>
-            </div>
-            
+          <div class="card-body">            
             <div class="state-machines-container">
-              {#if ProfessionalStateMachineComponent}
+              {#if SessionStateMachineComponent}
                 <div class="machine-grid">
-                  <!-- Session State Machine (Professional) -->
+                  <!-- AuthState Machine (Simplified) -->
                   <div class="machine-section">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.sessionMachineInstance}
-                      title="Session State Machine"
-                      theme="blue"
-                      width={1200}
-                      height={350}
+                    <svelte:component this={SessionStateMachineComponent}
+                      authState={authState}
+                      width={600}
+                      height={300}
                       onStateClick={(state) => {
-                        console.log('Session state clicked:', state);
+                        console.log('Auth state clicked:', state);
                       }}
                       on:stateClick={(e) => {
-                        console.log('Session state clicked event:', e.detail);
+                        console.log('Auth state clicked event:', e.detail);
                       }}
                     />
                   </div>
 
-                  <!-- Sign-In State Machine (Professional) -->
-                  <div class="machine-section">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.signInMachineInstance}
-                      title="Sign-In State Machine"
-                      theme="green"
-                      width={1200}
-                      height={350}
-                      onStateClick={(state) => {
-                        console.log('Sign-in state clicked:', state);
-                      }}
-                      on:stateClick={(e) => {
-                        console.log('Sign-in state clicked event:', e.detail);
-                      }}
-                    />
-                  </div>
+                  <!-- Sign-In State Machine (Simplified) -->
+                  {#if SignInStateMachineComponent}
+                    <div class="machine-section">
+                      <svelte:component this={SignInStateMachineComponent}
+                        currentSignInState={signInState}
+                        width={600}
+                        height={300}
+                        onStateClick={(state) => {
+                          console.log('Sign-in state clicked:', state);
+                          handleSignInStateClick(state);
+                        }}
+                        on:stateClick={(e) => {
+                          console.log('Sign-in state clicked event:', e.detail);
+                          if (e.detail && e.detail.state) {
+                            handleSignInStateClick(e.detail.state);
+                          }
+                        }}
+                      />
+                    </div>
+                  {/if}
                 </div>
               {:else}
                 <div class="graph-error">
@@ -1002,27 +1048,7 @@ $: if (dynamicAuthConfig) {
                   <p class="text-secondary">The state machines are initializing...</p>
                 </div>
               {/if}
-            </div>
-            
-            <div class="state-info">
-              <div class="state-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Current State:</span>
-                  <span class="stat-value">{stateMachineState || 'checkingSession'}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Total States:</span>
-                  <span class="stat-value">26</span>
-                </div>
-                {#if stateMachineContext}
-                  <div class="stat-item">
-                    <span class="stat-label">Has Context:</span>
-                    <span class="stat-value">Yes</span>
-                  </div>
-                {/if}
-              </div>
-
-            </div>
+            </div>            
           </div>
         </div>
         
@@ -1075,25 +1101,21 @@ $: if (dynamicAuthConfig) {
               <div class="auth-state-controls">
                 <!-- Legacy Store State -->
                 <div class="state-section">
-                  <span class="config-label">Current State:</span>
+                  <span class="config-label">Store State:</span>
                   <span class="state-badge {authState}">{authState}</span>
                 </div>
-                
-                <!-- Legacy State Mock Actions -->
-                <div class="state-actions">
-                  <button class="btn btn-outline btn-xs" on:click={mockUnauthenticated}>
-                    🚪 Mock Unauthenticated
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockAuthenticated}>
-                    ✅ Mock Authenticated
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockLoading}>
-                    ⏳ Mock Loading
-                  </button>
-                  <button class="btn btn-outline btn-xs" on:click={mockError}>
-                    ❌ Mock Error State
-                  </button>
+                <!-- Sign In State -->
+                <div class="state-section">
+                  <span class="config-label">SignIn State:</span>
+                  <span class="machine-state-badge">{signInState}</span>
                 </div>
+                <!-- PIN Status -->
+                {#if hasValidPinStatus}
+                  <div class="state-section">
+                    <span class="config-label">PIN:</span>
+                    <span class="pin-badge">Valid ({pinRemainingMinutes}min)</span>
+                  </div>
+                {/if}
               </div>
             </div>
         
@@ -1242,6 +1264,10 @@ $: if (dynamicAuthConfig) {
                       <input type="radio" bind:group={selectedClientVariant} value="healthcare" />
                       <span>🏥 MedSecure Health</span>
                     </label>
+                    <label class="radio-option">
+                      <input type="radio" bind:group={selectedClientVariant} value="app.thepia.net" />
+                      <span>📋 app.thepia.net</span>
+                    </label>
                   </div>
                 </div>
 
@@ -1269,8 +1295,8 @@ $: if (dynamicAuthConfig) {
                     <span>Enable Passkeys</span>
                   </label>
                   <label class="checkbox-option">
-                    <input type="checkbox" bind:checked={enableMagicPins} />
-                    <span>Enable Magic Pins</span>
+                    <input type="checkbox" bind:checked={enableMagicLinks} />
+                    <span>Enable Magic Links</span>
                   </label>
                 </div>
               </div>
@@ -1281,21 +1307,25 @@ $: if (dynamicAuthConfig) {
               <ul>
                 <li>User Handling: {signInMode === 'login-only' ? 'Login Only' : 'Login or Register as Needed'}</li>
                 <li>Passkeys: {enablePasskeys ? 'Enabled' : 'Disabled'}</li>
-                <li>Magic Pins: {enableMagicPins ? 'Enabled' : 'Disabled'}</li>
+                <li>Magic Links: {enableMagicLinks ? 'Enabled' : 'Disabled'}</li>
                 <li>Autocomplete: {enablePasskeys ? 'email webauthn' : 'email'}</li>
-                <li>Auth Flow: {enablePasskeys && enableMagicPins ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicPins ? 'Email only' : 'No auth methods'}</li>
+                <li>Auth Flow: {enablePasskeys && enableMagicLinks ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicLinks ? 'Email only' : 'No auth methods'}</li>
               </ul>
             </div> -->
           </div>
 
           <!-- Main Demo Area -->
           <div class="demo-main">
-            <!-- Live SignInCore Component -->
-            {#if authStore && dynamicAuthConfig && !isAuthenticated}
+            <!-- Live SignInCore Component   && !isAuthenticated -->
+            {#if authStore && dynamicAuthConfig}
+              <!-- Debug: Log what should be shown -->
+              {#if browser}
+                {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, dynamicAuthConfig: !!dynamicAuthConfig, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
+              {/if}
               {#if useSignInForm && formVariant === 'popup'}
                 <!-- Popup SignInForm - no card wrapper to avoid double borders -->
-                {#await import('@thepia/flows-auth') then { SignInForm }}
-                  <SignInForm 
+                {#if browser && SignInFormComponent}
+                  <svelte:component this={SignInFormComponent} 
                     config={dynamicAuthConfig}
                     initialEmail={emailInput}
                     size={formSize}
@@ -1306,11 +1336,11 @@ $: if (dynamicAuthConfig) {
                     on:error={(e) => handleSignInError(e.detail)}
                     on:stepChange={(e) => handleStepChange(e.detail)}
                   />
-                {:catch error}
-                  <div class="signin-error">
-                    <p>Failed to load SignInForm: {error.message}</p>
+                {:else}
+                  <div class="signin-loading">
+                    <p>Loading SignInForm...</p>
                   </div>
-                {/await}
+                {/if}
               {:else}
                 <!-- Inline components with card wrapper -->
                 <div class="signin-demo card">
@@ -1326,8 +1356,8 @@ $: if (dynamicAuthConfig) {
                   </div>
                   <div class="card-body">
                     {#if useSignInForm}
-                      {#await import('@thepia/flows-auth') then { SignInForm }}
-                        <SignInForm 
+                      {#if browser && SignInFormComponent}
+                        <svelte:component this={SignInFormComponent} 
                           config={dynamicAuthConfig}
                           initialEmail={emailInput}
                           size={formSize}
@@ -1339,16 +1369,17 @@ $: if (dynamicAuthConfig) {
                           on:stepChange={(e) => handleStepChange(e.detail)}
                           on:close={handleSignInClose}
                         />
-                      {:catch error}
-                        <div class="signin-error">
-                          <p>Failed to load SignInForm: {error.message}</p>
+                      {:else}
+                        <div class="signin-loading">
+                          <p>Loading SignInForm...</p>
                         </div>
-                      {/await}
+                      {/if}
                     {:else}
-                      {#await import('@thepia/flows-auth') then { SignInCore }}
+                      {#if browser && SignInCoreComponent}
                         <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
-                          <SignInCore 
+                          <svelte:component this={SignInCoreComponent} 
                             config={dynamicAuthConfig}
+                            authStore={authStore}
                             initialEmail={emailInput}
                             className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
                             on:success={(e) => handleSignInSuccess(e.detail)}
@@ -1356,11 +1387,11 @@ $: if (dynamicAuthConfig) {
                             on:stepChange={(e) => handleStepChange(e.detail)}
                           />
                         </div>
-                      {:catch error}
-                        <div class="signin-error">
-                          <p>Failed to load SignInForm: {error.message}</p>
+                      {:else}
+                        <div class="signin-loading">
+                          <p>Loading SignInCore...</p>
                         </div>
-                      {/await}
+                      {/if}
                     {/if}
                   </div>
                 </div>
@@ -1379,33 +1410,28 @@ $: if (dynamicAuthConfig) {
               <!-- Interactive State Machine Graphs -->
               <div class="config-section">
                 <h4>📊 State Machine Visualization</h4>
-                {#if ProfessionalStateMachineComponent}
-                  <!-- Compact Session Machine (Professional) -->
+                {#if SessionStateMachineComponent}
+                  <!-- Compact AuthState Machine (Simplified) -->
                   <div class="compact-machine">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.sessionMachineInstance}
-                      title="Session"
-                      theme="blue"
+                    <svelte:component this={SessionStateMachineComponent}
+                      authState={authState}
+                      compact={true}
                       width={280}
                       height={180}
-                      onStateClick={(state) => console.log('Session state clicked:', state)}
-                      on:stateClick={(e) => console.log('Session state clicked event:', e.detail)}
+                      onStateClick={(state) => console.log('Auth state clicked:', state)}
+                      on:stateClick={(e) => console.log('Auth state clicked event:', e.detail)}
                     />
                   </div>
                   
-                  <!-- Compact Sign-In Machine (Professional) -->
+                  <!-- Current Auth State Display -->
                   <div class="compact-machine">
-                    <svelte:component this={ProfessionalStateMachineComponent}
-                      dualState={dualState}
-                      signInMachine={dualAuthMachine?.signInMachineInstance}
-                      title="Sign-In"
-                      theme="green"
-                      width={280}
-                      height={180}
-                      onStateClick={(state) => console.log('Sign-in state clicked:', state)}
-                      on:stateClick={(e) => console.log('Sign-in state clicked event:', e.detail)}
-                    />
+                    <div class="state-display">
+                      <h4>Current State</h4>
+                      <div class="state-value">{authState}</div>
+                      {#if signInState !== 'emailEntry'}
+                        <div class="signin-state">Sign-in: {signInState}</div>
+                      {/if}
+                    </div>
                   </div>
                 {:else}
                   <div class="graph-error">
@@ -1520,6 +1546,108 @@ $: if (dynamicAuthConfig) {
         </div>
       </div>
     
+    {:else if selectedDemo === 'signin-machine'}
+      <div class="content-section">
+        <h2>Interactive SignIn State Machine</h2>
+        <p>Click on states in the diagram below to trigger actual state transitions in the global auth store:</p>
+        
+        <div class="machine-status-grid">
+          <div class="state-card card">
+            <div class="card-header">
+              <h4>Current SignIn State</h4>
+            </div>
+            <div class="card-body">
+              <div class="state-value current-signin-state">
+                {signInState || 'emailEntry'}
+              </div>
+              <div class="state-info-small">
+                Click any state in the diagram to transition
+              </div>
+            </div>
+          </div>
+          
+          <div class="quick-actions card">
+            <div class="card-header">
+              <h4>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+              <div class="action-buttons">
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('emailEntry')}>
+                  🔄 Reset to Start
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('userChecked')}>
+                  👤 Check User
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('pinEntry')}>
+                  📧 Send PIN
+                </button>
+                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('signedIn')}>
+                  ✅ Sign In
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive SignIn State Machine Diagram -->
+        <div class="machine-diagram-section card">
+          <div class="card-header">
+            <h4>Interactive State Flow Diagram</h4>
+            <p class="text-secondary">Click any state to trigger that transition • Current state is highlighted</p>
+          </div>
+          <div class="card-body">
+            {#if SignInStateMachineComponent}
+              <div class="signin-machine-container">
+                <svelte:component this={SignInStateMachineComponent}
+                  currentSignInState={signInState}
+                  width={800}
+                  height={400}
+                  compact={false}
+                  enableZoom={true}
+                  onStateClick={(state) => {
+                    console.log('🎯 Interactive state clicked:', state);
+                    handleSignInStateClick(state);
+                  }}
+                  on:stateClick={(e) => {
+                    if (e.detail && e.detail.state) {
+                      console.log('🎯 Interactive state event:', e.detail.state);
+                      handleSignInStateClick(e.detail.state);
+                    }
+                  }}
+                />
+              </div>
+            {:else}
+              <div class="loading-state">
+                <p>Loading interactive state machine...</p>
+                <p class="text-secondary">Initializing SignIn state machine visualization</p>
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Event Log for Debugging -->
+        <div class="event-log card">
+          <div class="card-header">
+            <h4>State Transition Log</h4>
+            <p class="text-secondary">Monitor state changes and events in real-time</p>
+          </div>
+          <div class="card-body">
+            <div class="log-instructions">
+              <p><strong>How to use:</strong></p>
+              <ul>
+                <li>🎯 <strong>Click any state</strong> in the diagram above to trigger a transition</li>
+                <li>📊 <strong>Watch the current state</strong> update in real-time</li>
+                <li>🔍 <strong>Open browser console</strong> to see detailed event logs</li>
+                <li>🔄 <strong>Use quick actions</strong> for common transitions</li>
+              </ul>
+              <p class="current-state-display">
+                Current State: <code class="signin-state-code">{signInState}</code>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     {:else if selectedDemo === 'register'}
       <div class="content-section">
         <h2>Registration Flow Demo</h2>
@@ -2813,6 +2941,16 @@ $: if (dynamicAuthConfig) {
     border: 1px solid #bae6fd;
     font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
   }
+  .pin-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    font-family: var(--font-mono, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+  }
 
   .context-group {
     margin-bottom: 1rem;
@@ -3089,36 +3227,99 @@ $: if (dynamicAuthConfig) {
     margin-bottom: 0;
   }
 
+  /* Interactive SignIn Machine Styles */
+  .machine-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .current-signin-state {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    padding: 0.5rem;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-family: monospace;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .action-buttons .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .machine-diagram-section {
+    margin-bottom: 2rem;
+  }
+
+  .signin-machine-container {
+    background: #fafafa;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .event-log {
+    background: var(--color-background-secondary);
+  }
+
+  .log-instructions {
+    line-height: 1.6;
+  }
+
+  .log-instructions ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .log-instructions li {
+    margin-bottom: 0.5rem;
+  }
+
+  .current-state-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--color-background);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--color-primary);
+  }
+
+  .signin-state-code {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .machine-status-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .action-buttons .btn {
+      min-width: 100px;
+    }
+  }
+
   @media (max-width: 1200px) {
     .machine-grid {
       grid-template-columns: 1fr;
     }
-  }
-  
-  .diagram-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.75rem;
-    background: var(--background-muted);
-    border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
-  }
-  
-  .diagram-controls .control-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .diagram-controls input[type="checkbox"] {
-    margin: 0;
-  }
-  
-  .diagram-controls .form-select {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9rem;
-    min-width: 150px;
   }
 
   .state-info {
@@ -3164,9 +3365,31 @@ $: if (dynamicAuthConfig) {
     margin: 0;
   }
 
-  .state-description strong {
+  .state-display {
+    padding: 20px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    text-align: center;
+  }
+
+  .state-display h4 {
+    margin: 0 0 10px 0;
     color: var(--text-primary);
+    font-size: 14px;
     font-weight: 600;
+  }
+
+  .state-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 5px;
+  }
+
+  .signin-state {
+    font-size: 12px;
+    color: var(--text-secondary);
   }
 
   /* Demo SignInForm styles */

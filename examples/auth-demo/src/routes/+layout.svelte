@@ -1,56 +1,86 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
+import { writable } from 'svelte/store';
+import { setContext } from 'svelte';
+import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
+// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
+const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import '../app.css';
 import '@thepia/flows-auth/dist/style.css';
+
+// Optional SvelteKit props
+export let params = {};
 
 // Auth state for reactivity
 let isAuthenticated = false;
 let user = null;
 let authStore = null;
-let authConfig = null;
+let isLoading = true;
+let initError = null;
 
-// ✅ PROPER SOLUTION: Use global auth store instead of Svelte context
-// Svelte context requires synchronous initialization, but we need async imports
-// The global singleton pattern works better for this use case
-if (browser) {
-  (async () => {
-    try {
-      console.log('🚀 Initializing auth demo with global singleton pattern...');
-      
-      // Dynamic import to avoid SSR issues
-      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
-      
-      // Create auth config asynchronously
-      authConfig = await quickAuthSetup({
-        companyName: 'Auth Demo',
-        clientId: 'demo',
-        enableErrorReporting: true,
-        appCode: 'demo', // Use demo app code for example endpoints
-      });
-      console.log('⚙️ Auth config created with library utilities:', authConfig);
-      
-      // Initialize global auth store (not Svelte context)
-      authStore = initializeAuth(authConfig);
-      console.log('🔐 Global auth store initialized');
-      
-      // Subscribe to auth state changes
-      authStore.subscribe((state) => {
-        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
-        user = state.user;
-        console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
-      });
-      
-      // Initialize the auth store (check for existing session)
-      authStore.initialize();
-      
-      console.log('✅ Auth demo initialization complete');
-      
-    } catch (error) {
-      console.error('❌ Failed to initialize auth demo:', error);
-    }
-  })();
-}
+// Create context immediately during component initialization
+const authStoreContext = writable(null);
+setContext(AUTH_CONTEXT_KEY, authStoreContext);
+
+// Create auth store in onMount to prevent reactive loops
+onMount(() => {
+  if (!browser) {
+    console.log('⚠️ Non-browser environment');
+    return;
+  }
+
+  try {
+    console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
+
+    // Create config synchronously
+    const authConfig = {
+      apiBaseUrl: 'https://api.thepia.com',
+      clientId: 'demo',
+      domain: 'thepia.net',
+      enablePasskeys: false,
+      enableMagicLinks: true,
+      enableErrorReporting: true,
+      appCode: 'demo',
+      branding: {
+        companyName: 'Auth Demo'
+      }
+    };
+    console.log('⚙️ Auth config created:', authConfig);
+
+    // Create auth store and update context
+    authStore = createAuthStore(authConfig);
+    console.log('🔧 Auth store created');
+    
+    // Update context with the created auth store
+    authStoreContext.set(authStore);
+    console.log('🔄 Auth store context updated');
+
+    // Initialize the auth store (check for existing session)
+    authStore.initialize();
+    console.log('✅ Auth store initialized');
+
+    // Subscribe to auth state changes for layout reactivity
+    const unsubscribe = authStore.subscribe((state) => {
+      isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+      user = state.user;
+      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+    });
+
+    isLoading = false;
+    console.log('✅ Auth store setup complete');
+
+    // Return cleanup function
+    return () => {
+      unsubscribe();
+    };
+
+  } catch (error) {
+    console.error('❌ Failed to create/initialize auth store:', error);
+    initError = error instanceof Error ? error.message : 'Unknown error';
+    isLoading = false;
+  }
+});
 </script>
 
 <div class="app" class:authenticated={isAuthenticated}>
@@ -85,7 +115,27 @@ if (browser) {
 	
 	<main class="main">
 		<div class="container">
-			<slot />
+			{#if isLoading}
+				<div class="loading-state">
+					<div class="loading-spinner"></div>
+					<p>Initializing auth demo...</p>
+				</div>
+			{:else if initError}
+				<div class="error-state">
+					<h2>❌ Initialization Error</h2>
+					<p>{initError}</p>
+					<button class="btn btn-outline" on:click={() => window.location.reload()}>
+						Reload Page
+					</button>
+				</div>
+			{:else}
+				<!-- ✅ Pass authStore to all pages via slot props -->
+				{console.log('🎯 Layout rendering slot (context-based):', { authStore: !!authStore, isAuthenticated, user: !!user })}
+				<slot 
+					isAuthenticated={isAuthenticated} 
+					user={user} 
+				/>
+			{/if}
 		</div>
 	</main>
 </div>
@@ -209,5 +259,44 @@ if (browser) {
 	.main {
 		flex: 1;
 		padding: 2rem 0;
+	}
+	
+	.loading-state,
+	.error-state {
+		text-align: center;
+		padding: 4rem 2rem;
+	}
+	
+	.loading-spinner {
+		width: 3rem;
+		height: 3rem;
+		border: 4px solid #e5e7eb;
+		border-top: 4px solid #2563eb;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin: 0 auto 1rem;
+	}
+	
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+	
+	.error-state {
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 8px;
+		max-width: 500px;
+		margin: 0 auto;
+	}
+	
+	.error-state h2 {
+		color: #dc2626;
+		margin-bottom: 1rem;
+	}
+	
+	.error-state p {
+		color: #7f1d1d;
+		margin-bottom: 1.5rem;
 	}
 </style>

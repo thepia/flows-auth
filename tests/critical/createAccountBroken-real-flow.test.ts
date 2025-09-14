@@ -3,9 +3,9 @@ import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
 /**
- * CRITICAL REAL FLOW TESTS for createAccount method
+ * CRITICAL REAL FLOW TESTS for createAccountBroken method
  * 
- * These tests validate the ACTUAL createAccount method that components use,
+ * These tests validate the ACTUAL createAccountBroken method that components use,
  * not the deprecated registerUser method. They test real business logic
  * with minimal mocking to catch actual production issues.
  * 
@@ -34,7 +34,7 @@ vi.mock('../../src/utils/webauthn-utils', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
 
-describe('CRITICAL: createAccount Real Flow Tests', () => {
+describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
   let authStore: any;
   let authConfig: AuthConfig;
 
@@ -57,7 +57,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     authStore = createAuthStore(authConfig);
   });
 
-  test('CRITICAL: createAccount should complete full WebAuthn registration flow', async () => {
+  test('CRITICAL: createAccountBroken should complete full WebAuthn registration flow', async () => {
     // Mock the complete API flow responses
     mockFetch
       // Step 1: User registration
@@ -126,8 +126,8 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
       acceptedPrivacy: true
     };
 
-    // CRITICAL: Test the actual createAccount method
-    const result = await authStore.createAccount(registrationData);
+    // CRITICAL: Test the actual createAccountBroken method
+    const result = await authStore.createAccountBroken(registrationData);
 
     // Verify the complete flow was executed
     expect(mockFetch).toHaveBeenCalledTimes(3);
@@ -187,7 +187,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     expect(result.accessToken).toBe('final-access-token');
   });
 
-  test('CRITICAL: createAccount should handle invitation token flow correctly', async () => {
+  test('CRITICAL: createAccountBroken should handle invitation token flow correctly', async () => {
     // Mock invitation registration response
     mockFetch
       .mockResolvedValueOnce({
@@ -252,7 +252,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     };
 
     // CRITICAL: Test invitation flow
-    const result = await authStore.createAccount(invitationRegistrationData);
+    const result = await authStore.createAccountBroken(invitationRegistrationData);
 
     // Verify invitation token was sent in registration request
     const registrationCall = mockFetch.mock.calls[0];
@@ -264,7 +264,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     expect(result.user.emailVerified).toBe(true);
   });
 
-  test('CRITICAL: createAccount should handle WebAuthn errors gracefully', async () => {
+  test('CRITICAL: createAccountBroken should handle WebAuthn errors gracefully', async () => {
     // Mock successful user registration
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -297,7 +297,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     };
 
     // CRITICAL: Should handle WebAuthn errors gracefully
-    await expect(authStore.createAccount(registrationData))
+    await expect(authStore.createAccountBroken(registrationData))
       .rejects.toThrow(/User cancelled WebAuthn/);
 
     // Verify user registration still happened
@@ -310,7 +310,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     );
   });
 
-  test('CRITICAL: createAccount should validate required fields', async () => {
+  test('CRITICAL: createAccountBroken should validate required fields', async () => {
     const invalidRegistrationData = {
       // Missing required fields
       email: '',
@@ -319,7 +319,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     };
 
     // CRITICAL: Should validate required fields before API calls
-    await expect(authStore.createAccount(invalidRegistrationData))
+    await expect(authStore.createAccountBroken(invalidRegistrationData))
       .rejects.toThrow();
 
     // Verify no API calls were made
@@ -327,7 +327,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     expect(mockCredentialCreate).not.toHaveBeenCalled();
   });
 
-  test('CRITICAL: createAccount should handle API failures gracefully', async () => {
+  test('CRITICAL: createAccountBroken should handle API failures gracefully', async () => {
     // Mock API failure
     mockFetch.mockRejectedValue(new Error('Network error'));
 
@@ -340,7 +340,7 @@ describe('CRITICAL: createAccount Real Flow Tests', () => {
     };
 
     // CRITICAL: Should handle network errors gracefully
-    await expect(authStore.createAccount(registrationData))
+    await expect(authStore.createAccountBroken(registrationData))
       .rejects.toThrow(/Network error/);
 
     // Verify only one API call was attempted

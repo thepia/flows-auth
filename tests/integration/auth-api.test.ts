@@ -124,21 +124,19 @@ describe('AuthApiClient', () => {
         json: () => Promise.resolve(mockResponse)
       });
 
-      const result = await apiClient.signInWithPassword({
-        email: 'test@example.com',
-        password: 'password'
+      const result = await apiClient.signInWithMagicLink({
+        email: 'test@example.com'
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/auth/signin/password',
+        'https://api.test.com/auth/send-email',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
             'Content-Type': 'application/json'
           }),
           body: JSON.stringify({
-            email: 'test@example.com',
-            password: 'password'
+            email: 'test@example.com'
           })
         })
       );
@@ -161,7 +159,7 @@ describe('AuthApiClient', () => {
       });
 
       await expect(
-        apiClient.signInWithPassword({ email: 'test@example.com', password: 'wrong' })
+        apiClient.signInWithMagicLink({ email: 'test@example.com' })
       ).rejects.toEqual({
         code: 'invalid_credentials',
         message: 'Invalid email or password'
@@ -228,9 +226,8 @@ describe('AuthApiClient', () => {
         json: () => Promise.resolve(mockResponse)
       });
 
-      const result = await apiClient.signInWithPassword({
-        email: 'test@example.com',
-        password: 'password123'
+      const result = await apiClient.signInWithMagicLink({
+        email: 'test@example.com'
       });
 
       expect(result).toEqual(mockResponse);

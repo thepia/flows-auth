@@ -3,6 +3,12 @@
  * Based on thepia.com React implementation
  */
 
+import type { AuthApiClient } from '../api/auth-api';
+import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
+// SignIn state types (keeping only the types, removed the class)
+import type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError } from './signin-state-machine';
+export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
+
 // User types
 export interface User {
   id: string;
@@ -18,18 +24,22 @@ export interface User {
 // Authentication states - simplified with email verification support
 export type AuthState =
   | 'unauthenticated'
-  | 'authenticated-unconfirmed'  // Has passkey but email not verified
-  | 'authenticated-confirmed'    // Full access after email verification
-  | 'authenticated'              // Generic authenticated state for backward compatibility
-  | 'loading'
+  | 'authenticated-unconfirmed' // Has passkey but email not verified
+  | 'authenticated-confirmed' // Full access after email verification
+  | 'authenticated' // Generic authenticated state for backward compatibility
   | 'error';
 
 export type AuthMethod = 'passkey' | 'magic-link' | 'email-code';
 
-
-
 // Sign-in flow states - passwordless only
-export type SignInStep = 'email' | 'passkey' | 'magic-link' | 'email-code' | 'loading' | 'success' | 'error';
+export type SignInStep =
+  | 'email'
+  | 'passkey'
+  | 'magic-link'
+  | 'email-code'
+  | 'loading'
+  | 'success'
+  | 'error';
 
 // Registration flow states
 export type RegistrationStep =
@@ -40,68 +50,11 @@ export type RegistrationStep =
   | 'email-verification-complete'
   | 'error';
 
-// State Machine Types - Based on documented authentication state machine
-// Legacy state machine - to be deprecated in favor of dual state machines
-export type AuthMachineState =
-  | 'checkingSession'
-  | 'sessionValid'
-  | 'sessionInvalid'
-  | 'combinedAuth'
-  | 'emailCodeInput'             // PIN/code entry state
-  | 'conditionalMediation'
-  | 'autofillPasskeys'
-  | 'waitForExplicit'
-  | 'explicitAuth'
-  | 'auth0UserLookup'
-  | 'directWebAuthnAuth'
-  | 'passkeyRegistration'
-  | 'newUserRegistration'
-  | 'webauthnRegister'           // Registration with passkey
-  | 'authenticatedUnconfirmed'   // Logged in but email not verified
-  | 'authenticatedConfirmed'     // Full access after email verification
-  | 'biometricPrompt'
-  | 'auth0WebAuthnVerify'
-  | 'passkeyError'
-  | 'errorHandling'
-  | 'credentialNotFound'
-  | 'userCancellation'
-  | 'credentialMismatch'
-  | 'auth0TokenExchange'
-  | 'sessionCreated'
-  | 'loadingApp'
-  | 'appLoaded';
 
 // New dual state machine types
-export * from './session-state-machine';
-export * from './signin-state-machine';
+// Removed: session-state-machine types - SessionStateMachine removed
+// Note: signin-state-machine types exported at top of file
 
-export type AuthMachineEvent = 
-  | { type: 'CHECK_SESSION' }
-  | { type: 'VALID_SESSION'; session: SessionData }
-  | { type: 'INVALID_SESSION' }
-  | { type: 'USER_CLICKS_NEXT' }
-  | { type: 'EMAIL_TYPED'; email: string }
-  | { type: 'CONTINUE_CLICKED' }
-  | { type: 'PASSKEY_SELECTED'; credential: any }
-  | { type: 'USER_EXISTS'; hasPasskey: boolean }
-  | { type: 'USER_NOT_FOUND' }
-  | { type: 'PIN_REQUIRED' }        // Transition to email code input
-  | { type: 'PIN_SUBMITTED'; code: string }
-  | { type: 'PIN_VERIFIED' }
-  | { type: 'WEBAUTHN_SUCCESS'; response: any }
-  | { type: 'WEBAUTHN_ERROR'; error: AuthError; timing: number }
-  | { type: 'TOKEN_EXCHANGE_SUCCESS'; tokens: any }
-  | { type: 'RESET_TO_COMBINED_AUTH' };
-
-export interface AuthMachineContext {
-  email: string | null;
-  user: User | null;
-  error: AuthError | null;
-  startTime: number;
-  retryCount: number;
-  sessionData: SessionData | null;
-  challengeId: string | null;
-}
 
 export interface SessionData {
   accessToken: string;
@@ -123,13 +76,13 @@ export interface StorageConfig {
 export interface ApplicationContext {
   // Domain-based hints
   domain?: string; // e.g., 'internal.company.com' suggests all users are employees
-  
-  // URL-based hints  
+
+  // URL-based hints
   urlPath?: string; // e.g., '/admin/login' suggests admin users
-  
+
   // Application-level hints
   userType?: 'all_employees' | 'all_guests' | 'mixed'; // Corporate intranet vs public site
-  
+
   // Security override
   forceGuestMode?: boolean; // Always start with guest settings for security
 }
@@ -154,14 +107,13 @@ export interface SessionMigrationResult {
 
 export type StorageType = 'sessionStorage' | 'localStorage';
 
-
 // Authentication configuration
 export interface AuthConfig {
   apiBaseUrl: string;
   clientId: string;
   domain: string;
   enablePasskeys: boolean;
-  enableMagicPins: boolean;
+  enableMagicLinks: boolean;
   redirectUri?: string;
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;
@@ -169,10 +121,12 @@ export interface AuthConfig {
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
   appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
-  
+
+  invitationToken?: string; // Optional invitation token for account creation permission
+
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
-  
+
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
   translations?: import('../utils/i18n').CustomTranslations; // Custom translation overrides
@@ -207,7 +161,6 @@ export interface AuthBranding {
   customCSS?: string;
 }
 
-
 // API request/response types
 export interface SignInRequest {
   email: string;
@@ -232,7 +185,6 @@ export interface PasskeyRequest {
   credential: PasskeyCredential; // Properly typed WebAuthn credential
   challengeId?: string; // Optional challenge ID for verification
 }
-
 
 export interface MagicLinkRequest {
   email: string;
@@ -334,6 +286,57 @@ export interface PasskeyCredential {
   type: 'public-key';
 }
 
+// Passkey management types
+export interface UserPasskey {
+  id: string;
+  name?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  type?: string;
+}
+
+// User profile type
+export interface UserProfile extends User {
+  passkeys?: UserPasskey[];
+  mfaEnabled?: boolean;
+  organizations?: string[];
+}
+
+// WebAuthn registration types
+export interface WebAuthnRegistrationOptions {
+  challenge: string;
+  rp: {
+    name: string;
+    id: string;
+  };
+  user: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  timeout?: number;
+  attestation?: AttestationConveyancePreference;
+}
+
+export interface WebAuthnRegistrationResponse {
+  id: string;
+  rawId: ArrayBuffer;
+  response: AuthenticatorAttestationResponse;
+  type: 'public-key';
+}
+
+export interface WebAuthnVerificationResult {
+  success: boolean;
+  error?: string;
+  tokens?: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt: number;
+  };
+}
+
 // Error types
 export interface AuthError {
   code: string;
@@ -342,7 +345,7 @@ export interface AuthError {
   timestamp?: string;
 }
 
-export type AuthErrorCode = 
+export type AuthErrorCode =
   | 'user_not_found'
   | 'email_not_verified'
   | 'passkey_not_supported'
@@ -365,6 +368,7 @@ export interface AuthEventData {
   appCode?: string;
   success?: boolean;
   timestamp?: number;
+  requiresVerification?: boolean;
 }
 
 export type AuthEventType =
@@ -420,7 +424,6 @@ export interface PasskeyStepProps {
   branding?: AuthBranding;
 }
 
-
 export interface MagicLinkStepProps {
   email: string;
   onBack: () => void;
@@ -429,7 +432,6 @@ export interface MagicLinkStepProps {
   error?: string;
   branding?: AuthBranding;
 }
-
 
 export interface TermsOfServiceProps {
   onAccept: (accepted: { terms: boolean; privacy: boolean; marketing?: boolean }) => void;
@@ -462,6 +464,7 @@ export interface EmailVerificationPromptProps {
 // Store state
 export interface AuthStore {
   state: AuthState;
+  signInState: SignInState; // Added: UI flow state for sign-in process
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -469,24 +472,100 @@ export interface AuthStore {
   error: AuthError | null;
 }
 
-// Auth store methods - passwordless only with strict typing
-export type AuthStoreMethods = {
-  signIn: (request: SignInRequest) => Promise<SignInResponse>;
-  signInWithPasskey: (request: PasskeyRequest) => Promise<SignInResponse>;
-  signInWithMagicLink: (request: MagicLinkRequest) => Promise<SignInResponse>;
+// Svelte store types
+export type Unsubscriber = () => void;
+export type Subscriber<T> = (value: T) => void;
+export type Readable<T> = {
+  subscribe: (run: Subscriber<T>) => Unsubscriber;
+};
+
+// Complete auth store type with all methods
+export interface CompleteAuthStore extends Readable<AuthStore> {
+  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
+  signInWithMagicLink: (email: string) => Promise<SignInResponse>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   isAuthenticated: () => boolean;
   getAccessToken: () => string | null;
   reset: () => void;
-  
-  // Convenience methods for backward compatibility
-  signInByEmail: (email: string, method?: AuthMethod) => Promise<SignInResponse>;
-};
+  initialize: () => void;
+  startConditionalAuthentication: (email: string) => Promise<boolean>;
+  checkUser: (email: string) => Promise<{
+    exists: boolean;
+    hasWebAuthn: boolean;
+    userId?: string;
+    emailVerified?: boolean;
+    invitationTokenHash?: string;
+    lastPinExpiry?: number;
+  }>;
+  registerUser: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }) => Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }>;
+  createAccount: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }) => Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }>;
+  registerIndividualUser: (userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+  }) => Promise<{
+    success: boolean;
+    user: User;
+    verificationRequired: boolean;
+    message: string;
+  }>;
+  checkUserWithInvitation: (
+    email: string,
+    invitationOptions?: {
+      token: string;
+      tokenData?: InvitationTokenData;
+      skipTokenValidation?: boolean;
+    }
+  ) => Promise<EnhancedUserCheck>;
+  determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
+  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
+  api: AuthApiClient;
+
+  // SignIn flow control methods
+  notifyPinSent: () => void;
+  notifyPinVerified: (sessionData: any) => void;
+  sendSignInEvent: (event: SignInEvent) => SignInState;
+
+  // Email-based authentication methods
+  sendEmailCode: (email: string) => Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }>;
+  verifyEmailCode: (email: string, code: string) => Promise<SignInResponse>;
+
+  // Dynamic role configuration methods
+  getApplicationContext: () => ApplicationContext | null;
+  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
+  migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
+
+  // Configuration access
+  getConfig: () => AuthConfig;
+
+  // Cleanup
+  destroy: () => void;
+}
 
 // Re-export i18n types for convenience
-export type { 
+export type {
   CustomTranslations,
   TranslationKey,
-  SupportedLanguage 
+  SupportedLanguage,
 } from '../utils/i18n';

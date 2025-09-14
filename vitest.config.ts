@@ -1,10 +1,12 @@
-import { defineConfig } from 'vitest/config';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import sveltePreprocess from 'svelte-preprocess';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [
     svelte({
+      preprocess: sveltePreprocess(),
       hot: !process.env.VITEST,
     }),
   ],
@@ -16,13 +18,13 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/examples/**/tests/**',
-      '**/examples/**/*.test.js'
+      '**/examples/**/*.test.js',
     ],
-    testTimeout: 10000
+    testTimeout: 10000,
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-    }
-  }
+    },
+  },
 });

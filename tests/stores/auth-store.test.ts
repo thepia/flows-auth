@@ -11,14 +11,13 @@ import type { AuthConfig, SignInResponse } from '../../src/types';
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     signIn: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
+    signInWithPasskey: vi.fn(),
     refreshToken: vi.fn(),
     signOut: vi.fn(),
     checkEmail: vi.fn(),
-    sendOrgEmailCode: vi.fn(),
-    verifyOrgEmailCode: vi.fn()
+    sendAppEmailCode: vi.fn(),
+    verifyAppEmailCode: vi.fn()
   }))
 }));
 
@@ -41,7 +40,8 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: true,
+  appCode: 'test-app',
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -134,9 +134,9 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithPassword.mockResolvedValue(mockResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
 
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
 
       const state = get(authStore);
       expect(state.state).toBe('authenticated');
@@ -149,10 +149,10 @@ describe('Auth Store', () => {
       const mockError = new Error('Invalid credentials');
       (mockError as any).code = 'invalid_credentials';
 
-      mockApiClient.signInWithPassword.mockRejectedValue(mockError);
+      mockApiClient.signInWithMagicLink.mockRejectedValue(mockError);
 
       await expect(
-        authStore.signInWithPassword('test@example.com', 'wrong-password')
+        authStore.signInWithMagicLink('test@example.com')
       ).rejects.toThrow('Invalid credentials');
 
       const state = get(authStore);
@@ -197,9 +197,9 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithPassword.mockResolvedValue(mockResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
 
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
 
       // Verify session was saved by checking localStorage (real session manager behavior)
       const { getSession } = await import('../../src/utils/sessionManager');
@@ -253,10 +253,10 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
 
       // Sign in to establish refresh token
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
 
       // Now set up refresh response
       const mockRefreshResponse: SignInResponse = {
@@ -300,9 +300,9 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
 
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
       expect(authStore.isAuthenticated()).toBe(true);
     });
 
@@ -324,9 +324,9 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithPassword.mockResolvedValue(mockSignInResponse);
+      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
 
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
       expect(authStore.getAccessToken()).toBe('token');
     });
 
@@ -381,9 +381,9 @@ describe('Auth Store', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithPassword.mockResolvedValue(mockResponse);
+      mockApi.signInWithMagicLink.mockResolvedValue(mockResponse);
 
-      await authStore.signInWithPassword('test@example.com', 'password');
+      await authStore.signInWithMagicLink('test@example.com');
 
       expect(signInStartedHandler).toHaveBeenCalledWith({ method: 'password' });
       expect(signInSuccessHandler).toHaveBeenCalledWith({
@@ -392,10 +392,10 @@ describe('Auth Store', () => {
       });
 
       // Test failed sign in
-      mockApi.signInWithPassword.mockRejectedValue(new Error('Invalid credentials'));
+      mockApi.signInWithMagicLink.mockRejectedValue(new Error('Invalid credentials'));
 
       try {
-        await authStore.signInWithPassword('test@example.com', 'wrong');
+        await authStore.signInWithMagicLink('test@example.com');
       } catch (error) {
         // Expected to throw
       }
@@ -410,7 +410,7 @@ describe('Auth Store', () => {
       unsubscribe();
 
       // This shouldn't call the handler since we unsubscribed
-      authStore.signInWithPassword('test@example.com', 'password').catch(() => {
+      authStore.signInWithMagicLink('test@example.com').catch(() => {
         // Ignore errors for this test
       });
 
@@ -488,14 +488,17 @@ describe('Auth Store', () => {
     });
   });
 
-  describe('Email Authentication (Transparent Org Support)', () => {
-    it('should use org endpoints when org is configured', async () => {
-      const configWithOrg: AuthConfig = {
+  // AppCode not org
+  // Don't test magic link, only magic pin.
+  // Soon we will not support configs without appCode.
+  describe('Email Authentication (Transparent App Support)', () => {
+    it('should use app endpoints when appCode is configured', async () => {
+      const configWithApp: AuthConfig = {
         ...mockConfig,
-        org: 'test-org'
+        appCode: 'test-app'
       };
       
-      const authStore = createAuthStore(configWithOrg);
+      const authStore = createAuthStore(configWithApp);
       
       const mockEmailCodeResponse = {
         success: true,
@@ -503,22 +506,22 @@ describe('Auth Store', () => {
         timestamp: Date.now()
       };
 
-      mockApiClient.sendOrgEmailCode.mockResolvedValue(mockEmailCodeResponse);
+      mockApiClient.sendAppEmailCode.mockResolvedValue(mockEmailCodeResponse);
 
       const result = await authStore.sendEmailCode('test@example.com');
 
-      expect(mockApiClient.sendOrgEmailCode).toHaveBeenCalledWith('test@example.com');
+      expect(mockApiClient.sendAppEmailCode).toHaveBeenCalledWith('test-app', 'test@example.com');
       expect(result).toEqual(mockEmailCodeResponse);
     });
 
-    it('should fall back to magic link when org is not configured', async () => {
-      const configWithoutOrg: AuthConfig = {
+    it('should fall back to magic link when appCode is not configured', async () => {
+      const configWithoutApp: AuthConfig = {
         ...mockConfig,
-        enableMagicPins: true
+        enableMagicLinks: true
       };
-      delete (configWithoutOrg as any).org;
+      delete (configWithoutApp as any).appCode;
       
-      const authStore = createAuthStore(configWithoutOrg);
+      const authStore = createAuthStore(configWithoutApp);
       
       const mockMagicLinkResponse: SignInResponse = {
         step: 'magic-link',
@@ -534,13 +537,13 @@ describe('Auth Store', () => {
       expect(result.message).toBe('Magic link sent to your email');
     });
 
-    it('should verify email code with org endpoints when org is configured', async () => {
-      const configWithOrg: AuthConfig = {
+    it('should verify email code with app endpoints when appCode is configured', async () => {
+      const configWithApp: AuthConfig = {
         ...mockConfig,
-        org: 'test-org'
+        appCode: 'test-app'
       };
       
-      const authStore = createAuthStore(configWithOrg);
+      const authStore = createAuthStore(configWithApp);
       
       const mockVerifyResponse: SignInResponse = {
         step: 'success',
@@ -556,11 +559,11 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.verifyOrgEmailCode.mockResolvedValue(mockVerifyResponse);
+      mockApiClient.verifyAppEmailCode.mockResolvedValue(mockVerifyResponse);
 
       const result = await authStore.verifyEmailCode('test@example.com', '123456');
 
-      expect(mockApiClient.verifyOrgEmailCode).toHaveBeenCalledWith('test@example.com', '123456');
+      expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith('test-app', 'test@example.com', '123456');
       expect(result).toEqual(mockVerifyResponse);
       
       // Check that user is authenticated
@@ -569,13 +572,13 @@ describe('Auth Store', () => {
       expect(state.user).toEqual(mockVerifyResponse.user);
     });
 
-    it('should throw error when trying to verify code without org configuration', async () => {
-      const configWithoutOrg: AuthConfig = {
+    it('should throw error when trying to verify code without appCode configuration', async () => {
+      const configWithoutApp: AuthConfig = {
         ...mockConfig
       };
-      delete (configWithoutOrg as any).org;
+      delete (configWithoutApp as any).appCode;
       
-      const authStore = createAuthStore(configWithoutOrg);
+      const authStore = createAuthStore(configWithoutApp);
 
       await expect(
         authStore.verifyEmailCode('test@example.com', '123456')
@@ -583,15 +586,15 @@ describe('Auth Store', () => {
     });
 
     it('should handle email code send errors gracefully', async () => {
-      const configWithOrg: AuthConfig = {
+      const configWithApp: AuthConfig = {
         ...mockConfig,
-        org: 'test-org'
+        appCode: 'test-app'
       };
       
-      const authStore = createAuthStore(configWithOrg);
+      const authStore = createAuthStore(configWithApp);
       
       const mockError = new Error('Network error');
-      mockApiClient.sendOrgEmailCode.mockRejectedValue(mockError);
+      mockApiClient.sendAppEmailCode.mockRejectedValue(mockError);
 
       await expect(
         authStore.sendEmailCode('test@example.com')
@@ -602,15 +605,15 @@ describe('Auth Store', () => {
     });
 
     it('should handle email code verification errors gracefully', async () => {
-      const configWithOrg: AuthConfig = {
+      const configWithApp: AuthConfig = {
         ...mockConfig,
-        org: 'test-org'
+        appCode: 'test-app'
       };
       
-      const authStore = createAuthStore(configWithOrg);
+      const authStore = createAuthStore(configWithApp);
       
       const mockError = new Error('Invalid code');
-      mockApiClient.verifyOrgEmailCode.mockRejectedValue(mockError);
+      mockApiClient.verifyAppEmailCode.mockRejectedValue(mockError);
 
       await expect(
         authStore.verifyEmailCode('test@example.com', '123456')

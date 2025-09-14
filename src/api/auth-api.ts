@@ -11,24 +11,58 @@ import type {
   SignInRequest,
   SignInResponse,
   PasskeyRequest,
+  PasskeyCredential,
   MagicLinkRequest,
   RefreshTokenRequest,
   LogoutRequest,
   PasskeyChallenge,
   AuthError,
-  User
+  User,
+  UserProfile,
+  UserPasskey,
+  WebAuthnRegistrationOptions,
+  WebAuthnRegistrationResponse,
+  WebAuthnVerificationResult,
+  RegistrationResponse
 } from '../types';
 
 export class AuthApiClient {
   private config: AuthConfig;
   private baseUrl: string;
+  private effectiveBaseUrl: Promise<string>;
 
   constructor(config: AuthConfig) {
     this.config = config;
     this.baseUrl = config.apiBaseUrl.replace(/\/$/, '');
     
+    // Create a promise that resolves to the effective base URL
+    // This allows for async API detection while keeping the constructor synchronous
+    this.effectiveBaseUrl = this.detectEffectiveBaseUrl();
+    
     // Rate limiting is now handled by the intelligent client rate limiter
     // No configuration needed - uses 5 req/sec default with server backoff
+  }
+
+  /**
+   * Detect the effective base URL to use (local dev server or production)
+   */
+  private async detectEffectiveBaseUrl(): Promise<string> {
+    // If running in browser and config allows detection
+    if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
+      try {
+        // Try to use the detection utility if available
+        const { detectApiServer } = await import('../utils/api-detection');
+        const apiServer = await detectApiServer();
+        console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
+        return apiServer.url.replace(/\/$/, '');
+      } catch (error) {
+        // Fall back to configured URL if detection fails
+        console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
+      }
+    }
+    
+    // Use the configured URL as-is
+    return this.baseUrl;
   }
 
   /**
@@ -62,7 +96,9 @@ export class AuthApiClient {
     options: RequestInit = {},
     includeAuth = false
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Resolve the effective base URL (will use cached promise result after first call)
+    const effectiveUrl = await this.effectiveBaseUrl;
+    const url = `${effectiveUrl}${endpoint}`;
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -313,8 +349,8 @@ export class AuthApiClient {
   /**
    * Get user profile
    */
-  async getProfile(): Promise<any> {
-    return this.request<any>('/auth/profile', {
+  async getProfile(): Promise<UserProfile> {
+    return this.request<UserProfile>('/auth/profile', {
       method: 'GET'
     }, true);
   }
@@ -435,7 +471,7 @@ export class AuthApiClient {
   /**
    * Create passkey
    */
-  async createPasskey(credential: any): Promise<void> {
+  async createPasskey(credential: PasskeyCredential): Promise<void> {
     await this.request<void>('/auth/passkey/create', {
       method: 'POST',
       body: JSON.stringify({ credential })
@@ -445,8 +481,8 @@ export class AuthApiClient {
   /**
    * List user's passkeys
    */
-  async listPasskeys(): Promise<any[]> {
-    return this.request<any[]>('/auth/passkeys', {
+  async listPasskeys(): Promise<UserPasskey[]> {
+    return this.request<UserPasskey[]>('/auth/passkeys', {
       method: 'GET'
     }, true);
   }
@@ -473,14 +509,43 @@ export class AuthApiClient {
   }): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/create-user` : '/auth/register';
-    
-    return this.request<SignInResponse>(endpoint, {
+
+    const response = await this.request<{
+      success?: boolean;
+      user?: any;
+      message?: string;
+      step?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      expiresIn?: number;
+    }>(endpoint, {
       method: 'POST',
       body: JSON.stringify(userData),
       headers: {
         'Origin': typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
     });
+
+    // Transform API response to SignInResponse format
+    if (response.success && response.user) {
+      // API returned {success: true, user: {...}} format
+      return {
+        step: 'success',
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresIn: response.expiresIn
+      };
+    } else if (response.step) {
+      // API returned legacy SignInResponse format
+      return response as SignInResponse;
+    } else {
+      // API returned error or unexpected format
+      return {
+        step: 'error',
+        user: undefined
+      };
+    }
   }
 
   /**
@@ -544,8 +609,8 @@ export class AuthApiClient {
   /**
    * Get WebAuthn registration options for new passkey
    */
-  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<any> {
-    return this.request<any>('/auth/webauthn/register-options', {
+  async getWebAuthnRegistrationOptions(data: { email: string; userId: string }): Promise<WebAuthnRegistrationOptions> {
+    return this.request<WebAuthnRegistrationOptions>('/auth/webauthn/register-options', {
       method: 'POST',
       body: JSON.stringify(data)
     });
@@ -556,33 +621,9 @@ export class AuthApiClient {
    */
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
-    registrationResponse: any;
-  }): Promise<{
-    success: boolean;
-    error?: string;
-    tokens?: {
-      accessToken: string;
-      refreshToken: string;
-      expiresAt: number;
-    };
-    user?: {
-      id: string;
-      email: string;
-    };
-  }> {
-    return this.request<{
-      success: boolean;
-      error?: string;
-      tokens?: {
-        accessToken: string;
-        refreshToken: string;
-        expiresAt: number;
-      };
-      user?: {
-        id: string;
-        email: string;
-      };
-    }>('/auth/webauthn/register-verify', {
+    registrationResponse: WebAuthnRegistrationResponse;
+  }): Promise<WebAuthnVerificationResult> {
+    return this.request<WebAuthnVerificationResult>('/auth/webauthn/register-verify', {
       method: 'POST',
       body: JSON.stringify({
         ...registrationData,

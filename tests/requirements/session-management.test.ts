@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { AuthStateMachine } from '../../src/stores/auth-state-machine';
+import { createAuthStore } from '../../src/stores/auth-store';
 import { 
   getSession, 
   saveSession, 
@@ -119,12 +119,13 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       const session = createTestSession();
       saveSession(session);
 
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
+      // Auth store should find session through sessionManager
+      const authStore = createAuthStore(mockConfig);
+      authStore.initialize();
       
-      // State machine should find session through sessionManager
-      stateMachine.start();
-      expect(stateMachine.currentState).toBe('sessionValid');
+      // Should be authenticated since valid session exists
+      const state = authStore.getState();
+      expect(state.state).toBe('authenticated');
     });
 
     it('MUST NOT use direct localStorage in state machine', () => {
@@ -132,12 +133,13 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       mockLocalStorage.data.set('auth_access_token', 'legacy-token');
       mockLocalStorage.data.set('auth_user', JSON.stringify({ id: 'legacy' }));
 
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
+      // Auth store should NOT find legacy localStorage data
+      const authStore = createAuthStore(mockConfig);
+      authStore.initialize();
       
-      // State machine should NOT find legacy localStorage data
-      stateMachine.start();
-      expect(stateMachine.currentState).toBe('sessionInvalid');
+      // Should be unauthenticated since no valid session exists
+      const state = authStore.getState();
+      expect(state.state).toBe('unauthenticated');
     });
   });
 });

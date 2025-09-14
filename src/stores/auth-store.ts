@@ -20,22 +20,24 @@ import {
   getOptimalSessionConfig,
   type FlowsSessionData
 } from '../utils/sessionManager';
-import { AuthStateMachine } from './auth-state-machine';
 import type {
   AuthConfig,
   AuthStore,
+  CompleteAuthStore,
   AuthError,
   SignInResponse,
   RegistrationResponse,
   AuthMethod,
   AuthEventType,
   AuthEventData,
-  AuthMachineState,
-  AuthMachineContext,
   ApplicationContext,
   StorageConfigurationUpdate,
   SessionMigrationResult,
-  StorageType
+  StorageType,
+  User,
+  InvitationTokenData,
+  SignInState,
+  SignInEvent
 } from '../types';
 
 // Legacy localStorage migration (remove old localStorage entries if they exist)
@@ -47,7 +49,7 @@ const LEGACY_STORAGE_KEYS = {
 } as const;
 
 // Create auth store with state machine integration
-function createAuthStore(config: AuthConfig) {
+function createAuthStore(config: AuthConfig): CompleteAuthStore {
   // Initialize error reporting if configured
   if (browser && config.errorReporting) {
     initializeErrorReporter(config.errorReporting);
@@ -80,9 +82,8 @@ function createAuthStore(config: AuthConfig) {
     return undefined;
   };
 
-  // Initialize API client and state machine
+  // Initialize API client
   const api = new AuthApiClient(config);
-  const stateMachine = new AuthStateMachine(api, config);
 
   // Clean up any legacy localStorage data and migrate to sessionStorage if needed
   if (browser) {
@@ -106,6 +107,7 @@ function createAuthStore(config: AuthConfig) {
 
   const initialState: AuthStore = {
     state: isValidSession ? 'authenticated' : 'unauthenticated',
+    signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
     user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
@@ -114,20 +116,6 @@ function createAuthStore(config: AuthConfig) {
   };
 
   const store = writable<AuthStore>(initialState);
-  
-  // Create state machine store
-  const stateMachineStore = writable({
-    state: stateMachine.currentState,
-    context: stateMachine.currentContext
-  });
-
-  // Subscribe to state machine changes
-  const unsubscribeStateMachine = stateMachine.onTransition((state, context) => {
-    stateMachineStore.set({ state, context });
-    
-    // Update legacy store based on state machine state
-    updateLegacyStoreFromStateMachine(state, context);
-  });
 
   // Event handlers
   const eventHandlers = new Map<AuthEventType, ((data: AuthEventData) => void)[]>();
@@ -166,6 +154,76 @@ function createAuthStore(config: AuthConfig) {
    */
   function updateState(updates: Partial<AuthStore>) {
     store.update(state => ({ ...state, ...updates }));
+  }
+
+  /**
+   * Process SignInEvent and transition signInState
+   */
+  function processSignInTransition(currentState: SignInState, event: SignInEvent): SignInState {
+    switch (currentState) {
+      case 'emailEntry':
+        if (event.type === 'USER_CHECKED') {
+          // Transition to userChecked - passkey handling should be at UI level
+          return 'userChecked';
+        }
+        break;
+      
+      case 'userChecked':
+        if (event.type === 'SENT_PIN_EMAIL') return 'pinEntry'; // Transition to PIN entry after email sent
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'passkeyPrompt':
+        if (event.type === 'PASSKEY_SUCCESS') return 'signedIn';
+        if (event.type === 'PASSKEY_FAILED') return 'generalError';
+        break;
+        
+      case 'pinEntry':
+        if (event.type === 'PIN_VERIFIED') return 'signedIn';
+        if (event.type === 'EMAIL_VERIFICATION_REQUIRED') return 'emailVerification';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'emailVerification':
+        if (event.type === 'EMAIL_VERIFIED') return 'signedIn';
+        break;
+        
+      case 'signedIn':
+        if (event.type === 'REGISTER_PASSKEY') return 'passkeyRegistration';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'passkeyRegistration':
+        if (event.type === 'PASSKEY_REGISTERED') return 'signedIn';
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+        
+      case 'generalError':
+        if (event.type === 'RESET') return 'emailEntry';
+        break;
+    }
+    return currentState; // No transition found, stay in current state
+  }
+
+  /**
+   * Send SignInEvent and update signInState accordingly
+   * Returns the new signInState after processing
+   */
+  function sendSignInEvent(event: SignInEvent): SignInState {
+    let newSignInState: SignInState = 'emailEntry'; // Initialize with default
+    store.update(s => {
+      newSignInState = processSignInTransition(s.signInState, event);
+      const updatedStore = { ...s, signInState: newSignInState };
+      return updatedStore;
+    });
+    return newSignInState;
+  }
+
+  /**
+   * Update signInState directly
+   */
+  function updateSignInState(newSignInState: SignInState) {
+    store.update(s => ({ ...s, signInState: newSignInState }));
   }
 
   /**
@@ -258,7 +316,7 @@ function createAuthStore(config: AuthConfig) {
       });
 
       console.log('🧹 Cleaned up legacy localStorage auth data');
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to clean up legacy localStorage:', error);
     }
   }
@@ -284,49 +342,11 @@ function createAuthStore(config: AuthConfig) {
     setTimeout(async () => {
       try {
         await refreshTokens();
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Auto token refresh failed:', error);
       }
     }, refreshTime);
   }
-
-  /**
-   * Initiate sign-in flow
-   */
-  async function signIn(email: string, method?: AuthMethod): Promise<SignInResponse> {
-    updateState({ state: 'loading', error: null });
-    emit('sign_in_started', { method });
-
-    try {
-      const response = await api.signIn({ email, method });
-      
-      if (response.step === 'success' && response.user && response.accessToken) {
-        saveAuthSession(response, method === 'passkey' ? 'passkey' : 'password');
-        updateState({
-          state: 'authenticated',
-          user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : null,
-          error: null
-        });
-        scheduleTokenRefresh();
-        emit('sign_in_success', { user: response.user, method });
-      }
-
-      return response;
-    } catch (error: any) {
-      const authError: AuthError = {
-        code: error.code || 'unknown_error',
-        message: error.message || 'Sign in failed'
-      };
-      
-      updateState({ state: 'error', error: authError });
-      emit('sign_in_error', { error: authError, method });
-      throw authError;
-    }
-  }
-
   /**
    * Sign in with passkey
    */
@@ -340,7 +360,7 @@ function createAuthStore(config: AuthConfig) {
     }
 
     if (!conditional) {
-      updateState({ state: 'loading', error: null });
+      updateState({ error: null }); // Clear errors but don't change state
       emit('sign_in_started', { method: 'passkey' });
       reportAuthState({
         event: 'webauthn-start',
@@ -432,6 +452,9 @@ function createAuthStore(config: AuthConfig) {
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'passkey' });
         emit('passkey_used', { user: response.user });
+        
+        // Send SignInEvent for state transition to 'signedIn'
+        sendSignInEvent({ type: 'PASSKEY_SUCCESS', credential: credential });
 
         reportAuthState({
           event: 'webauthn-success',
@@ -455,10 +478,10 @@ function createAuthStore(config: AuthConfig) {
       }
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError: AuthError = {
-        code: error.code || 'passkey_failed',
-        message: error.message || 'Passkey authentication failed'
+        code: (error as any)?.code || 'passkey_failed',
+        message: (error as any)?.message || 'Passkey authentication failed'
       };
 
       reportAuthState({
@@ -474,6 +497,18 @@ function createAuthStore(config: AuthConfig) {
         updateState({ state: 'error', error: authError });
         emit('sign_in_error', { error: authError, method: 'passkey' });
       }
+      
+      // Send SignInEvent for passkey failure
+      sendSignInEvent({ 
+        type: 'PASSKEY_FAILED', 
+        error: {
+          name: (error as any)?.name || 'PasskeyError',
+          message: authError.message,
+          timing: Date.now() - startTime,
+          type: 'credential-not-found'
+        }
+      });
+      
       throw authError;
     }
   }
@@ -485,7 +520,7 @@ function createAuthStore(config: AuthConfig) {
   async function signInWithMagicLink(email: string): Promise<SignInResponse> {
     const startTime = Date.now();
     
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('sign_in_started', { method: 'magic-link' });
     
     reportAuthState({
@@ -507,10 +542,10 @@ function createAuthStore(config: AuthConfig) {
       });
       
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError: AuthError = {
-        code: error.code || 'unknown_error',
-        message: error.message || 'Magic link request failed'
+        code: (error as any)?.code || 'unknown_error',
+        message: (error as any)?.message || 'Magic link request failed'
       };
       
       reportAuthState({
@@ -540,7 +575,7 @@ function createAuthStore(config: AuthConfig) {
           refreshToken: currentState.refreshToken || undefined
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Server sign out failed:', error);
     } finally {
       clearAuthSession();
@@ -588,7 +623,7 @@ function createAuthStore(config: AuthConfig) {
         scheduleTokenRefresh();
         emit('token_refreshed');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Token refresh failed:', error);
       await signOut();
       throw error;
@@ -632,15 +667,25 @@ function createAuthStore(config: AuthConfig) {
   async function checkUser(email: string) {
     try {
       const result = await api.checkEmail(email);
-      return {
+      const userData = {
         exists: result.exists,
         hasWebAuthn: result.hasPasskey,
         userId: result.userId,
         emailVerified: result.emailVerified,
         invitationTokenHash: result.invitationTokenHash,
-        lastPinExpiry: result.lastPinExpiry
+        lastPinExpiry: result.lastPinExpiry as any
       };
-    } catch (error) {
+      
+      // Send USER_CHECKED event with user data
+      sendSignInEvent({ 
+        type: 'USER_CHECKED', 
+        email, 
+        exists: result.exists, 
+        hasPasskey: !!result.hasPasskey 
+      });
+      
+      return userData;
+    } catch (error: unknown) {
       console.error('Error checking user:', error);
       return { exists: false, hasWebAuthn: false, emailVerified: false };
     }
@@ -659,7 +704,7 @@ function createAuthStore(config: AuthConfig) {
   }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -697,10 +742,10 @@ function createAuthStore(config: AuthConfig) {
       }
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError: AuthError = {
-        code: error.code || 'registration_failed',
-        message: error.message || 'User registration failed'
+        code: (error as any)?.code || 'registration_failed',
+        message: (error as any)?.message || 'User registration failed'
       };
 
       reportAuthState({
@@ -730,11 +775,11 @@ function createAuthStore(config: AuthConfig) {
     acceptedPrivacy: boolean;
   }): Promise<{
     success: boolean;
-    user: any;
+    user: User;
     verificationRequired: boolean;
     message: string;
   }> {
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -747,7 +792,6 @@ function createAuthStore(config: AuthConfig) {
 
       console.log('✅ User account created:', registrationResponse.user.id);
 
-      console.log('🔄 Sending verification email...');
       const magicLinkResponse = await api.startPasswordlessAuthentication(userData.email);
       
       if (!magicLinkResponse.success) {
@@ -757,7 +801,7 @@ function createAuthStore(config: AuthConfig) {
       console.log('✅ Verification email sent');
 
       updateState({
-        state: 'loading', // Use valid AuthState
+        state: 'unauthenticated', // Not authenticated until email clicked
         user: null, // Not authenticated until email clicked
         error: null
       });
@@ -769,7 +813,7 @@ function createAuthStore(config: AuthConfig) {
         message: "Registration successful! Check your email and click the verification link to complete setup."
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Individual user registration failed:', error);
       const authError = error instanceof Error ? error.message : 'Registration failed';
       updateState({ 
@@ -781,9 +825,8 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
-   * Create account with passkey - Enhanced registration flow
-   * For now, this is an enhanced version of registerUser with better error handling
-   * TODO: Implement full WebAuthn integration when API endpoints are confirmed
+   * Create account without passkey - Simple registration flow
+   * Creates user account and sends email verification, no immediate authentication
    */
   async function createAccount(userData: {
     email: string;
@@ -795,7 +838,91 @@ function createAuthStore(config: AuthConfig) {
   }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
     const startTime = Date.now();
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
+    emit('registration_started', { email: userData.email });
+
+    try {
+      reportAuthState({
+        event: 'registration-start',
+        email: userData.email,
+        context: { 
+          operation: 'createAccount',
+          hasInvitationToken: !!userData.invitationToken,
+          webauthnRequired: false
+        }
+      });
+
+      // Create user account via API
+      console.log('🔄 Creating user account without passkey...');
+      const registrationResponse = await api.registerUser(userData);
+
+      if (registrationResponse.step !== 'success' || !registrationResponse.user) {
+        throw new Error('Failed to create user account');
+      }
+
+      console.log('✅ User account created:', registrationResponse.user.id);
+
+      // Don't authenticate immediately, return the response for further processing
+      // The calling component will handle the next steps (e.g., email verification)
+      
+      reportAuthState({
+        event: 'registration-success',
+        email: userData.email,
+        userId: registrationResponse.user.id,
+        duration: Date.now() - startTime,
+        context: { 
+          operation: 'createAccount',
+          authenticated: false,
+          requiresEmailVerification: true
+        }
+      });
+
+      emit('registration_success', { 
+        user: registrationResponse.user,
+        requiresVerification: true 
+      });
+
+      return registrationResponse;
+    } catch (error: unknown) {
+      const authError: AuthError = {
+        code: (error as any)?.code || 'account_creation_failed',
+        message: (error as any)?.message || 'Failed to create user account'
+      };
+
+      reportAuthState({
+        event: 'registration-failure',
+        email: userData.email,
+        error: authError.message,
+        duration: Date.now() - startTime,
+        context: { 
+          operation: 'createAccount',
+          errorCode: (error as any)?.code
+        }
+      });
+
+      updateState({ state: 'error', error: authError });
+      emit('registration_error', { error: authError });
+      throw authError;
+    }
+  }
+
+  /**
+   * BROKEN: Create account with passkey - Enhanced registration flow
+   * For now, this is an enhanced version of registerUser with better error handling
+   * TODO: Implement full WebAuthn integration when API endpoints are confirmed
+   */
+  // biome-ignore lint/correctness/noUnusedVariables: Broken function kept for reference
+  async function createAccountBroken(userData: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
+    invitationToken?: string;
+  }): Promise<SignInResponse & { emailVerifiedViaInvitation?: boolean }> {
+    const startTime = Date.now();
+
+    updateState({ error: null }); // Clear errors but don't change state
     emit('registration_started', { email: userData.email });
 
     try {
@@ -804,7 +931,7 @@ function createAuthStore(config: AuthConfig) {
         throw new Error('Passkey authentication is not supported on this device. Please use a device with biometric authentication.');
       }
 
-      const platformAvailable = await browser ? (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
+      const platformAvailable = browser ? await (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable() : false;
       if (!platformAvailable) {
         throw new Error('No biometric authentication available. Please ensure Touch ID, Face ID, or Windows Hello is set up on your device.');
       }
@@ -929,20 +1056,20 @@ function createAuthStore(config: AuthConfig) {
       }
 
       return completeAuthResponse;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const authError: AuthError = {
-        code: error.code || 'account_creation_failed',
-        message: error.message || 'Account creation failed'
+        code: (error as any)?.code || 'account_creation_failed',
+        message: (error as any)?.message || 'Account creation failed'
       };
 
       // Enhanced error handling for WebAuthn-specific errors
-      if (error.name === 'NotAllowedError') {
+      if ((error as any)?.name === 'NotAllowedError') {
         authError.message = 'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
-      } else if (error.name === 'NotSupportedError') {
+      } else if ((error as any)?.name === 'NotSupportedError') {
         authError.message = 'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
-      } else if (error.name === 'SecurityError') {
+      } else if ((error as any)?.name === 'SecurityError') {
         authError.message = 'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
-      } else if (error.name === 'InvalidStateError') {
+      } else if ((error as any)?.name === 'InvalidStateError') {
         authError.message = 'A passkey for this account may already exist. Please try signing in instead.';
       }
 
@@ -953,8 +1080,8 @@ function createAuthStore(config: AuthConfig) {
         duration: Date.now() - startTime,
         context: { 
           operation: 'createAccount',
-          errorName: error.name,
-          errorCode: error.code
+          errorName: (error as any)?.name,
+          errorCode: (error as any)?.code
         }
       });
 
@@ -973,7 +1100,7 @@ function createAuthStore(config: AuthConfig) {
    */
   async function checkUserWithInvitation(
     email: string,
-    invitationOptions?: { token: string; tokenData?: any; skipTokenValidation?: boolean }
+    invitationOptions?: { token: string; tokenData?: InvitationTokenData; skipTokenValidation?: boolean }
   ) {
     try {
       const result = await api.checkEmail(email);
@@ -986,7 +1113,7 @@ function createAuthStore(config: AuthConfig) {
         invitationTokenHash: result.invitationTokenHash,
         userId: result.userId,
         requiresPasskeySetup: false,
-        registrationMode: 'sign_in' as 'new_user' | 'complete_passkey' | 'sign_in'
+        registrationMode: 'sign_in' as const
       };
 
       // If no invitation token, return basic result
@@ -1005,7 +1132,7 @@ function createAuthStore(config: AuthConfig) {
             console.warn('🔒 Token hash mismatch - token may not be valid for this user');
             return {
               ...userCheck,
-              registrationMode: 'sign_in' // Force sign-in mode on token mismatch
+              registrationMode: 'sign_in' as const // Force sign-in mode on token mismatch
             };
           }
         }
@@ -1013,7 +1140,7 @@ function createAuthStore(config: AuthConfig) {
         return {
           ...userCheck,
           requiresPasskeySetup: true,
-          registrationMode: 'complete_passkey'
+          registrationMode: 'complete_passkey' as const
         };
       }
 
@@ -1021,12 +1148,12 @@ function createAuthStore(config: AuthConfig) {
       if (!result.exists && invitationOptions.token) {
         return {
           ...userCheck,
-          registrationMode: 'new_user'
+          registrationMode: 'new_user' as const
         };
       }
 
       return userCheck;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error in checkUserWithInvitation:', error);
       return {
         exists: false,
@@ -1067,7 +1194,7 @@ function createAuthStore(config: AuthConfig) {
 
           // Extract registration data from token
           prefillData = extractRegistrationData(tokenData);
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn('Failed to process invitation token:', error);
           return {
             mode: 'sign_in' as const,
@@ -1079,7 +1206,7 @@ function createAuthStore(config: AuthConfig) {
       // Check user status with invitation context
       const userCheck = await checkUserWithInvitation(email, invitationToken ? {
         token: invitationToken,
-        tokenData,
+        tokenData: tokenData || undefined,
         skipTokenValidation: false
       } : undefined);
 
@@ -1088,14 +1215,14 @@ function createAuthStore(config: AuthConfig) {
         case 'new_user':
           return {
             mode: 'register' as const,
-            prefillData,
+            prefillData: prefillData || undefined,
             message: 'Welcome! Please complete your registration.'
           };
         
         case 'complete_passkey':
           return {
             mode: 'complete_passkey' as const,
-            prefillData,
+            prefillData: prefillData || undefined,
             message: 'Your account exists but needs a passkey for secure access. Please create your passkey.'
           };
         
@@ -1108,7 +1235,7 @@ function createAuthStore(config: AuthConfig) {
               : 'Please sign in to your account.'
           };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error determining auth flow:', error);
       return {
         mode: 'sign_in' as const,
@@ -1201,9 +1328,9 @@ function createAuthStore(config: AuthConfig) {
       }
 
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Conditional auth should fail silently for most errors
-      console.log('⚠️ Conditional authentication failed (this is expected if no passkeys exist):', error.message);
+      console.log('⚠️ Conditional authentication failed (this is expected if no passkeys exist):', (error as any)?.message);
 
       reportAuthState({
         event: 'login-failure',
@@ -1219,62 +1346,11 @@ function createAuthStore(config: AuthConfig) {
   }
 
   /**
-   * Update legacy store based on state machine state
-   */
-  function updateLegacyStoreFromStateMachine(state: AuthMachineState, context: AuthMachineContext): void {
-    const currentStore = get(store);
-    
-    switch (state) {
-      case 'sessionValid':
-      case 'appLoaded':
-        if (context.sessionData) {
-          updateState({
-            state: 'authenticated',
-            user: context.user,
-            accessToken: context.sessionData.accessToken,
-            refreshToken: context.sessionData.refreshToken || null,
-            error: null
-          });
-        }
-        break;
-        
-      case 'sessionInvalid':
-      case 'combinedAuth':
-        updateState({
-          state: 'unauthenticated',
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          error: null
-        });
-        break;
-        
-      case 'checkingSession':
-      case 'loadingApp':
-        updateState({
-          state: 'loading',
-          error: null
-        });
-        break;
-        
-      case 'passkeyError':
-      case 'credentialNotFound':
-      case 'userCancellation':
-      case 'credentialMismatch':
-        updateState({
-          state: 'error',
-          error: context.error
-        });
-        break;
-    }
-  }
-
-  /**
    * Initialize store (check for existing session)
    */
   function initialize(): void {
-    // Start the state machine - it will handle session checking
-    stateMachine.start();
+    // Note: Previously started state machine, now using direct signInState management
+    // Session checking is handled by existing session initialization above
   }
 
   /**
@@ -1346,7 +1422,7 @@ function createAuthStore(config: AuthConfig) {
       }
 
       console.log('✅ Storage configuration updated successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Storage configuration update failed:', error);
       throw error;
     }
@@ -1444,7 +1520,7 @@ function createAuthStore(config: AuthConfig) {
         dataPreserved: true,
         tokensPreserved: true
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Session migration failed:', error);
       
       // Clear sensitive data on failure
@@ -1485,7 +1561,7 @@ function createAuthStore(config: AuthConfig) {
       };
     }
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('app_email_started', { email, appCode: getEffectiveAppCode() });
 
     try {
@@ -1506,7 +1582,7 @@ function createAuthStore(config: AuthConfig) {
       updateState({ state: 'unauthenticated', error: null });
       
       return response;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('App email sign-in failed:', error);
       
       const authError: AuthError = {
@@ -1533,7 +1609,7 @@ function createAuthStore(config: AuthConfig) {
       throw new Error('Email code verification is only available with organization configuration. This email uses magic link authentication instead.');
     }
 
-    updateState({ state: 'loading', error: null });
+    updateState({ error: null }); // Clear errors but don't change state
     emit('app_email_verify_started', { email, appCode: getEffectiveAppCode() });
 
     try {
@@ -1562,11 +1638,26 @@ function createAuthStore(config: AuthConfig) {
           appCode: getEffectiveAppCode() 
         });
         
+        // Convert SignInResponse to SessionData format for EMAIL_VERIFIED event
+        const sessionData = {
+          accessToken: response.accessToken || '',
+          refreshToken: response.refreshToken || '',
+          user: {
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name || '',
+            emailVerified: response.user.emailVerified || false
+          },
+          expiresAt: response.expiresIn ? Date.now() + (response.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000), // Default 24h
+          lastActivity: Date.now()
+        };
+        sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
+        
         return response;
       } else {
         throw new Error('Invalid response from email code verification');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Organization email code verification failed:', error);
       
       const authError: AuthError = {
@@ -1591,7 +1682,6 @@ function createAuthStore(config: AuthConfig) {
   return {
     // Legacy store interface (backward compatibility)
     subscribe: store.subscribe,
-    signIn,
     signInWithPasskey,
     signInWithMagicLink,
     signOut,
@@ -1609,36 +1699,28 @@ function createAuthStore(config: AuthConfig) {
     determineAuthFlow,
     on,
     api,
-    
+
+    // SignIn flow control methods
+    notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
+    notifyPinVerified: (sessionData: any) => sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
+    sendSignInEvent, // Expose for components to send custom events
+
     // Email-based authentication methods (transparently uses app endpoints if configured)
     sendEmailCode: signInWithAppEmail,
     verifyEmailCode: verifyAppEmailCode,
-    
+
     // Dynamic role configuration methods
     getApplicationContext,
     updateStorageConfiguration,
     migrateSession,
-    
-    // State machine interface
-    stateMachine: {
-      subscribe: stateMachineStore.subscribe,
-      send: (event: any) => stateMachine.send(event),
-      matches: (state: AuthMachineState) => stateMachine.matches(state),
-      currentState: () => stateMachine.currentState,
-      currentContext: () => stateMachine.currentContext,
-      // Expose full state machine for debugging and testing
-      _instance: stateMachine
-    },
-    
-    // State machine event senders (convenience methods)
-    checkSession: () => stateMachine.send({ type: 'CHECK_SESSION' }),
-    typeEmail: (email: string) => stateMachine.send({ type: 'EMAIL_TYPED', email }),
-    clickContinue: () => stateMachine.send({ type: 'CONTINUE_CLICKED' }),
-    clickNext: () => stateMachine.send({ type: 'USER_CLICKS_NEXT' }),
-    resetToAuth: () => stateMachine.send({ type: 'RESET_TO_COMBINED_AUTH' }),
-    
+
+    // Configuration access
+    getConfig: () => config,
+
     // Cleanup
-    destroy: unsubscribeStateMachine
+    destroy: () => {
+      // Note: No longer need to unsubscribe from state machine
+    }
   };
 }
 
@@ -1651,21 +1733,16 @@ export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthS
     // Legacy derived stores
     user: derived(authStore, $auth => $auth.user),
     isAuthenticated: derived(authStore, $auth => $auth.state === 'authenticated'),
-    isLoading: derived(authStore, $auth => $auth.state === 'loading'),
+    isLoading: derived(authStore, () => false), // No loading state exists
     error: derived(authStore, $auth => $auth.error),
     
-    // State machine derived stores
-    currentStep: derived(authStore.stateMachine, $sm => $sm.state),
-    machineContext: derived(authStore.stateMachine, $sm => $sm.context),
-    isInState: (state: AuthMachineState) => derived(authStore.stateMachine, $sm => $sm.state === state),
-    
-    // Convenience derived stores for common states
-    isCheckingSession: derived(authStore.stateMachine, $sm => $sm.state === 'checkingSession'),
-    isCombinedAuth: derived(authStore.stateMachine, $sm => $sm.state === 'combinedAuth'),
-    isConditionalAuth: derived(authStore.stateMachine, $sm => $sm.state === 'conditionalMediation'),
-    isBiometricPrompt: derived(authStore.stateMachine, $sm => $sm.state === 'biometricPrompt'),
-    hasError: derived(authStore.stateMachine, $sm => 
-      ['passkeyError', 'credentialNotFound', 'userCancellation', 'credentialMismatch'].includes($sm.state)
-    )
+    // Sign-in state derived stores
+    signInState: derived(authStore, $auth => $auth.signInState),
+    isEmailEntry: derived(authStore, $auth => $auth.signInState === 'emailEntry'),
+    isUserChecked: derived(authStore, $auth => $auth.signInState === 'userChecked'),
+    isPasskeyPrompt: derived(authStore, $auth => $auth.signInState === 'passkeyPrompt'),
+    isPinEntry: derived(authStore, $auth => $auth.signInState === 'pinEntry'),
+    isSignedIn: derived(authStore, $auth => $auth.signInState === 'signedIn'),
+    hasSignInError: derived(authStore, $auth => $auth.signInState === 'generalError')
   };
 }

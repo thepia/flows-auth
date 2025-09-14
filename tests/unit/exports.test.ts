@@ -2,7 +2,7 @@
  * Comprehensive Export Tests
  * Verifies all exported functions and components can be imported properly
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Library Exports', () => {
   describe('API Clients', () => {
@@ -63,24 +63,6 @@ describe('Library Exports', () => {
     });
   });
 
-  describe('State Machine', () => {
-    it('should export AuthActions', async () => {
-      const { AuthActions } = await import('../../src/index');
-      expect(AuthActions).toBeDefined();
-      expect(typeof AuthActions).toBe('object');
-    });
-
-    it('should export AuthGuards', async () => {
-      const { AuthGuards } = await import('../../src/index');
-      expect(AuthGuards).toBeDefined();
-      expect(typeof AuthGuards).toBe('object');
-    });
-
-    it('should export AuthStateMachine', async () => {
-      const { AuthStateMachine } = await import('../../src/index');
-      expect(AuthStateMachine).toBeDefined();
-    });
-  });
 
   describe('Store Functions', () => {
     it('should export createAuthDerivedStores', async () => {

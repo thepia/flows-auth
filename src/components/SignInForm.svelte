@@ -3,22 +3,26 @@
   The actual auth logic is handled by SignInCore component
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy, getContext } from 'svelte';
-  import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import type { User, AuthError, AuthMethod } from '../types';
   import SignInCore from './core/SignInCore.svelte';
+  import { useAuthSafe } from '../utils/auth-context';
+  import { getI18n } from '../utils/i18n';
+
+  // Configuration prop (optional - will use context if not provided)
+  export let config = null;
 
   // Presentational props only
   export let showLogo = true;
   export let compact = false;
   export let className = '';
   export let initialEmail = '';
-  
+
   // Size and display variants
   export let size: 'small' | 'medium' | 'large' | 'full' = 'medium';
   export let variant: 'inline' | 'popup' = 'inline';
   export let popupPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right';
-  
+
   // Popup modal controls
   export let showCloseButton = true;
   export let closeOnEscape = true;
@@ -30,6 +34,20 @@
     stepChange: { step: string };
     close: {}; // New event for popup close
   }>();
+
+  // Get auth config from context or prop
+  const authStore = useAuthSafe();
+  $: contextConfig = authStore?.getConfig?.();
+  $: authConfig = config || contextConfig;
+  $: logoConfig = authConfig?.branding;
+
+  // Get i18n instance for translations
+  // Pass auth config to get proper language and custom translations
+  $: i18nInstance = getI18n({
+    language: authConfig?.language || 'en',
+    translations: authConfig?.translations || {}
+  });
+  $: i18n = i18nInstance.t;
 
   // Popup close functionality
   function handleClose() {
@@ -65,11 +83,6 @@
     }
   });
 
-  // Get auth config from context for logo display only
-  const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-  $: authStore = $authStoreContext;
-  $: logoConfig = authStore?.getConfig?.()?.branding;
-
   // Dynamic class names based on props
   $: authFormClasses = [
     'auth-form',
@@ -100,6 +113,31 @@
     </div>
   {/if}
 
+          <!-- Header Icon (added to SignInForm via custom styling) -->
+           <!--
+        <div class="auth-header-icon">
+          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+-->
+
+
+    <!-- Title and Description Section -->
+    <div class="auth-header">
+      <h2 class="auth-title font-brand-lead">{$i18n('signIn.title')}</h2>
+      <p class="auth-description">
+        {#if authConfig?.branding?.companyName}
+          {$i18n('signIn.description', { companyName: authConfig.branding.companyName })}
+        {:else}
+          {$i18n('signIn.descriptionGeneric')}
+        {/if}
+      </p>
+    </div>
+
+
   <div class="auth-container">
     <!-- SignInCore handles all auth logic and context access -->
     <SignInCore 
@@ -108,6 +146,32 @@
       on:error={handleError}
     />
   </div>
+
+          <!-- Policy Footer (added after SignInForm) -->
+           <!--
+        <div class="auth-policy-footer">
+          <div class="text-sm text-gray-500 space-y-2">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>Secure passkey authentication</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              <span>Privacy-compliant access</span>
+            </div>
+            <div class="flex items-center">
+              <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              <span>Employee verification required</span>
+            </div>
+          </div>
+        </div>
+-->
   
 </div>
 
@@ -211,6 +275,28 @@
     object-fit: contain;
   }
 
+  /* Auth header styles */
+  .auth-header {
+    /* font-family: var(--font-fontFamily-brand-lead); */
+    padding: 24px 24px 0;
+    text-align: center;
+  }
+
+  .auth-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text-primary, #111827);
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+  }
+
+  .auth-description {
+    font-size: 16px;
+    color: var(--color-text-secondary, #6b7280);
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
+
   /* Container for SignInCore */
   .auth-container {
     padding: 24px;
@@ -220,12 +306,76 @@
     padding: 16px;
   }
 
+  .auth-form--compact .auth-header {
+    padding: 16px 16px 0;
+  }
+
+  .auth-form--compact .auth-title {
+    font-size: 20px;
+  }
+
+  .auth-form--compact .auth-description {
+    font-size: 14px;
+  }
+
   /* Error state */
   .config-error {
     text-align: center;
     color: var(--color-error, #dc2626);
     padding: 20px;
     font-size: 14px;
+  }
+
+    .auth-policy-footer {
+    padding: 1.5rem 2rem 2rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1.5rem;
+  }
+
+
+  .text-sm {
+    font-size: 0.875rem;
+  }
+
+  .text-gray-500 {
+    color: #6b7280;
+  }
+
+  .space-y-2 > * + * {
+    margin-top: 0.5rem;
+  }
+
+  .w-4 {
+    width: 1rem;
+  }
+
+  .h-4 {
+    height: 1rem;
+  }
+
+  .text-green-500 {
+    color: #22c55e;
+  }
+
+  .mr-2 {
+    margin-right: 0.5rem;
+  }
+
+
+  .w-16 {
+    width: 4rem;
+  }
+
+  .h-16 {
+    height: 4rem;
+  }
+
+  .bg-primary\/10 {
+    background-color: rgba(37, 99, 235, 0.1);
+  }
+
+  .text-primary {
+    color: #2563eb;
   }
 
   /* Responsive adjustments */

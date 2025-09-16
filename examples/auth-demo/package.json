@@ -21,7 +21,8 @@
     "@thepia/flows-auth": "file:../..",
     "@xyflow/svelte": "0.1.30",
     "d3": "^7.9.0",
-    "lucide-svelte": "^0.400.0"
+    "lucide-svelte": "^0.400.0",
+    "svelte-i18n": "^4.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

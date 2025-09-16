@@ -2,14 +2,14 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [sveltekit(), tailwindcss()],
   ssr: {
     noExternal: ['@thepia/flows-auth']
   },
   optimizeDeps: {
     exclude: ['@thepia/flows-auth'], // Force fresh rebuild of local package
-    force: true
+    force: false // DISABLE constant rebuilds
   },
   resolve: {
     dedupe: ['svelte']
@@ -28,6 +28,10 @@ export default defineConfig({
     },
     fs: {
       strict: false
+    },
+    // DISABLE file watching to prevent constant reloads
+    watch: {
+      ignored: ['**/.git/**', '**/node_modules/**', '**/dist/**']
     }
   },
   build: {
@@ -37,4 +41,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));

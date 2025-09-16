@@ -40,8 +40,6 @@ const dispatch = createEventDispatcher<{
 
 // Apple device detection for biometric text
 $: isAppleDevice = detectAppleDevice();
-$: hasTouchId = detectTouchId();
-$: hasFaceId = detectFaceId();
 
 // Dynamic content based on method and state
 $: displayText = getDisplayText();
@@ -66,17 +64,11 @@ function getDisplayText(): string {
   }
   
   switch (method) {
-    case 'passkey': 
+    case 'passkey':
       if (supportsWebAuthn && isAppleDevice) {
-        // Apple-specific passkey text
-        if (hasFaceId && hasTouchId) {
-          return $i18n('auth.continueWithTouchIdFaceId'); // "Continue with Touch ID/Face ID"
-        } else if (hasFaceId) {
-          return $i18n('auth.continueWithFaceId');
-        } else if (hasTouchId) {
-          return $i18n('auth.continueWithTouchId');
-        }
-        return $i18n('auth.continueWithBiometric');
+        // Use generic "Touch ID/Face ID" text for better reliability and UX
+        // Specific detection is unreliable and WebAuthn intentionally obscures biometric details
+        return $i18n('auth.continueWithBiometric'); // "Continue with Touch ID/Face ID"
       }
       return supportsWebAuthn ? $i18n('auth.signInWithPasskey') : $i18n('auth.signIn');
     case 'email':
@@ -91,17 +83,9 @@ function getDisplayText(): string {
     case 'continue-faceid':
       return $i18n('auth.continueWithFaceId');
     case 'continue-biometric':
-      // Smart biometric text based on device
-      if (isAppleDevice) {
-        if (hasFaceId && hasTouchId) {
-          return $i18n('auth.continueWithTouchIdFaceId');
-        } else if (hasFaceId) {
-          return $i18n('auth.continueWithFaceId');
-        } else if (hasTouchId) {
-          return $i18n('auth.continueWithTouchId');
-        }
-      }
-      return $i18n('auth.continueWithBiometric');
+      // Use generic biometric text for better reliability
+      // Specific biometric detection is unreliable and not recommended
+      return $i18n('auth.continueWithBiometric'); // "Continue with Touch ID/Face ID"
     default: 
       return $i18n('action.continue');
   }
@@ -113,38 +97,23 @@ function detectAppleDevice(): boolean {
   return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
 }
 
-function detectTouchId(): boolean {
-  if (!isAppleDevice) return false;
-  // iPhone/iPad with Touch ID, or Mac with Touch Bar
-  return /iPhone|iPad|iPod/.test(navigator.userAgent) || 
-         (/Macintosh/.test(navigator.userAgent) && 'ontouchstart' in window);
-}
-
-function detectFaceId(): boolean {
-  if (!isAppleDevice) return false;
-  // Modern iPhones with Face ID (iPhone X and later)
-  return /iPhone/.test(navigator.userAgent) && 
-         screen.height >= 812; // Rough detection for Face ID devices
-}
+// Note: Specific Touch ID/Face ID detection removed in favor of generic biometric text
+// This provides better reliability and follows WebAuthn privacy principles
 
 function getDisplayIcon(): string {
   if (loading) return '';
   if (icon) return icon;
-  
+
   switch (method) {
-    case 'passkey': 
-      // Use Apple-specific icons on Apple devices
-      if (isAppleDevice) {
-        if (hasFaceId) return '😊'; // Face ID
-        if (hasTouchId) return '👆'; // Touch ID
-      }
-      return '🔑';
-    case 'email': 
+    case 'passkey':
+      // Use generic biometric icon for Apple devices, passkey icon for others
+      return isAppleDevice ? '👆' : '🔑'; // Touch ID icon for Apple, passkey for others
+    case 'email':
     case 'email-code':
     case 'magic-link': return '✉️';
     case 'continue-touchid': return '👆';
     case 'continue-faceid': return '😊';
-    case 'continue-biometric': return isAppleDevice ? (hasFaceId ? '😊' : '👆') : '🔐';
+    case 'continue-biometric': return '👆'; // Generic Touch ID icon for biometric
     default: return '';
   }
 }
@@ -197,7 +166,7 @@ function getButtonClasses(): string {
 >
   {#if loading}
     <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
-    <span id="button-loading-text" class="sr-only">Loading, please wait</span>
+    <span id="button-loading-text" class="sr-only">Signing in...</span>
   {:else if showIcon && displayIcon}
     <span aria-hidden="true">{displayIcon}</span>
   {/if}

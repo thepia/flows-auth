@@ -2,6 +2,8 @@
  * SignInCore User Flow Tests
  *
  * Tests for user flow scenarios and event handling in SignInCore
+ * 
+ * This needs to be replaced by an actual test. It currently tests a local function.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthConfig } from '../../src/types';

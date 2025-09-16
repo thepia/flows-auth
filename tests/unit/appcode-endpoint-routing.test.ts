@@ -12,9 +12,19 @@ import { AuthApiClient } from '../../src/api/auth-api';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Mock the API detection to prevent localhost detection
+vi.mock('../../src/utils/api-detection', () => ({
+  detectApiServer: vi.fn().mockResolvedValue({
+    url: 'https://api.thepia.com',
+    type: 'production',
+    isHealthy: true
+  })
+}));
+
 describe('AppCode-based Endpoint Routing (BDD)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, user: { id: '1', email: 'test@example.com' } })
@@ -29,19 +39,21 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       it('THEN checkEmail should call /demo/check-user endpoint', async () => {
         // WHEN calling checkEmail
         await client.checkEmail('test@example.com');
 
-        // THEN it should use the appCode-based endpoint
+        // THEN it should use the appCode-based endpoint with GET method and query parameter
         expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/demo/check-user',
+          'https://api.thepia.com/demo/check-user?email=test%40example.com',
           expect.objectContaining({
-            method: 'POST',
-            body: expect.stringContaining('test@example.com')
+            method: 'GET',
+            headers: expect.objectContaining({
+              'Origin': expect.any(String)
+            })
           })
         );
       });
@@ -102,17 +114,22 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'app',
         domain: 'app.thepia.net',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       it('THEN endpoints should use /app/ prefix', async () => {
+        // Clear cache to ensure fresh API call
+        client.clearUserCache();
+
         // WHEN calling checkEmail
         await client.checkEmail('test@example.com');
 
-        // THEN it should use the app-specific endpoint
+        // THEN it should use the app-specific endpoint with GET method and query parameter
         expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/app/check-user',
-          expect.anything()
+          'https://api.thepia.com/app/check-user?email=test%40example.com',
+          expect.objectContaining({
+            method: 'GET'
+          })
         );
       });
     });
@@ -126,18 +143,21 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: false,
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       it('THEN checkEmail should call legacy /auth/check-user endpoint', async () => {
+        // Clear cache to ensure fresh API call
+        client.clearUserCache();
+
         // WHEN calling checkEmail
         await client.checkEmail('test@example.com');
 
-        // THEN it should use the legacy endpoint
+        // THEN it should use the legacy endpoint with GET method and query parameter
         expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/auth/check-user',
+          'https://api.thepia.com/auth/check-user?email=test%40example.com',
           expect.objectContaining({
-            method: 'POST'
+            method: 'GET'
           })
         );
       });
@@ -169,17 +189,22 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: true,
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       it('THEN endpoints should default to /app/ prefix', async () => {
+        // Clear cache to ensure fresh API call
+        client.clearUserCache();
+
         // WHEN calling checkEmail
         await client.checkEmail('test@example.com');
 
-        // THEN it should use the default app endpoint
+        // THEN it should use the default app endpoint with GET method and query parameter
         expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/app/check-user',
-          expect.anything()
+          'https://api.thepia.com/app/check-user?email=test%40example.com',
+          expect.objectContaining({
+            method: 'GET'
+          })
         );
       });
     });
@@ -193,10 +218,13 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       it('THEN checkEmail should use GET method (not POST)', async () => {
+        // Clear cache to ensure fresh API call
+        client.clearUserCache();
+
         // WHEN calling checkEmail
         await client.checkEmail('test@example.com');
 

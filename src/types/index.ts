@@ -474,6 +474,7 @@ export interface AuthStore {
   refreshToken: string | null;
   expiresAt: number | null;
   error: AuthError | null;
+  passkeysEnabled: boolean; // Added: Centralized passkey availability determination
 }
 
 // Svelte store types
@@ -541,6 +542,9 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
   api: AuthApiClient;
+
+  // Passkey capability
+  getPasskeysEnabled: () => boolean;
 
   // SignIn flow control methods
   notifyPinSent: () => void;

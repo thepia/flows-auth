@@ -2,6 +2,8 @@
  * SignInCore Pin Validation Logic Tests
  *
  * Tests for pin expiry validation and remaining time calculation
+ * 
+ * This needs to be replaced by an actual test. It currently tests a local function.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

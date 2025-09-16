@@ -14,10 +14,10 @@ import { fireEvent, render } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthButton from '../../src/components/core/AuthButton.svelte';
-import type { TranslationKey } from '../../src/utils/i18n';
 
-describe('AuthButton Component', () => {
-  const mockI18n = vi.fn((key: TranslationKey) => {
+// Mock svelte-i18n for future compatibility
+vi.mock('svelte-i18n', () => ({
+  _: vi.fn((key: string) => {
     const translations: Record<string, string> = {
       'auth.signInWithPasskey': 'Sign in with Passkey',
       'auth.signIn': 'Sign in',
@@ -33,6 +33,27 @@ describe('AuthButton Component', () => {
       'action.continue': 'Continue'
     };
     return translations[key] || key;
+  })
+}));
+
+describe('AuthButton Component', () => {
+  // Mock i18n store for current component implementation
+  const mockI18n = vi.fn((key: string) => {
+    const translations: Record<string, string> = {
+      'auth.signInWithPasskey': 'Sign in with Passkey',
+      'auth.signIn': 'Sign in',
+      'auth.sendPinToEmail': 'Send pin to email',
+      'auth.sendMagicLink': 'Send Magic Link',
+      'auth.continueWithTouchId': 'Continue with Touch ID',
+      'auth.continueWithFaceId': 'Continue with Face ID',
+      'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
+      'auth.loading': 'Loading...',
+      'auth.signingIn': 'Signing in...',
+      'auth.sendingPin': 'Sending pin...',
+      'auth.sendingMagicLink': 'Sending magic link...',
+      'action.continue': 'Continue'
+    };
+    return translations[key] || key;
   });
 
   const i18nStore = writable(mockI18n);
@@ -42,7 +63,28 @@ describe('AuthButton Component', () => {
   });
 
   describe('Method-specific Text', () => {
-    it('should display passkey text when method is passkey and WebAuthn is supported', () => {
+    it('should display generic biometric text when method is passkey and WebAuthn is supported on Apple device', () => {
+      // Test setup already mocks Mac user agent, so this should show generic biometric text
+      const { getByRole } = render(AuthButton, {
+        props: {
+          method: 'passkey',
+          supportsWebAuthn: true,
+          i18n: i18nStore
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Continue with Touch ID/Face ID');
+    });
+
+    it('should display generic passkey text when method is passkey and WebAuthn is supported on non-Apple device', () => {
+      // Mock non-Apple user agent
+      const originalUserAgent = navigator.userAgent;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        writable: true
+      });
+
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'passkey',
@@ -53,6 +95,12 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Sign in with Passkey');
+
+      // Restore original user agent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        writable: true
+      });
     });
 
     it('should display generic sign in text when method is passkey but WebAuthn is not supported', () => {
@@ -118,7 +166,8 @@ describe('AuthButton Component', () => {
       expect(button.textContent).toContain('Continue with Face ID');
     });
 
-    it('should display biometric text for continue-biometric method', () => {
+    it('should display generic biometric text for continue-biometric method', () => {
+      // All devices should show generic biometric text for better reliability
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'continue-biometric',
@@ -128,6 +177,31 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Continue with Touch ID/Face ID');
+    });
+
+    it('should display generic biometric text for continue-biometric method on non-Apple device', () => {
+      // Mock non-Apple user agent
+      const originalUserAgent = navigator.userAgent;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        writable: true
+      });
+
+      const { getByRole } = render(AuthButton, {
+        props: {
+          method: 'continue-biometric',
+          i18n: i18nStore
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Continue with Touch ID/Face ID');
+
+      // Restore original user agent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        writable: true
+      });
     });
   });
 
@@ -228,7 +302,8 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.textContent).toContain('🔑');
+      // On Apple devices (test setup mocks Mac), should show Touch ID icon
+      expect(button.textContent).toContain('👆');
     });
 
     it('should hide icon when showIcon is false', () => {
@@ -391,6 +466,7 @@ describe('AuthButton Component', () => {
         }
       });
 
+      // Listen for the custom event using Svelte 4 pattern
       component.$on('click', handleClick);
 
       const button = getByRole('button');
@@ -414,6 +490,7 @@ describe('AuthButton Component', () => {
         }
       });
 
+      // Listen for the custom event using Svelte 4 pattern
       component.$on('click', handleClick);
 
       const button = getByRole('button');
@@ -433,6 +510,7 @@ describe('AuthButton Component', () => {
         }
       });
 
+      // Listen for the custom event using Svelte 4 pattern
       component.$on('click', handleClick);
 
       const button = getByRole('button');
@@ -493,7 +571,8 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.getAttribute('aria-label')).toBe('Sign in with Passkey');
+      // On Apple devices (test setup mocks Mac), should show generic biometric text
+      expect(button.getAttribute('aria-label')).toBe('Continue with Touch ID/Face ID');
     });
 
     it('should use custom text as aria-label when provided', () => {

@@ -427,7 +427,7 @@ export class AuthApiClient {
     });
 
     // Use rate-limited request with Origin header for RPID determination
-    // TODO: Change to GET method once API server supports it
+    // Using GET method with email as query parameter (API server supports this)
     const response = await this.rateLimitedRequest<{
       exists: boolean;
       hasWebAuthn: boolean;
@@ -435,9 +435,8 @@ export class AuthApiClient {
       emailVerified?: boolean;
       invitationTokenHash?: string;
       lastPinExpiry?: string;
-    }>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ email }),
+    }>(`${endpoint}?email=${encodeURIComponent(email)}`, {
+      method: 'GET',
       headers: {
         Origin: origin
       }

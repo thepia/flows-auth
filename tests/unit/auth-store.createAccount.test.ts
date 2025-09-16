@@ -199,8 +199,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
     it('should handle API response without user', async () => {
       const mockResponse: SignInResponse = {
-        step: 'error',
-        message: 'Invalid request'
+        step: 'error'
       };
 
       mockApiClient.registerUser.mockResolvedValue(mockResponse);
@@ -274,10 +273,16 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
   describe('State management', () => {
     it('should clear errors before account creation', async () => {
-      // Set an existing error state
-      const state = get(authStore);
-      authStore['updateState']({ error: { code: 'previous_error', message: 'Previous error' } });
+      // First trigger an error by calling a method that will fail
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
 
+      try {
+        await authStore.checkUser('test@example.com');
+      } catch (error) {
+        // Expected to fail
+      }
+
+      // Verify error state exists
       expect(get(authStore).error).toBeTruthy();
 
       const mockResponse: SignInResponse = {

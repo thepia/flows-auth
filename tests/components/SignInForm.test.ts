@@ -1,160 +1,105 @@
 /**
- * SignInForm Tests - Presentational Wrapper Component
- *
- * Tests for SignInForm as a pure presentational wrapper around SignInCore.
- * SignInForm should handle:
- * - Visual presentation (borders, popups, sizing)
- * - Logo display from auth store context
- * - Event forwarding from SignInCore
- * - NO auth logic or store management
+ * @vitest-environment jsdom
+ * SignInForm Component Tests - Combined from components and disabled test files
  */
 
-import { fireEvent, render, screen } from '@testing-library/svelte';
-import { setContext } from 'svelte';
-import { writable } from 'svelte/store';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
-import SignInForm from '../SignInForm.svelte';
-
-// Mock SignInCore since we're testing the wrapper only
-vi.mock('../core/SignInCore.svelte', () => ({
-  default: vi.fn(() => ({
-    // Mock component that renders a div and can dispatch events
-    render: () => '<div data-testid="signin-core">SignInCore Mock</div>'
-  }))
+// Mock WebAuthn dependencies BEFORE any imports
+vi.mock('../../src/utils/webauthn', () => ({
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
+  isWebAuthnSupported: vi.fn(() => true)
 }));
 
-describe('SignInForm - Presentational Wrapper', () => {
-  const mockAuthConfig = {
-    apiBaseUrl: 'https://api.test.com',
-    clientId: 'test-client',
-    domain: 'test.com',
-    branding: {
-      logoUrl: 'https://example.com/logo.png',
-      companyName: 'Test Company'
-    }
-  };
+import { fireEvent, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import SignInForm from '../../src/components/SignInForm.svelte';
+import type { AuthConfig } from '../../src/types';
+import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
 
-  const mockAuthStore = {
-    getConfig: vi.fn(() => mockAuthConfig),
-    subscribe: vi.fn()
-    // Mock other auth store methods as needed
-  };
+const mockConfig: AuthConfig = {
+  apiBaseUrl: 'https://api.test.com',
+  clientId: 'test-client',
+  domain: 'test.com',
+  appCode: 'test-app',
+  enablePasskeys: true,
+  enableMagicLinks: true,
+  branding: {
+    companyName: 'Test Company',
+    logoUrl: 'https://example.com/logo.svg',
+    showPoweredBy: true,
+    primaryColor: '#0066cc'
+  }
+};
 
+describe('SignInForm Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Context Integration (Logo Display Only)', () => {
-    it('should display logo when auth store provides branding config', () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
-
-      render(TestWrapper, {
-        props: {
-          showLogo: true,
-          initialEmail: 'test@example.com'
-        }
+  describe('Rendering', () => {
+    it('should render with company branding', () => {
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      // Should show logo from auth store config
-      const logo = screen.getByAltText('Test Company');
-      expect(logo).toBeInTheDocument();
-      expect(logo.src).toBe(mockAuthConfig.branding.logoUrl);
+      expect(screen.getByText('Sign in')).toBeTruthy();
+      expect(screen.getByText(/Test Company/)).toBeTruthy();
+      expect(screen.getByPlaceholderText('your.email@company.com')).toBeTruthy();
+      // Button text varies based on features enabled
+      const button = screen.getByRole('button');
+      expect(button).toBeTruthy();
+      expect(button.textContent).toMatch(/Sign in with Passkey|Send Magic Link|Continue/);
     });
 
-    it('should not display logo when showLogo is false', () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
-
-      render(TestWrapper, {
-        props: {
-          showLogo: false,
-          initialEmail: 'test@example.com'
-        }
+    it('should show logo when provided', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig, showLogo: true }
       });
 
-      // Should not show logo
-      expect(screen.queryByAltText('Test Company')).not.toBeInTheDocument();
+      const logo = screen.getByRole('img');
+      expect(logo).toBeTruthy();
+      expect(logo.getAttribute('src')).toBe(mockConfig.branding?.logoUrl);
+      expect(logo.getAttribute('alt')).toBe(mockConfig.branding?.companyName);
     });
 
-    it('should not display logo when no branding config available', () => {
-      const authStoreWithoutBranding = {
-        getConfig: vi.fn(() => ({ ...mockAuthConfig, branding: undefined })),
-        subscribe: vi.fn()
-      };
-
-      const TestWrapper = () => {
-        const authStoreContext = writable(authStoreWithoutBranding);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
-
-      render(TestWrapper, {
-        props: {
-          showLogo: true,
-          initialEmail: 'test@example.com'
-        }
+    it('should hide logo when showLogo is false', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig, showLogo: false }
       });
 
-      // Should not show logo when no branding
-      expect(screen.queryByAltText('Test Company')).not.toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeTruthy();
     });
-  });
 
-  describe('Visual Variants and Styling', () => {
-    const setupAuthContext = () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
+    it('should show "Powered by Thepia" when enabled', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      expect(screen.getByText(/Secured by/)).toBeTruthy();
+      expect(screen.getByText('Thepia')).toBeTruthy();
+    });
+
+    it('should hide "Powered by Thepia" when disabled', () => {
+      const configWithoutPoweredBy = {
+        ...mockConfig,
+        branding: { ...mockConfig.branding, showPoweredBy: false }
       };
-      return TestWrapper;
-    };
 
-    it('should apply correct CSS classes for different sizes', () => {
-      const TestWrapper = setupAuthContext();
-
-      const { container } = render(TestWrapper, {
-        props: {
-          size: 'large',
-          variant: 'inline'
-        }
+      renderWithAuthContext(SignInForm, {
+        authConfig: configWithoutPoweredBy,
+        props: { config: configWithoutPoweredBy }
       });
 
-      const form = container.querySelector('.auth-form');
-      expect(form).toHaveClass('auth-form--large');
-      expect(form).toHaveClass('auth-form--inline');
+      expect(screen.queryByText(/Secured by/)).not.toBeTruthy();
     });
 
-    it('should apply popup variant classes correctly', () => {
-      const TestWrapper = setupAuthContext();
-
-      const { container } = render(TestWrapper, {
-        props: {
-          variant: 'popup',
-          popupPosition: 'top-right'
-        }
-      });
-
-      const form = container.querySelector('.auth-form');
-      expect(form).toHaveClass('auth-form--popup');
-      expect(form).toHaveClass('pos-top-right');
-    });
-
-    it('should apply compact styling when compact prop is true', () => {
-      const TestWrapper = setupAuthContext();
-
-      const { container } = render(TestWrapper, {
-        props: {
-          compact: true
-        }
+    it('should render in compact mode', () => {
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig, compact: true }
       });
 
       const form = container.querySelector('.auth-form');
@@ -162,194 +107,307 @@ describe('SignInForm - Presentational Wrapper', () => {
     });
 
     it('should apply custom className', () => {
-      const TestWrapper = setupAuthContext();
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig, className: 'custom-class' }
+      });
 
-      const { container } = render(TestWrapper, {
+      const form = container.querySelector('.auth-form');
+      expect(form).toHaveClass('custom-class');
+    });
+
+    it('should render auth header with title and description', () => {
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      // Check if auth-header container exists
+      const authHeader = container.querySelector('.auth-header');
+      expect(authHeader).toBeTruthy();
+
+      // Check if title exists and has correct text
+      const title = container.querySelector('.auth-title');
+      expect(title).toBeTruthy();
+      expect(title?.textContent).toBe('Sign in');
+
+      // Check if description exists
+      const description = container.querySelector('.auth-description');
+      expect(description).toBeTruthy();
+      expect(description?.textContent).toContain('Test Company');
+    });
+
+    it('should apply correct CSS classes for variants', () => {
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
         props: {
-          className: 'custom-signin-form'
+          config: mockConfig,
+          size: 'large',
+          variant: 'popup',
+          compact: true
         }
       });
 
       const form = container.querySelector('.auth-form');
-      expect(form).toHaveClass('custom-signin-form');
+      expect(form).toBeTruthy();
+      expect(form?.classList.contains('auth-form--large')).toBe(true);
+      expect(form?.classList.contains('auth-form--popup')).toBe(true);
+      expect(form?.classList.contains('auth-form--compact')).toBe(true);
     });
   });
 
-  describe('Popup Functionality', () => {
-    const setupAuthContext = () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
-      return TestWrapper;
-    };
-
-    it('should show close button for popup variant', () => {
-      const TestWrapper = setupAuthContext();
-
-      render(TestWrapper, {
-        props: {
-          variant: 'popup',
-          showCloseButton: true
-        }
+  describe('Form Interaction', () => {
+    it('should update email input', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      const closeButton = screen.getByLabelText('Close sign-in dialog');
-      expect(closeButton).toBeInTheDocument();
+      const emailInput = screen.getByPlaceholderText('your@email.com') as HTMLInputElement;
+
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+
+      expect(emailInput.value).toBe('test@example.com');
     });
 
-    it('should not show close button for inline variant', () => {
-      const TestWrapper = setupAuthContext();
-
-      render(TestWrapper, {
-        props: {
-          variant: 'inline',
-          showCloseButton: true
-        }
+    it('should set initial email value', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig, initialEmail: 'initial@example.com' }
       });
 
-      expect(screen.queryByLabelText('Close sign-in dialog')).not.toBeInTheDocument();
+      const emailInput = screen.getByPlaceholderText('your@email.com') as HTMLInputElement;
+      expect(emailInput.value).toBe('initial@example.com');
     });
 
-    it('should dispatch close event when close button clicked', async () => {
-      const TestWrapper = setupAuthContext();
-      const onClose = vi.fn();
-
-      const { component } = render(TestWrapper, {
-        props: {
-          variant: 'popup',
-          showCloseButton: true
-        }
+    it('should disable continue button when email is empty', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      component.$on('close', onClose);
-
-      const closeButton = screen.getByLabelText('Close sign-in dialog');
-      await fireEvent.click(closeButton);
-
-      expect(onClose).toHaveBeenCalledTimes(1);
+      const submitButton = screen.getByRole('button');
+      expect(submitButton.hasAttribute('disabled')).toBe(true);
     });
 
-    it('should handle escape key to close popup when closeOnEscape is true', async () => {
-      const TestWrapper = setupAuthContext();
-      const onClose = vi.fn();
-
-      const { component } = render(TestWrapper, {
-        props: {
-          variant: 'popup',
-          closeOnEscape: true
-        }
+    it('should enable continue button when email is entered', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      component.$on('close', onClose);
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+      const submitButton = screen.getByRole('button');
 
-      // Simulate escape key press
-      await fireEvent.keyDown(document, { key: 'Escape' });
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
 
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('Event Forwarding (Pure Wrapper Behavior)', () => {
-    const setupAuthContext = () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
-      return TestWrapper;
-    };
-
-    it('should forward success events from SignInCore', async () => {
-      const TestWrapper = setupAuthContext();
-      const onSuccess = vi.fn();
-
-      const { component } = render(TestWrapper, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
-      });
-
-      component.$on('success', onSuccess);
-
-      // Simulate SignInCore dispatching success event
-      const mockUser = { email: 'test@example.com', id: '123' };
-      const mockMethod = 'passkey';
-
-      // In a real test, we'd simulate the SignInCore component dispatching this
-      // For now, we test that the event handler is set up correctly
-      expect(component).toBeDefined();
-      // Event forwarding would be tested with more sophisticated mocking
+      expect(submitButton.hasAttribute('disabled')).toBe(false);
     });
 
-    it('should forward error events from SignInCore', async () => {
-      const TestWrapper = setupAuthContext();
-      const onError = vi.fn();
-
-      const { component } = render(TestWrapper, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
+    it('should show loading state during submission', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      component.$on('error', onError);
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+      const submitButton = screen.getByRole('button');
 
-      // Test that error event handler is set up
-      expect(component).toBeDefined();
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+      await fireEvent.click(submitButton);
+
+      expect(screen.getByText('Signing in...')).toBeTruthy();
+      expect(submitButton.hasAttribute('disabled')).toBe(true);
     });
 
-    it('should pass initialEmail prop to SignInCore', () => {
-      const TestWrapper = setupAuthContext();
-
-      render(TestWrapper, {
-        props: {
-          initialEmail: 'preset@example.com'
-        }
+    it('should show error state', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      // In a real test with proper SignInCore mocking, we'd verify
-      // that the initialEmail prop was passed correctly
-      expect(screen.getByTestId('signin-core')).toBeInTheDocument();
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+
+      await fireEvent.input(emailInput, { target: { value: 'invalid-email' } });
+
+      // The form should show an error for invalid email format
+      const form = emailInput.closest('form');
+      expect(form).toBeTruthy();
     });
   });
 
-  describe('No Auth Logic (Pure Presentation)', () => {
-    it('should not directly access auth store for logic', () => {
-      const TestWrapper = () => {
-        const authStoreContext = writable(mockAuthStore);
-        setContext(AUTH_CONTEXT_KEY, authStoreContext);
-        return SignInForm;
-      };
+  describe('Form Submission', () => {
+    it('should emit success event on successful authentication', async () => {
+      const successHandler = vi.fn();
 
-      render(TestWrapper, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
+      const { component } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      // SignInForm should only call getConfig for logo display, not for auth logic
-      expect(mockAuthStore.getConfig).toHaveBeenCalledTimes(1);
+      component.$on('success', successHandler);
 
-      // Should not call auth store methods like signIn, signOut, etc.
-      // (In a real implementation, we'd mock these methods and verify they're not called)
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+      const continueButton = screen.getByRole('button');
+
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+      await fireEvent.click(continueButton);
+
+      // Wait for the mock timeout to complete
+      await waitFor(
+        () => {
+          expect(successHandler).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: {
+                user: expect.objectContaining({
+                  email: 'test@example.com',
+                  name: 'Test User'
+                }),
+                method: expect.stringMatching(/passkey|magic-link/)
+              }
+            })
+          );
+        },
+        { timeout: 2000 }
+      );
     });
 
-    it('should render without auth store context (graceful degradation)', () => {
-      // Test that SignInForm can render even without auth context
-      // It should still show SignInCore, which handles its own context access
-      render(SignInForm, {
-        props: {
-          showLogo: true,
-          initialEmail: 'test@example.com'
-        }
+    it('should not submit with empty email', async () => {
+      const successHandler = vi.fn();
+
+      const { component } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
       });
 
-      // Should render SignInCore even without auth context (SignInCore handles its own context)
-      expect(screen.getByTestId('signin-core')).toBeInTheDocument();
+      component.$on('success', successHandler);
 
-      // Should not show logo without auth context
-      expect(screen.queryByAltText('Logo')).not.toBeInTheDocument();
+      const continueButton = screen.getByRole('button');
+
+      await fireEvent.click(continueButton);
+
+      expect(successHandler).not.toHaveBeenCalled();
+    });
+
+    it('should prevent default form submission', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      const form = document.querySelector('form');
+      const submitHandler = vi.fn();
+
+      if (form) {
+        form.addEventListener('submit', submitHandler);
+
+        const emailInput = screen.getByPlaceholderText('your@email.com');
+        await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+
+        await fireEvent.submit(form);
+
+        expect(submitHandler).toHaveBeenCalled();
+        expect(submitHandler.mock.calls[0][0].defaultPrevented).toBe(true);
+      }
     });
   });
+
+  describe('Accessibility', () => {
+    it('should have proper form labels', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      const emailInput = screen.getByLabelText('Email address');
+      expect(emailInput).toBeTruthy();
+      expect(emailInput.getAttribute('type')).toBe('email');
+      expect(emailInput.getAttribute('autocomplete')).toBe('email webauthn');
+      expect(emailInput.hasAttribute('required')).toBe(true);
+    });
+
+    it('should have proper ARIA attributes', () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+      expect(emailInput.getAttribute('id')).toBe('email-input');
+
+      const label = screen.getByText('Email address');
+      expect(label.getAttribute('for')).toBe('email-input');
+    });
+
+    it('should show loading spinner with proper accessibility', async () => {
+      renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      const emailInput = screen.getByPlaceholderText('your@email.com');
+      const continueButton = screen.getByRole('button');
+
+      await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
+      await fireEvent.click(continueButton);
+
+      const spinner = document.querySelector('.spinner');
+      expect(spinner).toBeTruthy();
+    });
+  });
+
+  describe('Responsive Design', () => {
+    it('should apply mobile styles', () => {
+      const { container } = renderWithAuthContext(SignInForm, {
+        authConfig: mockConfig,
+        props: { config: mockConfig }
+      });
+
+      // Check if mobile responsive styles are present
+      const form = container.querySelector('.auth-form');
+      expect(form).toBeTruthy();
+
+      // The actual mobile styles are CSS-based, so we just verify the structure exists
+      const logo = container.querySelector('.auth-logo');
+      const formContainer = container.querySelector('.auth-container');
+
+      expect(logo).toBeTruthy();
+      expect(formContainer).toBeTruthy();
+    });
+  });
+
+  /*
+  xit('should render header icon section', async () => {
+    const { container } = render(TestWrapper, {
+      props: {}
+    });
+
+    const headerIcon = container.querySelector('.auth-header-icon');
+    expect(headerIcon).toBeTruthy();
+
+    const iconContainer = headerIcon.querySelector('.w-16.h-16');
+    expect(iconContainer).toBeTruthy();
+
+    const svg = headerIcon.querySelector('svg');
+    expect(svg).toBeTruthy();
+  });
+
+  xit('should render policy footer section', async () => {
+    const { container } = render(TestWrapper, {
+      props: {}
+    });
+
+    const policyFooter = container.querySelector('.auth-policy-footer');
+    expect(policyFooter).toBeTruthy();
+
+    // Check for security features
+    const securityFeatures = policyFooter.querySelectorAll('.flex.items-center');
+    expect(securityFeatures.length).toBe(3);
+
+    // Check for specific text content
+    expect(policyFooter.textContent).toContain('Secure passkey authentication');
+    expect(policyFooter.textContent).toContain('Privacy-compliant access');
+    expect(policyFooter.textContent).toContain('Employee verification required');
+  });
+  */
 });

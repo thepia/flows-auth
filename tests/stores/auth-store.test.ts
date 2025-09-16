@@ -57,15 +57,22 @@ describe('Auth Store', () => {
     localStorage.clear();
     sessionStorage.clear();
 
-    // Get the mocked API client constructor
-    const { AuthApiClient } = await import('../../src/api/auth-api');
-    const MockedAuthApiClient = AuthApiClient as any;
+    // Create a mock API client with all the methods we need
+    mockApiClient = {
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refreshToken: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn(),
+      // Add any other methods that might be needed
+      getEffectiveAppCode: vi.fn(() => 'test-app')
+    };
 
-    authStore = createAuthStore(mockConfig);
-
-    // Get the mocked API client instance
-    mockApiClient =
-      MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
+    // Inject the mock API client into the auth store
+    authStore = createAuthStore(mockConfig, mockApiClient as any);
   });
 
   describe('Initial State', () => {
@@ -105,7 +112,7 @@ describe('Auth Store', () => {
       saveSession(sessionData);
 
       // Create new auth store that should restore from session
-      const restoredStore = createAuthStore(mockConfig);
+      const restoredStore = createAuthStore(mockConfig, mockApiClient as any);
 
       // Give state machine time to initialize
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -120,19 +127,9 @@ describe('Auth Store', () => {
   });
 
   describe('Authentication', () => {
-    it('should handle successful password sign in', async () => {
+    it('should handle successful magic link send', async () => {
       const mockResponse: SignInResponse = {
-        step: 'success',
-        user: {
-          id: '123',
-          email: 'test@example.com',
-          name: 'Test User',
-          emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        },
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresIn: 3600
+        step: 'magic-link'
       };
 
       mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
@@ -140,10 +137,11 @@ describe('Auth Store', () => {
       await authStore.signInWithMagicLink('test@example.com');
 
       const state = get(authStore);
-      expect(state.state).toBe('authenticated');
-      expect(state.user).toEqual(mockResponse.user);
-      expect(state.accessToken).toBe('access-token');
-      expect(state.refreshToken).toBe('refresh-token');
+      // Magic link just sends confirmation, doesn't authenticate immediately
+      expect(state.state).toBe('unauthenticated');
+      expect(state.user).toBeNull();
+      expect(state.accessToken).toBeNull();
+      expect(state.error).toBeNull();
     });
 
     it('should handle authentication errors', async () => {
@@ -166,16 +164,14 @@ describe('Auth Store', () => {
 
     it('should handle magic link sign in', async () => {
       const mockResponse: SignInResponse = {
-        step: 'magic_link_sent',
-        message: 'Magic link sent to your email'
+        step: 'magic-link'
       };
 
       mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
 
       const result = await authStore.signInWithMagicLink('test@example.com');
 
-      expect(result.step).toBe('magic_link_sent');
-      expect(result.message).toBe('Magic link sent to your email');
+      expect(result.step).toBe('magic-link');
 
       const state = get(authStore);
       expect(state.state).toBe('unauthenticated'); // Still unauthenticated until link is clicked
@@ -198,9 +194,22 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithMagicLink.mockResolvedValue(mockResponse);
+      // Use email code authentication instead of magic link
+      // Set up auth store with app code configuration
+      const authStoreWithApp = createAuthStore({
+        domain: 'test.com',
+        apiBaseUrl: 'https://api.test.com',
+        clientId: 'test-client',
+        enablePasskeys: true,
+        enableMagicLinks: false,
+        appCode: 'test-app'
+      });
 
-      await authStore.signInWithMagicLink('test@example.com');
+      // Mock the API client from the new auth store
+      const mockApi = authStoreWithApp.api as any;
+      mockApi.verifyAppEmailCode.mockResolvedValue(mockResponse);
+
+      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
 
       // Verify session was saved by checking localStorage (real session manager behavior)
       const { getSession } = await import('../../src/utils/sessionManager');
@@ -220,7 +229,7 @@ describe('Auth Store', () => {
           email: 'test@example.com',
           name: 'Test User',
           initials: 'TU',
-          avatar: null,
+          avatar: undefined,
           preferences: {}
         },
         tokens: {
@@ -228,6 +237,7 @@ describe('Auth Store', () => {
           refreshToken: 'refresh-token',
           expiresAt: Date.now() + 3600000
         },
+        authMethod: 'passkey' as const,
         lastActivity: Date.now(),
         createdAt: Date.now()
       };
@@ -265,10 +275,22 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
+      // Set up auth store with app code configuration
+      const authStoreWithApp = createAuthStore({
+        domain: 'test.com',
+        apiBaseUrl: 'https://api.test.com',
+        clientId: 'test-client',
+        enablePasskeys: true,
+        enableMagicLinks: false,
+        appCode: 'test-app'
+      });
+
+      // Mock the API client from the new auth store
+      const mockApi = authStoreWithApp.api as any;
+      mockApi.verifyAppEmailCode.mockResolvedValue(mockSignInResponse);
 
       // Sign in to establish refresh token
-      await authStore.signInWithMagicLink('test@example.com');
+      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
 
       // Now set up refresh response
       const mockRefreshResponse: SignInResponse = {
@@ -278,11 +300,11 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.refreshToken.mockResolvedValue(mockRefreshResponse);
+      mockApi.refreshToken.mockResolvedValue(mockRefreshResponse);
 
-      await authStore.refreshTokens();
+      await authStoreWithApp.refreshTokens();
 
-      const state = get(authStore);
+      const state = get(authStoreWithApp);
       expect(state.accessToken).toBe('new-access-token');
 
       // Verify session was updated with new tokens
@@ -312,10 +334,22 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
+      // Set up auth store with app code configuration
+      const authStoreWithApp = createAuthStore({
+        domain: 'test.com',
+        apiBaseUrl: 'https://api.test.com',
+        clientId: 'test-client',
+        enablePasskeys: true,
+        enableMagicLinks: false,
+        appCode: 'test-app'
+      });
 
-      await authStore.signInWithMagicLink('test@example.com');
-      expect(authStore.isAuthenticated()).toBe(true);
+      // Mock the API client from the new auth store
+      const mockApi = authStoreWithApp.api as any;
+      mockApi.verifyAppEmailCode.mockResolvedValue(mockSignInResponse);
+
+      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
+      expect(authStoreWithApp.isAuthenticated()).toBe(true);
     });
 
     it('should return access token when authenticated', async () => {
@@ -336,10 +370,22 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      mockApiClient.signInWithMagicLink.mockResolvedValue(mockSignInResponse);
+      // Set up auth store with app code configuration
+      const authStoreWithApp = createAuthStore({
+        domain: 'test.com',
+        apiBaseUrl: 'https://api.test.com',
+        clientId: 'test-client',
+        enablePasskeys: true,
+        enableMagicLinks: false,
+        appCode: 'test-app'
+      });
 
-      await authStore.signInWithMagicLink('test@example.com');
-      expect(authStore.getAccessToken()).toBe('token');
+      // Mock the API client from the new auth store
+      const mockApi = authStoreWithApp.api as any;
+      mockApi.verifyAppEmailCode.mockResolvedValue(mockSignInResponse);
+
+      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
+      expect(authStoreWithApp.getAccessToken()).toBe('token');
     });
 
     it('should reset store to initial state', async () => {
@@ -351,7 +397,7 @@ describe('Auth Store', () => {
           email: 'test@example.com',
           name: 'Test User',
           initials: 'TU',
-          avatar: null,
+          avatar: undefined,
           preferences: {}
         },
         tokens: {
@@ -359,6 +405,7 @@ describe('Auth Store', () => {
           refreshToken: 'refresh-token',
           expiresAt: Date.now() + 3600000
         },
+        authMethod: 'passkey' as const,
         lastActivity: Date.now(),
         createdAt: Date.now()
       };
@@ -384,9 +431,20 @@ describe('Auth Store', () => {
       const signInSuccessHandler = vi.fn();
       const signInErrorHandler = vi.fn();
 
-      authStore.on('sign_in_started', signInStartedHandler);
-      authStore.on('sign_in_success', signInSuccessHandler);
-      authStore.on('sign_in_error', signInErrorHandler);
+      // Set up auth store with app code configuration
+      const authStoreWithApp = createAuthStore({
+        domain: 'test.com',
+        apiBaseUrl: 'https://api.test.com',
+        clientId: 'test-client',
+        enablePasskeys: true,
+        enableMagicLinks: false,
+        appCode: 'test-app'
+      });
+
+      // Listen for the correct events that verifyEmailCode emits
+      authStoreWithApp.on('app_email_verify_started', signInStartedHandler);
+      authStoreWithApp.on('app_email_verify_success', signInSuccessHandler);
+      authStoreWithApp.on('app_email_verify_error', signInErrorHandler);
 
       // Test successful sign in
       const mockResponse: SignInResponse = {
@@ -403,22 +461,27 @@ describe('Auth Store', () => {
         expiresIn: 3600
       };
 
-      const mockApi = authStore.api as any;
-      mockApi.signInWithMagicLink.mockResolvedValue(mockResponse);
+      // Mock the API client from the new auth store
+      const mockApi = authStoreWithApp.api as any;
+      mockApi.verifyAppEmailCode.mockResolvedValue(mockResponse);
 
-      await authStore.signInWithMagicLink('test@example.com');
+      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
 
-      expect(signInStartedHandler).toHaveBeenCalledWith({ method: 'password' });
+      expect(signInStartedHandler).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        appCode: 'test-app'
+      });
       expect(signInSuccessHandler).toHaveBeenCalledWith({
         user: mockResponse.user,
-        method: 'password'
+        method: 'email-code',
+        appCode: 'test-app'
       });
 
       // Test failed sign in
-      mockApi.signInWithMagicLink.mockRejectedValue(new Error('Invalid credentials'));
+      mockApi.verifyAppEmailCode.mockRejectedValue(new Error('Invalid code'));
 
       try {
-        await authStore.signInWithMagicLink('test@example.com');
+        await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
       } catch (error) {
         // Expected to throw
       }
@@ -443,7 +506,7 @@ describe('Auth Store', () => {
 
   describe('Dynamic Role Configuration', () => {
     it('should start with guest configuration by default', () => {
-      const authStore = createAuthStore(mockConfig);
+      const authStore = createAuthStore(mockConfig, mockApiClient as any);
 
       // Should start with conservative guest defaults
       expect(authStore.getApplicationContext()).toEqual({
@@ -461,7 +524,7 @@ describe('Auth Store', () => {
         }
       };
 
-      const authStore = createAuthStore(configWithContext);
+      const authStore = createAuthStore(configWithContext, mockApiClient as any);
 
       expect(authStore.getApplicationContext()).toEqual({
         userType: 'all_employees',
@@ -470,7 +533,7 @@ describe('Auth Store', () => {
     });
 
     it('should handle storage configuration updates', async () => {
-      const authStore = createAuthStore(mockConfig);
+      const authStore = createAuthStore(mockConfig, mockApiClient as any);
 
       // Mock the updateStorageConfiguration method (will be implemented later)
       const mockUpdateStorageConfiguration = vi.fn();
@@ -490,7 +553,7 @@ describe('Auth Store', () => {
     });
 
     it('should handle session migration', async () => {
-      const authStore = createAuthStore(mockConfig);
+      const authStore = createAuthStore(mockConfig, mockApiClient as any);
 
       // Mock the migrateSession method (will be implemented later)
       const mockMigrateSession = vi.fn().mockResolvedValue({
@@ -521,7 +584,7 @@ describe('Auth Store', () => {
         appCode: 'test-app'
       };
 
-      const authStore = createAuthStore(configWithApp);
+      const authStore = createAuthStore(configWithApp, mockApiClient as any);
 
       const mockEmailCodeResponse = {
         success: true,
@@ -531,9 +594,11 @@ describe('Auth Store', () => {
 
       mockApiClient.sendAppEmailCode.mockResolvedValue(mockEmailCodeResponse);
 
+
+
       const result = await authStore.sendEmailCode('test@example.com');
 
-      expect(mockApiClient.sendAppEmailCode).toHaveBeenCalledWith('test-app', 'test@example.com');
+      expect(mockApiClient.sendAppEmailCode).toHaveBeenCalledWith('test@example.com');
       expect(result).toEqual(mockEmailCodeResponse);
     });
 
@@ -544,7 +609,7 @@ describe('Auth Store', () => {
       };
       delete (configWithoutApp as any).appCode;
 
-      const authStore = createAuthStore(configWithoutApp);
+      const authStore = createAuthStore(configWithoutApp, mockApiClient as any);
 
       const mockMagicLinkResponse: SignInResponse = {
         step: 'magic-link',
@@ -555,7 +620,7 @@ describe('Auth Store', () => {
 
       const result = await authStore.sendEmailCode('test@example.com');
 
-      expect(mockApiClient.signInWithMagicLink).toHaveBeenCalledWith('test@example.com');
+      expect(mockApiClient.signInWithMagicLink).toHaveBeenCalledWith({ email: 'test@example.com' });
       expect(result.success).toBe(true);
       expect(result.message).toBe('Magic link sent to your email');
     });
@@ -566,7 +631,7 @@ describe('Auth Store', () => {
         appCode: 'test-app'
       };
 
-      const authStore = createAuthStore(configWithApp);
+      const authStore = createAuthStore(configWithApp, mockApiClient as any);
 
       const mockVerifyResponse: SignInResponse = {
         step: 'success',
@@ -587,7 +652,6 @@ describe('Auth Store', () => {
       const result = await authStore.verifyEmailCode('test@example.com', '123456');
 
       expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith(
-        'test-app',
         'test@example.com',
         '123456'
       );
@@ -605,7 +669,7 @@ describe('Auth Store', () => {
       };
       delete (configWithoutApp as any).appCode;
 
-      const authStore = createAuthStore(configWithoutApp);
+      const authStore = createAuthStore(configWithoutApp, mockApiClient as any);
 
       await expect(authStore.verifyEmailCode('test@example.com', '123456')).rejects.toThrow(
         'Email code verification is only available with organization configuration'
@@ -618,7 +682,7 @@ describe('Auth Store', () => {
         appCode: 'test-app'
       };
 
-      const authStore = createAuthStore(configWithApp);
+      const authStore = createAuthStore(configWithApp, mockApiClient as any);
 
       const mockError = new Error('Network error');
       mockApiClient.sendAppEmailCode.mockRejectedValue(mockError);
@@ -635,7 +699,7 @@ describe('Auth Store', () => {
         appCode: 'test-app'
       };
 
-      const authStore = createAuthStore(configWithApp);
+      const authStore = createAuthStore(configWithApp, mockApiClient as any);
 
       const mockError = new Error('Invalid code');
       mockApiClient.verifyAppEmailCode.mockRejectedValue(mockError);

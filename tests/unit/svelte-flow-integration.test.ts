@@ -7,10 +7,36 @@
 
 import { render } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { writable } from 'svelte/store';
 import TestFlow from '../../src/components/TestFlow.svelte';
 
-// We need to test with the actual library to catch integration issues
-// but we'll mock specific problematic parts if needed
+// Mock SvelteFlow stores to prevent initialization issues
+vi.mock('@xyflow/svelte', async () => {
+  const actual = await vi.importActual('@xyflow/svelte');
+
+  // Create mock stores that behave like Svelte stores
+  const createMockStore = (initialValue: any) => {
+    const store = writable(initialValue);
+    return {
+      ...store,
+      set: vi.fn((value) => store.set(value)),
+      update: vi.fn((fn) => store.update(fn)),
+      subscribe: store.subscribe
+    };
+  };
+
+  return {
+    ...actual,
+    // Mock the store utilities that are causing issues
+    syncNodeStores: vi.fn(),
+    syncEdgeStores: vi.fn(),
+    // Provide mock stores
+    nodesStore: createMockStore([]),
+    edgesStore: createMockStore([]),
+    userNodesStore: createMockStore([]),
+    userEdgesStore: createMockStore([]),
+  };
+});
 
 describe('Svelte Flow Integration', () => {
   beforeEach(() => {

@@ -6,6 +6,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { get } from 'svelte/store';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, FlowsSessionData } from '../../src/types';
 import {
@@ -144,7 +145,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       authStore.initialize();
 
       // Should be unauthenticated since no valid session exists
-      const state = authStore.getState();
+      const state = get(authStore);
       expect(state.state).toBe('unauthenticated');
     });
   });
@@ -342,13 +343,11 @@ describe('R4: Legacy Migration (MUST)', () => {
       mockLocalStorage.data.set('auth_refresh_token', 'legacy-refresh');
       mockLocalStorage.data.set('auth_expires_at', String(Date.now()));
 
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
+      // Create auth store which should trigger cleanup
+      const authStore = createAuthStore(mockConfig);
+      authStore.initialize();
 
-      // Starting state machine should trigger cleanup
-      stateMachine.start();
-
-      // Verify legacy keys are removed
+      // Verify legacy keys are removed (this happens during auth store initialization)
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_access_token');
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_user');
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_refresh_token');
@@ -367,9 +366,9 @@ describe('R4: Legacy Migration (MUST)', () => {
         mockLocalStorage.data.set(key, 'legacy-value');
       });
 
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-      stateMachine.start();
+      // Create auth store which should trigger cleanup
+      const authStore = createAuthStore(mockConfig);
+      authStore.initialize();
 
       // Verify all legacy keys are cleaned up
       legacyKeys.forEach((key) => {
@@ -392,9 +391,8 @@ describe('R4: Legacy Migration (MUST)', () => {
     it('MUST gracefully handle missing configuration', () => {
       // Should not throw when no storage config is provided
       expect(() => {
-        const mockApiClient = { signInWithPasskey: vi.fn() };
-        const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-        stateMachine.start();
+        const authStore = createAuthStore(mockConfig);
+        authStore.initialize();
       }).not.toThrow();
     });
 

@@ -8,7 +8,7 @@ import { createEventDispatcher, onMount, getContext } from 'svelte';
 import type { createAuthStore } from '../../stores/auth-store';
 import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
 import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent } from '../../types';
-import { isPlatformAuthenticatorAvailable, isWebAuthnSupported } from '../../utils/webauthn';
+import { isPlatformAuthenticatorAvailable } from '../../utils/webauthn';
 import { getI18n } from '../../utils/i18n';
 
 import AuthButton from './AuthButton.svelte';
@@ -46,6 +46,8 @@ $: {
     i18nInstance.setTranslations(authConfig.translations);
   }
 }
+
+// Remove problematic reactive initialization - use onMount only
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -86,7 +88,7 @@ function sendSignInEvent(event: SignInEvent) {
   currentSignInState = store.sendSignInEvent(event);
   return currentSignInState;
 }
-let supportsWebAuthn = false;
+// Note: supportsWebAuthn is now determined by the store, accessed via $authStore.passkeysEnabled
 let conditionalAuthActive = false;
 let userExists = false;
 let hasPasskeys = false;
@@ -181,19 +183,22 @@ async function checkEmailForExistingPin(emailValue: string) {
   }, 500); // 500ms debounce to avoid too many API calls while typing
 }
 
-// Initialize component
-onMount(async () => {
-  // Determine what authentication methods are available
-  const browserSupportsWebAuthn = isWebAuthnSupported();
-  
-  supportsWebAuthn = browserSupportsWebAuthn && authConfig?.enablePasskeys;
+// Initialize component logic
+async function initializeComponent() {
+  // Only initialize if we have store and config
+  if (!store || !authConfig) {
+    console.log('🔍 SignInCore: Waiting for store and config to be available');
+    return;
+  }
+
+  // Get passkey availability from store (centralized determination)
+  const passkeysEnabled = store.getPasskeysEnabled();
   platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
 
   console.log('🔐 SignInCore Authentication Methods:', {
-    browserSupportsWebAuthn,
-    supportsWebAuthn,
+    passkeysEnabled,
     platformAuthenticatorAvailable,
-    enablePasskeys: authConfig?.enablePasskeys,
+    enablePasskeys: authConfig.enablePasskeys,
     enableMagicLinks: authConfig.enableMagicLinks,
     signInMode: authConfig.signInMode,
   });
@@ -201,7 +206,7 @@ onMount(async () => {
   // If initial email is provided, check for existing pins and trigger conditional auth
   if (initialEmail) {
     email = initialEmail;
-    
+
     // Check for existing valid pins if app code is configured
     if (authConfig.appCode) {
       try {
@@ -226,11 +231,14 @@ onMount(async () => {
     }
     
     // Also trigger conditional auth if passkeys are enabled
-    if (supportsWebAuthn) {
+    if (passkeysEnabled) {
       await startConditionalAuthentication();
     }
   }
-});
+}
+
+// Initialize on mount
+onMount(initializeComponent);
 
 // Handle email changes and conditional auth
 async function handleEmailChange(event: CustomEvent<{value: string}>) {
@@ -355,7 +363,7 @@ async function handleSignIn() {
 
     // Handle non-existing users based on config
     if (!userExists) {
-      if (authConfig.signInMode === 'login-only') {
+      if (authConfig?.signInMode === 'login-only') {
         error = 'No account found for this email address. Please check your email or create an account.';
         loading = false;
         return;
@@ -437,17 +445,17 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   const hasPasskeys = userCheck.hasWebAuthn;
 
   // If user has passkeys and we support them
-  if (hasPasskeys && supportsWebAuthn && authConfig?.enablePasskeys) {
+  if (hasPasskeys && store.getPasskeysEnabled()) {
     // Use passkey with fallback to email if other email methods are enabled
     const hasEmailFallback = authConfig.appCode || authConfig.enableMagicLinks;
     return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
   }
-  
+
   // If app-based email authentication is available
   if (authConfig.appCode) {
     return 'email-code';
   }
-  
+
   // If user doesn't have passkeys but we have magic links enabled
   if (authConfig.enableMagicLinks) {
     return 'email-only';
@@ -607,11 +615,12 @@ function resetForm() {
   hasPasskeys = false;
 }
 
-// Determine authentication method and button configuration
-$: authMethodForUI = getAuthMethodForUI(authConfig, supportsWebAuthn);
-$: isNewUserSignin = currentSignInState === 'userChecked' && !userExists && authConfig.signInMode !== 'login-only';
-$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, supportsWebAuthn, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName);
-$: emailInputWebAuthnEnabled = getEmailInputWebAuthnEnabled(authConfig, supportsWebAuthn);
+// Determine authentication method and button configuration (with null guards)
+$: passkeysEnabled = store ? store.getPasskeysEnabled() : false;
+$: authMethodForUI = authConfig ? getAuthMethodForUI(authConfig, passkeysEnabled) : 'generic';
+$: isNewUserSignin = authConfig && currentSignInState === 'userChecked' && !userExists && authConfig.signInMode !== 'login-only';
+$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, passkeysEnabled, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName);
+$: emailInputWebAuthnEnabled = authConfig ? getEmailInputWebAuthnEnabled(authConfig, passkeysEnabled) : false;
 
 // Keep track of last checked email to avoid duplicate calls
 let lastCheckedEmail = '';
@@ -636,7 +645,7 @@ function getAuthMethodForUI(authConfig: AuthConfig | null | undefined, webAuthnS
     
     // Show passkey UI if passkeys are enabled and supported
     if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
-    
+
     // Show email UI if organization-based or magic links are enabled
     if (authConfig.appCode || authConfig.enableMagicLinks) return 'email';
     
@@ -647,7 +656,7 @@ function getAuthMethodForUI(authConfig: AuthConfig | null | undefined, webAuthnS
     enablePasskeys: authConfig?.enablePasskeys,
     enableMagicLinks: authConfig?.enableMagicLinks,
     hasAppCode: !!authConfig?.appCode,
-    supportsWebAuthn: webAuthnSupported,
+    passkeysEnabled: webAuthnSupported,
     result
   });
   
@@ -784,7 +793,7 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       {/if}
 
       {#if currentSignInState === 'userChecked' && !userExists}
-        {#if authConfig.signInMode === 'login-only'}
+        {#if authConfig?.signInMode === 'login-only'}
           <AuthStateMessage
             type="info"
             message={$i18n('auth.onlyRegisteredUsers')}
@@ -830,7 +839,7 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
         {/if}
       </div>
 
-      {#if supportsWebAuthn && authConfig?.enablePasskeys}
+      {#if passkeysEnabled}
         <!-- <AuthStateMessage
           type="info"
           message={$i18n('webauthn.ready')}

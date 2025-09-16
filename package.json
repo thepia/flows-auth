@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,40 +15,37 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./src": {
+      "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
     "./style.css": "./dist/style.css",
     "./dist/style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "test": "vitest run --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:watch": "vitest --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:ui": "vitest --ui --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:coverage": "vitest run --coverage --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ --exclude tests/integration/ tests/critical/",
-    "test:e2e": "vitest run tests/integration/ tests/critical/",
+    
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    
+    "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ tests/components/",
     "test:integration": "vitest run tests/integration/",
-    "test:integration:env": "vitest run tests/integration/api-environment.test.ts",
-    "test:integration:auth": "vitest run tests/integration/auth-store-integration.test.ts",
-    "test:critical": "vitest run tests/critical/ tests/contracts/ tests/unit/response-processing.test.ts tests/unit/ui-ux-integration.test.ts",
-    "test:critical-only": "vitest run tests/critical/",
-    "test:critical-stubs": "vitest run tests/critical/ --reporter=verbose --bail=false",
-    "test:contracts": "vitest run tests/contracts/api-response-contracts.test.ts",
-    "test:auth-patterns": "vitest run tests/unit/response-processing.test.ts",
-    "test:ui-ux": "vitest run tests/unit/ui-ux-integration.test.ts",
-    "test:real-flow": "vitest run tests/critical/createAccount-real-flow.test.ts",
-    "test:auth-store-critical": "vitest run tests/critical/auth-store-registration.test.ts",
-    "test:webauthn": "vitest run tests/critical/webauthn-flow-validation.test.ts",
-    "test:registration-form": "vitest run tests/critical/registration-form-real-integration.test.ts",
-    "test:email-verification": "vitest run tests/critical/email-verification-flow.test.ts",
-    "test:events": "vitest run tests/critical/event-emission-validation.test.ts",
-    "test:errors": "vitest run tests/critical/error-handling-scenarios.test.ts",
-    "test:state-machine": "vitest run tests/stores/auth-state-machine.test.ts",
-    "test:auth-store": "vitest run tests/stores/auth-store.test.ts",
+    "test:critical": "vitest run tests/critical/ tests/contracts/",
+    
     "test:smoke": "vitest run tests/stores/auth-state-machine.test.ts tests/integration/api-environment.test.ts",
-    "test:regression": "vitest run tests/regression/",
+    
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
@@ -56,25 +53,37 @@
     "check:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "svelte:check": "svelte-check --tsconfig ./tsconfig.json",
+
     "prepublishOnly": "npm run build",
     "publish:npm": "dotenv -- bash -c 'npm publish --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:pnpm": "dotenv -- bash -c 'pnpm publish --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:npm:dry": "dotenv -- bash -c 'npm publish --dry-run --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:pnpm:dry": "dotenv -- bash -c 'pnpm publish --dry-run --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
+    
     "pre-commit": "./scripts/pre-commit-validation.sh",
     "pre-push": "./scripts/pre-push-sanity-check.sh",
     "pre-push:quick": "./scripts/pre-push-sanity-check.sh --skip-build",
     "pre-push:fast": "./scripts/pre-push-sanity-check.sh --skip-tests --skip-build",
-    "validate": "pnpm typecheck && pnpm lint && pnpm test",
+    
+    "validate": "pnpm typecheck && pnpm check && pnpm test",
     "validate:quick": "pnpm typecheck && pnpm test:smoke",
     "verify-auth-patterns": "pnpm test:critical && echo '✅ Authentication patterns verified'",
     "protect-auth": "pnpm test:contracts && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
+        
     "example:tasks-app-demo": "cd examples/tasks-app-demo && pnpm dev",
     "example:flows-app-demo": "cd examples/flows-app-demo && pnpm dev",
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
     "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
-  "keywords": ["svelte", "authentication", "webauthn", "passkeys", "flows", "oauth", "thepia"],
+  "keywords": [
+    "svelte",
+    "authentication",
+    "webauthn",
+    "passkeys",
+    "flows",
+    "oauth",
+    "thepia"
+  ],
   "author": "Thepia <dev@thepia.com>",
   "license": "UNLICENSED",
   "repository": {
@@ -115,7 +124,8 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
     "@simplewebauthn/browser": "^13.1.2",
-    "base64url": "^3.0.1"
+    "base64url": "^3.0.1",
+    "svelte-i18n": "^4.0.1"
   },
   "publishConfig": {
     "access": "public",

@@ -1,42 +1,11 @@
-import { fireEvent, render, waitFor } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
+import { fireEvent, waitFor } from '@testing-library/svelte';
 /**
  * Tests for SignInCore registration flow with fullName validation
  * Ensures sign-in button is properly disabled when fullName is invalid for new users
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../../src/types';
-
-// Mock the auth store
-const mockAuthStore = () => {
-  const store = writable({
-    state: 'unauthenticated',
-    signInState: 'emailEntry',
-    user: null,
-    accessToken: null,
-    refreshToken: null,
-    expiresAt: null,
-    error: null
-  });
-
-  return {
-    subscribe: store.subscribe,
-    checkUser: vi.fn(),
-    sendSignInEvent: vi.fn((event) => {
-      // Update the store state based on the event
-      if (event.type === 'USER_CHECKED') {
-        store.update((s) => ({ ...s, signInState: 'userChecked' }));
-        return 'userChecked';
-      }
-      return 'emailEntry';
-    }),
-    createAccount: vi.fn(),
-    sendEmailCode: vi.fn(),
-    notifyPinSent: vi.fn(),
-    startConditionalAuthentication: vi.fn()
-  };
-};
+import { renderWithAuthContext, TEST_AUTH_CONFIGS } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -45,58 +14,21 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 describe('SignInCore - Registration with FullName Validation', () => {
-  let authStore: ReturnType<typeof mockAuthStore>;
-  let mockConfig: AuthConfig;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    authStore = mockAuthStore();
-
-    mockConfig = {
-      apiBaseUrl: 'https://api.test.com',
-      clientId: 'test-client',
-      domain: 'test.com',
-      enablePasskeys: false,
-      enableMagicLinks: false,
-      appCode: 'test',
-      signInMode: 'login-or-register', // Allow registration
-      invitationToken: 'test-invitation-token'
-    };
-  });
-
   describe('New user registration flow', () => {
-    beforeEach(() => {
-      // Mock checkUser to return user doesn't exist
-      authStore.checkUser.mockResolvedValue({
-        exists: false,
-        hasWebAuthn: false,
-        lastPinExpiry: null
-      });
-    });
 
     it('should disable sign-in button when fullName is empty for new users', async () => {
-      const { container, component } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
 
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
-
-      // Wait for UI update
+      // Wait for fullName input to appear after user check
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -109,28 +41,18 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should disable sign-in button when fullName has less than 3 characters', async () => {
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
 
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
-
-      // Wait for fullName input to appear
+      // Wait for fullName input to appear after user check
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -146,28 +68,13 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should enable sign-in button when fullName has 3 or more characters', async () => {
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
-
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
-
-      // Wait for fullName input to appear
+      // Wait for automatic user check to complete and fullName input to appear
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -185,33 +92,19 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should call createAccount with correct parameters when form is submitted', async () => {
-      authStore.createAccount.mockResolvedValue({
+      const { container, authStore } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: false, hasPasskey: false }
+      });
+
+      // Mock the createAccount method
+      authStore.createAccount = vi.fn().mockResolvedValue({
         user: { id: '123', email: 'newuser@example.com' },
         step: 'email-code'
       });
 
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
-      });
-
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
-
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
-
-      // Wait for fullName input to appear
+      // Wait for automatic user check to complete and fullName input to appear
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -232,35 +125,24 @@ describe('SignInCore - Registration with FullName Validation', () => {
           firstName: 'John',
           lastName: 'Doe',
           acceptedTerms: false,
-          acceptedPrivacy: false,
-          invitationToken: 'test-invitation-token'
+          acceptedPrivacy: false
         });
       });
     });
 
     it('should show registration form only in login-or-register mode', async () => {
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
 
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
-
-      // Check that fullName input is shown
+      // Wait for fullName input to appear after user check
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -273,38 +155,17 @@ describe('SignInCore - Registration with FullName Validation', () => {
   });
 
   describe('Login-only mode', () => {
-    beforeEach(() => {
-      mockConfig.signInMode = 'login-only';
-
-      // Mock checkUser to return user doesn't exist
-      authStore.checkUser.mockResolvedValue({
-        exists: false,
-        hasWebAuthn: false,
-        lastPinExpiry: null
-      });
-    });
-
     it('should not show fullName input in login-only mode', async () => {
-      const { container, getByText } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.loginOnly },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
-
-      // Simulate the state transition to userChecked
-      authStore.sendSignInEvent({
-        type: 'USER_CHECKED',
-        email: 'newuser@example.com',
-        exists: false,
-        hasPasskey: false
-      });
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
 
       // Wait for the component to update after state transition
       await waitFor(() => {
@@ -320,22 +181,19 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should keep submit button disabled for non-existing users in login-only mode', async () => {
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'newuser@example.com'
-        }
+      const { container, authStore } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'newuser@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.loginOnly },
+        mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Wait for initial email check
-      await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('newuser@example.com');
-      });
+      // Mock createAccount to verify it's not called
+      authStore.createAccount = vi.fn();
 
-      // Submit the form - should show error
-      const form = container.querySelector('form');
-      await fireEvent.submit(form!);
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
 
       // Verify createAccount was NOT called
       expect(authStore.createAccount).not.toHaveBeenCalled();
@@ -343,36 +201,33 @@ describe('SignInCore - Registration with FullName Validation', () => {
   });
 
   describe('Existing user flow', () => {
-    beforeEach(() => {
-      // Mock checkUser to return user exists
-      authStore.checkUser.mockResolvedValue({
-        exists: true,
-        hasWebAuthn: false,
-        lastPinExpiry: null
-      });
-    });
-
     it('should not show fullName input for existing users', async () => {
-      const { container } = render(SignInCore, {
-        props: {
-          config: mockConfig,
-          authStore,
-          initialEmail: 'existing@example.com'
-        }
+      const { container } = renderWithAuthContext(SignInCore, {
+        props: { initialEmail: 'existing@example.com' },
+        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
+        mockUserCheck: { exists: true, hasPasskey: false }
       });
 
-      // Wait for initial email check
+      // Click the sign-in button to trigger user check
+      const signInButton = container.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
+      await fireEvent.click(signInButton!);
+
+      // Wait for the component to transition to pin entry state for existing users
       await waitFor(() => {
-        expect(authStore.checkUser).toHaveBeenCalledWith('existing@example.com');
+        // For existing users, should transition to pin entry (email code input)
+        const pinInput = container.querySelector('#code-input');
+        expect(pinInput).toBeTruthy();
+
+        // FullName input should NOT be shown anywhere
+        const fullNameInput = container.querySelector('#fullName');
+        expect(fullNameInput).toBeFalsy();
+
+        // Should show "Check your email" message
+        const emailMessage = container.querySelector('.auth-message');
+        expect(emailMessage).toBeTruthy();
+        expect(emailMessage?.textContent).toContain('Check your email');
       });
-
-      // Check that fullName input is NOT shown
-      const fullNameInput = container.querySelector('#fullName');
-      expect(fullNameInput).toBeFalsy();
-
-      // Check that submit button is enabled (no fullName required)
-      const submitButton = container.querySelector('button[type="submit"]');
-      expect(submitButton?.disabled).toBe(false);
     });
   });
 });

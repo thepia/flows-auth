@@ -7,7 +7,7 @@ import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
 // TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
 const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import '../app.css';
-import '@thepia/flows-auth/dist/style.css';
+import '@thepia/flows-auth/style.css';
 
 // Optional SvelteKit props
 export let params = {};

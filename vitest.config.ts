@@ -17,10 +17,26 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/examples/**/tests/**',
-      '**/examples/**/*.test.js'
+      '**/examples/**',
+      '**/coverage/**',
+      '**/build/**',
+      '**/*.timestamp-*.mjs'
     ],
-    testTimeout: 10000
+    testTimeout: 10000,
+    // Simplified for VS Code compatibility
+    reporters: ['verbose'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'coverage/**',
+        'dist/**',
+        'examples/**',
+        '**/*.d.ts',
+        '**/*.test.{js,ts}',
+        '**/*.spec.{js,ts}'
+      ]
+    }
   },
   resolve: {
     alias: {

@@ -3,6 +3,8 @@
  *
  * Tests for the core data generation logic used in Svelte Flow components
  * without attempting to render the full Svelte components
+ * 
+ * This needs to be replaced by an actual test. It currently tests a local function.
  */
 
 import { describe, expect, it } from 'vitest';

@@ -3,8 +3,10 @@
  *
  * Tests for the new smart button configuration logic that prioritizes
  * passkey authentication when available and provides appropriate secondary actions.
+ * 
+ * This needs to be replaced by an actual test. It currently tests a local function.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { AuthConfig } from '../../src/types';
 
 describe('SignInCore Smart Button Configuration', () => {
@@ -16,9 +18,9 @@ describe('SignInCore Smart Button Configuration', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: false,
+      enableMagicLinks: false,
       signInMode: 'login-or-register',
-      appCode: 'demo' // Enable pin authentication
+      appCode: 'demo'
     };
   });
 
@@ -47,16 +49,19 @@ describe('SignInCore Smart Button Configuration', () => {
         primaryText = 'Sign in with Passkey';
         primaryLoadingText = 'Signing in with Passkey...';
 
-        // Add secondary action for pin fallback if available
-        if (config.appCode) {
-          secondaryAction = {
-            method: 'email-code',
-            text: hasValidPin ? 'Enter existing pin' : 'Send pin by email',
-            loadingText: hasValidPin ? 'Verifying pin...' : 'Sending pin...'
-          };
-        }
-      } else if (config.appCode) {
-        // User doesn't have passkeys, use pin authentication
+        // Pins are always available as secondary action
+        secondaryAction = {
+          method: 'email-code',
+          text: hasValidPin ? 'Enter existing pin' : 'Send pin by email',
+          loadingText: hasValidPin ? 'Verifying pin...' : 'Sending pin...'
+        };
+      } else if (config.enableMagicLinks) {
+        // Magic links explicitly enabled - use as primary
+        primaryMethod = 'magic-link';
+        primaryText = 'Send Magic Link';
+        primaryLoadingText = 'Sending magic link...';
+      } else {
+        // No passkeys available - use pin authentication as primary
         primaryMethod = 'email-code';
         if (hasValidPin) {
           primaryText = 'Enter existing pin';
@@ -65,11 +70,6 @@ describe('SignInCore Smart Button Configuration', () => {
           primaryText = 'Send pin by email';
           primaryLoadingText = 'Sending pin...';
         }
-      } else if (config.enableMagicPins) {
-        // Fallback to magic links
-        primaryMethod = 'magic-link';
-        primaryText = 'Send Magic Link';
-        primaryLoadingText = 'Sending magic link...';
       }
     }
 
@@ -104,7 +104,7 @@ describe('SignInCore Smart Button Configuration', () => {
       expect(config.primary.disabled).toBe(false);
     });
 
-    it('should show pin fallback as secondary when user has passkeys and appCode configured', () => {
+    it('should show pin fallback as secondary when user has passkeys', () => {
       const config = getButtonConfig(
         'email',
         false,
@@ -139,7 +139,7 @@ describe('SignInCore Smart Button Configuration', () => {
       expect(config.secondary!.loadingText).toBe('Verifying pin...');
     });
 
-    it('should not show secondary action when user has passkeys but no appCode', () => {
+    it('should show pin secondary action even without appCode', () => {
       const configWithoutAppCode = { ...mockConfig, appCode: undefined };
       const config = getButtonConfig(
         'email',
@@ -153,7 +153,9 @@ describe('SignInCore Smart Button Configuration', () => {
       );
 
       expect(config.primary.method).toBe('passkey');
-      expect(config.secondary).toBeNull();
+      expect(config.secondary).not.toBeNull();
+      expect(config.secondary!.method).toBe('email-code');
+      expect(config.secondary!.text).toBe('Send pin by email');
     });
   });
 
@@ -195,12 +197,11 @@ describe('SignInCore Smart Button Configuration', () => {
     });
   });
 
-  describe('Magic Link Fallback', () => {
-    it('should use magic link when user has no passkeys and no appCode', () => {
+  describe('Magic Links (Explicit Enable Only)', () => {
+    it('should use magic links as primary when explicitly enabled and no passkeys', () => {
       const configWithMagicLinks = {
         ...mockConfig,
-        appCode: undefined,
-        enableMagicPins: true
+        enableMagicLinks: true  // Explicitly enabled
       };
 
       const config = getButtonConfig(
@@ -217,6 +218,29 @@ describe('SignInCore Smart Button Configuration', () => {
       expect(config.primary.method).toBe('magic-link');
       expect(config.primary.text).toBe('Send Magic Link');
       expect(config.primary.loadingText).toBe('Sending magic link...');
+      expect(config.secondary).toBeNull();
+    });
+
+    it('should use pins as primary when magic links disabled and no passkeys', () => {
+      const configWithoutMagicLinks = {
+        ...mockConfig,
+        enableMagicLinks: false  // Default - magic links disabled
+      };
+
+      const config = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        true,
+        true,
+        false,
+        false,
+        configWithoutMagicLinks
+      );
+
+      expect(config.primary.method).toBe('email-code');
+      expect(config.primary.text).toBe('Send pin by email');
+      expect(config.primary.loadingText).toBe('Sending pin...');
       expect(config.secondary).toBeNull();
     });
   });
@@ -239,11 +263,10 @@ describe('SignInCore Smart Button Configuration', () => {
       expect(config.secondary).toBeNull();
     });
 
-    it('should fall back to magic link when user has passkeys but WebAuthn not supported and no appCode', () => {
+    it('should fall back to magic link when user has passkeys but WebAuthn not supported and magic links enabled', () => {
       const configWithMagicLinks = {
         ...mockConfig,
-        appCode: undefined,
-        enableMagicPins: true
+        enableMagicLinks: true  // Explicitly enabled
       };
 
       const config = getButtonConfig(
@@ -259,6 +282,28 @@ describe('SignInCore Smart Button Configuration', () => {
 
       expect(config.primary.method).toBe('magic-link');
       expect(config.primary.text).toBe('Send Magic Link');
+      expect(config.secondary).toBeNull();
+    });
+
+    it('should fall back to pin when user has passkeys but WebAuthn not supported and magic links disabled', () => {
+      const configWithoutMagicLinks = {
+        ...mockConfig,
+        enableMagicLinks: false  // Default - disabled
+      };
+
+      const config = getButtonConfig(
+        'email',
+        false,
+        'test@example.com',
+        false,
+        true,
+        true,
+        false,
+        configWithoutMagicLinks
+      );
+
+      expect(config.primary.method).toBe('email-code');
+      expect(config.primary.text).toBe('Send pin by email');
       expect(config.secondary).toBeNull();
     });
   });
@@ -353,12 +398,11 @@ describe('SignInCore Smart Button Configuration', () => {
       expect(config.secondary).toBeNull();
     });
 
-    it('should handle all authentication methods disabled', () => {
+    it('should handle passkeys disabled but pins still available', () => {
       const configDisabled = {
         ...mockConfig,
         enablePasskeys: false,
-        enableMagicPins: false,
-        appCode: undefined
+        enableMagicLinks: false
       };
 
       const config = getButtonConfig(
@@ -372,7 +416,8 @@ describe('SignInCore Smart Button Configuration', () => {
         configDisabled
       );
 
-      expect(config.primary.method).toBe('generic');
+      expect(config.primary.method).toBe('email-code');
+      expect(config.primary.text).toBe('Send pin by email');
       expect(config.secondary).toBeNull();
     });
   });

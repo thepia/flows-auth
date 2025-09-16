@@ -1,10 +1,8 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
-// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
-const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
-import { ErrorReportingStatus } from '@thepia/flows-auth';
+import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
 export let isAuthenticated = false;
@@ -202,7 +200,6 @@ const demoSections = [
   { id: 'signin-machine', title: 'Interactive SignIn Machine', icon: Shield },
   { id: 'register', title: 'Registration', icon: Mail },
   { id: 'passkey', title: 'Passkey Auth', icon: Key },
-  { id: 'state-machine', title: 'State Machine', icon: Settings },
 ];
 
 onMount(async () => {
@@ -903,52 +900,6 @@ $: dynamicAuthConfig = authConfig ? {
 </script>
 
 <div class="demo-container">
-  <!-- Hero Section -->
-  <div class="hero">
-    <h1 class="hero-title">
-      <span class="brand-accent">Flows Auth</span> Demo
-    </h1>
-    <p class="hero-subtitle">
-      Comprehensive demonstration of authentication flows, state machine, and branded components
-    </p>
-    
-    <!-- Auth Status Card -->
-    <div class="auth-status-card card">
-      <div class="card-body">
-        <div class="status-row">
-          <div class="status-info">
-            <div class="status-indicator {authState}">
-              <span class="status-dot"></span>
-              <span class="status-text">
-                {#if isAuthenticated}
-                  Authenticated as {currentUser?.email || 'Unknown'}
-                {:else if authState === 'loading'}
-                  Initializing...
-                {:else}
-                  Not authenticated
-                {/if}
-              </span>
-            </div>
-            {#if authConfig}
-              <div class="config-info">
-                <span class="domain-badge">{authConfig.domain}</span>
-                <select class="domain-select" bind:value={currentDomain} on:change={updateDomain}>
-                  {#each domainOptions as domain}
-                    <option value={domain}>{domain}</option>
-                  {/each}
-                </select>
-              </div>
-            {/if}
-          </div>
-          {#if isAuthenticated}
-            <button class="btn btn-outline btn-sm" on:click={testSignOut}>
-              Sign Out
-            </button>
-          {/if}
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Demo Navigation -->
   <div class="demo-nav">
@@ -1962,174 +1913,6 @@ $: dynamicAuthConfig = authConfig ? {
         </div>
       </div>
     
-    {:else if selectedDemo === 'state-machine'}
-      <div class="content-section">
-        <h2>Authentication State Machine</h2>
-        <p>Monitor and control the internal state machine that drives authentication flows:</p>
-        
-        <div class="state-display grid grid-cols-2 gap-4">
-          <div class="state-card card">
-            <div class="card-header">
-              <h4>Current Machine State</h4>
-            </div>
-            <div class="card-body">
-              <div class="state-value">
-                {stateMachineState || 'loading'}
-              </div>
-              <div class="state-info-small">
-                Legacy: <code>{authState || 'loading'}</code>
-              </div>
-            </div>
-          </div>
-          
-          <div class="context-card card">
-            <div class="card-header">
-              <h4>Machine Context</h4>
-            </div>
-            <div class="card-body">
-              <pre class="context-json">
-                {JSON.stringify(stateMachineContext || { state: authState }, null, 2)}
-              </pre>
-            </div>
-          </div>
-        </div>
-        
-        <!-- State Machine Controls -->
-        {#if authStore && authStore.stateMachine}
-          <div class="machine-control-panel card">
-            <div class="card-header">
-              <h4>State Machine Controls</h4>
-              <p class="text-secondary">Send events to transition between states</p>
-            </div>
-            <div class="card-body">
-              <div class="control-grid">
-                <div class="control-group">
-                  <h5>Session Events</h5>
-                  <div class="control-buttons">
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.checkSession()}>
-                      CHECK_SESSION
-                    </button>
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
-                      INVALID_SESSION
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="control-group">
-                  <h5>User Input Events</h5>
-                  <div class="control-buttons">
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.clickNext()}>
-                      USER_CLICKS_NEXT
-                    </button>
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
-                      EMAIL_TYPED
-                    </button>
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.clickContinue()}>
-                      CONTINUE_CLICKED
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="control-group">
-                  <h5>Auth Flow Events</h5>
-                  <div class="control-buttons">
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
-                      PASSKEY_SELECTED
-                    </button>
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
-                      WEBAUTHN_SUCCESS
-                    </button>
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
-                      WEBAUTHN_ERROR
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="control-group">
-                  <h5>Reset Events</h5>
-                  <div class="control-buttons">
-                    <button class="btn btn-outline btn-sm" on:click={() => authStore.resetToAuth()}>
-                      RESET_TO_COMBINED_AUTH
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        {/if}
-        
-        <div class="state-info card">
-          <div class="card-body">
-            <h4>All State Machine States (26 Total)</h4>
-            <p>The authentication state machine manages these states:</p>
-            
-            <div class="states-grid">
-              <div class="state-category">
-                <h5>Session Management</h5>
-                <ul>
-                  <li><code>checkingSession</code> - Initial session validation</li>
-                  <li><code>sessionValid</code> - Existing valid session found</li>
-                  <li><code>sessionInvalid</code> - No valid session, needs authentication</li>
-                </ul>
-              </div>
-              
-              <div class="state-category">
-                <h5>Authentication Flow</h5>
-                <ul>
-                  <li><code>combinedAuth</code> - Combined authentication form</li>
-                  <li><code>emailCodeInput</code> - PIN/code entry state</li>
-                  <li><code>conditionalMediation</code> - Passkey auto-discovery</li>
-                  <li><code>autofillPasskeys</code> - Autofill passkey suggestions</li>
-                  <li><code>waitForExplicit</code> - Waiting for explicit user action</li>
-                  <li><code>explicitAuth</code> - Explicit authentication flow</li>
-                </ul>
-              </div>
-              
-              <div class="state-category">
-                <h5>User Management</h5>
-                <ul>
-                  <li><code>auth0UserLookup</code> - Looking up user in Auth0</li>
-                  <li><code>directWebAuthnAuth</code> - Direct WebAuthn authentication</li>
-                  <li><code>passkeyRegistration</code> - Passkey registration flow</li>
-                  <li><code>newUserRegistration</code> - New user registration</li>
-                  <li><code>webauthnRegister</code> - WebAuthn registration</li>
-                </ul>
-              </div>
-              
-              <div class="state-category">
-                <h5>Authentication States</h5>
-                <ul>
-                  <li><code>authenticatedUnconfirmed</code> - Logged in but email unverified</li>
-                  <li><code>authenticatedConfirmed</code> - Full access after verification</li>
-                  <li><code>biometricPrompt</code> - WebAuthn authentication prompt</li>
-                  <li><code>auth0WebAuthnVerify</code> - WebAuthn verification with Auth0</li>
-                </ul>
-              </div>
-              
-              <div class="state-category">
-                <h5>Error Handling</h5>
-                <ul>
-                  <li><code>passkeyError</code> - General passkey error</li>
-                  <li><code>errorHandling</code> - Generic error handling</li>
-                  <li><code>credentialNotFound</code> - No matching credential</li>
-                  <li><code>userCancellation</code> - User cancelled operation</li>
-                  <li><code>credentialMismatch</code> - Credential mismatch error</li>
-                </ul>
-              </div>
-              
-              <div class="state-category">
-                <h5>Session Creation</h5>
-                <ul>
-                  <li><code>auth0TokenExchange</code> - Token exchange process</li>
-                  <li><code>sessionCreated</code> - New session established</li>
-                  <li><code>loadingApp</code> - Loading application</li>
-                  <li><code>appLoaded</code> - Authentication complete</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     {/if}
     
   </div>

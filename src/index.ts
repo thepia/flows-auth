@@ -94,6 +94,9 @@ export {
   getI18n
 } from './utils/i18n';
 
+// Note: For i18n, use svelte-i18n directly:
+// import { init, addMessages, _, locale } from 'svelte-i18n';
+
 export type {
   SupportedLanguage,
   TranslationKey,

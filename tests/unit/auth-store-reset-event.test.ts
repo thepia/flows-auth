@@ -29,7 +29,7 @@ describe('Auth Store RESET Event Handling', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicPins: true,
+      enableMagicLinks: false,
       enableErrorReporting: false,
       appCode: 'test',
       signInMode: 'login-only'

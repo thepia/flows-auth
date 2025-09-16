@@ -3,11 +3,23 @@
  *
  * Tests the logic functions and input handling for CodeInput component
  * without requiring full Svelte component rendering
+ *
+ * This needs to be replaced by an actual test. It currently tests a local function.
  */
 
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TranslationKey } from '../../src/utils/i18n';
+
+// Mock svelte-i18n for future compatibility
+vi.mock('svelte-i18n', () => ({
+  _: vi.fn((key: string) => {
+    const translations: Record<string, string> = {
+      'code.label': 'Enter verification code',
+      'code.placeholder': '6-digit code'
+    };
+    return translations[key] || key;
+  })
+}));
 
 // Mock the numeric input filtering logic from CodeInput
 function filterNumericInput(value: string): string {
@@ -51,7 +63,7 @@ function isCompleteCode(code: string, expectedLength: number): boolean {
 }
 
 describe('CodeInput Logic', () => {
-  const mockI18n = vi.fn((key: TranslationKey) => {
+  const mockI18n = vi.fn((key: string) => {
     const translations: Record<string, string> = {
       'code.placeholder': '6-digit code',
       'code.label': 'Enter verification code'

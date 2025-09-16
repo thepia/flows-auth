@@ -60,7 +60,7 @@ const LEGACY_STORAGE_KEYS = {
 } as const;
 
 // Create auth store with state machine integration
-function createAuthStore(config: AuthConfig): CompleteAuthStore {
+function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): CompleteAuthStore {
   // Initialize error reporting if configured
   if (browser && config.errorReporting) {
     initializeErrorReporter(config.errorReporting);
@@ -93,8 +93,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     return undefined;
   };
 
-  // Initialize API client
-  const api = new AuthApiClient(config);
+  // Initialize API client (use injected client for testing, or create new one)
+  const api = apiClient || new AuthApiClient(config);
 
   // Clean up any legacy localStorage data and migrate to sessionStorage if needed
   if (browser) {
@@ -116,6 +116,13 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     metadata: sessionUser.preferences
   });
 
+  // Determine passkey availability centrally
+  const determinePasskeysEnabled = (): boolean => {
+    if (!browser) return false;
+    if (!config.enablePasskeys) return false;
+    return isWebAuthnSupported();
+  };
+
   const initialState: AuthStore = {
     state: isValidSession ? 'authenticated' : 'unauthenticated',
     signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
@@ -123,7 +130,8 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
-    error: null
+    error: null,
+    passkeysEnabled: determinePasskeysEnabled()
   };
 
   const store = writable<AuthStore>(initialState);
@@ -602,6 +610,7 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
       clearAuthSession();
       updateState({
         state: 'unauthenticated',
+        signInState: 'emailEntry', // Reset signInState when signing out
         user: null,
         accessToken: null,
         refreshToken: null,
@@ -1629,6 +1638,11 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
 
       const response = await api.sendAppEmailCode(email);
 
+      // Handle case where response is undefined (testing scenarios)
+      if (!response) {
+        throw new Error('No response received from email code API');
+      }
+
       emit('app_email_sent', {
         email,
         success: response.success,
@@ -1767,6 +1781,9 @@ function createAuthStore(config: AuthConfig): CompleteAuthStore {
     determineAuthFlow,
     on,
     api,
+
+    // Passkey capability
+    getPasskeysEnabled: () => get(store).passkeysEnabled,
 
     // SignIn flow control methods
     notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),

@@ -10,12 +10,14 @@ const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
 import type {
   ApplicationContext,
+  AuthButtonMethod,
   AuthConfig,
   AuthError,
   AuthEventData,
   AuthEventType,
   AuthMethod,
   AuthStore,
+  ButtonConfig,
   CompleteAuthStore,
   InvitationTokenData,
   RegistrationResponse,
@@ -23,6 +25,8 @@ import type {
   SignInEvent,
   SignInResponse,
   SignInState,
+  SingleButtonConfig,
+  StateMessageConfig,
   StorageConfigurationUpdate,
   StorageType,
   User
@@ -1802,6 +1806,139 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
     // Configuration access
     getConfig: () => config,
+
+    // UI Configuration
+    getButtonConfig: (params: {
+      email: string;
+      loading: boolean;
+      userExists: boolean | null;
+      hasPasskeys: boolean;
+      hasValidPin: boolean;
+      isNewUserSignin: boolean;
+      fullName?: string;
+    }) => {
+      const { email, loading, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName } =
+        params;
+      const passkeysEnabled = determinePasskeysEnabled();
+
+      // Determine authentication method for UI
+      const getAuthMethodForUI = (): 'passkey' | 'email' | 'generic' => {
+        // Show passkey UI if passkeys are enabled and supported
+        if (config.enablePasskeys && passkeysEnabled) return 'passkey';
+        // Show email UI if organization-based or magic links are enabled
+        if (config.appCode || config.enableMagicLinks) return 'email';
+        return 'generic';
+      };
+
+      const authMethodForUI = getAuthMethodForUI();
+
+      // Smart button configuration based on discovered user state
+      let primaryMethod: AuthButtonMethod = authMethodForUI;
+      let primaryTextKey = 'auth.signIn';
+      let primaryLoadingTextKey = 'auth.loading';
+      let secondaryAction: SingleButtonConfig | null = null;
+
+      // Set default button text based on available authentication methods
+      if (config.appCode) {
+        primaryMethod = 'email-code';
+        primaryTextKey = 'auth.sendPinByEmail';
+        primaryLoadingTextKey = 'auth.sendingPin';
+      } else if (config.enableMagicLinks) {
+        primaryMethod = 'magic-link';
+        primaryTextKey = 'auth.sendMagicLink';
+        primaryLoadingTextKey = 'auth.sendingMagicLink';
+      }
+
+      // Button disabled state logic
+      const isDisabled = loading || !email || !email.trim();
+
+      // Smart button logic based on user state
+      if (userExists && hasPasskeys && config.enablePasskeys && passkeysEnabled) {
+        // User has passkeys - prioritize passkey authentication
+        primaryMethod = 'passkey';
+        primaryTextKey = 'auth.signInWithPasskey';
+        primaryLoadingTextKey = 'auth.authenticating';
+
+        // Offer alternative method as secondary button
+        if (config.appCode) {
+          secondaryAction = {
+            method: 'email-code',
+            textKey: 'auth.sendPinByEmail',
+            loadingTextKey: 'auth.sendingPin',
+            supportsWebAuthn: passkeysEnabled && primaryMethod === 'passkey',
+            disabled: isDisabled
+          };
+        } else if (config.enableMagicLinks) {
+          secondaryAction = {
+            method: 'magic-link',
+            textKey: 'auth.sendMagicLink',
+            loadingTextKey: 'auth.sendingMagicLink',
+            supportsWebAuthn: passkeysEnabled && primaryMethod === 'passkey',
+            disabled: isDisabled
+          };
+        }
+      }
+
+      return {
+        primary: {
+          method: primaryMethod,
+          textKey: primaryTextKey,
+          loadingTextKey: primaryLoadingTextKey,
+          supportsWebAuthn: passkeysEnabled && primaryMethod === 'passkey',
+          disabled: isDisabled
+        },
+        secondary: secondaryAction
+      };
+    },
+
+    // State message configuration
+    getStateMessageConfig: (params: {
+      signInState: SignInState;
+      userExists: boolean | null;
+      emailCodeSent: boolean;
+      hasValidPin: boolean;
+      signInMode?: 'login-only' | 'login-or-register';
+    }): StateMessageConfig | null => {
+      const { signInState, userExists, emailCodeSent, hasValidPin, signInMode } = params;
+
+      switch (signInState) {
+        case 'userChecked':
+          if (!userExists && signInMode === 'login-only') {
+            return {
+              type: 'info',
+              textKey: 'auth.onlyRegisteredUsers',
+              showIcon: true
+            };
+          }
+          return null;
+
+        case 'pinEntry':
+          if (emailCodeSent && !hasValidPin) {
+            return {
+              type: 'success',
+              textKey: 'status.checkEmail',
+              showIcon: true
+            };
+          } else if (hasValidPin) {
+            return {
+              type: 'info',
+              textKey: 'status.pinDetected',
+              showIcon: true
+            };
+          }
+          return null;
+
+        case 'emailVerification':
+          return {
+            type: 'info',
+            textKey: 'registration.required',
+            showIcon: true
+          };
+
+        default:
+          return null;
+      }
+    },
 
     // Cleanup
     destroy: () => {

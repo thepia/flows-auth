@@ -6,6 +6,7 @@
 import { createEventDispatcher } from 'svelte';
 import type { Readable } from 'svelte/store';
 import type { TranslationKey } from '../../utils/i18n';
+import type { AuthButtonMethod, SingleButtonConfig } from '../../types';
 
 // Props
 export let type: 'submit' | 'button' = 'submit';
@@ -16,19 +17,21 @@ export let size: 'sm' | 'md' | 'lg' = 'md';
 export let fullWidth = true;
 export let className = '';
 
-// Content props
+// Content props (legacy - use buttonConfig instead)
 export let text = '';
 export let loadingText = '';
 export let icon = '';
 export let showIcon = true;
 
-// Method-specific text and icons
-export let method: 'passkey' | 'email' | 'email-code' | 'magic-link' | 'generic' | 
-                   'continue-touchid' | 'continue-faceid' | 'continue-biometric' = 'generic';
+// Method-specific text and icons (legacy - use buttonConfig instead)
+export let method: AuthButtonMethod = 'generic';
 export let supportsWebAuthn = false;
 
-// AppCode awareness for pin vs magic link
+// AppCode awareness for pin vs magic link (legacy)
 export let isAppCodeBased = false;
+
+// NEW: Button configuration object (preferred approach)
+export let buttonConfig: SingleButtonConfig | null = null;
 
 // i18n support (required - parent component must provide this)
 export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
@@ -41,19 +44,35 @@ const dispatch = createEventDispatcher<{
 // Apple device detection for biometric text
 $: isAppleDevice = detectAppleDevice();
 
+// Resolve effective values from buttonConfig or legacy props
+$: effectiveMethod = buttonConfig?.method || method;
+$: effectiveSupportsWebAuthn = buttonConfig?.supportsWebAuthn ?? supportsWebAuthn;
+$: effectiveDisabled = buttonConfig?.disabled ?? disabled;
+
 // Dynamic content based on method and state
 $: displayText = getDisplayText();
 $: displayIcon = getDisplayIcon();
 
 function getDisplayText(): string {
+  // NEW: Use buttonConfig translation keys if available
+  if (buttonConfig) {
+    if (loading && buttonConfig.loadingTextKey) {
+      return $i18n(buttonConfig.loadingTextKey as TranslationKey);
+    }
+    if (buttonConfig.textKey) {
+      return $i18n(buttonConfig.textKey as TranslationKey);
+    }
+  }
+
+  // LEGACY: Fall back to explicit text props
   if (loading && loadingText) return loadingText;
   if (text) return text;
-  
-  // Method-specific text using i18n
+
+  // LEGACY: Method-specific text using i18n (fallback for old usage)
   if (loading) {
-    switch (method) {
+    switch (effectiveMethod) {
       case 'passkey': return $i18n('auth.signingIn');
-      case 'email': 
+      case 'email':
       case 'email-code': return $i18n('auth.sendingPin');
       case 'magic-link': return $i18n('auth.sendingMagicLink');
       case 'continue-touchid':
@@ -62,15 +81,15 @@ function getDisplayText(): string {
       default: return $i18n('auth.loading');
     }
   }
-  
-  switch (method) {
+
+  switch (effectiveMethod) {
     case 'passkey':
-      if (supportsWebAuthn && isAppleDevice) {
+      if (effectiveSupportsWebAuthn && isAppleDevice) {
         // Use generic "Touch ID/Face ID" text for better reliability and UX
         // Specific detection is unreliable and WebAuthn intentionally obscures biometric details
         return $i18n('auth.continueWithBiometric'); // "Continue with Touch ID/Face ID"
       }
-      return supportsWebAuthn ? $i18n('auth.signInWithPasskey') : $i18n('auth.signIn');
+      return effectiveSupportsWebAuthn ? $i18n('auth.signInWithPasskey') : $i18n('auth.signIn');
     case 'email':
       // AppCode-aware: use pin or magic link text
       return isAppCodeBased ? $i18n('auth.sendPinToEmail') : $i18n('auth.sendMagicLink');
@@ -86,7 +105,7 @@ function getDisplayText(): string {
       // Use generic biometric text for better reliability
       // Specific biometric detection is unreliable and not recommended
       return $i18n('auth.continueWithBiometric'); // "Continue with Touch ID/Face ID"
-    default: 
+    default:
       return $i18n('action.continue');
   }
 }
@@ -104,7 +123,7 @@ function getDisplayIcon(): string {
   if (loading) return '';
   if (icon) return icon;
 
-  switch (method) {
+  switch (effectiveMethod) {
     case 'passkey':
       // Use generic biometric icon for Apple devices, passkey icon for others
       return isAppleDevice ? '👆' : '🔑'; // Touch ID icon for Apple, passkey for others
@@ -119,12 +138,12 @@ function getDisplayIcon(): string {
 }
 
 function handleClick(event: MouseEvent) {
-  if (disabled || loading) {
+  if (effectiveDisabled || loading) {
     event.preventDefault();
     return;
   }
-  
-  dispatch('click', { method });
+
+  dispatch('click', { method: effectiveMethod });
 }
 
 function getButtonClasses(): string {
@@ -150,7 +169,7 @@ function getButtonClasses(): string {
   }
   
   const widthClass = fullWidth ? "w-full" : "";
-  const disabledClass = (disabled || loading) ? "cursor-not-allowed opacity-50" : "cursor-pointer";
+  const disabledClass = (effectiveDisabled || loading) ? "cursor-not-allowed opacity-50" : "cursor-pointer";
   
   return `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${disabledClass}`;
 }
@@ -159,7 +178,7 @@ function getButtonClasses(): string {
 <button
   {type}
   class="{getButtonClasses()} {className}"
-  {disabled}
+  disabled={effectiveDisabled || loading}
   on:click={handleClick}
   aria-label={text || displayText}
   aria-describedby={loading ? 'button-loading-text' : null}

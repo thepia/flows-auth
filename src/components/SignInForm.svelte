@@ -172,8 +172,17 @@
           </div>
         </div>
 -->
-  
+
 </div>
+
+<!-- Powered by footer (matches AccountCreationForm pattern) -->
+{#if authConfig?.branding?.showPoweredBy !== false}
+  <div class="auth-footer">
+    <p class="powered-by">
+      {$i18n('branding.securedBy')} <strong>{$i18n('branding.poweredBy')}</strong>
+    </p>
+  </div>
+{/if}
 
 <style>
   /* Container and layout styles */
@@ -376,6 +385,24 @@
 
   .text-primary {
     color: #2563eb;
+  }
+
+  /* Auth footer styles (matches AccountCreationForm pattern) */
+  .auth-footer {
+    text-align: center;
+    margin-top: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border-light, #e5e7eb);
+  }
+
+  .powered-by {
+    font-size: 12px;
+    color: var(--auth-text-secondary, #6b7280);
+    margin: 0;
+  }
+
+  .powered-by strong {
+    color: var(--auth-text-primary, #111827);
   }
 
   /* Responsive adjustments */

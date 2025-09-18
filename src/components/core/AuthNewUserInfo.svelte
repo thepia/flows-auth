@@ -42,9 +42,10 @@ $: t = $i18n;
   
   <AuthStateMessage
     type="info"
-    message={t('auth.newUserTermsNotice')}
+    tKey="auth.newUserTermsNotice"
     showIcon={true}
     className="terms-notice"
+    {i18n}
   />
 </div>
 

@@ -567,8 +567,59 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   // Configuration access
   getConfig: () => AuthConfig;
 
+  // UI Configuration
+  getButtonConfig: (params: {
+    email: string;
+    loading: boolean;
+    userExists: boolean | null;
+    hasPasskeys: boolean;
+    hasValidPin: boolean;
+    isNewUserSignin: boolean;
+    fullName?: string;
+  }) => ButtonConfig;
+
+  getStateMessageConfig: (params: {
+    signInState: SignInState;
+    userExists: boolean | null;
+    emailCodeSent: boolean;
+    hasValidPin: boolean;
+    signInMode?: 'login-only' | 'login-or-register';
+  }) => StateMessageConfig | null;
+
   // Cleanup
   destroy: () => void;
+}
+
+// Button configuration types
+export type AuthButtonMethod =
+  | 'passkey'
+  | 'email'
+  | 'email-code'
+  | 'magic-link'
+  | 'generic'
+  | 'continue-touchid'
+  | 'continue-faceid'
+  | 'continue-biometric';
+
+export interface SingleButtonConfig {
+  method: AuthButtonMethod;
+  textKey: string;
+  loadingTextKey: string;
+  supportsWebAuthn: boolean;
+  disabled: boolean;
+}
+
+export interface ButtonConfig {
+  primary: SingleButtonConfig;
+  secondary?: SingleButtonConfig | null;
+}
+
+// State message configuration types
+export interface StateMessageConfig {
+  type: 'info' | 'success' | 'warning' | 'error';
+  textKey: string;
+  showIcon?: boolean;
+  className?: string;
 }
 
 // Re-export i18n types for convenience

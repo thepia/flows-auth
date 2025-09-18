@@ -1,18 +1,28 @@
 <!--
   AuthStateMessage - Component for displaying authentication status and error messages
-  Features: different message types, icons, animations, accessibility
+  Features: different message types, icons, animations, accessibility, i18n support
 -->
 <script lang="ts">
+import type { Readable } from 'svelte/store';
+import type { TranslationKey } from '../../utils/i18n';
+
 // Props
 export let type: 'error' | 'success' | 'info' | 'warning' = 'info';
 export let message = '';
+export let tKey: TranslationKey | '' = ''; // Translation key for i18n
 export let showIcon = true;
 export let dismissible = false;
 export let className = '';
 export let animate = true;
 
+// i18n support (required when using tKey)
+export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string> | undefined = undefined;
+
 // Internal state
 let visible = true;
+
+// Computed message - use tKey if provided and i18n is available, otherwise use message
+$: displayMessage = (tKey && i18n) ? $i18n(tKey) : message;
 
 // SVG icon mapping - simple monochrome
 const icons = {
@@ -29,15 +39,15 @@ function dismiss() {
 }
 
 // Auto-dismiss for success messages
-$: if (type === 'success' && message) {
+$: if (type === 'success' && displayMessage) {
   setTimeout(() => {
     if (dismissible) dismiss();
   }, 5000);
 }
 </script>
 
-{#if visible && message}
-  <div 
+{#if visible && displayMessage}
+  <div
     class="auth-message type-{type} {className}"
     class:animate
     role={type === 'error' ? 'alert' : 'status'}
@@ -49,8 +59,8 @@ $: if (type === 'success' && message) {
           {@html icons[type]}
         </span>
       {/if}
-      
-      <span class="message-text">{message}</span>
+
+      <span class="message-text">{displayMessage}</span>
       
       {#if dismissible}
         <button 

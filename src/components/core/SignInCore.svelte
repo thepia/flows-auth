@@ -305,7 +305,7 @@ function goToPinInput() {
 
 // Handle secondary action (pin fallback when passkey is primary)
 async function handleSecondaryAction() {
-  if (!email.trim() || !buttonConfig.secondary) return;
+  if (!email.trim() || !buttonConfig || !buttonConfig.secondary) return;
 
   loading = true;
   error = null;
@@ -617,9 +617,17 @@ function resetForm() {
 
 // Determine authentication method and button configuration (with null guards)
 $: passkeysEnabled = store ? store.getPasskeysEnabled() : false;
-$: authMethodForUI = authConfig ? getAuthMethodForUI(authConfig, passkeysEnabled) : 'generic';
+// authMethodForUI logic moved to AuthStore.getButtonConfig()
 $: isNewUserSignin = authConfig && currentSignInState === 'userChecked' && !userExists && authConfig.signInMode !== 'login-only';
-$: buttonConfig = getButtonConfig(authMethodForUI, loading, email, passkeysEnabled, userExists, hasPasskeys, hasValidPin, isNewUserSignin, fullName);
+$: buttonConfig = store ? store.getButtonConfig({
+  email,
+  loading,
+  userExists,
+  hasPasskeys,
+  hasValidPin,
+  isNewUserSignin,
+  fullName
+}) : null;
 $: emailInputWebAuthnEnabled = authConfig ? getEmailInputWebAuthnEnabled(authConfig, passkeysEnabled) : false;
 
 // Keep track of last checked email to avoid duplicate calls
@@ -639,117 +647,9 @@ $: if (email && authConfig?.appCode && (currentSignInState === 'emailEntry' || c
   checkEmailForExistingPin(email);
 }
 
-function getAuthMethodForUI(authConfig: AuthConfig | null | undefined, webAuthnSupported: boolean): 'passkey' | 'email' | 'generic' {
-  const result = (() => {
-    if (!authConfig) return 'generic';
-    
-    // Show passkey UI if passkeys are enabled and supported
-    if (authConfig.enablePasskeys && webAuthnSupported) return 'passkey';
-
-    // Show email UI if organization-based or magic links are enabled
-    if (authConfig.appCode || authConfig.enableMagicLinks) return 'email';
-    
-    return 'generic';
-  })();
-  
-  console.log('🎯 getAuthMethodForUI():', {
-    enablePasskeys: authConfig?.enablePasskeys,
-    enableMagicLinks: authConfig?.enableMagicLinks,
-    hasAppCode: !!authConfig?.appCode,
-    passkeysEnabled: webAuthnSupported,
-    result
-  });
-  
-  return result;
-}
-
 function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined, webAuthnSupported: boolean): boolean {
   // Enable WebAuthn autocomplete if passkeys are supported and enabled in config
   return webAuthnSupported && (authConfig?.enablePasskeys || false);
-}
-
-function getButtonConfig(method: string, isLoading: boolean, emailValue: string, webAuthnSupported: boolean, userExists: boolean, hasPasskeys: boolean, hasValidPin: boolean, isNewUserSignin: boolean, fullName: string) {
-  // Smart button configuration based on discovered user state
-  let primaryMethod = method;
-  let primaryText = $i18n('auth.signIn');
-  let primaryLoadingText = $i18n('auth.loading');
-  let secondaryAction = null;
-
-  // Set default button text based on available authentication methods
-  if (authConfig?.appCode) {
-    primaryMethod = 'email-code';
-    primaryText = $i18n('auth.sendPinByEmail');
-    primaryLoadingText = $i18n('auth.sendingPin');
-  } else if (authConfig?.enableMagicLinks) {
-    primaryMethod = 'magic-link';
-    primaryText = $i18n('auth.sendMagicLink');
-    primaryLoadingText = $i18n('auth.sendingMagicLink');
-  }
-
-  // If we have user information and email is entered, make smart decisions
-  if (emailValue && emailValue.trim() && userExists !== null) {
-    if (webAuthnSupported && authConfig?.enablePasskeys && hasPasskeys) {
-      // User has passkeys - prioritize passkey authentication
-      primaryMethod = 'passkey';
-      primaryText = $i18n('auth.signInWithPasskey');
-      primaryLoadingText = $i18n('auth.signingIn');
-      
-      // Add secondary action for pin fallback if available
-      if (authConfig?.appCode) {
-        secondaryAction = {
-          method: 'email-code',
-          text: $i18n('auth.sendPinByEmail'),
-          loadingText: $i18n('auth.sendingPin')
-        };
-      }
-    } else if (authConfig?.appCode) {
-      // User doesn't have passkeys, use pin authentication
-      primaryMethod = 'email-code';
-      primaryText = $i18n('auth.sendPinByEmail');
-      primaryLoadingText = $i18n('auth.sendingPin');
-    } else if (authConfig?.enableMagicLinks) {
-      // Fallback to magic links
-      primaryMethod = 'magic-link';
-      primaryText = $i18n('auth.sendMagicLink');
-      primaryLoadingText = $i18n('auth.sendingMagicLink');
-    }
-  }
-
-  // Check if button should be disabled
-  let isDisabled = isLoading || !emailValue || !emailValue.trim();
-  
-  // If this is new user registration, require valid full name (3+ characters)
-  if (isNewUserSignin) {
-    isDisabled = isDisabled || !fullName || fullName.trim().length < 3;
-  }
-
-  const buttonConfig = {
-    primary: {
-      method: primaryMethod,
-      supportsWebAuthn: webAuthnSupported && primaryMethod === 'passkey',
-      text: primaryText,
-      loadingText: primaryLoadingText,
-      disabled: isDisabled
-    },
-    secondary: secondaryAction
-  };
-  
-  console.log('🎯 getButtonConfig():', {
-    emailValue: emailValue ? `"${emailValue}"` : 'empty',
-    userExists,
-    hasPasskeys,
-    hasValidPin,
-    isNewUserSignin,
-    fullName: fullName ? `"${fullName}"` : 'empty',
-    originalMethod: method,
-    primaryMethod,
-    primaryText,
-    secondaryAction: secondaryAction ? secondaryAction.text : 'none',
-    disabled: isDisabled,
-    config: buttonConfig
-  });
-  
-  return buttonConfig;
 }
 </script>
 
@@ -760,8 +660,8 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     <form on:submit|preventDefault={handleSignIn}>
       <EmailInput
         bind:value={email}
-        label={$i18n('email.label')}
-        placeholder={$i18n('email.placeholder')}
+        label="email.label"
+        placeholder="email.placeholder"
         {error}
         disabled={loading}
         enableWebAuthn={emailInputWebAuthnEnabled}
@@ -796,8 +696,9 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
         {#if authConfig?.signInMode === 'login-only'}
           <AuthStateMessage
             type="info"
-            message={$i18n('auth.onlyRegisteredUsers')}
+            tKey="auth.onlyRegisteredUsers"
             showIcon={true}
+            {i18n}
           />
         {:else}
           <!-- Registration form for new users -->
@@ -810,39 +711,35 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
         {/if}
       {/if}
       
-      <div class="button-section">
-        <AuthButton
-          type="submit"
-          method={buttonConfig.primary.method}
-          text={buttonConfig.primary.text}
-          loadingText={buttonConfig.primary.loadingText}
-          disabled={buttonConfig.primary.disabled}
-          {loading}
-          supportsWebAuthn={buttonConfig.primary.supportsWebAuthn}
-          {i18n}
-          on:click={handleSignIn}
-        />
-        
-        {#if buttonConfig.secondary}
+      {#if buttonConfig}
+        <div class="button-section">
           <AuthButton
-            type="button"
-            variant="secondary"
-            method={buttonConfig.secondary.method}
-            text={buttonConfig.secondary.text}
-            loadingText={buttonConfig.secondary.loadingText}
+            type="submit"
+            buttonConfig={buttonConfig.primary}
             disabled={loading || !email.trim()}
             {loading}
-            supportsWebAuthn={false}
             {i18n}
-            on:click={handleSecondaryAction}
+            on:click={handleSignIn}
           />
-        {/if}
-      </div>
+
+          {#if buttonConfig.secondary}
+            <AuthButton
+              type="button"
+              variant="secondary"
+              buttonConfig={buttonConfig.secondary}
+              disabled={loading || !email.trim()}
+              {loading}
+              {i18n}
+              on:click={handleSecondaryAction}
+            />
+          {/if}
+        </div>
+      {/if}
 
       {#if passkeysEnabled}
         <!-- <AuthStateMessage
           type="info"
-          message={$i18n('webauthn.ready')}
+          tKey="webauthn.ready"
           showIcon={true}
           className="webauthn-indicator"
         /> -->
@@ -872,8 +769,9 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       {#if emailCodeSent && !hasValidPin}
         <AuthStateMessage
           type="success"
-          message={$i18n('status.checkEmail')}
+          tKey="status.checkEmail"
           showIcon={true}
+          {i18n}
         />
         
         <p class="email-code-message">
@@ -883,8 +781,9 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       {:else}
         <AuthStateMessage
           type="info"
-          message={$i18n('status.pinDetected')}
+          tKey="status.pinDetected"
           showIcon={true}
+          {i18n}
         />
         
         <p class="email-code-message">
@@ -896,8 +795,8 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       <form on:submit|preventDefault={handleEmailCodeVerification}>
         <CodeInput
           bind:value={emailCode}
-          label={$i18n('code.label')}
-          placeholder={$i18n('code.placeholder')}
+          label="code.label"
+          placeholder="code.placeholder"
           {error}
           disabled={loading}
           maxlength={6}
@@ -907,12 +806,14 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
         <div class="button-section">
           <AuthButton
             type="submit"
-            method="email-code"
-            text={$i18n('code.verify')}
-            loadingText={$i18n('code.verifying')}
-            disabled={loading || !emailCode.trim()}
+            buttonConfig={{
+    method: "email-code",
+    textKey: 'code.verify',
+    loadingTextKey: 'code.verifying',
+    supportsWebAuthn: false,
+    disabled: loading || !emailCode.trim()
+            }}
             {loading}
-            supportsWebAuthn={false}
             {i18n}
           />
         </div>
@@ -921,7 +822,14 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
       <AuthButton
         type="button"
         variant="secondary"
-        text={$i18n('action.useDifferentEmail')}
+        buttonConfig={{
+    method: "generic",
+    textKey: 'action.useDifferentEmail',
+    loadingTextKey: 'action.useDifferentEmail',
+    supportsWebAuthn: false,
+    disabled: false
+            }}
+        {loading}
         {i18n}
         on:click={resetForm}
       />
@@ -941,8 +849,9 @@ function getButtonConfig(method: string, isLoading: boolean, emailValue: string,
     <!-- Registration flow would be handled by parent or separate component -->
     <AuthStateMessage
       type="info"
-      message={$i18n('registration.required')}
+      tKey="registration.required"
       showIcon={true}
+      {i18n}
     />
   {/if}
 </div>

@@ -1,0 +1,124 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "signin": "Sign In",
+    "register": "Registration"
+  },
+  "overview": {
+    "title": "Authentication Demo Overview",
+    "subtitle": "Auth Overview",
+    "features": {
+      "passkeys": {
+        "title": "WebAuthn Passkeys",
+        "description": "Secure, passwordless authentication using biometrics or security keys"
+      },
+      "magic_links": {
+        "title": "Magic Link Authentication",
+        "description": "Email-based authentication without passwords"
+      },
+      "state_machine": {
+        "title": "State Machine Visualization",
+        "description": "Real-time authentication flow visualization and debugging"
+      },
+      "multi_language": {
+        "title": "Multi-language Support",
+        "description": "Internationalization with multiple language options"
+      }
+    },
+    "try_signin": "Try Sign-In Demo →",
+    "try_register": "Try Registration Demo →"
+  },
+  "signin": {
+    "title": "Sign In Flow Demo",
+    "subtitle": "Test SignInCore/SignInForm",
+    "redirect_notice": "The Sign In demo has been moved to a dedicated page for better organization.",
+    "go_to_demo": "Go to Sign In Demo →"
+  },
+  "register": {
+    "title": "Registration Flow Demo",
+    "subtitle": "Registration and Invitation",
+    "redirect_notice": "The Registration demo has been moved to a dedicated page for better organization.",
+    "go_to_demo": "Go to Registration Demo →"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  },
+  "auth": {
+    "sign_in": "Sign In",
+    "sign_out": "Sign Out",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot Password?",
+    "remember_me": "Remember me",
+    "welcome_back": "Welcome back!",
+    "create_account": "Create Account",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account?"
+  },
+  "demo": {
+    "configuration": "Configuration",
+    "debug_info": "Debug Information",
+    "auth_state": "Auth State",
+    "signin_state": "Sign-In State",
+    "current_user": "Current User",
+    "domain": "Domain",
+    "none": "None"
+  },
+  "variants": {
+    "standard": {
+      "signin": {
+        "title": "Sign In",
+        "subtitle": "Test SignInCore/SignInForm"
+      },
+      "auth": {
+        "sign_in": "Sign In",
+        "welcome_back": "Welcome back!",
+        "create_account": "Create Account"
+      }
+    },
+    "friendly": {
+      "signin": {
+        "title": "Welcome Back!",
+        "subtitle": "Let's get you signed in"
+      },
+      "auth": {
+        "sign_in": "Let's Go!",
+        "welcome_back": "Great to see you again!",
+        "create_account": "Join Us!"
+      }
+    },
+    "professional": {
+      "signin": {
+        "title": "Authentication Portal",
+        "subtitle": "Secure Access Management"
+      },
+      "auth": {
+        "sign_in": "Authenticate",
+        "welcome_back": "Access Granted",
+        "create_account": "Register Account"
+      }
+    },
+    "playful": {
+      "signin": {
+        "title": "🚀 Ready to Launch?",
+        "subtitle": "Time to blast off into your account!"
+      },
+      "auth": {
+        "sign_in": "Blast Off! 🚀",
+        "welcome_back": "You're back! 🎉",
+        "create_account": "Join the Adventure! ✨"
+      }
+    }
+  }
+}

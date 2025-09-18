@@ -1,6 +1,7 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
+import { _ } from 'svelte-i18n';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
@@ -47,16 +48,12 @@ let SignInCoreComponent = null;
 let selectedDemo = 'overview';
 let emailInput = '';
 let testEmail = 'demo@example.com';
+
+
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
 let userStateResult = null;
 let invitationToken = '';
-
-// Pin verification controls
-let pinCode = '';
-let pinVerificationLoading = false;
-let pinVerificationError = null;
-let pinVerificationSuccess = null;
 
 // Enhanced check user state options
 let checkMethod = 'store'; // 'store' or 'api'
@@ -193,18 +190,9 @@ let registrationSuccess = null;
 let registrationLoading = false;
 
 
-// Available demo sections
-const demoSections = [
-  { id: 'overview', title: 'Overview', icon: Activity },
-  { id: 'signin', title: 'Sign In Flow', icon: User },
-  { id: 'signin-machine', title: 'Interactive SignIn Machine', icon: Shield },
-  { id: 'register', title: 'Registration', icon: Mail },
-  { id: 'passkey', title: 'Passkey Auth', icon: Key },
-];
-
 onMount(async () => {
   if (!browser) return;
-  
+
   console.log('🎯 Demo page initializing...');
   
   try {
@@ -257,7 +245,7 @@ onMount(async () => {
     }
     
     console.log('✅ Demo page initialization complete');
-    
+
   } catch (error) {
     console.error('❌ Failed to initialize demo page:', error);
   }
@@ -265,134 +253,6 @@ onMount(async () => {
 
 // Note: Auth store subscriptions are handled in the reactive block above
 // to avoid creating duplicate subscriptions
-
-// Demo actions
-async function testPasskeySignIn() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('🔑 Testing passkey sign in with:', emailInput);
-    const result = await authStore.signInWithPasskey(emailInput);
-    console.log('✅ Passkey sign in result:', result);
-  } catch (error) {
-    console.error('❌ Passkey sign in failed:', error);
-  }
-}
-
-async function testRegister() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('📝 Checking email for registration flow:', emailInput);
-    
-    // First check if user already exists and their email verification status
-    const userCheck = await authStore.checkUser(emailInput);
-    console.log('🔍 User check result:', userCheck);
-    
-    if (userCheck.exists) {
-      console.log('👤 User already exists');
-      
-      if (userCheck.emailVerified === false) {
-        console.log('📧 Email not verified - sending verification email');
-        await startPasswordlessAuth();
-        return;
-      } else if (!userCheck.hasWebAuthn) {
-        console.log('🔑 Email verified but no passkey - proceeding to passkey registration');
-        await registerPasskey();
-        return;
-      } else {
-        console.log('✅ User has verified email and passkey - can sign in');
-        console.error('⚠️ User already has an account with passkey. Please use Sign In instead.');
-        return;
-      }
-    } else {
-      console.log('🆕 New user - creating account first');
-      // Use createAccount for complete registration with passkey
-      const result = await authStore.createAccount({
-        email: emailInput,
-        firstName: 'Demo',
-        lastName: 'User',
-        acceptedTerms: true,
-        acceptedPrivacy: true,
-      });
-      console.log('✅ Full registration with passkey complete:', result);
-      console.log('🔐 User is now authenticated with passkey!');
-    }
-  } catch (error) {
-    console.error('❌ Registration failed:', error);
-    
-    // Provide helpful error messages
-    if (error.message?.includes('NotAllowedError')) {
-      console.error('💡 Tip: You cancelled the passkey creation. Try again and accept the prompt.');
-    } else if (error.message?.includes('NotSupportedError')) {
-      console.error('💡 Tip: Your device doesn\'t support passkeys. Try a different device.');
-    } else if (error.message?.includes('already exists')) {
-      console.error('💡 Tip: This email is already registered. Try signing in instead.');
-    }
-  }
-}
-
-// Uses the unified /auth/start-passwordless endpoint for all magic link flows
-async function startPasswordlessAuth() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('📧 Starting passwordless authentication for:', emailInput);
-    const result = await authStore.api.startPasswordlessAuthentication(emailInput);
-    
-    if (result.success) {
-      console.log('✅ Passwordless email sent:', result.message);
-      console.log('📬 Please check your email and click the verification link to continue.');
-    } else {
-      console.error('❌ Failed to start passwordless authentication:', result.message);
-    }
-  } catch (error) {
-    console.error('❌ Error starting passwordless authentication:', error);
-  }
-}
-
-async function registerPasskey() {
-  if (!authStore || !emailInput.trim()) return;
-  
-  try {
-    console.log('🔑 Starting passkey registration for verified user:', emailInput);
-    
-    // For existing verified users, we need to use the appropriate method to add a passkey
-    // This would typically involve calling the passkey registration flow
-    const result = await authStore.createAccount({
-      email: emailInput,
-      firstName: 'Demo',
-      lastName: 'User',
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-    });
-    
-    console.log('✅ Passkey registration complete:', result);
-    console.log('🔐 User is now authenticated with passkey!');
-  } catch (error) {
-    console.error('❌ Passkey registration failed:', error);
-  }
-}
-
-async function testSignOut() {
-  if (!authStore) return;
-  
-  try {
-    console.log('👋 Testing sign out');
-    await authStore.signOut();
-    console.log('✅ Sign out successful');
-  } catch (error) {
-    console.error('❌ Sign out failed:', error);
-  }
-}
-
-function setTestEmail(email) {
-  emailInput = email;
-}
-
-function selectDemo(sectionId) {
-  selectedDemo = sectionId;
-}
 
 async function updateDomain() {
   // Update the auth config with new domain
@@ -497,27 +357,6 @@ async function checkUserState() {
   checkMethod = 'store';
   resultFormat = 'formatted';
   await checkUserStateEnhanced();
-}
-
-function getRegistrationStatus(state) {
-  if (!state.exists) return 'New User';
-  if (!state.emailVerified) return 'Unverified Email';
-  if (!state.hasWebAuthn) return 'Missing Passkey';
-  return 'Fully Registered';
-}
-
-function getStatusClass(state) {
-  if (!state.exists) return 'new';
-  if (!state.emailVerified) return 'unverified';
-  if (!state.hasWebAuthn) return 'partial';
-  return 'complete';
-}
-
-function getRecommendedAction(state) {
-  if (!state.exists) return 'new-registration';
-  if (!state.emailVerified) return 'resend-verification';
-  if (!state.hasWebAuthn) return 'passkey-setup';
-  return 'use-signin';
 }
 
 // Handle clicks on the SignIn state machine diagram
@@ -671,205 +510,6 @@ function getPinTimeRemaining(state) {
   }
 }
 
-async function executeNewUserRegistration() {
-  if (!authStore || !userStateResult?.email) return;
-  
-  // Clear previous messages
-  registrationError = null;
-  registrationSuccess = null;
-  registrationLoading = true;
-  
-  try {
-    console.log('🆕 Executing individual user registration for:', userStateResult.email);
-    
-    const result = await authStore.registerIndividualUser({
-      email: userStateResult.email,
-      firstName: 'Demo',
-      lastName: 'User',
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-    });
-    
-    console.log('✅ Individual user registration complete:', result);
-    registrationSuccess = result.message;
-    
-    // Refresh user state after a short delay
-    setTimeout(async () => {
-      await checkUserState();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('❌ New user registration failed:', error);
-    
-    // Parse error message
-    if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-      registrationError = 'Rate limit exceeded (max 3 registration attempts per 15 minutes). Please wait before trying again.';
-    } else if (error.message?.includes('already exists')) {
-      registrationError = 'This email is already registered. Try signing in instead.';
-    } else if (error.message?.includes('invalid email')) {
-      registrationError = 'Please enter a valid email address.';
-    } else {
-      registrationError = error.message || 'Registration failed. Please try again.';
-    }
-  } finally {
-    registrationLoading = false;
-  }
-}
-
-async function executeResendVerification() {
-  if (!authStore || !userStateResult?.email) return;
-  
-  try {
-    console.log('📧 Resending verification email for:', userStateResult.email);
-    
-    const result = await authStore.api.startPasswordlessAuthentication(userStateResult.email);
-    console.log('✅ Verification email sent:', result);
-    
-    if (result.alreadyVerified) {
-      console.log('🎉 Email was already verified!');
-      await checkUserState();
-    }
-  } catch (error) {
-    console.error('❌ Failed to send verification email:', error);
-  }
-}
-
-async function executePasskeySetup() {
-  if (!authStore || !userStateResult?.email) return;
-  
-  try {
-    console.log('🔑 Setting up passkey for verified user:', userStateResult.email);
-    
-    // For verified users, we complete the registration with passkey
-    const result = await authStore.createAccount({
-      email: userStateResult.email,
-      firstName: 'Demo',
-      lastName: 'User',
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-    });
-    
-    console.log('✅ Passkey setup complete:', result);
-    
-    // Refresh user state
-    await checkUserState();
-  } catch (error) {
-    console.error('❌ Passkey setup failed:', error);
-  }
-}
-
-async function executeInvitationRegistration() {
-  if (!authStore || !invitationToken.trim()) return;
-  
-  try {
-    console.log('🎫 Executing invitation registration with token');
-    
-    const result = await authStore.createAccount({
-      invitationToken: invitationToken,
-      acceptedTerms: true,
-      acceptedPrivacy: true,
-    });
-    
-    console.log('✅ Invitation registration complete:', result);
-    
-    // Clear token and refresh state if email was extracted
-    invitationToken = '';
-    if (result.user?.email) {
-      emailInput = result.user.email;
-      await checkUserState();
-    }
-  } catch (error) {
-    console.error('❌ Invitation registration failed:', error);
-  }
-}
-
-async function runQuickTest() {
-  const { runTestAndDisplay } = await import('../lib/test/checkUserTest.js');
-  return runTestAndDisplay();
-}
-
-async function verifyAuthPin() {
-  if (!authStore || !emailInput.trim() || !pinCode.trim()) return;
-  
-  // Clear previous messages
-  pinVerificationError = null;
-  pinVerificationSuccess = null;
-  pinVerificationLoading = true;
-  
-  try {
-    console.log('🔢 Verifying auth pin for:', emailInput);
-    
-    // Use the WorkOS verifyEmailAuth function
-    const result = await authStore.api.verifyEmailAuth(emailInput, pinCode);
-    console.log('✅ Pin verification result:', result);
-    
-    pinVerificationSuccess = `Successfully authenticated! Welcome, ${result.user?.email}`;
-    
-    // Clear pin code after successful verification
-    pinCode = '';
-    
-    // The auth store should automatically update with the authenticated user
-    // so we don't need to manually update the UI
-    
-  } catch (error) {
-    console.error('❌ Pin verification failed:', error);
-    
-    // Parse error message for user-friendly display
-    if (error.message?.includes('invalid code') || error.message?.includes('401')) {
-      pinVerificationError = 'Invalid or expired pin code. Please try again or request a new pin.';
-    } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-      pinVerificationError = 'Too many verification attempts. Please wait before trying again.';
-    } else if (error.message?.includes('user not found')) {
-      pinVerificationError = 'User not found. Please check the email address.';
-    } else {
-      pinVerificationError = error.message || 'Pin verification failed. Please try again.';
-    }
-  } finally {
-    pinVerificationLoading = false;
-  }
-}
-
-
-// SignInForm event handlers
-function handleSignInSuccess(detail) {
-  console.log('✅ SignInForm Success:', detail);
-  console.log(`🎉 User ${detail.user.email} successfully authenticated via ${detail.method}`);
-}
-
-function handleSignInError(detail) {
-  console.error('❌ SignInForm Error:', detail);
-  console.log(`⚠️ Authentication error: ${detail.error.message || detail.error.code}`);
-}
-
-function handleStepChange(detail) {
-  console.log('🔄 SignInForm Step Change:', detail);
-  console.log(`📍 Authentication flow step: ${detail.step}`);
-}
-
-function handleSignInClose() {
-  console.log('✖️ SignInForm popup closed by user');
-  // In a real app, you might hide the popup or reset state
-  // For demo purposes, we'll just log it
-}
-
-// Handle custom translation updates
-function updateCustomTranslations() {
-  try {
-    // Parse the JSON and validate it
-    const parsed = JSON.parse(customTranslationsJson);
-    if (typeof parsed === 'object' && parsed !== null) {
-      customTranslationOverrides = parsed;
-      customTranslationError = null;
-      // Update the custom variant's translations
-      clientVariants.custom.translations = parsed;
-    } else {
-      customTranslationError = 'Invalid JSON: must be an object';
-    }
-  } catch (error) {
-    customTranslationError = `Invalid JSON: ${error.message}`;
-  }
-}
-
 // Get current client variant and build translation overrides
 $: currentClientVariant = clientVariants[selectedClientVariant] || clientVariants.default;
 $: combinedTranslations = selectedClientVariant === 'custom' 
@@ -901,49 +541,38 @@ $: dynamicAuthConfig = authConfig ? {
 
 <div class="demo-container">
 
-  <!-- Demo Navigation -->
-  <div class="demo-nav">
-    {#each demoSections as section (section.id)}
-      <button 
-        class="nav-item" 
-        class:active={selectedDemo === section.id}
-        on:click={() => selectDemo(section.id)}
-      >
-        <svelte:component this={section.icon} size={20} />
-        <span>{section.title}</span>
-        <ChevronRight size={16} class="nav-arrow" />
-      </button>
-    {/each}
-  </div>
+
 
   <!-- Demo Content -->
   <div class="demo-content">
     
     {#if selectedDemo === 'overview'}
       <div class="content-section">
-        <h2>Authentication Demo Overview</h2>
-        <p>This demo showcases the flows-auth library capabilities:</p>
+        <h2>{$_('overview.title')}</h2>
+        <p>{$_('overview.subtitle')}</p>
         
         <div class="feature-grid">
           <div class="feature-card">
             <Shield size={32} class="feature-icon" />
-            <h3>Passwordless Authentication</h3>
-            <p>WebAuthn passkeys and magic link authentication</p>
+            <h3>{$_('overview.features.passkeys.title')}</h3>
+            <p>{$_('overview.features.passkeys.description')}</p>
+            <a href="/signin" class="feature-link">{$_('overview.try_signin')}</a>
           </div>
           <div class="feature-card">
             <User size={32} class="feature-icon" />
-            <h3>User Registration</h3>
-            <p>Complete registration flow with email verification</p>
+            <h3>{$_('overview.features.magic_links.title')}</h3>
+            <p>{$_('overview.features.magic_links.description')}</p>
+            <a href="/register" class="feature-link">{$_('overview.try_register')}</a>
           </div>
           <div class="feature-card">
             <Activity size={32} class="feature-icon" />
-            <h3>State Machine</h3>
-            <p>XState-inspired authentication state management with 26 states</p>
+            <h3>{$_('overview.features.state_machine.title')}</h3>
+            <p>{$_('overview.features.state_machine.description')}</p>
           </div>
           <div class="feature-card">
             <Settings size={32} class="feature-icon" />
-            <h3>Branded Components</h3>
-            <p>White-label ready with configurable branding</p>
+            <h3>{$_('overview.features.multi_language.title')}</h3>
+            <p>{$_('overview.features.multi_language.description')}</p>
           </div>
         </div>
         
@@ -1017,901 +646,26 @@ $: dynamicAuthConfig = authConfig ? {
         </div>
       </div>
     
+
     {:else if selectedDemo === 'signin'}
       <div class="content-section">
-        <h2>Sign In Flow Demo</h2>
-        <p>Test different sign-in methods with the core authentication components:</p>
-        
-        <div class="demo-layout">
-          <!-- Configuration Sidebar -->
-          <div class="config-sidebar">
-            <div class="sidebar-header">
-              <h3>Authentication Configuration</h3>
-              <p class="text-secondary">Configure component behavior:</p>
-            </div>
-            
-            <!-- Quick Email Input -->
-            <div class="config-section">
-              <h4>🔄 Set Initial Email</h4>
-              <div class="quick-emails">
-                <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'demo@example.com'}>
-                  demo@example.com
-                </button>
-                <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'test@thepia.net'}>
-                  test@thepia.net
-                </button>
-                <button class="btn btn-outline btn-xs" on:click={() => emailInput = ''}>
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <!-- Basic Auth Store State -->
-            <div class="config-section">
-              <h4>⚙️ Auth Store State</h4>
-              <div class="auth-state-controls">
-                <!-- Legacy Store State -->
-                <div class="state-section">
-                  <span class="config-label">Store State:</span>
-                  <span class="state-badge {authState}">{authState}</span>
-                </div>
-                <!-- Sign In State -->
-                <div class="state-section">
-                  <span class="config-label">SignIn State:</span>
-                  <span class="machine-state-badge">{signInState}</span>
-                </div>
-                <!-- PIN Status -->
-                {#if hasValidPinStatus}
-                  <div class="state-section">
-                    <span class="config-label">PIN:</span>
-                    <span class="pin-badge">Valid ({pinRemainingMinutes}min)</span>
-                  </div>
-                {/if}
-              </div>
-            </div>
-        
-            <!-- Configuration Controls -->
-            <div class="config-grid">
-              <div class="config-group">
-                <span class="config-label">User Handling:</span>
-                <div class="radio-group">
-                  <label class="radio-option">
-                    <input type="radio" bind:group={signInMode} value="login-only" />
-                    <span>Login Only (error for new users)</span>
-                  </label>
-                  <label class="radio-option">
-                    <input type="radio" bind:group={signInMode} value="login-or-register" />
-                    <span>Login or Register as Needed</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="config-group">
-                <span class="config-label">Component Type:</span>
-                <div class="radio-group">
-                  <label class="radio-option">
-                    <input type="radio" bind:group={useSignInForm} value={false} />
-                    <span>SignInCore (basic, no size options)</span>
-                  </label>
-                  <label class="radio-option">
-                    <input type="radio" bind:group={useSignInForm} value={true} />
-                    <span>SignInForm (full-featured, with sizing)</span>
-                  </label>
-                </div>
-              </div>
-
-              {#if !useSignInForm}
-                <div class="config-group">
-                  <span class="config-label">SignInCore Layout:</span>
-                  <div class="radio-group">
-                    <label class="radio-option">
-                      <input type="radio" bind:group={signInCoreLayout} value="full-width" />
-                      <span>Full Width (current style)</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={signInCoreLayout} value="hero-centered" />
-                      <span>Hero Centered (card style, ~square)</span>
-                    </label>
-                  </div>
-                </div>
-              {/if}
-
-              {#if useSignInForm}
-                <div class="config-group">
-                  <span class="config-label">Form Size:</span>
-                  <div class="radio-group">
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formSize} value="small" />
-                      <span>Small (280px)</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formSize} value="medium" />
-                      <span>Medium (360px)</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formSize} value="large" />
-                      <span>Large (480px)</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formSize} value="full" />
-                      <span>Full Width</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="config-group">
-                  <div class="config-label" id="display-variant-label">Display Variant:</div>
-                  <div class="radio-group" role="radiogroup" aria-labelledby="display-variant-label">
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formVariant} value="inline" />
-                      <span>Inline (normal flow)</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={formVariant} value="popup" />
-                      <span>Popup (fixed position)</span>
-                    </label>
-                  </div>
-                </div>
-
-                {#if formVariant === 'popup'}
-                  <div class="config-group">
-                    <div class="config-label" id="popup-position-label">Popup Position:</div>
-                    <div class="radio-group" role="radiogroup" aria-labelledby="popup-position-label">
-                      <label class="radio-option">
-                        <input type="radio" bind:group={popupPosition} value="top-right" />
-                        <span>Top Right</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" bind:group={popupPosition} value="top-left" />
-                        <span>Top Left</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" bind:group={popupPosition} value="bottom-right" />
-                        <span>Bottom Right</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" bind:group={popupPosition} value="bottom-left" />
-                        <span>Bottom Left</span>
-                      </label>
-                    </div>
-                  </div>
-                {/if}
-              {/if}
-
-              <!-- i18n Configuration Controls -->
-              <div class="config-section">
-                <h4 class="config-section-title">🌍 Internationalization (i18n)</h4>
-                
-                <div class="config-group">
-                  <div class="config-label">Language:</div>
-                  <div class="radio-group">
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedLanguage} value="en" />
-                      <span>English</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedLanguage} value="da" />
-                      <span>Dansk (Danish)</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="config-group">
-                  <div class="config-label">Client Variant:</div>
-                  <div class="radio-group">
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedClientVariant} value="default" />
-                      <span>Default Thepia</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedClientVariant} value="acme" />
-                      <span>🏢 ACME Corporation</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedClientVariant} value="techcorp" />
-                      <span>🚀 TechCorp Solutions</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedClientVariant} value="healthcare" />
-                      <span>🏥 MedSecure Health</span>
-                    </label>
-                    <label class="radio-option">
-                      <input type="radio" bind:group={selectedClientVariant} value="app.thepia.net" />
-                      <span>📋 app.thepia.net</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="config-group">
-                  <div class="config-label">Current Configuration:</div>
-                  <div class="config-info">
-                    <div class="info-line">
-                      <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Dansk'}
-                    </div>
-                    <div class="info-line">
-                      <strong>Client:</strong> {currentClientVariant.name}
-                    </div>
-                    <div class="info-line">
-                      <strong>Custom Translations:</strong> {Object.keys(combinedTranslations).length} keys
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="config-group">
-                <div class="config-label">Authentication Methods:</div>
-                <div class="checkbox-group">
-                  <label class="checkbox-option">
-                    <input type="checkbox" bind:checked={enablePasskeys} />
-                    <span>Enable Passkeys</span>
-                  </label>
-                  <label class="checkbox-option">
-                    <input type="checkbox" bind:checked={enableMagicLinks} />
-                    <span>Enable Magic Links</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <!-- <div class="config-info">
-              <p><strong>Current Configuration:</strong></p>
-              <ul>
-                <li>User Handling: {signInMode === 'login-only' ? 'Login Only' : 'Login or Register as Needed'}</li>
-                <li>Passkeys: {enablePasskeys ? 'Enabled' : 'Disabled'}</li>
-                <li>Magic Links: {enableMagicLinks ? 'Enabled' : 'Disabled'}</li>
-                <li>Autocomplete: {enablePasskeys ? 'email webauthn' : 'email'}</li>
-                <li>Auth Flow: {enablePasskeys && enableMagicLinks ? 'Passkey preferred with email fallback' : enablePasskeys ? 'Passkey only' : enableMagicLinks ? 'Email only' : 'No auth methods'}</li>
-              </ul>
-            </div> -->
-          </div>
-
-          <!-- Main Demo Area -->
-          <div class="demo-main">
-            <!-- Live SignInCore Component   && !isAuthenticated -->
-            {#if authStore && dynamicAuthConfig}
-              <!-- Debug: Log what should be shown -->
-              {#if browser}
-                {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, dynamicAuthConfig: !!dynamicAuthConfig, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
-              {/if}
-              {#if useSignInForm && formVariant === 'popup'}
-                <!-- Popup SignInForm - no card wrapper to avoid double borders -->
-                {#if browser && SignInFormComponent}
-                  <svelte:component this={SignInFormComponent} 
-                    config={dynamicAuthConfig}
-                    initialEmail={emailInput}
-                    size={formSize}
-                    variant={formVariant}
-                    popupPosition={popupPosition}
-                    className="demo-signin-form"
-                    on:success={(e) => handleSignInSuccess(e.detail)}
-                    on:error={(e) => handleSignInError(e.detail)}
-                    on:stepChange={(e) => handleStepChange(e.detail)}
-                  />
-                {:else}
-                  <div class="signin-loading">
-                    <p>Loading SignInForm...</p>
-                  </div>
-                {/if}
-              {:else}
-                <!-- Inline components with card wrapper -->
-                <div class="signin-demo card">
-                  <div class="card-header">
-                    <h3>Live Sign-In Component</h3>
-                    <p class="text-secondary">
-                      {#if signInMode === 'login-only'}
-                        Login-only mode - will show error if user doesn't exist
-                      {:else}
-                        Login-or-register mode - will automatically handle new users
-                      {/if}
-                    </p>
-                  </div>
-                  <div class="card-body">
-                    {#if useSignInForm}
-                      {#if browser && SignInFormComponent}
-                        <svelte:component this={SignInFormComponent} 
-                          config={dynamicAuthConfig}
-                          initialEmail={emailInput}
-                          size={formSize}
-                          variant={formVariant}
-                          popupPosition={popupPosition}
-                          className="demo-signin-form"
-                          on:success={(e) => handleSignInSuccess(e.detail)}
-                          on:error={(e) => handleSignInError(e.detail)}
-                          on:stepChange={(e) => handleStepChange(e.detail)}
-                          on:close={handleSignInClose}
-                        />
-                      {:else}
-                        <div class="signin-loading">
-                          <p>Loading SignInForm...</p>
-                        </div>
-                      {/if}
-                    {:else}
-                      {#if browser && SignInCoreComponent}
-                        <div class="signin-core-container" class:hero-centered={signInCoreLayout === 'hero-centered'}>
-                          <svelte:component this={SignInCoreComponent} 
-                            config={dynamicAuthConfig}
-                            authStore={authStore}
-                            initialEmail={emailInput}
-                            className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
-                            on:success={(e) => handleSignInSuccess(e.detail)}
-                            on:error={(e) => handleSignInError(e.detail)}
-                            on:stepChange={(e) => handleStepChange(e.detail)}
-                          />
-                        </div>
-                      {:else}
-                        <div class="signin-loading">
-                          <p>Loading SignInCore...</p>
-                        </div>
-                      {/if}
-                    {/if}
-                  </div>
-                </div>
-              {/if}
-            {/if}
-          </div>
-
-          <!-- State Machine Sidebar (Right) -->
-          <div class="state-machine-sidebar">
-            <div class="sidebar-header">
-              <h3>🔧 State Machine</h3>
-              <p class="text-secondary">Interactive authentication flow visualization:</p>
-            </div>
-            
-            {#if authStore && authStore.stateMachine}
-              <!-- Interactive State Machine Graphs -->
-              <div class="config-section">
-                <h4>📊 State Machine Visualization</h4>
-                {#if SessionStateMachineComponent}
-                  <!-- Compact AuthState Machine (Simplified) -->
-                  <div class="compact-machine">
-                    <svelte:component this={SessionStateMachineComponent}
-                      authState={authState}
-                      compact={true}
-                      width={280}
-                      height={180}
-                      onStateClick={(state) => console.log('Auth state clicked:', state)}
-                      on:stateClick={(e) => console.log('Auth state clicked event:', e.detail)}
-                    />
-                  </div>
-                  
-                  <!-- Current Auth State Display -->
-                  <div class="compact-machine">
-                    <div class="state-display">
-                      <h4>Current State</h4>
-                      <div class="state-value">{authState}</div>
-                      {#if signInState !== 'emailEntry'}
-                        <div class="signin-state">Sign-in: {signInState}</div>
-                      {/if}
-                    </div>
-                  </div>
-                {:else}
-                  <div class="graph-error">
-                    <p>Loading state machines...</p>
-                    <!-- Fallback to simple state display -->
-                    <div class="state-display-compact">
-                      <div class="state-item-compact">
-                        <span class="state-label">Machine:</span>
-                        <span class="machine-state-badge">{stateMachineState || 'loading'}</span>
-                      </div>
-                      <div class="state-item-compact">
-                        <span class="state-label">Legacy:</span>
-                        <span class="state-badge {authState}">{authState}</span>
-                      </div>
-                    </div>
-                  </div>
-                {/if}
-              </div>
-              
-              <!-- State Machine Event Controls -->
-              <div class="config-section">
-                <h4>State Events</h4>
-                <div class="event-controls-compact">
-                  <div class="control-group-compact">
-                    <span class="group-label">Session:</span>
-                    <div class="control-buttons-compact">
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.checkSession()}>
-                        Check
-                      </button>
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
-                        Invalid
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="control-group-compact">
-                    <span class="group-label">Input:</span>
-                    <div class="control-buttons-compact">
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.clickNext()}>
-                        Next
-                      </button>
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
-                        Email
-                      </button>
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.clickContinue()}>
-                        Continue
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="control-group-compact">
-                    <span class="group-label">Auth:</span>
-                    <div class="control-buttons-compact">
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
-                        Passkey
-                      </button>
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
-                        Success
-                      </button>
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
-                        Error
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="control-group-compact">
-                    <span class="group-label">Reset:</span>
-                    <div class="control-buttons-compact">
-                      <button class="btn btn-outline btn-xs" on:click={() => authStore.resetToAuth()}>
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- State Machine Context (Compact) -->
-              <div class="config-section">
-                <details class="context-details-compact">
-                  <summary class="context-summary">Machine Context</summary>
-                  <div class="context-data-compact">
-                    {#if stateMachineContext}
-                      <div class="context-item-compact">
-                        <strong>Email:</strong> {stateMachineContext.email || 'None'}
-                      </div>
-                      <div class="context-item-compact">
-                        <strong>User:</strong> {stateMachineContext.user?.email || 'None'}
-                      </div>
-                      <div class="context-item-compact">
-                        <strong>Error:</strong> {stateMachineContext.error?.message || 'None'}
-                      </div>
-                      <div class="context-item-compact">
-                        <strong>Retry:</strong> {stateMachineContext.retryCount || 0}
-                      </div>
-                      {#if stateMachineContext.sessionData}
-                        <div class="context-item-compact">
-                          <strong>Session:</strong> {stateMachineContext.sessionData.accessToken ? 'Present' : 'None'}
-                        </div>
-                      {/if}
-                    {:else}
-                      <div class="context-item-compact">No context available</div>
-                    {/if}
-                  </div>
-                </details>
-              </div>
-            {:else}
-              <div class="no-state-machine">
-                <p class="text-secondary">State machine not available</p>
-              </div>
-            {/if}
-          </div>
+        <h2>{$_('signin.title')}</h2>
+        <p>{$_('signin.subtitle')}</p>
+        <div class="signin-redirect-notice">
+          <p>{$_('signin.redirect_notice')}</p>
+          <a href="/signin" class="btn btn-primary">{$_('signin.go_to_demo')}</a>
         </div>
       </div>
-    
-    {:else if selectedDemo === 'signin-machine'}
-      <div class="content-section">
-        <h2>Interactive SignIn State Machine</h2>
-        <p>Click on states in the diagram below to trigger actual state transitions in the global auth store:</p>
-        
-        <div class="machine-status-grid">
-          <div class="state-card card">
-            <div class="card-header">
-              <h4>Current SignIn State</h4>
-            </div>
-            <div class="card-body">
-              <div class="state-value current-signin-state">
-                {signInState || 'emailEntry'}
-              </div>
-              <div class="state-info-small">
-                Click any state in the diagram to transition
-              </div>
-            </div>
-          </div>
-          
-          <div class="quick-actions card">
-            <div class="card-header">
-              <h4>Quick Actions</h4>
-            </div>
-            <div class="card-body">
-              <div class="action-buttons">
-                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('emailEntry')}>
-                  🔄 Reset to Start
-                </button>
-                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('userChecked')}>
-                  👤 Check User
-                </button>
-                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('pinEntry')}>
-                  📧 Send PIN
-                </button>
-                <button class="btn btn-outline btn-sm" on:click={() => handleSignInStateClick('signedIn')}>
-                  ✅ Sign In
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Interactive SignIn State Machine Diagram -->
-        <div class="machine-diagram-section card">
-          <div class="card-header">
-            <h4>Interactive State Flow Diagram</h4>
-            <p class="text-secondary">Click any state to trigger that transition • Current state is highlighted</p>
-          </div>
-          <div class="card-body">
-            {#if SignInStateMachineComponent}
-              <div class="signin-machine-container">
-                <svelte:component this={SignInStateMachineComponent}
-                  currentSignInState={signInState}
-                  width={800}
-                  height={400}
-                  compact={false}
-                  enableZoom={true}
-                  onStateClick={(state) => {
-                    console.log('🎯 Interactive state clicked:', state);
-                    handleSignInStateClick(state);
-                  }}
-                  on:stateClick={(e) => {
-                    if (e.detail && e.detail.state) {
-                      console.log('🎯 Interactive state event:', e.detail.state);
-                      handleSignInStateClick(e.detail.state);
-                    }
-                  }}
-                />
-              </div>
-            {:else}
-              <div class="loading-state">
-                <p>Loading interactive state machine...</p>
-                <p class="text-secondary">Initializing SignIn state machine visualization</p>
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Event Log for Debugging -->
-        <div class="event-log card">
-          <div class="card-header">
-            <h4>State Transition Log</h4>
-            <p class="text-secondary">Monitor state changes and events in real-time</p>
-          </div>
-          <div class="card-body">
-            <div class="log-instructions">
-              <p><strong>How to use:</strong></p>
-              <ul>
-                <li>🎯 <strong>Click any state</strong> in the diagram above to trigger a transition</li>
-                <li>📊 <strong>Watch the current state</strong> update in real-time</li>
-                <li>🔍 <strong>Open browser console</strong> to see detailed event logs</li>
-                <li>🔄 <strong>Use quick actions</strong> for common transitions</li>
-              </ul>
-              <p class="current-state-display">
-                Current State: <code class="signin-state-code">{signInState}</code>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
     {:else if selectedDemo === 'register'}
       <div class="content-section">
-        <h2>Registration Flow Demo</h2>
-        <p>Test registration by first checking actual user state, then following the appropriate flow:</p>
-        
-        <!-- Debug Panel -->
-        
-        <!-- Quick Test Button -->
-        <div class="quick-test card">
-          <div class="card-body">
-            <button class="btn btn-info" on:click={runQuickTest}>
-              🧪 Run Quick checkUser Test
-            </button>
-            
-            <ErrorReportingStatus />
-          </div>
-        </div>
-        
-        <!-- User State Checker -->
-        <div class="user-checker card">
-          <div class="card-header">
-            <h3>1. Check User State</h3>
-          </div>
-          <div class="card-body">
-            <div class="input-group">
-              <label for="check-email">Email Address</label>
-              <input 
-                id="check-email" 
-                type="email" 
-                bind:value={emailInput}
-                placeholder="Enter email to check registration status" 
-                class="form-input"
-              />
-            </div>
-
-            <!-- Enhanced options section -->
-            <div class="check-options">
-              <div class="option-group">
-                <div class="option-label">Call Method:</div>
-                <div class="radio-group">
-                  <label class="radio-option">
-                    <input type="radio" bind:group={checkMethod} value="store" />
-                    <span>authStore.checkUser() <em>(recommended)</em></span>
-                  </label>
-                  <label class="radio-option">
-                    <input type="radio" bind:group={checkMethod} value="api" />
-                    <span>Direct API call</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="option-group">
-                <div class="option-label">Result Format:</div>
-                <div class="radio-group">
-                  <label class="radio-option">
-                    <input type="radio" bind:group={resultFormat} value="formatted" />
-                    <span>Formatted display <em>(default)</em></span>
-                  </label>
-                  <label class="radio-option">
-                    <input type="radio" bind:group={resultFormat} value="json" />
-                    <span>Raw JSON</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div class="action-buttons">
-              <button class="btn btn-primary" on:click={checkUserStateEnhanced} disabled={!emailInput.trim()}>
-                <User size={16} />
-                Check User State
-              </button>
-              <button class="btn btn-outline" on:click={() => userStateResult = null}>
-                Clear Results
-              </button>
-            </div>
-            
-            {#if userStateResult}
-              <div class="user-state-result">
-                <h4>User State for: {userStateResult.email}</h4>
-                <div class="result-meta">
-                  <small>Method: <strong>{userStateResult.method === 'api' ? 'Direct API' : 'Auth Store'}</strong> | Format: <strong>{resultFormat}</strong></small>
-                </div>
-
-                {#if resultFormat === 'json'}
-                  <!-- Raw JSON display -->
-                  <div class="json-result">
-                    <h5>Raw Result:</h5>
-                    <pre class="json-output">{JSON.stringify(userStateResult.rawResult, null, 2)}</pre>
-                    {#if userStateResult.error}
-                      <div class="error-section">
-                        <strong>Error:</strong> {userStateResult.error}
-                      </div>
-                    {/if}
-                  </div>
-                {:else}
-                  <!-- Formatted display -->
-                  <div class="state-grid">
-                    <div class="state-item">
-                      <span class="label">Exists:</span>
-                      <span class="value" class:exists={userStateResult.exists} class:not-exists={!userStateResult.exists}>
-                        {userStateResult.exists ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div class="state-item">
-                      <span class="label">Email Verified:</span>
-                      <span class="value" class:verified={userStateResult.emailVerified} class:unverified={!userStateResult.emailVerified}>
-                        {userStateResult.emailVerified ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div class="state-item">
-                      <span class="label">Has Passkey:</span>
-                      <span class="value" class:has-passkey={userStateResult.hasWebAuthn} class:no-passkey={!userStateResult.hasWebAuthn}>
-                        {userStateResult.hasWebAuthn ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div class="state-item">
-                      <span class="label">Registration Status:</span>
-                      <span class="status-badge {getStatusClass(userStateResult)}">
-                        {getRegistrationStatus(userStateResult)}
-                      </span>
-                    </div>
-                  </div>
-                {/if}
-                
-                <!-- Show appropriate registration action -->
-                <div class="recommended-action">
-                  <h4>Recommended Action:</h4>
-                  
-                  {#if registrationError}
-                    <div class="alert alert-error">
-                      <strong>Error:</strong> {registrationError}
-                    </div>
-                  {/if}
-                  
-                  {#if registrationSuccess}
-                    <div class="alert alert-success">
-                      <strong>Success:</strong> {registrationSuccess}
-                    </div>
-                  {/if}
-                  
-                  {#if getRecommendedAction(userStateResult) === 'new-registration'}
-                    <button 
-                      class="btn btn-success" 
-                      on:click={executeNewUserRegistration} 
-                      disabled={isAuthenticated || registrationLoading}
-                    >
-                      <User size={16} />
-                      {registrationLoading ? 'Registering...' : 'Complete New User Registration'}
-                    </button>
-                    <p class="action-note">This will create a new account, send verification email, and set up passkey.</p>
-                  {:else if getRecommendedAction(userStateResult) === 'resend-verification'}
-                    <button class="btn btn-warning" on:click={executeResendVerification}>
-                      <Mail size={16} />
-                      Resend Email Verification
-                    </button>
-                    <p class="action-note">Email exists but not verified. Send verification email again.</p>
-                  {:else if getRecommendedAction(userStateResult) === 'passkey-setup'}
-                    <button class="btn btn-info" on:click={executePasskeySetup}>
-                      <Key size={16} />
-                      Add Passkey to Verified Account
-                    </button>
-                    <p class="action-note">Email is verified but no passkey. Complete registration with passkey.</p>
-                  {:else if getRecommendedAction(userStateResult) === 'use-signin'}
-                    <button class="btn btn-secondary" on:click={() => selectedDemo = 'signin'}>
-                      <Shield size={16} />
-                      Go to Sign In
-                    </button>
-                    <p class="action-note">User is fully registered. Use sign-in flow instead of registration.</p>
-                  {/if}
-                </div>
-              </div>
-            {/if}
-          </div>
-        </div>
-        
-        <!-- Registration Scenarios Documentation -->
-        <div class="scenarios-info card">
-          <div class="card-header">
-            <h3>2. Registration Flow Scenarios</h3>
-          </div>
-          <div class="card-body">
-            <p>The registration system handles these different user states automatically:</p>
-            
-            <div class="scenario-grid">
-              <div class="scenario-doc">
-                <div class="scenario-header">
-                  <span class="scenario-badge new">NEW USER</span>
-                  <h4>New User Registration</h4>
-                </div>
-                <p><strong>When:</strong> Email doesn't exist in system</p>
-                <p><strong>Flow:</strong> Create account → Send verification email → Email verification → Passkey setup → Complete</p>
-              </div>
-              
-              <div class="scenario-doc">
-                <div class="scenario-header">
-                  <span class="scenario-badge unverified">UNVERIFIED</span>
-                  <h4>Email Verification Needed</h4>
-                </div>
-                <p><strong>When:</strong> User exists but email not verified</p>
-                <p><strong>Flow:</strong> Resend verification email → Email verification → Passkey setup → Complete</p>
-              </div>
-              
-              <div class="scenario-doc">
-                <div class="scenario-header">
-                  <span class="scenario-badge partial">NO PASSKEY</span>
-                  <h4>Passkey Setup Required</h4>
-                </div>
-                <p><strong>When:</strong> Email verified but no passkey registered</p>
-                <p><strong>Flow:</strong> Skip email verification → Passkey setup → Complete</p>
-              </div>
-              
-              <div class="scenario-doc">
-                <div class="scenario-header">
-                  <span class="scenario-badge complete">COMPLETE</span>
-                  <h4>Already Registered</h4>
-                </div>
-                <p><strong>When:</strong> Email verified AND has passkey</p>
-                <p><strong>Flow:</strong> Reject registration → Redirect to sign-in</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Invitation Registration -->
-        <div class="invitation-card card">
-          <div class="card-header">
-            <h3>3. Invitation Token Registration</h3>
-          </div>
-          <div class="card-body">
-            <p>Register using an invitation token (bypasses some verification steps):</p>
-            
-            <div class="input-group">
-              <label for="invitation-token">Invitation Token</label>
-              <input 
-                id="invitation-token" 
-                type="text" 
-                bind:value={invitationToken}
-                placeholder="Paste invitation token here" 
-                class="form-input"
-              />
-            </div>
-            
-            <button class="btn btn-primary" on:click={executeInvitationRegistration} disabled={!invitationToken.trim() || isAuthenticated}>
-              <Mail size={16} />
-              Register with Invitation
-            </button>
-            
-            <p class="action-note">Invitation tokens pre-fill user data and may skip email verification.</p>
-          </div>
-        </div>
-        
-        <div class="info-card card">
-          <div class="card-body">
-            <h4>Domain Configuration: {currentDomain}</h4>
-            <p>Passkeys will be registered for this domain. Make sure it matches your testing environment.</p>
-            
-            {#if !window?.PublicKeyCredential}
-              <div class="alert alert-warning" style="margin-top: 1rem;">
-                <strong>Warning:</strong> Your browser doesn't support WebAuthn/Passkeys. Registration will fail.
-              </div>
-            {/if}
-          </div>
+        <h2>{$_('register.title')}</h2>
+        <p>{$_('register.subtitle')}</p>
+        <div class="signin-redirect-notice">
+          <p>{$_('register.redirect_notice')}</p>
+          <a href="/register" class="btn btn-primary">{$_('register.go_to_demo')}</a>
         </div>
       </div>
-    
-    {:else if selectedDemo === 'passkey'}
-      <div class="content-section">
-        <h2>Passkey Authentication Demo</h2>
-        <p>Test WebAuthn passkey authentication flows:</p>
-        
-        <div class="passkey-info card">
-          <div class="card-body">
-            <h4>Passkey Requirements</h4>
-            <ul>
-              <li>HTTPS connection (✅ Current: {window?.location?.protocol === 'https:' ? 'Secure' : 'Insecure'})</li>
-              <li>WebAuthn support (✅ {typeof PublicKeyCredential !== 'undefined' ? 'Supported' : 'Not supported'})</li>
-              <li>Domain: {authConfig?.domain || 'Loading...'}</li>
-              <li>Registered passkeys for this domain</li>
-            </ul>
-          </div>
-        </div>
-        
-        <div class="demo-controls">
-          <div class="input-group">
-            <label for="passkey-email">Email with Passkey</label>
-            <input 
-              id="passkey-email" 
-              type="email" 
-              bind:value={emailInput}
-              placeholder="Enter email with existing passkey..." 
-              class="form-input"
-            />
-          </div>
-          
-          <div class="action-buttons">
-            <button class="btn btn-primary" on:click={testPasskeySignIn} disabled={!emailInput.trim()}>
-              <Key size={16} />
-              Authenticate with Passkey
-            </button>
-          </div>
-        </div>
-        
-        <div class="passkey-tips card">
-          <div class="card-body">
-            <h4>Tips for Testing Passkeys</h4>
-            <ul>
-              <li>Use Chrome/Edge with Windows Hello or macOS Safari with Touch ID</li>
-              <li>Register a passkey first using the registration flow</li>
-              <li>Make sure the domain matches your registered passkey domain</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+
     
     {/if}
     
@@ -2095,22 +849,97 @@ $: dynamicAuthConfig = authConfig ? {
     border: 1px solid var(--border-color);
     background: var(--background-primary);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.2s ease;
   }
-  
+
+  .feature-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
   .feature-icon {
     color: var(--primary-color);
     margin-bottom: 1rem;
   }
-  
+
   .feature-card h3 {
     margin-bottom: 0.5rem;
     font-size: 1.125rem;
   }
-  
+
   .feature-card p {
     color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
+  }
+
+  .feature-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: auto;
+    transition: color 0.2s ease;
+  }
+
+  .feature-link:hover {
+    color: var(--primary-color-dark);
+    text-decoration: underline;
+  }
+
+  /* Signin redirect notice */
+  .signin-redirect-notice {
+    background: var(--background-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  .signin-redirect-notice p {
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    background: var(--background-muted);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
+    color: white;
   }
   
   .config-display, .info-card, .passkey-info, .passkey-tips, .state-info {

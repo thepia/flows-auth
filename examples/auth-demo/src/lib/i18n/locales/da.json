@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "overview": "Oversigt",
+    "signin": "Log Ind",
+    "register": "Registrering"
+  },
+  "overview": {
+    "title": "Autentificerings Demo Oversigt",
+    "subtitle": "Auth Oversigt",
+    "features": {
+      "passkeys": {
+        "title": "WebAuthn Adgangsnøgler",
+        "description": "Sikker, passwordløs autentificering ved hjælp af biometri eller sikkerhedsnøgler"
+      },
+      "magic_links": {
+        "title": "Magisk Link Autentificering",
+        "description": "Email-baseret autentificering uden adgangskoder"
+      },
+      "state_machine": {
+        "title": "Tilstandsmaskine Visualisering",
+        "description": "Realtids autentificeringsflow visualisering og fejlfinding"
+      },
+      "multi_language": {
+        "title": "Flersproget Support",
+        "description": "Internationalisering med flere sprogmuligheder"
+      }
+    },
+    "try_signin": "Prøv Log Ind Demo →",
+    "try_register": "Prøv Registrerings Demo →"
+  },
+  "signin": {
+    "title": "Log Ind Flow Demo",
+    "subtitle": "Test SignInCore/SignInForm",
+    "redirect_notice": "Log Ind demoen er flyttet til en dedikeret side for bedre organisation.",
+    "go_to_demo": "Gå til Log Ind Demo →"
+  },
+  "register": {
+    "title": "Registreringsflow Demo",
+    "subtitle": "Registrering og Invitation",
+    "redirect_notice": "Registrerings demoen er flyttet til en dedikeret side for bedre organisation.",
+    "go_to_demo": "Gå til Registrerings Demo →"
+  },
+  "common": {
+    "loading": "Indlæser...",
+    "error": "Fejl",
+    "success": "Succes",
+    "cancel": "Annuller",
+    "continue": "Fortsæt",
+    "back": "Tilbage",
+    "next": "Næste",
+    "save": "Gem",
+    "delete": "Slet",
+    "edit": "Rediger",
+    "close": "Luk"
+  },
+  "auth": {
+    "sign_in": "Log Ind",
+    "sign_out": "Log Ud",
+    "register": "Registrer",
+    "email": "Email",
+    "password": "Adgangskode",
+    "forgot_password": "Glemt adgangskode?",
+    "remember_me": "Husk mig",
+    "welcome_back": "Velkommen tilbage!",
+    "create_account": "Opret Konto",
+    "already_have_account": "Har du allerede en konto?",
+    "dont_have_account": "Har du ikke en konto?"
+  },
+  "demo": {
+    "configuration": "Konfiguration",
+    "debug_info": "Debug Information",
+    "auth_state": "Auth Tilstand",
+    "signin_state": "Log Ind Tilstand",
+    "current_user": "Nuværende Bruger",
+    "domain": "Domæne",
+    "none": "Ingen"
+  }
+}

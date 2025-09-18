@@ -6,6 +6,12 @@ import { setContext } from 'svelte';
 import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
 // TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
 const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
+import TabNavigation from '$lib/components/TabNavigation.svelte';
+import LanguageSelector from '$lib/components/LanguageSelector.svelte';
+import TranslationVariantSelector from '$lib/components/TranslationVariantSelector.svelte';
+import { isLoading } from 'svelte-i18n';
+import '$lib/i18n'; // Initialize i18n
+import { initializeVariant } from '$lib/stores/translation-variants.js';
 import '../app.css';
 import '@thepia/flows-auth/style.css';
 
@@ -16,7 +22,7 @@ export let params = {};
 let isAuthenticated = false;
 let user = null;
 let authStore = null;
-let isLoading = true;
+let isAuthLoading = true;
 let initError = null;
 
 // Create context immediately during component initialization
@@ -32,6 +38,9 @@ onMount(() => {
 
   try {
     console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
+
+    // Initialize translation variants from localStorage
+    initializeVariant();
 
     // Create config synchronously
     const authConfig = {
@@ -67,7 +76,7 @@ onMount(() => {
       console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
     });
 
-    isLoading = false;
+    isAuthLoading = false;
     console.log('✅ Auth store setup complete');
 
     // Return cleanup function
@@ -78,7 +87,7 @@ onMount(() => {
   } catch (error) {
     console.error('❌ Failed to create/initialize auth store:', error);
     initError = error instanceof Error ? error.message : 'Unknown error';
-    isLoading = false;
+    isAuthLoading = false;
   }
 });
 </script>
@@ -91,23 +100,27 @@ onMount(() => {
 					<span class="brand-icon">🔐</span>
 					Auth Demo
 				</h1>
-				<div class="auth-status">
-					{#if isAuthenticated && user}
-						<div class="user-info">
-							<span class="welcome">Welcome, {user.email}!</span>
-							<button 
-								class="btn btn-outline" 
-								on:click={() => authStore?.signOut()}
-							>
-								Sign Out
-							</button>
-						</div>
-					{:else}
-						<div class="status-indicator">
-							<span class="status-dot"></span>
-							Not authenticated
-						</div>
-					{/if}
+				<div class="header-controls">
+					<TranslationVariantSelector />
+					<LanguageSelector />
+					<div class="auth-status">
+						{#if isAuthenticated && user}
+							<div class="user-info">
+								<span class="welcome">Welcome, {user.email}!</span>
+								<button
+									class="btn btn-outline"
+									on:click={() => authStore?.signOut()}
+								>
+									Sign Out
+								</button>
+							</div>
+						{:else}
+							<div class="status-indicator">
+								<span class="status-dot"></span>
+								Not authenticated
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -115,7 +128,7 @@ onMount(() => {
 	
 	<main class="main">
 		<div class="container">
-			{#if isLoading}
+			{#if $isLoading || isAuthLoading}
 				<div class="loading-state">
 					<div class="loading-spinner"></div>
 					<p>Initializing auth demo...</p>
@@ -129,11 +142,14 @@ onMount(() => {
 					</button>
 				</div>
 			{:else}
+				<!-- Tab Navigation -->
+				<TabNavigation />
+
 				<!-- ✅ Pass authStore to all pages via slot props -->
 				{console.log('🎯 Layout rendering slot (context-based):', { authStore: !!authStore, isAuthenticated, user: !!user })}
-				<slot 
-					isAuthenticated={isAuthenticated} 
-					user={user} 
+				<slot
+					isAuthenticated={isAuthenticated}
+					user={user}
 				/>
 			{/if}
 		</div>
@@ -195,7 +211,15 @@ onMount(() => {
 	.brand-icon {
 		font-size: 2rem;
 	}
-	
+
+	.header-controls {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		position: relative;
+		z-index: 100;
+	}
+
 	.auth-status {
 		display: flex;
 		align-items: center;

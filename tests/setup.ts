@@ -7,9 +7,6 @@ import '@testing-library/jest-dom';
 // Import vitest setup for automatic cleanup
 import '@testing-library/svelte/vitest';
 
-// Initialize svelte-i18n for test environment
-import { init, addMessages } from 'svelte-i18n';
-
 // Mock the error reporter module before it's imported anywhere else
 vi.mock('../src/utils/errorReporter', () => ({
   initializeErrorReporter: vi.fn(),
@@ -137,7 +134,7 @@ global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
 global.getComputedStyle = vi.fn(() => ({
   getPropertyValue: vi.fn(() => ''),
   width: '0px',
-  height: '0px',
+  height: '0px'
 }));
 
 // Mock getBoundingClientRect for layout calculations
@@ -150,7 +147,7 @@ Element.prototype.getBoundingClientRect = vi.fn(() => ({
   right: 400,
   x: 0,
   y: 0,
-  toJSON: vi.fn(),
+  toJSON: vi.fn()
 }));
 
 // Mock HTMLElement methods that SvelteFlow might use
@@ -204,67 +201,9 @@ beforeAll(async () => {
    * We only mock the error reporter module to prevent test interference.
    */
 
-  // Initialize svelte-i18n BEFORE any components render
-  // This prevents "[svelte-i18n] Cannot format a message without first setting the initial locale" errors
-  init({
-    fallbackLocale: 'en',
-    initialLocale: 'en'
-  });
-
-  // Add comprehensive test translations to match flows-auth components
-  addMessages('en', {
-    // Auth button translations - exact keys used by AuthButton component
-    'auth.signIn': 'Sign In',
-    'auth.signUp': 'Sign Up',
-    'auth.continue': 'Continue',
-    'auth.loading': 'Loading...',
-    'auth.signingIn': 'Signing in...',
-    'auth.sendingPin': 'Sending pin...',
-    'auth.sendingMagicLink': 'Sending magic link...',
-    'auth.signInWithPasskey': 'Sign in with Passkey',
-    'auth.sendPinToEmail': 'Send pin to email',
-    'auth.sendMagicLink': 'Send Magic Link',
-    'auth.continueWithTouchId': 'Continue with Touch ID',
-    'auth.continueWithFaceId': 'Continue with Face ID',
-    'auth.continueWithTouchIdFaceId': 'Continue with Touch ID/Face ID',
-    'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
-    'action.continue': 'Continue',
-
-    // Email input translations
-    'email.label': 'Email',
-    'email.placeholder': 'Enter your email',
-
-    // Code input translations
-    'code.label': 'Verification Code',
-    'code.placeholder': 'Enter code',
-
-    // Form translations
-    'form.signInTitle': 'Sign In',
-    'form.signUpTitle': 'Sign Up',
-    'form.continueTitle': 'Continue',
-
-    // SignIn form translations
-    'signIn.title': 'Sign In',
-    'signIn.description': 'Enter your email to continue',
-
-    // User management translations
-    'user.signOut': 'Sign Out',
-    'user.profile': 'Profile',
-
-    // Error translations
-    'error.generic': 'An error occurred',
-    'error.network': 'Network error',
-
-    // Demo translations
-    'demo.title': 'Demo',
-    'demo.subtitle': 'Testing flows-auth',
-    'demo.welcome': 'Welcome to the demo!'
-  });
-
   // Do NOT mock fetch at all - let all tests use real networking
   // Integration tests need real API calls, unit tests should mock individually
   console.log('🚨 Test setup: NO fetch mocking - using real networking for all tests');
-  console.log('✅ svelte-i18n initialized for test environment');
 });
 
 // Cleanup after each test

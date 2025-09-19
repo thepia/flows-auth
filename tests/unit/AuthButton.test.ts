@@ -3,7 +3,8 @@
  *
  * Comprehensive tests for the AuthButton component covering:
  * - Different authentication methods
- * - i18n support
+ * - Paraglide i18n support (new)
+ * - Legacy i18n support (backward compatibility)
  * - AppCode awareness
  * - Loading states
  * - Button variants and sizes
@@ -11,55 +12,85 @@
  */
 
 import { fireEvent, render } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthButton from '../../src/components/core/AuthButton.svelte';
 
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string) => {
-    const translations: Record<string, string> = {
-      'auth.signInWithPasskey': 'Sign in with Passkey',
-      'auth.signIn': 'Sign in',
-      'auth.sendPinToEmail': 'Send pin to email',
-      'auth.sendMagicLink': 'Send Magic Link',
-      'auth.continueWithTouchId': 'Continue with Touch ID',
-      'auth.continueWithFaceId': 'Continue with Face ID',
-      'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
-      'auth.signingIn': 'Signing in...',
-      'auth.sendingPin': 'Sending pin...',
-      'auth.sendingMagicLink': 'Sending magic link...',
-      'auth.loading': 'Loading...',
-      'action.continue': 'Continue'
-    };
-    return translations[key] || key;
-  })
-}));
+// No mocking of Paraglide functions - use real functions to test actual integration
 
 describe('AuthButton Component', () => {
-  // Mock i18n store for current component implementation
-  const mockI18n = vi.fn((key: string) => {
-    const translations: Record<string, string> = {
-      'auth.signInWithPasskey': 'Sign in with Passkey',
-      'auth.signIn': 'Sign in',
-      'auth.sendPinToEmail': 'Send pin to email',
-      'auth.sendMagicLink': 'Send Magic Link',
-      'auth.continueWithTouchId': 'Continue with Touch ID',
-      'auth.continueWithFaceId': 'Continue with Face ID',
-      'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
-      'auth.loading': 'Loading...',
-      'auth.signingIn': 'Signing in...',
-      'auth.sendingPin': 'Sending pin...',
-      'auth.sendingMagicLink': 'Sending magic link...',
-      'action.continue': 'Continue'
-    };
-    return translations[key] || key;
-  });
-
-  const i18nStore = writable(mockI18n);
-
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('Paraglide i18n Integration (Primary)', () => {
+    it('should work with buttonConfig using Paraglide directly', () => {
+      const { getByRole } = render(AuthButton, {
+        props: {
+          buttonConfig: {
+            method: 'passkey',
+            textKey: 'auth.signInWithPasskey',
+            loadingTextKey: 'auth.signingIn',
+            supportsWebAuthn: true,
+            disabled: false
+          }
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Continue with Touch ID/Face ID');
+    });
+
+    it('should call Paraglide message functions for different methods', () => {
+      const { getByRole } = render(AuthButton, {
+        props: {
+          buttonConfig: {
+            method: 'email-code',
+            textKey: 'auth.sendPinByEmail',
+            loadingTextKey: 'auth.sendingPin',
+            supportsWebAuthn: false,
+            disabled: false
+          }
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Send pin to email');
+    });
+
+    it('should call Paraglide loading functions when loading', () => {
+      const { getByRole } = render(AuthButton, {
+        props: {
+          buttonConfig: {
+            method: 'passkey',
+            textKey: 'auth.signInWithPasskey',
+            loadingTextKey: 'auth.signingIn',
+            supportsWebAuthn: true,
+            disabled: false
+          },
+          loading: true
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Signing in...');
+    });
+
+    it('should use Paraglide for magic link method', () => {
+      const { getByRole } = render(AuthButton, {
+        props: {
+          buttonConfig: {
+            method: 'magic-link',
+            textKey: 'auth.sendMagicLink',
+            loadingTextKey: 'auth.sendingMagicLink',
+            supportsWebAuthn: false,
+            disabled: false
+          }
+        }
+      });
+
+      const button = getByRole('button');
+      expect(button.textContent).toContain('Send Magic Link');
+    });
   });
 
   describe('Method-specific Text', () => {
@@ -67,9 +98,13 @@ describe('AuthButton Component', () => {
       // Test setup already mocks Mac user agent, so this should show generic biometric text
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'passkey',
-          supportsWebAuthn: true,
-          i18n: i18nStore
+          buttonConfig: {
+            method: 'passkey',
+            textKey: 'auth.signInWithPasskey',
+            loadingTextKey: 'auth.signingIn',
+            supportsWebAuthn: true,
+            disabled: false
+          }
         }
       });
 
@@ -87,9 +122,13 @@ describe('AuthButton Component', () => {
 
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'passkey',
-          supportsWebAuthn: true,
-          i18n: i18nStore
+          buttonConfig: {
+            method: 'passkey',
+            textKey: 'auth.signInWithPasskey',
+            loadingTextKey: 'auth.signingIn',
+            supportsWebAuthn: true,
+            disabled: false
+          }
         }
       });
 
@@ -106,9 +145,13 @@ describe('AuthButton Component', () => {
     it('should display generic sign in text when method is passkey but WebAuthn is not supported', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'passkey',
-          supportsWebAuthn: false,
-          i18n: i18nStore
+          buttonConfig: {
+            method: 'passkey',
+            textKey: 'auth.signIn',
+            loadingTextKey: 'auth.signingIn',
+            supportsWebAuthn: false,
+            disabled: false
+          }
         }
       });
 
@@ -119,9 +162,14 @@ describe('AuthButton Component', () => {
     it('should display pin text when method is email and AppCode is enabled', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'email',
-          isAppCodeBased: true,
-          i18n: i18nStore
+          buttonConfig: {
+            method: 'email',
+            textKey: 'auth.sendPinByEmail',
+            loadingTextKey: 'auth.sendingPin',
+            supportsWebAuthn: false,
+            disabled: false
+          },
+          isAppCodeBased: true
         }
       });
 
@@ -132,9 +180,14 @@ describe('AuthButton Component', () => {
     it('should display magic link text when method is email and AppCode is disabled', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'email',
-          isAppCodeBased: false,
-          i18n: i18nStore
+          buttonConfig: {
+            method: 'email',
+            textKey: 'auth.sendMagicLink',
+            loadingTextKey: 'auth.sendingMagicLink',
+            supportsWebAuthn: false,
+            disabled: false
+          },
+          isAppCodeBased: false
         }
       });
 
@@ -145,8 +198,7 @@ describe('AuthButton Component', () => {
     it('should display Touch ID text for continue-touchid method', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'continue-touchid',
-          i18n: i18nStore
+          method: 'continue-touchid'
         }
       });
 
@@ -157,8 +209,7 @@ describe('AuthButton Component', () => {
     it('should display Face ID text for continue-faceid method', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'continue-faceid',
-          i18n: i18nStore
+          method: 'continue-faceid'
         }
       });
 
@@ -170,8 +221,7 @@ describe('AuthButton Component', () => {
       // All devices should show generic biometric text for better reliability
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'continue-biometric',
-          i18n: i18nStore
+          method: 'continue-biometric'
         }
       });
 
@@ -189,8 +239,7 @@ describe('AuthButton Component', () => {
 
       const { getByRole } = render(AuthButton, {
         props: {
-          method: 'continue-biometric',
-          i18n: i18nStore
+          method: 'continue-biometric'
         }
       });
 
@@ -210,8 +259,7 @@ describe('AuthButton Component', () => {
       const { getByRole, container } = render(AuthButton, {
         props: {
           method: 'passkey',
-          loading: true,
-          i18n: i18nStore
+          loading: true
         }
       });
 
@@ -227,8 +275,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'email-code',
-          loading: true,
-          i18n: i18nStore
+          loading: true
         }
       });
 
@@ -240,8 +287,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'magic-link',
-          loading: true,
-          i18n: i18nStore
+          loading: true
         }
       });
 
@@ -254,8 +300,7 @@ describe('AuthButton Component', () => {
         props: {
           method: 'passkey',
           loading: true,
-          loadingText: 'Custom loading...',
-          i18n: i18nStore
+          loadingText: 'Custom loading...'
         }
       });
 
@@ -269,8 +314,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           text: 'Custom Button Text',
-          method: 'passkey',
-          i18n: i18nStore
+          method: 'passkey'
         }
       });
 
@@ -283,8 +327,7 @@ describe('AuthButton Component', () => {
         props: {
           icon: '🚀',
           method: 'passkey',
-          showIcon: true,
-          i18n: i18nStore
+          showIcon: true
         }
       });
 
@@ -296,8 +339,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'passkey',
-          showIcon: true,
-          i18n: i18nStore
+          showIcon: true
         }
       });
 
@@ -310,8 +352,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'passkey',
-          showIcon: false,
-          i18n: i18nStore
+          showIcon: false
         }
       });
 
@@ -324,8 +365,7 @@ describe('AuthButton Component', () => {
     it('should apply primary variant classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          variant: 'primary',
-          i18n: i18nStore
+          variant: 'primary'
         }
       });
 
@@ -336,8 +376,7 @@ describe('AuthButton Component', () => {
     it('should apply secondary variant classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          variant: 'secondary',
-          i18n: i18nStore
+          variant: 'secondary'
         }
       });
 
@@ -348,8 +387,7 @@ describe('AuthButton Component', () => {
     it('should apply ghost variant classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          variant: 'ghost',
-          i18n: i18nStore
+          variant: 'ghost'
         }
       });
 
@@ -362,8 +400,7 @@ describe('AuthButton Component', () => {
     it('should apply small size classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          size: 'sm',
-          i18n: i18nStore
+          size: 'sm'
         }
       });
 
@@ -376,8 +413,7 @@ describe('AuthButton Component', () => {
     it('should apply medium size classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          size: 'md',
-          i18n: i18nStore
+          size: 'md'
         }
       });
 
@@ -390,8 +426,7 @@ describe('AuthButton Component', () => {
     it('should apply large size classes', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          size: 'lg',
-          i18n: i18nStore
+          size: 'lg'
         }
       });
 
@@ -406,8 +441,7 @@ describe('AuthButton Component', () => {
     it('should be disabled when disabled prop is true', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          disabled: true,
-          i18n: i18nStore
+          disabled: true
         }
       });
 
@@ -420,8 +454,7 @@ describe('AuthButton Component', () => {
     it('should be disabled when loading', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          loading: true,
-          i18n: i18nStore
+          loading: true
         }
       });
 
@@ -433,8 +466,7 @@ describe('AuthButton Component', () => {
     it('should apply full width class when fullWidth is true', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          fullWidth: true,
-          i18n: i18nStore
+          fullWidth: true
         }
       });
 
@@ -445,8 +477,7 @@ describe('AuthButton Component', () => {
     it('should not apply full width class when fullWidth is false', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          fullWidth: false,
-          i18n: i18nStore
+          fullWidth: false
         }
       });
 
@@ -461,8 +492,7 @@ describe('AuthButton Component', () => {
 
       const { getByRole, component } = render(AuthButton, {
         props: {
-          method: 'passkey',
-          i18n: i18nStore
+          method: 'passkey'
         }
       });
 
@@ -485,8 +515,7 @@ describe('AuthButton Component', () => {
       const { getByRole, component } = render(AuthButton, {
         props: {
           method: 'passkey',
-          disabled: true,
-          i18n: i18nStore
+          disabled: true
         }
       });
 
@@ -505,8 +534,7 @@ describe('AuthButton Component', () => {
       const { getByRole, component } = render(AuthButton, {
         props: {
           method: 'passkey',
-          loading: true,
-          i18n: i18nStore
+          loading: true
         }
       });
 
@@ -538,9 +566,7 @@ describe('AuthButton Component', () => {
   describe('Button Type', () => {
     it('should default to submit type', () => {
       const { getByRole } = render(AuthButton, {
-        props: {
-          i18n: i18nStore
-        }
+        props: {}
       });
 
       const button = getByRole('button') as HTMLButtonElement;
@@ -550,8 +576,7 @@ describe('AuthButton Component', () => {
     it('should use button type when specified', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          type: 'button',
-          i18n: i18nStore
+          type: 'button'
         }
       });
 
@@ -565,8 +590,7 @@ describe('AuthButton Component', () => {
       const { getByRole } = render(AuthButton, {
         props: {
           method: 'passkey',
-          supportsWebAuthn: true,
-          i18n: i18nStore
+          supportsWebAuthn: true
         }
       });
 
@@ -578,8 +602,7 @@ describe('AuthButton Component', () => {
     it('should use custom text as aria-label when provided', () => {
       const { getByRole } = render(AuthButton, {
         props: {
-          text: 'Custom Action',
-          i18n: i18nStore
+          text: 'Custom Action'
         }
       });
 

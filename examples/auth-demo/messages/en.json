@@ -1,0 +1,99 @@
+{
+  "signIn.title": "🚀 Demo Sign In",
+  "signIn.subtitle": "Experience passwordless authentication with {companyName}",
+  "branding.poweredBy": "Thepia Flows Demo",
+  "auth.signIn": "🔐 Sign In with Demo",
+
+  "flows.signIn.title": "Access Demo",
+  "flows.signIn.subtitle": "Enter your email to experience our passwordless authentication system with {companyName}",
+  "flows.signIn.subtitleGeneric": "Enter your email to experience our passwordless authentication system",
+
+  "flows.page.signIn.title": "Access Demo",
+  "flows.page.signIn.subtitle": "Enter your email to experience our passwordless authentication system",
+  "flows.page.signIn.emailPlaceholder": "Enter your email address",
+  "flows.page.signIn.submitButton": "Continue to Demo",
+  "flows.page.signIn.loadingText": "Preparing your demo experience...",
+  "flows.page.signIn.privacyNotice": "Privacy-first authentication - no cookies stored",
+
+  "overview": {
+    "title": "Thepia Flows Authentication",
+    "subtitle": "Passwordless authentication with WebAuthn passkeys and magic links",
+    "features": {
+      "passkeys": {
+        "title": "WebAuthn Passkeys",
+        "description": "Secure, passwordless authentication using biometrics or security keys"
+      },
+      "magic_links": {
+        "title": "Magic Links",
+        "description": "One-click authentication via secure email links"
+      },
+      "state_machine": {
+        "title": "State Machine",
+        "description": "Robust authentication flow with comprehensive state management"
+      },
+      "multi_language": {
+        "title": "Multi-Language",
+        "description": "Full internationalization support with Paraglide JS"
+      }
+    },
+    "try_signin": "Try Sign In",
+    "try_register": "Try Register"
+  },
+  "flows": {
+    "signIn": {
+      "title": "Employee Access Required",
+      "subtitle": "This demo is restricted to Thepia employees. Please sign in with your employee credentials to {companyName}.",
+      "subtitleGeneric": "This demo is restricted to Thepia employees. Please sign in with your employee credentials."
+    }
+  },
+  "signIn": {
+    "title": "Sign In Demo",
+    "subtitle": "Experience passwordless authentication in action with {companyName}",
+    "subtitleGeneric": "Experience passwordless authentication in action",
+    "redirect_notice": "Click below to go to the interactive sign-in demo page",
+    "go_to_demo": "Go to Sign In Demo",
+    "description": "Interactive authentication component demonstration",
+    "loading_form": "Loading SignInForm...",
+    "loading_core": "Loading SignInCore...",
+    "state_machine_title": "🔧 State Machine",
+    "state_machine_description": "Interactive authentication flow visualization:",
+    "loading_state_machines": "Loading state machines..."
+  },
+  "register": {
+    "title": "Registration Demo",
+    "subtitle": "See how new users can register with passkeys with {companyName}",
+    "subtitleGeneric": "See how new users can register with passkeys",
+    "redirect_notice": "Click below to go to the interactive registration demo page",
+    "go_to_demo": "Go to Registration Demo",
+    "page_title": "Registration Flow Demo",
+    "description": "Test registration by first checking actual user state, then following the appropriate flow:",
+    "check_user_state": "1. Check User State",
+    "check_user_description": "First, check if the user already exists and their verification status:",
+    "flow_documentation": "2. Registration Flow Documentation",
+    "flow_description": "The registration system handles different user states automatically:",
+    "scenario_new_user": "Complete Registration",
+    "scenario_new_user_when": "When: User doesn't exist in system",
+    "scenario_new_user_flow": "Flow: Email verification → Passkey setup → Complete",
+    "scenario_unverified": "Email Verification Required",
+    "scenario_unverified_when": "When: User exists but email not verified",
+    "scenario_unverified_flow": "Flow: Resend verification email → Email verification → Passkey setup → Complete",
+    "scenario_no_passkey": "Passkey Setup Required",
+    "scenario_no_passkey_when": "When: Email verified but no passkey registered",
+    "scenario_no_passkey_flow": "Flow: Skip email verification → Passkey setup → Complete",
+    "scenario_complete": "Already Registered",
+    "scenario_complete_when": "When: Email verified AND has passkey",
+    "scenario_complete_flow": "Flow: Reject registration → Redirect to sign-in",
+    "invitation_title": "3. Invitation Token Registration",
+    "invitation_description": "Register using an invitation token (bypasses some verification steps):",
+    "domain_config": "Domain Configuration: {domain}",
+    "domain_description": "Passkeys will be registered for this domain. Make sure it matches your testing environment."
+  },
+  "tabs_overview_title": "Overview",
+  "tabs_overview_description": "Introduction to Thepia Flows authentication system",
+  "tabs_signin_title": "Sign In",
+  "tabs_signin_description": "with SignInCore and SignInForm",
+  "tabs_register_title": "Register",
+  "tabs_register_description": "User registration and account creation flows",
+  "tabs_flows_title": "Flows Demo",
+  "tabs_flows_description": "Faithful reproduction of flows.thepia.net page"
+}

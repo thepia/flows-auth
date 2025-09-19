@@ -133,7 +133,6 @@ export interface AuthConfig {
 
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
-  translations?: import('../utils/i18n').CustomTranslations; // Custom translation overrides
   fallbackLanguage?: string; // Fallback language (defaults to 'en')
 }
 
@@ -622,9 +621,5 @@ export interface StateMessageConfig {
   className?: string;
 }
 
-// Re-export i18n types for convenience
-export type {
-  CustomTranslations,
-  TranslationKey,
-  SupportedLanguage
-} from '../utils/i18n';
+// Re-export i18n utilities for convenience
+export { m, setI18nMessages, getLocale } from '../utils/i18n';

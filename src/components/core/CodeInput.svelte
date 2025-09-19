@@ -4,23 +4,22 @@
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
+import { m } from '../../utils/i18n';
+import { "code.label" as codeLabel } from '../../paraglide/messages';
 
 // Props
 export let value = '';
-export let placeholder: TranslationKey | '' = '';
+export let placeholder = '';
 export let disabled = false;
 export let required = true;
 export let error: string | null = null;
-export let label: TranslationKey | '' = '';
+export let label = '';
 export let showLabel = true;
 export let maxlength = 6;
 export let className = '';
 export let autoAdvance = false; // Auto-submit when code is complete
 export let showDigits = false; // Show individual digit boxes instead of single input
 export let autoFocus = false; // Auto-focus the input when component mounts
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -170,10 +169,25 @@ $: if (autoFocus) {
 }
 
 // Reactive values for i18n
-$: displayPlaceholder = $i18n(placeholder || 'code.placeholder');
-$: displayLabel = $i18n(label || 'code.label');
+$: displayPlaceholder = getDisplayText(placeholder || 'code_placeholder');
+$: displayLabel = getDisplayText(label || 'code_label');
+
+// Helper function to get display text from Paraglide
+function getDisplayText(key: string): string {
+  try {
+    const messageFunction = (m as unknown as {[key: string]: () => string})[key];
+    if (typeof messageFunction === 'function') {
+      return messageFunction();
+    }
+    // Fallback to key if function doesn't exist
+    return key;
+  } catch (error) {
+    console.warn(`Translation key "${key}" not found in Paraglide messages`);
+    return key;
+  }
+}
 // Use existing translation keys for accessibility
-$: ariaLabel = `${$i18n('code.label')} (${maxlength} digits)`;
+$: ariaLabel = `${codeLabel()} (${maxlength} digits)`;
 $: helpText = `Enter ${maxlength}-digit verification code`;
 </script>
 

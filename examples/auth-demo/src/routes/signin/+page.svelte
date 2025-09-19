@@ -2,9 +2,11 @@
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
-import { _ } from 'svelte-i18n';
 
-// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
+// Paraglide i18n setup
+import * as m from '../../paraglide/messages';
+
+// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 export let isAuthenticated = false;
 export let user = null;
 
@@ -86,36 +88,36 @@ const clientVariants = {
     name: 'ACME Corporation', 
     companyName: 'ACME Corp',
     translations: {
-      'signin.title': 'Welcome to ACME',
-      'signin.subtitle': 'Access your ACME account',
-      'signin.email.placeholder': 'Enter your ACME email'
+      'signIn.title': 'Welcome to ACME',
+      'signIn.subtitle': 'Access your ACME account',
+      'signIn.email.placeholder': 'Enter your ACME email'
     }
   },
   techcorp: { 
     name: 'TechCorp Solutions', 
     companyName: 'TechCorp',
     translations: {
-      'signin.title': 'TechCorp Portal',
-      'signin.subtitle': 'Innovation starts here',
-      'signin.email.placeholder': 'your.email@techcorp.com'
+      'signIn.title': 'TechCorp Portal',
+      'signIn.subtitle': 'Innovation starts here',
+      'signIn.email.placeholder': 'your.email@techcorp.com'
     }
   },
   healthcare: { 
     name: 'MedSecure Health', 
     companyName: 'MedSecure',
     translations: {
-      'signin.title': 'MedSecure Access',
-      'signin.subtitle': 'Secure healthcare portal',
-      'signin.email.placeholder': 'healthcare.professional@medsecure.com'
+      'signIn.title': 'MedSecure Access',
+      'signIn.subtitle': 'Secure healthcare portal',
+      'signIn.email.placeholder': 'healthcare.professional@medsecure.com'
     }
   },
   'app.thepia.net': { 
     name: 'Thepia App Portal', 
     companyName: 'Thepia',
     translations: {
-      'signin.title': 'Thepia App',
-      'signin.subtitle': 'Your productivity workspace',
-      'signin.email.placeholder': 'Enter your work email'
+      'signIn.title': 'Thepia App',
+      'signIn.subtitle': 'Your productivity workspace',
+      'signIn.email.placeholder': 'Enter your work email'
     }
   },
   custom: { 
@@ -197,11 +199,10 @@ $: combinedTranslations = selectedClientVariant === 'custom'
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicLinks, 
+  enableMagicLinks,
   signInMode,
   // i18n configuration
   language: selectedLanguage,
-  translations: combinedTranslations,
   fallbackLanguage: 'en',
   // Update branding with client variant
   branding: {
@@ -224,6 +225,8 @@ onMount(async () => {
       SignInFormComponent = SignInForm;
       SignInCoreComponent = SignInCore;
 
+      // Note: Using demo-specific Paraglide setup, not library i18n
+
       console.log('✅ Auth components loaded successfully');
     } catch (error) {
       console.error('❌ Failed to load auth components:', error);
@@ -234,8 +237,8 @@ onMount(async () => {
 
 <div class="signin-page">
   <div class="page-header">
-    <h1>{$_('signin.title')}</h1>
-    <p>{$_('signin.subtitle')}</p>
+    <h1>{m["signIn.title"]()}</h1>
+    <p>{m["signIn.subtitleGeneric"]()}</p>
   </div>
   
   <div class="demo-layout">
@@ -394,65 +397,7 @@ onMount(async () => {
           {/if}
         {/if}
 
-        <!-- i18n Configuration Controls -->
-        <div class="config-section">
-          <h4 class="config-section-title">🌍 Internationalization (i18n)</h4>
-
-          <div class="config-group">
-            <div class="config-label">Language:</div>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedLanguage} value="en" />
-                <span>English</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedLanguage} value="da" />
-                <span>Dansk (Danish)</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="config-group">
-            <div class="config-label">Client Variant:</div>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedClientVariant} value="default" />
-                <span>Default Thepia</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedClientVariant} value="acme" />
-                <span>🏢 ACME Corporation</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedClientVariant} value="techcorp" />
-                <span>🚀 TechCorp Solutions</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedClientVariant} value="healthcare" />
-                <span>🏥 MedSecure Health</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" bind:group={selectedClientVariant} value="app.thepia.net" />
-                <span>📋 app.thepia.net</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="config-group">
-            <div class="config-label">Current Configuration:</div>
-            <div class="config-info">
-              <div class="info-line">
-                <strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : 'Dansk'}
-              </div>
-              <div class="info-line">
-                <strong>Client:</strong> {currentClientVariant.name}
-              </div>
-              <div class="info-line">
-                <strong>Custom Translations:</strong> {Object.keys(combinedTranslations).length} keys
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Note: i18n Configuration Controls removed for cleaner demo -->
 
         <div class="config-group">
           <div class="config-label">Authentication Methods:</div>
@@ -488,13 +433,14 @@ onMount(async () => {
               variant={formVariant}
               popupPosition={popupPosition}
               className="demo-signin-form"
+
               on:success={(e) => handleSignInSuccess(e.detail)}
               on:error={(e) => handleSignInError(e.detail)}
               on:stepChange={(e) => handleStepChange(e.detail)}
             />
           {:else}
             <div class="signin-loading">
-              <p>Loading SignInForm...</p>
+              <p>{m["signIn.loading_form"]()}</p>
             </div>
           {/if}
         {:else}
@@ -509,6 +455,7 @@ onMount(async () => {
                     variant={formVariant}
                     popupPosition={popupPosition}
                     className="demo-signin-form"
+
                     on:success={(e) => handleSignInSuccess(e.detail)}
                     on:error={(e) => handleSignInError(e.detail)}
                     on:stepChange={(e) => handleStepChange(e.detail)}
@@ -516,7 +463,7 @@ onMount(async () => {
                   />
                 {:else}
                   <div class="signin-loading">
-                    <p>Loading SignInForm...</p>
+                    <p>{m["signIn.loading_form"]()}</p>
                   </div>
                 {/if}
               {:else}
@@ -539,13 +486,14 @@ onMount(async () => {
                       authStore={authStore}
                       initialEmail={emailInput}
                       className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
+
                       on:success={(e) => handleSignInSuccess(e.detail)}
                       on:error={(e) => handleSignInError(e.detail)}
                       on:stepChange={(e) => handleStepChange(e.detail)}
                     />
                 {:else}
                   <div class="signin-loading">
-                    <p>Loading SignInCore...</p>
+                    <p>{m["signIn.loading_core"]()}</p>
                   </div>
                 {/if}
             </div>
@@ -558,8 +506,8 @@ onMount(async () => {
     <!-- State Machine Sidebar (Right) -->
     <div class="state-machine-sidebar">
       <div class="sidebar-header">
-        <h3>🔧 State Machine</h3>
-        <p class="text-secondary">Interactive authentication flow visualization:</p>
+        <h3>{m["signIn.state_machine_title"]()}</h3>
+        <p class="text-secondary">{m["signIn.state_machine_description"]()}</p>
       </div>
 
       {#if authStore && authStore.stateMachine}
@@ -591,7 +539,7 @@ onMount(async () => {
             </div>
           {:else}
             <div class="graph-error">
-              <p>Loading state machines...</p>
+              <p>{m["signIn.loading_state_machines"]()}</p>
               <!-- Fallback to simple state display -->
               <div class="state-display-compact">
                 <div class="state-item-compact">

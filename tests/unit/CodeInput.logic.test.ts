@@ -10,17 +10,6 @@
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string) => {
-    const translations: Record<string, string> = {
-      'code.label': 'Enter verification code',
-      'code.placeholder': '6-digit code'
-    };
-    return translations[key] || key;
-  })
-}));
-
 // Mock the numeric input filtering logic from CodeInput
 function filterNumericInput(value: string): string {
   return value.replace(/[^0-9]/g, '');

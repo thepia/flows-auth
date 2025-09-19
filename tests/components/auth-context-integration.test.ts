@@ -11,30 +11,14 @@ import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
 import type { AuthConfig, CompleteAuthStore } from '../../src/types';
+import { renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock dependencies
 vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false)
-}));
-
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string) => key)
-}));
-
-const mockI18n = vi.fn((key: string) => key);
-const i18nStore = writable(mockI18n);
-
-vi.mock('../../src/utils/i18n', () => ({
-  getI18n: vi.fn(() => ({
-    t: i18nStore,
-    setLanguage: vi.fn(),
-    setTranslations: vi.fn()
-  }))
 }));
 
 describe('Auth Context Integration', () => {
@@ -91,7 +75,6 @@ describe('Auth Context Integration', () => {
 
       // SignInCore should be rendered inside for logic
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-
     });
   });
 

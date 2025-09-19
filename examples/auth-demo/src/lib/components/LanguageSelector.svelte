@@ -1,23 +1,71 @@
 <script>
-  import { locale, locales } from 'svelte-i18n';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { Globe } from 'lucide-svelte';
+  import { baseLocale, setLocale, getLocale } from '../../paraglide/runtime.js';
 
+  // Paraglide language management
+  let currentLocale = 'en'; // Default fallback
+
+  // Supported languages (matching Paraglide configuration)
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
     { code: 'da', name: 'Dansk', flag: '🇩🇰' }
   ];
 
   let isOpen = false;
-  let currentLanguage = languages.find(lang => lang.code === $locale) || languages[0];
+  let currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+
+  // Load current locale from Paraglide on mount
+  onMount(() => {
+    if (browser) {
+      try {
+        currentLocale = getLocale();
+        currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+        console.log('✅ Language selector initialized with locale:', currentLocale);
+      } catch (error) {
+        console.warn('⚠️ Failed to get current locale, falling back to base locale:', error);
+        currentLocale = baseLocale;
+        currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+      }
+    }
+  });
 
   // Update current language when locale changes
-  $: currentLanguage = languages.find(lang => lang.code === $locale) || languages[0];
+  $: currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+
+  // Reactive sync with Paraglide locale changes (e.g., from other components or external changes)
+  $: if (browser) {
+    try {
+      const paraglideLoc = getLocale();
+      if (paraglideLoc !== currentLocale) {
+        currentLocale = paraglideLoc;
+        console.log('🔄 Language selector synced with Paraglide locale:', currentLocale);
+      }
+    } catch (error) {
+      // Ignore errors during reactive updates
+    }
+  }
 
   function selectLanguage(language) {
-    locale.set(language.code);
+    if (browser) {
+      // ✅ Use Paraglide's setLocale function to actually switch language
+      setLocale(language.code, { reload: false });
+
+      // Update local component state
+      currentLocale = language.code;
+      currentLanguage = language;
+
+      // Manual localStorage backup (in case Paraglide localStorage strategy isn't working)
+      try {
+        localStorage.setItem('PARAGLIDE_LOCALE', language.code);
+      } catch (error) {
+        console.warn('⚠️ Failed to store locale in localStorage:', error);
+      }
+
+      console.log('🌐 Language switched to:', language.code, 'via Paraglide setLocale()');
+      console.log('🔍 Current Paraglide locale:', getLocale());
+    }
     isOpen = false;
   }
 
@@ -69,12 +117,12 @@
       {#each languages as language}
         <button
           class="language-option"
-          class:active={language.code === $locale}
+          class:active={language.code === currentLocale}
           on:click={() => selectLanguage(language)}
         >
           <span class="flag">{language.flag}</span>
           <span class="name">{language.name}</span>
-          {#if language.code === $locale}
+          {#if language.code === currentLocale}
             <svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path 
                 d="M13.5 4.5L6 12L2.5 8.5" 

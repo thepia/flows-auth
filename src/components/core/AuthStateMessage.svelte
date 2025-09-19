@@ -1,28 +1,43 @@
 <!--
   AuthStateMessage - Component for displaying authentication status and error messages
-  Features: different message types, icons, animations, accessibility, i18n support
+  Features: different message types, icons, animations, accessibility, Paraglide i18n support
 -->
 <script lang="ts">
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
+import { m } from '../../utils/i18n';
 
 // Props
 export let type: 'error' | 'success' | 'info' | 'warning' = 'info';
 export let message = '';
-export let tKey: TranslationKey | '' = ''; // Translation key for i18n
+export let tKey = ''; // Translation key for Paraglide i18n
 export let showIcon = true;
 export let dismissible = false;
 export let className = '';
 export let animate = true;
 
-// i18n support (required when using tKey)
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string> | undefined = undefined;
-
 // Internal state
 let visible = true;
 
-// Computed message - use tKey if provided and i18n is available, otherwise use message
-$: displayMessage = (tKey && i18n) ? $i18n(tKey) : message;
+// Computed message - use Paraglide message functions directly
+$: displayMessage = getDisplayMessage();
+
+function getDisplayMessage(): string {
+  // If explicit message is provided, use it
+  if (message) return message;
+
+  // If tKey is provided, use Paraglide bracket notation for dot keys
+  if (tKey) {
+    // Use bracket notation to access Paraglide message functions with dot keys
+    const messageFunction = (m as unknown as {[key: string]: () => string})[tKey];
+    if (typeof messageFunction === 'function') {
+      return messageFunction();
+    } else {
+      console.warn(`AuthStateMessage: Unknown tKey "${tKey}"`);
+      return tKey; // Fallback to showing the key itself
+    }
+  }
+
+  return '';
+}
 
 // SVG icon mapping - simple monochrome
 const icons = {

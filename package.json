@@ -23,6 +23,10 @@
     },
     "./style.css": "./dist/style.css",
     "./dist/style.css": "./dist/style.css",
+    "./paraglide/runtime.js": "./dist/paraglide/runtime.js",
+    "./paraglide/messages.js": "./dist/paraglide/messages.js",
+    "./src/paraglide/runtime.js": "./dist/paraglide/runtime.js",
+    "./src/paraglide/messages.js": "./dist/paraglide/messages.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -34,18 +38,19 @@
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
-    
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    
     "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ tests/components/",
     "test:integration": "vitest run tests/integration/",
     "test:critical": "vitest run tests/critical/ tests/contracts/",
-    
     "test:smoke": "vitest run tests/stores/auth-state-machine.test.ts tests/integration/api-environment.test.ts",
-    
+    "test:package": "vitest run tests/package",
+    "test:paraglide-merge": "vitest run tests/integration/paraglide-multi-directory-merge.test.ts",
+    "test:demos": "pnpm test:demos:auth && pnpm test:demos:flows-app",
+    "test:demos:auth": "cd examples/auth-demo && pnpm build",
+    "test:demos:flows-app": "cd examples/flows-app-demo && pnpm build",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
@@ -53,23 +58,20 @@
     "check:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "svelte:check": "svelte-check --tsconfig ./tsconfig.json",
-
     "prepublishOnly": "npm run build",
     "publish:npm": "dotenv -- bash -c 'npm publish --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:pnpm": "dotenv -- bash -c 'pnpm publish --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:npm:dry": "dotenv -- bash -c 'npm publish --dry-run --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
     "publish:pnpm:dry": "dotenv -- bash -c 'pnpm publish --dry-run --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",
-    
     "pre-commit": "./scripts/pre-commit-validation.sh",
     "pre-push": "./scripts/pre-push-sanity-check.sh",
     "pre-push:quick": "./scripts/pre-push-sanity-check.sh --skip-build",
     "pre-push:fast": "./scripts/pre-push-sanity-check.sh --skip-tests --skip-build",
-    
     "validate": "pnpm typecheck && pnpm check && pnpm test",
     "validate:quick": "pnpm typecheck && pnpm test:smoke",
+    "validate:publish": "pnpm build && pnpm test:package",
     "verify-auth-patterns": "pnpm test:critical && echo '✅ Authentication patterns verified'",
     "protect-auth": "pnpm test:contracts && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
-        
     "example:tasks-app-demo": "cd examples/tasks-app-demo && pnpm dev",
     "example:flows-app-demo": "cd examples/flows-app-demo && pnpm dev",
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
@@ -101,6 +103,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@inlang/paraglide-js": "^2.3.2",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^4.0.0",
@@ -124,8 +127,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
     "@simplewebauthn/browser": "^13.1.2",
-    "base64url": "^3.0.1",
-    "svelte-i18n": "^4.0.1"
+    "base64url": "^3.0.1"
   },
   "publishConfig": {
     "access": "public",

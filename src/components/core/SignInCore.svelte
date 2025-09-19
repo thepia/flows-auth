@@ -9,7 +9,16 @@ import type { createAuthStore } from '../../stores/auth-store';
 import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
 import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent } from '../../types';
 import { isPlatformAuthenticatorAvailable } from '../../utils/webauthn';
-import { getI18n } from '../../utils/i18n';
+import { m } from '../../utils/i18n';
+import {
+  "security.passwordlessExplanation" as securityPasswordlessExplanation,
+  "security.passwordlessGeneric" as securityPasswordlessGeneric,
+  "security.passwordlessWithPin" as securityPasswordlessWithPin,
+  "security.passwordlessWithPinGeneric" as securityPasswordlessWithPinGeneric,
+  "status.emailSent" as statusEmailSent,
+  "status.pinDirectAction" as statusPinDirectAction,
+  "status.pinValid" as statusPinValid
+} from '../../paraglide/messages';
 
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
@@ -26,28 +35,6 @@ export let className = '';
 
 // Get config from auth store context only
 $: authConfig = store?.getConfig();
-
-// Get i18n instance - will use context if available, or create from config
-const i18nInstance = getI18n({
-  language: authConfig?.language,
-  translations: authConfig?.translations,
-  fallbackLanguage: authConfig?.fallbackLanguage
-});
-
-// Extract the translation function store
-const i18n = i18nInstance.t;
-
-// Update i18n when authConfig changes
-$: {
-  if (authConfig?.language) {
-    i18nInstance.setLanguage(authConfig.language);
-  }
-  if (authConfig?.translations) {
-    i18nInstance.setTranslations(authConfig.translations);
-  }
-}
-
-// Remove problematic reactive initialization - use onMount only
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -628,6 +615,16 @@ $: buttonConfig = store ? store.getButtonConfig({
   isNewUserSignin,
   fullName
 }) : null;
+
+// State message configuration (centralized in AuthStore)
+$: stateMessageConfig = store ? store.getStateMessageConfig({
+  signInState: currentSignInState,
+  userExists,
+  emailCodeSent,
+  hasValidPin,
+  signInMode: authConfig?.signInMode
+}) : null;
+
 $: emailInputWebAuthnEnabled = authConfig ? getEmailInputWebAuthnEnabled(authConfig, passkeysEnabled) : false;
 
 // Keep track of last checked email to avoid duplicate calls
@@ -665,7 +662,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
         {error}
         disabled={loading}
         enableWebAuthn={emailInputWebAuthnEnabled}
-        {i18n}
         on:change={handleEmailChange}
         on:input={handleEmailChange}
         on:blur={handleEmailChange}
@@ -676,9 +672,9 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
         <div class="pin-status-message">
           <span class="pin-status-icon">📧</span>
           <span class="pin-status-text">
-            {$i18n('status.pinValid', { 
-              minutes: pinRemainingMinutes, 
-              s: pinRemainingMinutes !== 1 ? 's' : '' 
+            {statusPinValid({
+              minutes: pinRemainingMinutes,
+              s: pinRemainingMinutes !== 1 ? 's' : ''
             })}
             <button
               type="button"
@@ -686,27 +682,26 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
               on:click={goToPinInput}
               disabled={loading}
             >
-              {$i18n('status.pinDirectAction')}
+              {statusPinDirectAction()}
             </button>
           </span>
         </div>
       {/if}
 
       {#if currentSignInState === 'userChecked' && !userExists}
-        {#if authConfig?.signInMode === 'login-only'}
+        {#if stateMessageConfig}
           <AuthStateMessage
-            type="info"
-            tKey="auth.onlyRegisteredUsers"
-            showIcon={true}
-            {i18n}
+            type={stateMessageConfig.type}
+            tKey={stateMessageConfig.textKey}
+            showIcon={stateMessageConfig.showIcon}
           />
-        {:else}
+        {/if}
+        {#if authConfig?.signInMode !== 'login-only'}
           <!-- Registration form for new users -->
           <AuthNewUserInfo
             bind:fullName
             disabled={loading}
             error={null}
-            {i18n}
           />
         {/if}
       {/if}
@@ -718,7 +713,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
             buttonConfig={buttonConfig.primary}
             disabled={loading || !email.trim()}
             {loading}
-            {i18n}
             on:click={handleSignIn}
           />
 
@@ -729,7 +723,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
               buttonConfig={buttonConfig.secondary}
               disabled={loading || !email.trim()}
               {loading}
-              {i18n}
               on:click={handleSecondaryAction}
             />
           {/if}
@@ -749,15 +742,15 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
       <div class="security-message">
         {#if authConfig?.branding?.companyName}
           {#if authConfig.appCode}
-            {$i18n('security.passwordlessWithPin', { companyName: authConfig.branding.companyName })}
+            {securityPasswordlessWithPin({ companyName: authConfig.branding.companyName })}
           {:else}
-            {$i18n('security.passwordlessExplanation', { companyName: authConfig.branding.companyName })}
+            {securityPasswordlessExplanation({ companyName: authConfig.branding.companyName })}
           {/if}
         {:else}
           {#if authConfig.appCode}
-            {$i18n('security.passwordlessWithPinGeneric')}
+            {securityPasswordlessWithPinGeneric()}
           {:else}
-            {$i18n('security.passwordlessGeneric')}
+            {securityPasswordlessGeneric()}
           {/if}
         {/if}
       </div>
@@ -766,30 +759,24 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
   {:else if currentSignInState === 'pinEntry'}
     <!-- Email Code Input Step -->
     <div class="email-code-input">
-      {#if emailCodeSent && !hasValidPin}
+      {#if stateMessageConfig}
         <AuthStateMessage
-          type="success"
-          tKey="status.checkEmail"
-          showIcon={true}
-          {i18n}
+          type={stateMessageConfig.type}
+          tKey={stateMessageConfig.textKey}
+          showIcon={stateMessageConfig.showIcon}
         />
-        
-        <p class="email-code-message">
-          {$i18n('status.emailSent')}<br>
-          <strong>{email}</strong>
-        </p>
-      {:else}
-        <AuthStateMessage
-          type="info"
-          tKey="status.pinDetected"
-          showIcon={true}
-          {i18n}
-        />
-        
-        <p class="email-code-message">
-          Enter the verification code from your recent email<br>
-          <strong>{email}</strong>
-        </p>
+
+        {#if emailCodeSent && !hasValidPin}
+          <p class="email-code-message">
+            {statusEmailSent()}<br>
+            <strong>{email}</strong>
+          </p>
+        {:else}
+          <p class="email-code-message">
+            Enter the verification code from your recent email<br>
+            <strong>{email}</strong>
+          </p>
+        {/if}
       {/if}
 
       <form on:submit|preventDefault={handleEmailCodeVerification}>
@@ -800,7 +787,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
           {error}
           disabled={loading}
           maxlength={6}
-          {i18n}
         />
         
         <div class="button-section">
@@ -814,7 +800,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
     disabled: loading || !emailCode.trim()
             }}
             {loading}
-            {i18n}
           />
         </div>
       </form>
@@ -830,7 +815,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
     disabled: false
             }}
         {loading}
-        {i18n}
         on:click={resetForm}
       />
     </div>
@@ -840,7 +824,6 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
       <UserManagement
         user={$store.user}
         onSignOut={() => store.signOut()}
-        {i18n}
         on:navigate
       />
     {/if}
@@ -851,8 +834,16 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
       type="info"
       tKey="registration.required"
       showIcon={true}
-      {i18n}
     />
+  {:else if currentSignInState === 'emailVerification'}
+    <!-- Email verification required -->
+    {#if stateMessageConfig}
+      <AuthStateMessage
+        type={stateMessageConfig.type}
+        tKey={stateMessageConfig.textKey}
+        showIcon={stateMessageConfig.showIcon}
+      />
+    {/if}
   {/if}
 </div>
 {:else}

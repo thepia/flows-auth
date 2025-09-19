@@ -1,0 +1,46 @@
+[ ] NAME:Current Task List DESCRIPTION:Root task for conversation __NEW_AGENT__
+-[ ] NAME:Current Task List DESCRIPTION:Root task for conversation b082f8cc-8d29-4ede-9c53-c881b3213010
+--[ ] NAME:Current Task List DESCRIPTION:Root task for conversation e5d60ef3-6c98-42cc-b09a-57f9713ef90a
+-[x] NAME:Architecture Refactoring Phase DESCRIPTION:Refactor SignInCore complexity and move UI logic to AuthStore before Paraglide migration
+--[x] NAME:Analyze current translation usage DESCRIPTION:Audit all translation keys, patterns, and usage across the codebase to understand migration scope
+--[x] NAME:Research Paraglide JS integration DESCRIPTION:Study Paraglide JS documentation, SvelteKit integration, and best practices for library projects
+--[x] NAME:Create migration strategy DESCRIPTION:Define step-by-step approach, rollback plan, and compatibility considerations
+--[x] NAME:Set up Paraglide JS project structure DESCRIPTION:Install dependencies, configure inlang project, and set up build pipeline
+--[x] NAME:Move getButtonConfig to auth-store.ts DESCRIPTION:Extract button configuration logic from SignInCore and implement in AuthStore with translation keys
+--[x] NAME:Update SignInCore to use AuthStore button config DESCRIPTION:Refactor SignInCore to get button configurations from AuthStore instead of internal logic
+--[x] NAME:Design translation key passing pattern DESCRIPTION:Define how translation keys flow from AuthStore through components to AuthButton/EmailInput
+-[ ] NAME:Paraglide Migration Phase DESCRIPTION:Migrate to Paraglide JS with multi-language support and component-level translation
+--[ ] NAME:Set up multi-language translations DESCRIPTION:Create translation files for multiple languages (en, es, fr, etc.) in inlang format
+--[ ] NAME:Generate Paraglide message functions DESCRIPTION:Run Paraglide compiler to generate type-safe message functions from translations
+--[ ] NAME:Update components for translation key pattern DESCRIPTION:Modify AuthButton, EmailInput, etc. to accept translation keys and translate internally with Paraglide
+--[ ] NAME:Update utility components DESCRIPTION:Migrate EmailInput, CodeInput, AuthButton, and other utility components
+--[ ] NAME:Update demo applications DESCRIPTION:Migrate auth-demo and other example applications to use Paraglide
+--[ ] NAME:Remove svelte-i18n dependencies DESCRIPTION:Clean up svelte-i18n imports, loading guards, and related code
+-[/] NAME:Testing and Validation Phase DESCRIPTION:Comprehensive testing and validation of the migration
+--[ ] NAME:Update unit tests DESCRIPTION:Modify test mocks and assertions to work with Paraglide message functions
+--[ ] NAME:Update integration tests DESCRIPTION:Ensure integration tests work with compile-time translations
+--[ ] NAME:Test demo applications DESCRIPTION:Verify all demo apps work correctly with Paraglide translations
+--[ ] NAME:Validate build process DESCRIPTION:Ensure library builds correctly and translations are properly compiled
+--[ ] NAME:Performance testing DESCRIPTION:Verify bundle size improvements and runtime performance gains
+-[ ] NAME:Documentation and Cleanup Phase DESCRIPTION:Update documentation and clean up legacy code
+--[ ] NAME:Update README and documentation DESCRIPTION:Update project documentation to reflect Paraglide usage and remove svelte-i18n references
+--[ ] NAME:Update CLAUDE.md guidelines DESCRIPTION:Update AI development guidelines to reflect new translation patterns
+--[ ] NAME:Create migration guide DESCRIPTION:Document the migration process for future reference and other projects
+--[ ] NAME:Clean up package.json dependencies DESCRIPTION:Remove svelte-i18n and add Paraglide dependencies to package.json
+-[/] NAME:Test Suite Improvement Phase DESCRIPTION:Fix failing tests and improve test coverage for the new centralized architecture
+--[/] NAME:Fix button disabled state tests DESCRIPTION:Fix failing tests related to button disabled states in SignInCore and SignInForm components
+--[ ] NAME:Fix SignInForm rendering tests DESCRIPTION:Fix failing tests for company branding and 'Powered by Thepia' rendering
+--[ ] NAME:Fix SignInForm event emission tests DESCRIPTION:Fix failing test for success event emission on authentication
+--[ ] NAME:Add tests for new AuthStore methods DESCRIPTION:Create comprehensive tests for getButtonConfig and getStateMessageConfig methods
+--[ ] NAME:Add tests for centralized UI configuration DESCRIPTION:Test the new centralized UI configuration pattern and translation key flow
+--[ ] NAME:Update component tests for new architecture DESCRIPTION:Update AuthButton and other component tests to reflect the new buttonConfig pattern
+--[ ] NAME:Add integration tests for Phase 1 architecture DESCRIPTION:Create integration tests that validate the complete flow from AuthStore to components
+-[ ] NAME:getButtonConfig is now in CompleteAuthStore/auth-store. We can recreate tests/unit/SignInCore.smart-buttons.test.ts as an actual test of functionality instead of a make believe test. It should not need to mock anything, it can just call getButtonConfig on the auth store DESCRIPTION:
+-[/] NAME:Create comprehensive AuthStore UI configuration tests DESCRIPTION:Add tests for the new getButtonConfig() and getStateMessageConfig() methods in AuthStore to ensure centralized UI configuration works correctly across all states and scenarios
+-[ ] NAME:Add AuthButton component tests for new buttonConfig pattern DESCRIPTION:Create tests for AuthButton's new buttonConfig prop, translation key handling, and backward compatibility with legacy props
+-[ ] NAME:Add integration tests for Phase 1 architecture DESCRIPTION:Create integration tests that validate the complete flow from AuthStore UI configuration methods through to component rendering and translation
+-[ ] NAME:Update existing component tests for new architecture DESCRIPTION:Update EmailInput, CodeInput, and other component tests to reflect the new translation key pattern and centralized configuration approach
+-[ ] NAME:Add performance tests for centralized UI configuration DESCRIPTION:Create tests to ensure the new centralized UI configuration doesn't introduce performance regressions and handles reactive updates efficiently
+-[ ] NAME:Create comprehensive state machine tests for UI configuration DESCRIPTION:Add tests that validate UI configuration changes correctly across all SignInState transitions and edge cases
+-[ ] NAME:Write tests to validate the full API being exported in the built bundles as intended. I guess that would be a sort of integration test, or test:publish DESCRIPTION:
+-[ ] NAME:Current Task List DESCRIPTION:Root task for conversation __NEW_AGENT__

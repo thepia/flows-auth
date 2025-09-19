@@ -4,6 +4,9 @@ import { onMount, getContext } from 'svelte';
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
+// Paraglide i18n setup
+import * as m from '../../paraglide/messages.js';
+
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
 export let isAuthenticated = false;
 export let user = null;
@@ -263,8 +266,8 @@ async function updateDomain() {
   <!-- Demo Content -->
   <div class="demo-content">
     <div class="content-section">
-      <h2>Registration Flow Demo</h2>
-      <p>Test registration by first checking actual user state, then following the appropriate flow:</p>
+      <h2>{m["register.page_title"]()}</h2>
+      <p>{m["register.description"]()}</p>
       
       <!-- Debug Panel -->
       <div class="debug-panel card">

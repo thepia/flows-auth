@@ -6,37 +6,10 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EmailInput from '../../src/components/core/EmailInput.svelte';
 
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string) => {
-    const translations: Record<string, string> = {
-      'email.placeholder': 'your@email.com',
-      'email.label': 'Email address',
-      'email.error.invalid': 'Please enter a valid email address',
-      'email.error.required': 'Email is required'
-    };
-    return translations[key] || key;
-  })
-}));
-
 describe('EmailInput Component', () => {
-  // Mock i18n store for current component implementation
-  const mockI18n = vi.fn((key: string) => {
-    const translations: Record<string, string> = {
-      'email.placeholder': 'your@email.com',
-      'email.label': 'Email address',
-      'email.error.invalid': 'Please enter a valid email address',
-      'email.error.required': 'Email is required'
-    };
-    return translations[key] || key;
-  });
-
-  const i18nStore = writable(mockI18n);
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.clearAllTimers();
@@ -51,9 +24,7 @@ describe('EmailInput Component', () => {
   describe('Basic Rendering', () => {
     it('should render with default props', () => {
       render(EmailInput, {
-        props: {
-          i18n: i18nStore
-        }
+        props: {}
       });
 
       const input = screen.getByRole('textbox');
@@ -66,7 +37,6 @@ describe('EmailInput Component', () => {
     it('should render label when showLabel is true', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           showLabel: true
         }
       });
@@ -79,7 +49,6 @@ describe('EmailInput Component', () => {
     it('should not render label when showLabel is false', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           showLabel: false
         }
       });
@@ -90,8 +59,7 @@ describe('EmailInput Component', () => {
     it('should display custom placeholder', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
-          placeholder: 'email.placeholder'
+          placeholder: 'email.placeholder' // Use correct Paraglide key format
         }
       });
 
@@ -102,7 +70,6 @@ describe('EmailInput Component', () => {
     it('should apply custom className', () => {
       const { container } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           className: 'custom-email-input'
         }
       });
@@ -116,7 +83,6 @@ describe('EmailInput Component', () => {
     it('should be disabled when disabled prop is true', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           disabled: true
         }
       });
@@ -128,7 +94,6 @@ describe('EmailInput Component', () => {
     it('should not be required when required prop is false', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           required: false
         }
       });
@@ -140,7 +105,6 @@ describe('EmailInput Component', () => {
     it('should display initial value', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           value: 'test@example.com'
         }
       });
@@ -154,7 +118,6 @@ describe('EmailInput Component', () => {
     it('should display error message when error prop is set', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           error: 'Invalid email address'
         }
       });
@@ -167,7 +130,6 @@ describe('EmailInput Component', () => {
     it('should apply error CSS class when error exists', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           error: 'Invalid email'
         }
       });
@@ -179,7 +141,6 @@ describe('EmailInput Component', () => {
     it('should not display error message when error is null', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           error: null
         }
       });
@@ -192,7 +153,6 @@ describe('EmailInput Component', () => {
     it('should include webauthn in autocomplete when enableWebAuthn is true', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true
         }
       });
@@ -204,7 +164,6 @@ describe('EmailInput Component', () => {
     it('should only include email in autocomplete when enableWebAuthn is false', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: false
         }
       });
@@ -217,9 +176,7 @@ describe('EmailInput Component', () => {
   describe('Event Handling', () => {
     it('should dispatch change event on input', async () => {
       const { component } = render(EmailInput, {
-        props: {
-          i18n: i18nStore
-        }
+        props: {}
       });
 
       const handleChange = vi.fn();
@@ -238,7 +195,6 @@ describe('EmailInput Component', () => {
     it('should dispatch focus event on focus', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           value: 'test@example.com'
         }
       });
@@ -259,7 +215,6 @@ describe('EmailInput Component', () => {
     it('should dispatch blur event on blur', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           value: 'test@example.com'
         }
       });
@@ -282,7 +237,6 @@ describe('EmailInput Component', () => {
     it('should dispatch conditionalAuth for valid email after debounce', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -309,7 +263,6 @@ describe('EmailInput Component', () => {
     it('should not dispatch conditionalAuth for invalid email', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -328,7 +281,6 @@ describe('EmailInput Component', () => {
     it('should not dispatch conditionalAuth when WebAuthn is disabled', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: false,
           debounceMs: 1000
         }
@@ -347,7 +299,6 @@ describe('EmailInput Component', () => {
     it('should not dispatch conditionalAuth when input is disabled', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           disabled: true,
           debounceMs: 1000
@@ -367,7 +318,6 @@ describe('EmailInput Component', () => {
     it('should cancel previous timeout on rapid changes', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -377,7 +327,7 @@ describe('EmailInput Component', () => {
       component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
-      
+
       // First email change
       await fireEvent.input(input, { target: { value: 'first@example.com' } });
       vi.advanceTimersByTime(500);
@@ -406,7 +356,6 @@ describe('EmailInput Component', () => {
     it('should respect custom debounce timing', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 500
         }
@@ -433,85 +382,17 @@ describe('EmailInput Component', () => {
   });
 
   describe('i18n Integration', () => {
-    it('should use custom label translation key', () => {
-      const customI18n = vi.fn((key: TranslationKey) => {
-        if (key === 'custom.label') return 'Custom Email Label';
-        return key;
-      });
-      const customI18nStore = writable(customI18n);
-
+    it('should use default translations for label and placeholder', () => {
       render(EmailInput, {
         props: {
-          i18n: customI18nStore,
-          label: 'custom.label',
           showLabel: true
         }
       });
 
-      expect(screen.getByText('Custom Email Label')).toBeInTheDocument();
-      expect(customI18n).toHaveBeenCalledWith('custom.label');
-    });
-
-    it('should use custom placeholder translation key', () => {
-      const customI18n = vi.fn((key: TranslationKey) => {
-        if (key === 'custom.placeholder') return 'Enter your email here';
-        return key;
-      });
-      const customI18nStore = writable(customI18n);
-
-      render(EmailInput, {
-        props: {
-          i18n: customI18nStore,
-          placeholder: 'custom.placeholder'
-        }
-      });
-
-      const input = screen.getByRole('textbox');
-      expect(input).toHaveAttribute('placeholder', 'Enter your email here');
-      expect(customI18n).toHaveBeenCalledWith('custom.placeholder');
-    });
-
-    it('should fall back to default keys when custom keys are empty', () => {
-      render(EmailInput, {
-        props: {
-          i18n: i18nStore,
-          label: '',
-          placeholder: '',
-          showLabel: true
-        }
-      });
-
+      // Should display translated text, not raw keys
       expect(screen.getByText('Email address')).toBeInTheDocument();
       const input = screen.getByRole('textbox');
       expect(input).toHaveAttribute('placeholder', 'your@email.com');
-    });
-
-    it('should reactively update when i18n store changes', async () => {
-      const dynamicI18n = writable(mockI18n);
-
-      const { rerender } = render(EmailInput, {
-        props: {
-          i18n: dynamicI18n,
-          showLabel: true
-        }
-      });
-
-      expect(screen.getByText('Email address')).toBeInTheDocument();
-
-      // Update i18n function
-      const newI18n = vi.fn((key: TranslationKey) => {
-        if (key === 'email.label') return 'Updated Email Label';
-        return key;
-      });
-      dynamicI18n.set(newI18n);
-
-      // Force re-render to trigger reactivity
-      await rerender({
-        i18n: dynamicI18n,
-        showLabel: true
-      });
-
-      expect(screen.getByText('Updated Email Label')).toBeInTheDocument();
     });
   });
 
@@ -519,7 +400,6 @@ describe('EmailInput Component', () => {
     it('should handle empty input gracefully', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -538,7 +418,6 @@ describe('EmailInput Component', () => {
     it('should handle whitespace-only input', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -557,7 +436,6 @@ describe('EmailInput Component', () => {
     it('should validate complex email addresses', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -591,7 +469,6 @@ describe('EmailInput Component', () => {
     it('should reject invalid email formats', async () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }
@@ -624,7 +501,6 @@ describe('EmailInput Component', () => {
     it('should have proper ARIA attributes', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           error: 'Invalid email'
         }
       });
@@ -640,11 +516,11 @@ describe('EmailInput Component', () => {
     it('should associate label with input', () => {
       render(EmailInput, {
         props: {
-          i18n: i18nStore,
           showLabel: true
         }
       });
 
+      // Should display the translated label text
       const label = screen.getByText('Email address');
       const input = screen.getByRole('textbox');
 
@@ -657,7 +533,6 @@ describe('EmailInput Component', () => {
     it('should cleanup timeout on component destruction', () => {
       const { component } = render(EmailInput, {
         props: {
-          i18n: i18nStore,
           enableWebAuthn: true,
           debounceMs: 1000
         }

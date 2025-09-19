@@ -1,7 +1,9 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
-import { _ } from 'svelte-i18n';
+// Paraglide demo translations
+import * as m from '../paraglide/messages.js';
+
 import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
@@ -160,8 +162,8 @@ const clientVariants = {
     companyName: 'Task Coordination',
     translations: {
       'signIn.title': 'Receiving Requests',
-      'signIn.description': 'Receive task lists and work requests directly from the coordinator.',
-      'signIn.descriptionGeneric': 'Receive task lists and work requests directly from the coordinator.',
+      'signIn.subtitle': 'Receive task lists and work requests directly from the coordinator.',
+      'signIn.subtitleGeneric': 'Receive task lists and work requests directly from the coordinator.',
       'email.label': 'Personal e-mail',
       'email.placeholder': 'Enter your personal email address',
       'status.emailSent': "We'll send you a confirmation email to verify this address.",
@@ -523,11 +525,10 @@ $: combinedTranslations = selectedClientVariant === 'custom'
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicLinks, 
+  enableMagicLinks,
   signInMode,
   // i18n configuration
   language: selectedLanguage,
-  translations: combinedTranslations,
   fallbackLanguage: 'en',
   // Update branding with client variant
   branding: {
@@ -548,31 +549,31 @@ $: dynamicAuthConfig = authConfig ? {
     
     {#if selectedDemo === 'overview'}
       <div class="content-section">
-        <h2>{$_('overview.title')}</h2>
-        <p>{$_('overview.subtitle')}</p>
+        <h2>{m["overview.title"]()}</h2>
+        <p>{m["overview.subtitle"]()}</p>
         
         <div class="feature-grid">
           <div class="feature-card">
             <Shield size={32} class="feature-icon" />
-            <h3>{$_('overview.features.passkeys.title')}</h3>
-            <p>{$_('overview.features.passkeys.description')}</p>
-            <a href="/signin" class="feature-link">{$_('overview.try_signin')}</a>
+            <h3>{m["overview.features.passkeys.title"]()}</h3>
+            <p>{m["overview.features.passkeys.description"]()}</p>
+            <a href="/signin" class="feature-link">{m["overview.try_signin"]()}</a>
           </div>
           <div class="feature-card">
             <User size={32} class="feature-icon" />
-            <h3>{$_('overview.features.magic_links.title')}</h3>
-            <p>{$_('overview.features.magic_links.description')}</p>
-            <a href="/register" class="feature-link">{$_('overview.try_register')}</a>
+            <h3>{m["overview.features.magic_links.title"]()}</h3>
+            <p>{m["overview.features.magic_links.description"]()}</p>
+            <a href="/register" class="feature-link">{m["overview.try_register"]()}</a>
           </div>
           <div class="feature-card">
             <Activity size={32} class="feature-icon" />
-            <h3>{$_('overview.features.state_machine.title')}</h3>
-            <p>{$_('overview.features.state_machine.description')}</p>
+            <h3>{m["overview.features.state_machine.title"]()}</h3>
+            <p>{m["overview.features.state_machine.description"]()}</p>
           </div>
           <div class="feature-card">
             <Settings size={32} class="feature-icon" />
-            <h3>{$_('overview.features.multi_language.title')}</h3>
-            <p>{$_('overview.features.multi_language.description')}</p>
+            <h3>{m["overview.features.multi_language.title"]()}</h3>
+            <p>{m["overview.features.multi_language.description"]()}</p>
           </div>
         </div>
         
@@ -649,20 +650,20 @@ $: dynamicAuthConfig = authConfig ? {
 
     {:else if selectedDemo === 'signin'}
       <div class="content-section">
-        <h2>{$_('signin.title')}</h2>
-        <p>{$_('signin.subtitle')}</p>
+        <h2>{m["signIn.title"]()}</h2>
+        <p>{m["signIn.subtitle"]()}</p>
         <div class="signin-redirect-notice">
-          <p>{$_('signin.redirect_notice')}</p>
-          <a href="/signin" class="btn btn-primary">{$_('signin.go_to_demo')}</a>
+          <p>{m["signIn.redirect_notice"]()}</p>
+          <a href="/signin" class="btn btn-primary">{m["signIn.go_to_demo"]()}</a>
         </div>
       </div>
     {:else if selectedDemo === 'register'}
       <div class="content-section">
-        <h2>{$_('register.title')}</h2>
-        <p>{$_('register.subtitle')}</p>
+        <h2>{m["register.title"]()}</h2>
+        <p>{m["register.subtitle"]()}</p>
         <div class="signin-redirect-notice">
-          <p>{$_('register.redirect_notice')}</p>
-          <a href="/register" class="btn btn-primary">{$_('register.go_to_demo')}</a>
+          <p>{m["register.redirect_notice"]()}</p>
+          <a href="/register" class="btn btn-primary">{m["register.go_to_demo"]()}</a>
         </div>
       </div>
 
@@ -679,146 +680,9 @@ $: dynamicAuthConfig = authConfig ? {
     padding: 0 1rem;
   }
   
-  .hero {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-  
-  .hero-title {
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .brand-accent {
-    color: var(--primary-color);
-  }
-  
-  .hero-subtitle {
-    font-size: 1.25rem;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
-  }
-  
-  .auth-status-card {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-  
-  .status-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .status-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 500;
-  }
-  
-  .status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--error-color);
-    transition: background 0.3s;
-  }
-  
-  .status-indicator.authenticated .status-dot {
-    background: var(--success-color);
-  }
-  
-  .status-indicator.loading .status-dot {
-    background: var(--warning-color);
-    animation: pulse 2s infinite;
-  }
-  
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
-  }
-  
-  .config-info {
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .brand-badge, .domain-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
-  
-  .brand-badge {
-    background: var(--primary-color);
-    color: white;
-  }
-  
-  .domain-badge {
-    background: var(--background-muted);
-    color: var(--text-secondary);
-  }
-  
-  .domain-select {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid var(--border-color);
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: white;
-    color: var(--text-primary);
-    cursor: pointer;
-  }
-  
-  .demo-nav {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    overflow-x: auto;
-  }
-  
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: none;
-    background: transparent;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    color: var(--text-secondary);
-  }
-  
-  .nav-item:hover {
-    background: var(--background-muted);
-    color: var(--text-primary);
-  }
-  
-  .nav-item.active {
-    background: var(--primary-color);
-    color: white;
-  }
-  
-  .nav-arrow {
-    opacity: 0.5;
-    transition: transform 0.2s;
   }
   
   
@@ -942,11 +806,11 @@ $: dynamicAuthConfig = authConfig ? {
     color: white;
   }
   
-  .config-display, .info-card, .passkey-info, .passkey-tips, .state-info {
+  .config-display {
     margin-bottom: 2rem;
   }
   
-  .config-json, .context-json {
+  .config-json {
     background: var(--background-muted);
     padding: 1rem;
     border-radius: var(--radius-sm);
@@ -956,372 +820,6 @@ $: dynamicAuthConfig = authConfig ? {
     margin: 0;
   }
   
-  .demo-controls {
-    background: var(--background-primary);
-    padding: 1.5rem;
-    border-radius: var(--radius);
-    border: 1px solid var(--border-color);
-    margin-bottom: 2rem;
-  }
-  
-  .input-group {
-    margin-bottom: 1rem;
-  }
-  
-  .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-  
-  .form-input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    transition: border-color 0.2s;
-  }
-  
-  .form-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-  
-  .quick-emails {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-  
-  .quick-emails span {
-    color: var(--text-secondary);
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  
-  .info-note {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: rgba(59, 130, 246, 0.05);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 8px;
-    color: #3b82f6;
-    font-size: 0.875rem;
-  }
-  
-  .signin-demo, .signin-placeholder {
-    margin-bottom: 2rem;
-  }
-  
-  .signin-placeholder {
-    padding: 2rem;
-    text-align: center;
-    background: var(--background-muted);
-    border-radius: var(--radius-sm);
-    border: 2px dashed var(--border-color);
-  }
-  
-  .state-display {
-    margin-bottom: 2rem;
-  }
-  
-  .state-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    color: var(--primary-color);
-    text-align: center;
-    padding: 1rem;
-    background: var(--background-muted);
-    border-radius: var(--radius-sm);
-  }
-  
-  /* Registration Scenario Styles */
-  .registration-scenarios {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  
-  .scenario-card {
-    border-left: 4px solid var(--primary-color);
-  }
-  
-  
-  .scenario-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  
-  .scenario-badge.new {
-    background: #dcfce7;
-    color: #166534;
-  }
-  
-  .scenario-badge.unverified {
-    background: #fef3c7;
-    color: #92400e;
-  }
-  
-  .scenario-badge.partial {
-    background: #e0f2fe;
-    color: #0369a1;
-  }
-  
-  .scenario-badge.complete {
-    background: #f3e8ff;
-    color: #7c2d12;
-  }
-  
-  .scenario-badge.invitation {
-    background: #fce7f3;
-    color: #be185d;
-  }
-  
-  .scenario-flow {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: var(--background-muted);
-    border-radius: var(--radius-sm);
-  }
-  
-  
-  /* Check Options Styles */
-  .check-options {
-    margin: 1rem 0;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-  }
-
-  .option-group {
-    margin-bottom: 1rem;
-  }
-
-  .option-group:last-child {
-    margin-bottom: 0;
-  }
-
-  .option-label {
-    display: block;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-  }
-
-  .radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .radio-option {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #6c757d;
-  }
-
-  .radio-option input[type="radio"] {
-    margin: 0;
-  }
-
-  .radio-option span em {
-    color: #6c757d;
-    font-style: italic;
-    font-size: 0.8rem;
-  }
-
-  /* User State Display Styles */
-  .user-state-result {
-    margin-top: 1.5rem;
-    padding: 1.5rem;
-    background: var(--background-muted);
-    border-radius: var(--radius);
-    border: 1px solid var(--border-color);
-  }
-
-  .result-meta {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background: #e9ecef;
-    border-radius: 4px;
-  }
-
-  .json-result {
-    margin-top: 1rem;
-  }
-
-  .json-output {
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 1rem;
-    overflow-x: auto;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.85rem;
-    color: #495057;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .error-section {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
-  }
-
-  .alert {
-    margin: 1rem 0;
-    padding: 0.75rem 1rem;
-    border-radius: 4px;
-    border: 1px solid;
-  }
-
-  .alert-error {
-    background: #f8d7da;
-    color: #721c24;
-    border-color: #f5c6cb;
-  }
-
-  .alert-success {
-    background: #d4edda;
-    color: #155724;
-    border-color: #c3e6cb;
-  }
-
-  .alert strong {
-    font-weight: 600;
-  }
-  
-  .user-state-result h4 {
-    margin: 0 0 1rem 0;
-    color: var(--text-primary);
-    font-size: 1.1rem;
-  }
-  
-  .state-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .state-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    background: var(--background-primary);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-  }
-  
-  .state-item .label {
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-  
-  .state-item .value {
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.9rem;
-  }
-  
-  .value.exists, .value.verified, .value.has-passkey {
-    background: #dcfce7;
-    color: #166534;
-  }
-  
-  .value.not-exists, .value.unverified, .value.no-passkey {
-    background: #fef2f2;
-    color: #dc2626;
-  }
-  
-  .status-badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  
-  .recommended-action {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background: var(--background-primary);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-  }
-  
-  .recommended-action h4 {
-    margin: 0 0 1rem 0;
-    color: var(--text-primary);
-    font-size: 1rem;
-  }
-  
-  .action-note {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-style: italic;
-  }
-  
-  /* Scenario Documentation Styles */
-  .scenario-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .scenario-doc {
-    padding: 1rem;
-    background: var(--background-primary);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-  }
-  
-  .scenario-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .scenario-doc h4 {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-  }
-  
-  .scenario-doc p {
-    margin: 0.5rem 0;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
 
   /* SignIn Configuration Styles */
   .signin-config {

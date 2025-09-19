@@ -3,11 +3,11 @@
   The actual auth logic is handled by SignInCore component
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy, getContext } from 'svelte';
   import type { User, AuthError, AuthMethod } from '../types';
   import SignInCore from './core/SignInCore.svelte';
   import { useAuthSafe } from '../utils/auth-context';
-  import { getI18n } from '../utils/i18n';
+  import { m } from '../utils/i18n';
 
   // Configuration prop (optional - will use context if not provided)
   export let config = null;
@@ -27,6 +27,13 @@
   export let showCloseButton = true;
   export let closeOnEscape = true;
 
+  // Text keys
+  export let titleKey = 'signIn.title';
+  export let subtitleBrandedKey = 'signIn.subtitle';
+  export let subtitleKey = 'signIn.subtitleGeneric';
+
+
+
   // Events
   const dispatch = createEventDispatcher<{
     success: { user: User; method: AuthMethod };
@@ -41,13 +48,37 @@
   $: authConfig = config || contextConfig;
   $: logoConfig = authConfig?.branding;
 
-  // Get i18n instance for translations
-  // Pass auth config to get proper language and custom translations
-  $: i18nInstance = getI18n({
-    language: authConfig?.language || 'en',
-    translations: authConfig?.translations || {}
-  });
-  $: i18n = i18nInstance.t;
+  // Get custom message bundle from context (if provided by app)
+  const customMessages = getContext('paraglide-messages');
+
+  // Helper function to get display text from Paraglide
+  function getDisplayText(key: string, variables?: Record<string, any>): string {
+    // Try custom messages from context first (app-specific merged messages)
+    if (customMessages) {
+      try {
+        const messageFunction = customMessages[key];
+        if (typeof messageFunction === 'function') {
+          return messageFunction(variables);
+        }
+      } catch (error) {
+        console.warn(`Custom message context failed for key "${key}":`, error);
+        // Fall through to default behavior
+      }
+    }
+
+    // Default behavior: use library's Paraglide messages
+    try {
+      const messageFunction = (m as unknown as {[key: string]: (params?: any) => string})[key];
+      if (typeof messageFunction === 'function') {
+        return messageFunction(variables);
+      }
+      // Fallback to key if function doesn't exist
+      return key;
+    } catch (error) {
+      console.warn(`Translation key "${key}" not found in Paraglide messages`);
+      return key;
+    }
+  }
 
   // Popup close functionality
   function handleClose() {
@@ -124,15 +155,14 @@
         </div>
 -->
 
-
     <!-- Title and Description Section -->
     <div class="auth-header">
-      <h2 class="auth-title font-brand-lead">{$i18n('signIn.title')}</h2>
+      <h2 class="auth-title font-brand-lead">{getDisplayText(titleKey)}</h2>
       <p class="auth-description">
         {#if authConfig?.branding?.companyName}
-          {$i18n('signIn.description', { companyName: authConfig.branding.companyName })}
+          {getDisplayText(subtitleBrandedKey, { companyName: authConfig.branding.companyName })}
         {:else}
-          {$i18n('signIn.descriptionGeneric')}
+          {getDisplayText(subtitleKey)}
         {/if}
       </p>
     </div>
@@ -179,7 +209,7 @@
 {#if authConfig?.branding?.showPoweredBy !== false}
   <div class="auth-footer">
     <p class="powered-by">
-      {$i18n('branding.securedBy')} <strong>{$i18n('branding.poweredBy')}</strong>
+      {getDisplayText('branding.securedBy')} <strong>{getDisplayText('branding.poweredBy')}</strong>
     </p>
   </div>
 {/if}

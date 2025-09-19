@@ -3,15 +3,12 @@ import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import { writable } from 'svelte/store';
 import { setContext } from 'svelte';
-import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
+import * as authDemoMessages from '../paraglide/messages/_index.js';
+import { createAuthStore, setI18nMessages } from '@thepia/flows-auth'; // ✅ Static imports
 // TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
 const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
-import TranslationVariantSelector from '$lib/components/TranslationVariantSelector.svelte';
-import { isLoading } from 'svelte-i18n';
-import '$lib/i18n'; // Initialize i18n
-import { initializeVariant } from '$lib/stores/translation-variants.js';
 import '../app.css';
 import '@thepia/flows-auth/style.css';
 
@@ -29,6 +26,10 @@ let initError = null;
 const authStoreContext = writable(null);
 setContext(AUTH_CONTEXT_KEY, authStoreContext);
 
+// 🌐 Set up Paraglide message context for library components
+// This allows library components to use auth-demo's merged messages
+setI18nMessages(authDemoMessages);
+
 // Create auth store in onMount to prevent reactive loops
 onMount(() => {
   if (!browser) {
@@ -38,9 +39,6 @@ onMount(() => {
 
   try {
     console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
-
-    // Initialize translation variants from localStorage
-    initializeVariant();
 
     // Create config synchronously
     const authConfig = {
@@ -101,7 +99,6 @@ onMount(() => {
 					Auth Demo
 				</h1>
 				<div class="header-controls">
-					<TranslationVariantSelector />
 					<LanguageSelector />
 					<div class="auth-status">
 						{#if isAuthenticated && user}
@@ -128,7 +125,7 @@ onMount(() => {
 	
 	<main class="main">
 		<div class="container">
-			{#if $isLoading || isAuthLoading}
+			{#if isAuthLoading}
 				<div class="loading-state">
 					<div class="loading-spinner"></div>
 					<p>Initializing auth demo...</p>

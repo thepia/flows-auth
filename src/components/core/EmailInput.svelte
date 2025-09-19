@@ -3,22 +3,20 @@
   Features: validation, WebAuthn autocomplete, conditional authentication trigger
 -->
 <script lang="ts">
+import { m } from '../../utils/i18n';
 import { createEventDispatcher } from 'svelte';
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
 
 // Props
 export let value = '';
-export let placeholder: TranslationKey | '' = '';
+export let placeholder = '';
 export let disabled = false;
 export let required = true;
 export let error: string | null = null;
-export let label: TranslationKey | '' = '';
+export let label = '';
 export let showLabel = true;
 export let enableWebAuthn = true;
 export let debounceMs = 1000;
 export let className = '';
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -78,8 +76,23 @@ function getInputClasses(): string {
 }
 
 // Reactive values for i18n
-$: displayPlaceholder = $i18n(placeholder || 'email.placeholder');
-$: displayLabel = $i18n(label || 'email.label');
+$: displayPlaceholder = getDisplayText(placeholder || 'email.placeholder');
+$: displayLabel = getDisplayText(label || 'email.label');
+
+// Helper function to get display text from Paraglide
+function getDisplayText(key: string): string {
+  try {
+    const messageFunction = (m as unknown as {[key: string]: () => string})[key];
+    if (typeof messageFunction === 'function') {
+      return messageFunction();
+    }
+    // Fallback to key if function doesn't exist
+    return key;
+  } catch (error) {
+    console.warn(`Translation key "${key}" not found in Paraglide messages`);
+    return key;
+  }
+}
 </script>
 
 <div class="space-y-2 {className}">

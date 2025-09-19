@@ -83,25 +83,10 @@ export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
 // API Detection
 export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
 
-// Internationalization
-export {
-  createI18n,
-  detectUserLanguage,
-  getSupportedLanguages,
-  isLanguageSupported,
-  defaultTranslations,
-  setI18nContext,
-  getI18n
-} from './utils/i18n';
+// Paraglide JS Internationalization
+export { createParaglideI18n } from './utils/paraglide-i18n';
 
-// Note: For i18n, use svelte-i18n directly:
-// import { init, addMessages, _, locale } from 'svelte-i18n';
-
-export type {
-  SupportedLanguage,
-  TranslationKey,
-  CustomTranslations
-} from './utils/i18n';
+export * from './utils/i18n';
 
 export * from './utils/errorReporter';
 

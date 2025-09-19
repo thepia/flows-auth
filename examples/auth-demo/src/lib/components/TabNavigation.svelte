@@ -1,31 +1,32 @@
 <script>
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { _ } from 'svelte-i18n';
+  // Paraglide demo translations
+  import * as m from '../../paraglide/messages.js';
   import { Activity, User, Mail } from 'lucide-svelte';
 
-  // Tab configuration with i18n
+  // Tab configuration with Paraglide functions
   $: tabs = [
     {
       id: 'overview',
-      title: $_('nav.overview'),
+      title: m.tabs_overview_title(),
+      description: m.tabs_overview_description(),
       icon: Activity,
-      href: '/',
-      description: $_('overview.subtitle')
+      href: '/'
     },
     {
       id: 'signin',
-      title: $_('nav.signin'),
+      title: m.tabs_signin_title(),
+      description: m.tabs_signin_description(),
       icon: User,
-      href: '/signin',
-      description: $_('signin.subtitle')
+      href: '/signin'
     },
     {
       id: 'register',
-      title: $_('nav.register'),
+      title: m.tabs_register_title(),
+      description: m.tabs_register_description(),
       icon: Mail,
-      href: '/register',
-      description: $_('register.subtitle')
+      href: '/register'
     }
   ];
 
@@ -75,17 +76,16 @@
 
 <style>
   .tab-navigation {
-    background: var(--card-bg);
+    background: transparent;
     border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    position: static;
+    z-index: 1;
   }
 
   .tab-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1rem;
   }
 
   .tab-list {
@@ -104,27 +104,25 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.5rem 2rem;
+    padding: 1rem 1.5rem;
     border: none;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
-    border-bottom: 3px solid transparent;
+    transition: color 0.2s ease;
+    border-bottom: 2px solid transparent;
     min-width: 0;
     flex-shrink: 0;
     position: relative;
   }
 
   .tab-button:hover {
-    background: var(--background-muted);
     color: var(--text-primary);
   }
 
   .tab-button.active {
     color: var(--primary-color);
     border-bottom-color: var(--primary-color);
-    background: var(--background-muted);
   }
 
   .tab-button:focus-visible {
@@ -168,7 +166,7 @@
     }
 
     .tab-button {
-      padding: 1.5rem 2.5rem;
+      padding: 1rem 2rem;
     }
   }
 
@@ -178,7 +176,7 @@
     }
 
     .tab-button {
-      padding: 1rem 1.5rem;
+      padding: 0.75rem 1rem;
       gap: 0.75rem;
     }
 
@@ -191,7 +189,7 @@
     .tab-button {
       flex-direction: column;
       gap: 0.5rem;
-      padding: 1rem;
+      padding: 0.75rem;
       text-align: center;
     }
 

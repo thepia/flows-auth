@@ -3,30 +3,29 @@
   Shows Full Name input and terms notice
 -->
 <script lang="ts">
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
+import { m } from '../../utils/i18n';
 import AuthStateMessage from './AuthStateMessage.svelte';
+import {
+  "auth.fullName" as authFullName,
+  "auth.fullNamePlaceholder" as authFullNamePlaceholder
+} from '../../paraglide/messages';
 
 // Props
 export let fullName = '';
 export let disabled = false;
 export let error: string | null = null;
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
-
-// Subscribe to i18n store
-$: t = $i18n;
 </script>
 
 <div class="auth-new-user-info">
   <div class="input-group">
     <label for="fullName" class="input-label">
-      {t('auth.fullName')}
+      {authFullName()}
     </label>
     <input
       id="fullName"
       type="text"
       bind:value={fullName}
-      placeholder={t('auth.fullNamePlaceholder')}
+      placeholder={authFullNamePlaceholder()}
       class="auth-input"
       class:error
       autocomplete="name"
@@ -45,7 +44,6 @@ $: t = $i18n;
     tKey="auth.newUserTermsNotice"
     showIcon={true}
     className="terms-notice"
-    {i18n}
   />
 </div>
 

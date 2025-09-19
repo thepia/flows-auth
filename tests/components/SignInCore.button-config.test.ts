@@ -5,38 +5,6 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string, params: Record<string, any> = {}) => {
-    const translations: Record<string, string> = {
-      'auth.signIn': 'Sign In',
-      'auth.signInWithPasskey': 'Sign in with Passkey',
-      'auth.sendPinByEmail': 'Send pin by email',
-      'auth.sendMagicLink': 'Send Magic Link',
-      'auth.loading': 'Loading...',
-      'auth.signingIn': 'Signing in...',
-      'auth.sendingPin': 'Sending pin...',
-      'auth.sendingMagicLink': 'Sending magic link...',
-      'auth.continueWithTouchId': 'Continue with Touch ID',
-      'auth.continueWithFaceId': 'Continue with Face ID',
-      'auth.continueWithBiometric': 'Continue with Touch ID/Face ID',
-      'status.pinValid': 'A valid pin was already sent to you, good for {minutes} minute{s}.',
-      'status.pinDirectAction': 'Enter pin here'
-    };
-
-    let result = translations[key] || key;
-
-    // Handle template variables
-    if (params && typeof result === 'string') {
-      Object.keys(params).forEach(paramKey => {
-        result = result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
-      });
-    }
-
-    return result;
-  })
-}));
-
 describe('SignInCore Button Configuration Logic', () => {
   // Mock the $i18n function for current implementation
   const mockI18n = (key: string, params: Record<string, any> = {}) => {

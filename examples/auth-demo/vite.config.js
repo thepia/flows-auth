@@ -1,9 +1,19 @@
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => ({
-  plugins: [sveltekit(), tailwindcss()],
+  plugins: [
+    // Paraglide plugin BEFORE sveltekit for proper compilation
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/paraglide',
+      strategy: ['localStorage', 'cookie', 'globalVariable', 'baseLocale']
+    }),
+    sveltekit(),
+    tailwindcss()
+  ],
   ssr: {
     noExternal: ['@thepia/flows-auth']
   },

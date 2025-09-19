@@ -21,10 +21,10 @@
     "@thepia/flows-auth": "file:../..",
     "@xyflow/svelte": "0.1.30",
     "d3": "^7.9.0",
-    "lucide-svelte": "^0.400.0",
-    "svelte-i18n": "^4.0.1"
+    "lucide-svelte": "^0.400.0"
   },
   "devDependencies": {
+    "@inlang/paraglide-js": "^2.3.2",
     "@playwright/test": "^1.55.0",
     "@sveltejs/adapter-auto": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",

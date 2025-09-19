@@ -14,27 +14,18 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { setContext } from 'svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext, TEST_AUTH_CONFIGS, createTestAuthStore } from '../helpers/component-test-setup';
+import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
+import {
+  TEST_AUTH_CONFIGS,
+  createTestAuthStore,
+  renderWithAuthContext
+} from '../helpers/component-test-setup';
 
 // Mock dependencies
 vi.mock('../../../utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false)
-}));
-
-// Mock svelte-i18n for future compatibility
-vi.mock('svelte-i18n', () => ({
-  _: vi.fn((key: string) => key)
-}));
-
-vi.mock('../../../utils/i18n', () => ({
-  getI18n: vi.fn(() => ({
-    t: vi.fn((key: string) => key),
-    setLanguage: vi.fn(),
-    setTranslations: vi.fn()
-  }))
 }));
 
 describe('SignInCore - Clean Architecture', () => {

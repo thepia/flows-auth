@@ -62,9 +62,15 @@ export type RegistrationStep =
 
 export interface SessionData {
   accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  user: User;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    emailVerified: boolean;
+  };
+  expiresAt: number;
+  lastActivity: number;
 }
 
 // Storage configuration
@@ -474,6 +480,22 @@ export interface AuthStore {
   expiresAt: number | null;
   error: AuthError | null;
   passkeysEnabled: boolean; // Added: Centralized passkey availability determination
+
+  // UI State (moved from SignInCore)
+  email: string; // Current email input value
+  loading: boolean; // Component loading state
+  emailCodeSent: boolean; // Whether email code was sent
+  fullName: string; // Registration full name input
+
+  // User Discovery State (moved from SignInCore)
+  userExists: boolean | null; // Whether user exists (null = not checked)
+  hasPasskeys: boolean; // Whether user has passkeys
+  hasValidPin: boolean; // Whether user has valid pin
+  pinRemainingMinutes: number; // Minutes remaining for valid pin
+
+  // WebAuthn State (moved from SignInCore)
+  conditionalAuthActive: boolean; // Whether conditional auth is active
+  platformAuthenticatorAvailable: boolean; // Whether platform authenticator is available
 }
 
 // Svelte store types
@@ -494,6 +516,14 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   reset: () => void;
   initialize: () => void;
   startConditionalAuthentication: (email: string) => Promise<boolean>;
+  // checkUserIfNeeded: (email: string) => Promise<{
+  //   exists: boolean;
+  //   hasWebAuthn: boolean;
+  //   userId?: string;
+  //   emailVerified?: boolean;
+  //   invitationTokenHash?: string;
+  //   lastPinExpiry?: number;
+  // }>;
   checkUser: (email: string) => Promise<{
     exists: boolean;
     hasWebAuthn: boolean;
@@ -542,9 +572,6 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
   api: AuthApiClient;
 
-  // Passkey capability
-  getPasskeysEnabled: () => boolean;
-
   // SignIn flow control methods
   notifyPinSent: () => void;
   notifyPinVerified: (sessionData: any) => void;
@@ -556,7 +583,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     message: string;
     timestamp: number;
   }>;
-  verifyEmailCode: (email: string, code: string) => Promise<SignInResponse>;
+  verifyEmailCode: (code: string) => Promise<SignInResponse>;
 
   // Dynamic role configuration methods
   getApplicationContext: () => ApplicationContext | null;
@@ -565,33 +592,21 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
 
   // Configuration access
   getConfig: () => AuthConfig;
+  updateConfig: (updates: Partial<AuthConfig>) => void;
 
-  // UI Configuration
-  getButtonConfig: (params: {
-    email: string;
-    loading: boolean;
-    userExists: boolean | null;
-    hasPasskeys: boolean;
-    hasValidPin: boolean;
-    isNewUserSignin: boolean;
-    fullName?: string;
-  }) => ButtonConfig;
+  // UI Configuration (state-aware - accepts optional live email)
+  getButtonConfig: () => ButtonConfig;
 
-  getStateMessageConfig: (params: {
-    signInState: SignInState;
-    userExists: boolean | null;
-    emailCodeSent: boolean;
-    hasValidPin: boolean;
-    signInMode?: 'login-only' | 'login-or-register';
-  }) => StateMessageConfig | null;
+  getStateMessageConfig: () => StateMessageConfig | null;
 
-  getExplainerConfig: (params: {
-    signInState: SignInState;
-    userExists: boolean | null;
-    hasPasskeys: boolean;
-    hasValidPin: boolean;
-    explainFeatures?: boolean;
-  }) => ExplainerConfig | null;
+  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
+
+  // Direct UI state setters
+  setEmail: (email: string) => void;
+  setFullName: (name: string) => void;
+  setLoading: (loading: boolean) => void;
+  setConditionalAuthActive: (active: boolean) => void;
+  setEmailCodeSent: (sent: boolean) => void;
 
   // Cleanup
   destroy: () => void;

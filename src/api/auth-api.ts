@@ -870,6 +870,12 @@ export class AuthApiClient {
     // Transform organization API response to match SignInResponse interface
     // The API returns tokens directly in the response, not nested
     if (response.success && response.user && response.accessToken) {
+      // Clear user cache entry since verification succeeded
+      // This handles cases where user was previously cached as "doesn't exist"
+      // but verification created the user account
+      globalUserCache.clear(email);
+      console.log(`🧹 Cleared user cache for ${email} after successful pin verification`);
+
       return {
         step: 'success',
         user: response.user,

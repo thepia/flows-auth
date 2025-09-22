@@ -3,7 +3,7 @@
   Shows Full Name input and terms notice
 -->
 <script lang="ts">
-import { m } from '../../utils/i18n';
+import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import {
   "auth.fullName" as authFullName,
@@ -14,6 +14,18 @@ import {
 export let fullName = '';
 export let disabled = false;
 export let error: string | null = null;
+
+// Event dispatcher
+const dispatch = createEventDispatcher<{
+  input: { fullName: string };
+}>();
+
+// Handle input changes and emit events
+function handleInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  fullName = target.value;
+  dispatch('input', { fullName });
+}
 </script>
 
 <div class="auth-new-user-info">
@@ -25,6 +37,7 @@ export let error: string | null = null;
       id="fullName"
       type="text"
       bind:value={fullName}
+      on:input={handleInput}
       placeholder={authFullNamePlaceholder()}
       class="auth-input"
       class:error

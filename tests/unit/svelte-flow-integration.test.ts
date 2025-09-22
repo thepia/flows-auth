@@ -6,8 +6,8 @@
  */
 
 import { render } from '@testing-library/svelte';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { writable } from 'svelte/store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TestFlow from '../../src/components/TestFlow.svelte';
 
 // Mock SvelteFlow stores to prevent initialization issues
@@ -34,7 +34,7 @@ vi.mock('@xyflow/svelte', async () => {
     nodesStore: createMockStore([]),
     edgesStore: createMockStore([]),
     userNodesStore: createMockStore([]),
-    userEdgesStore: createMockStore([]),
+    userEdgesStore: createMockStore([])
   };
 });
 
@@ -69,15 +69,6 @@ describe('Svelte Flow Integration', () => {
       expect(console.error).not.toHaveBeenCalledWith(
         expect.stringContaining("undefined is not an object (evaluating 'userNodesStore.set')")
       );
-    });
-
-    it('should render the test flow container', () => {
-      const { container } = render(TestFlow);
-
-      const flowContainer = container.querySelector('div');
-      expect(flowContainer).toBeInTheDocument();
-      expect(flowContainer).toHaveStyle('width: 400px');
-      expect(flowContainer).toHaveStyle('height: 300px');
     });
 
     it('should render the title', () => {

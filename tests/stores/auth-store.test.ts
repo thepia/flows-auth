@@ -441,6 +441,8 @@ describe('Auth Store', () => {
         appCode: 'test-app'
       });
 
+      authStoreWithApp.setEmail('test@example.com');
+
       // Listen for the correct events that verifyEmailCode emits
       authStoreWithApp.on('app_email_verify_started', signInStartedHandler);
       authStoreWithApp.on('app_email_verify_success', signInSuccessHandler);
@@ -465,7 +467,7 @@ describe('Auth Store', () => {
       const mockApi = authStoreWithApp.api as any;
       mockApi.verifyAppEmailCode.mockResolvedValue(mockResponse);
 
-      await authStoreWithApp.verifyEmailCode('test@example.com', '123456');
+      await authStoreWithApp.verifyEmailCode('123456');
 
       expect(signInStartedHandler).toHaveBeenCalledWith({
         email: 'test@example.com',
@@ -594,8 +596,6 @@ describe('Auth Store', () => {
 
       mockApiClient.sendAppEmailCode.mockResolvedValue(mockEmailCodeResponse);
 
-
-
       const result = await authStore.sendEmailCode('test@example.com');
 
       expect(mockApiClient.sendAppEmailCode).toHaveBeenCalledWith('test@example.com');
@@ -632,6 +632,7 @@ describe('Auth Store', () => {
       };
 
       const authStore = createAuthStore(configWithApp, mockApiClient as any);
+      authStore.setEmail('test@example.com');
 
       const mockVerifyResponse: SignInResponse = {
         step: 'success',
@@ -649,12 +650,9 @@ describe('Auth Store', () => {
 
       mockApiClient.verifyAppEmailCode.mockResolvedValue(mockVerifyResponse);
 
-      const result = await authStore.verifyEmailCode('test@example.com', '123456');
+      const result = await authStore.verifyEmailCode('123456');
 
-      expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith(
-        'test@example.com',
-        '123456'
-      );
+      expect(mockApiClient.verifyAppEmailCode).toHaveBeenCalledWith('test@example.com', '123456');
       expect(result).toEqual(mockVerifyResponse);
 
       // Check that user is authenticated
@@ -671,7 +669,7 @@ describe('Auth Store', () => {
 
       const authStore = createAuthStore(configWithoutApp, mockApiClient as any);
 
-      await expect(authStore.verifyEmailCode('test@example.com', '123456')).rejects.toThrow(
+      await expect(authStore.verifyEmailCode('123456')).rejects.toThrow(
         'Email code verification is only available with organization configuration'
       );
     });
@@ -704,9 +702,7 @@ describe('Auth Store', () => {
       const mockError = new Error('Invalid code');
       mockApiClient.verifyAppEmailCode.mockRejectedValue(mockError);
 
-      await expect(authStore.verifyEmailCode('test@example.com', '123456')).rejects.toThrow(
-        'Invalid code'
-      );
+      await expect(authStore.verifyEmailCode('123456')).rejects.toThrow('Invalid code');
 
       const state = get(authStore);
       expect(state.state).toBe('error');

@@ -10,18 +10,11 @@ import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
 // Props
 export let type: 'submit' | 'button' = 'submit';
-export let disabled = false;
 export let loading = false;
 export let variant: 'primary' | 'secondary' | 'ghost' = 'primary';
 export let size: 'sm' | 'md' | 'lg' = 'md';
 export let fullWidth = true;
 export let className = '';
-
-// Content props (legacy - use buttonConfig instead)
-export let text = '';
-export let loadingText = '';
-export let icon = '';
-export let showIcon = true;
 
 // Method-specific text and icons (legacy - use buttonConfig instead)
 export let supportsWebAuthn = false;
@@ -50,12 +43,21 @@ $: {
   effectiveSupportsWebAuthn = buttonConfig ? buttonConfig.supportsWebAuthn : supportsWebAuthn;
   console.log('Reactive effectiveSupportsWebAuthn:', { buttonConfig: !!buttonConfig, buttonConfigSupportsWebAuthn: buttonConfig?.supportsWebAuthn, supportsWebAuthn, effectiveSupportsWebAuthn });
 }
-$: effectiveDisabled = buttonConfig ? buttonConfig.disabled : disabled;
+$: {
+  effectiveDisabled = buttonConfig?.disabled || false;
+  console.log('🔘 AuthButton disabled state:', {
+    hasButtonConfig: !!buttonConfig,
+    buttonConfigDisabled: buttonConfig?.disabled,
+    loading,
+    effectiveDisabled,
+    finalDisabled: effectiveDisabled || loading
+  });
+}
 
 // Dynamic content based on method and state - explicitly depend on effective values
 $: {
   // Reference all dependencies to make this reactive
-  effectiveSupportsWebAuthn; loading; text; loadingText; buttonConfig; isAppleDevice; isAppCodeBased;
+  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased;
   displayText = getDisplayText();
 }
 $: displayIconComponent = getDisplayIconComponent();
@@ -68,7 +70,7 @@ function getDisplayText(): string {
   });
 
   // Use Paraglide message functions directly - no legacy i18n
-  if (loading && buttonConfig.loadingTextKey && buttonConfig.textKey in m) {
+  if (loading && buttonConfig.loadingTextKey && buttonConfig.loadingTextKey in m) {
     return (m as unknown as {[key: string]: () => string})[buttonConfig.loadingTextKey]();
     // // Map common loading text keys to Paraglide functions
     // switch (buttonConfig.loadingTextKey) {
@@ -82,10 +84,6 @@ function getDisplayText(): string {
   if (buttonConfig.textKey && buttonConfig.textKey in m) {
     return (m as unknown as {[key: string]: () => string})[buttonConfig.textKey]();
   }
-
-  // LEGACY: Fall back to explicit text props
-  if (loading && loadingText) return loadingText;
-  if (text) return text;
 
   // Use Paraglide message functions directly
   if (loading) {
@@ -140,7 +138,7 @@ function detectAppleDevice(): boolean {
 
 function getDisplayIconComponent() {
   if (loading) return null;
-  if (icon) return null; // Legacy string icon support - will be displayed as text
+  if (!buttonConfig?.method) return null; // Safety check
 
   switch (buttonConfig.method) {
     case 'passkey':
@@ -204,17 +202,15 @@ function getButtonClasses(): string {
   class="{getButtonClasses()} {className}"
   disabled={effectiveDisabled || loading}
   on:click={handleClick}
-  aria-label={text || displayText}
+  aria-label={displayText}
   aria-describedby={loading ? 'button-loading-text' : null}
 >
   {#if loading}
     <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
     <span id="button-loading-text" class="sr-only">Signing in...</span>
-  {:else if showIcon && (displayIconComponent || icon)}
+  {:else if displayIconComponent}
     {#if displayIconComponent}
       <svelte:component this={displayIconComponent} size={16} weight="bold" aria-hidden="true" />
-    {:else if icon}
-      <span aria-hidden="true">{icon}</span>
     {/if}
   {/if}
   

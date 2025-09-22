@@ -7,9 +7,9 @@ import { screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
 import type { AuthConfig } from '../../src/types';
 import * as webauthnUtils from '../../src/utils/webauthn';
+import { renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -29,13 +29,13 @@ vi.mock('../../src/utils/errorReporter', () => ({
   updateErrorReporterConfig: vi.fn()
 }));
 
-describe('SignInCore Button Texts', () => {
+describe('SignInCore Button Texts(no passkeys)', () => {
   const baseConfig: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',
     appCode: 'demo',
     clientId: 'test-client',
     domain: 'test.com',
-    enablePasskeys: true,
+    enablePasskeys: false,
     enableMagicLinks: false,
     signInMode: 'login-or-register'
   };
@@ -59,11 +59,18 @@ describe('SignInCore Button Texts', () => {
     });
 
     it('should enable emailPin button when valid email is entered', async () => {
-      renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithAuthContext(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'test@example.com'
         }
+      });
+
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
+        email: 'test@example.com',
+        exists: true,
+        hasPasskey: false
       });
 
       await tick();

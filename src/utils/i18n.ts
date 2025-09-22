@@ -13,7 +13,11 @@ export function setI18nMessages(messages: { [key: string]: (vars?: object) => st
 export const m = new Proxy(
   {},
   {
-    get: (target, key) => {
+    has(_target, key) {
+      const libraryMessages = messages as unknown as { [key: string]: (vars?: object) => string };
+      return key in libraryMessages || (appMessages && key in appMessages) || false;
+    },
+    get(_target, key) {
       return (vars?: object) => {
         const libraryMessages = messages as unknown as { [key: string]: (vars?: object) => string };
         const appMessage = appMessages?.[key as string];

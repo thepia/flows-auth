@@ -15,11 +15,20 @@ export type SignInState =
   | 'generalError'; // API server 500 errors from any server call
 
 export type SignInEvent =
-  | { type: 'USER_CHECKED'; email: string; exists: boolean; hasPasskey: boolean } // User check completed with results
+  | {
+      type: 'USER_CHECKED';
+      email: string;
+      exists: boolean;
+      hasPasskey: boolean;
+      hasValidPin?: boolean;
+      pinRemainingMinutes?: number;
+    } // User check completed with results
   | { type: 'EMAIL_ENTERED'; email: string } // User entered email - used by state machine
   | { type: 'SENT_PIN_EMAIL' } // PIN email sent successfully, transition to pin entry
   | { type: 'PIN_REQUESTED' } // PIN authentication requested - used by state machine
   | { type: 'PASSKEY_AVAILABLE' } // WebAuthn credentials found
+  | { type: 'VALID_PIN_DETECTED'; remainingMinutes: number } // Valid PIN detected for user
+  | { type: 'EMAIL_CODE_ENTERED'; code: string } // User entered email code
   | { type: 'PASSKEY_SELECTED' } // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any } // WebAuthn authentication succeeded
   | { type: 'PASSKEY_FAILED'; error: WebAuthnError } // WebAuthn authentication failed

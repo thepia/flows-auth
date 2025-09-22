@@ -19,7 +19,13 @@ let authStore = null;
 // Initialize authStore from context once
 if (authStoreContext && browser) {
   authStore = $authStoreContext;
-  console.log('📦 Auth store from context:', { authStore: !!authStore, isAuthenticated, user: !!user });
+  console.log('📦 [OVERVIEW] Auth store from context:', {
+    authStore: !!authStore,
+    debugId: authStore?._debugId,
+    signInState: authStore ? $authStore.signInState : 'none',
+    isAuthenticated,
+    user: !!user
+  });
 }
 
 // Optional SvelteKit props
@@ -524,6 +530,21 @@ $: combinedTranslations = selectedClientVariant === 'custom'
       ...currentClientVariant.translations,
       ...customTranslationOverrides
     };
+
+// Update authStore config when controls change
+$: if (authStore && authStore.updateConfig) {
+  authStore.updateConfig({
+    enablePasskeys,
+    enableMagicLinks,
+    signInMode,
+    language: selectedLanguage,
+    fallbackLanguage: 'en',
+    branding: {
+      ...authConfig?.branding,
+      companyName: currentClientVariant.companyName
+    }
+  });
+}
 
 // Create reactive config that updates when controls change
 $: dynamicAuthConfig = authConfig ? {

@@ -5,7 +5,7 @@ import { fireEvent, waitFor } from '@testing-library/svelte';
  */
 import { describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext, TEST_AUTH_CONFIGS } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -15,29 +15,24 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 describe('SignInCore - Registration with FullName Validation', () => {
   describe('New user registration flow', () => {
-
     it('should disable sign-in button when fullName is empty for new users', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container, authStore } = renderWithAuthContext(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
-
-      // Wait for fullName input to appear after user check
+      // Wait for automatic user check to complete and fullName input to appear
+      // This happens reactively when initialEmail is set and component initializes
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
       });
 
       // Check that submit button is disabled when fullName is empty
-      const submitButton = container.querySelector('button[type="submit"]');
+      const submitButton = container.querySelector('button[type="submit"]') as HTMLButtonElement;
       expect(submitButton).toBeTruthy();
-      expect(submitButton?.disabled).toBe(true);
+      expect(submitButton.disabled).toBe(true);
     });
 
     it('should disable sign-in button when fullName has less than 3 characters', async () => {
@@ -47,12 +42,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
         mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
-
-      // Wait for fullName input to appear after user check
+      // Wait for automatic user check to complete and fullName input to appear
+      // This happens reactively when initialEmail is set and component initializes
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -63,8 +54,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
       await fireEvent.input(fullNameInput, { target: { value: 'AB' } });
 
       // Check that submit button is still disabled
-      const submitButton = container.querySelector('button[type="submit"]');
-      expect(submitButton?.disabled).toBe(true);
+      const submitButton = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(submitButton.disabled).toBe(true);
     });
 
     it('should enable sign-in button when fullName has 3 or more characters', async () => {
@@ -86,8 +77,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
 
       // Check that submit button is now enabled
       await waitFor(() => {
-        const submitButton = container.querySelector('button[type="submit"]');
-        expect(submitButton?.disabled).toBe(false);
+        const submitButton = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+        expect(submitButton.disabled).toBe(false);
       });
     });
 
@@ -115,8 +106,9 @@ describe('SignInCore - Registration with FullName Validation', () => {
       await fireEvent.input(fullNameInput, { target: { value: 'John Doe' } });
 
       // Submit the form
-      const form = container.querySelector('form');
-      await fireEvent.submit(form!);
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(form).toBeTruthy();
+      await fireEvent.submit(form);
 
       // Verify createAccount was called with correct parameters
       await waitFor(() => {
@@ -137,12 +129,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
         mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
-
-      // Wait for fullName input to appear after user check
+      // Wait for automatic user check to complete and fullName input to appear
+      // This happens reactively when initialEmail is set and component initializes
       await waitFor(() => {
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeTruthy();
@@ -162,12 +150,8 @@ describe('SignInCore - Registration with FullName Validation', () => {
         mockUserCheck: { exists: false, hasPasskey: false }
       });
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
-
-      // Wait for the component to update after state transition
+      // Wait for automatic user check to complete and component to update
+      // This happens reactively when initialEmail is set and component initializes
       await waitFor(() => {
         // Check that fullName input is NOT shown
         const fullNameInput = container.querySelector('#fullName');
@@ -190,12 +174,15 @@ describe('SignInCore - Registration with FullName Validation', () => {
       // Mock createAccount to verify it's not called
       authStore.createAccount = vi.fn();
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
+      // Wait for automatic user check to complete
+      // This happens reactively when initialEmail is set and component initializes
+      await waitFor(() => {
+        // Check that login-only message is shown (indicating user check completed)
+        const authMessage = container.querySelector('.auth-message');
+        expect(authMessage).toBeTruthy();
+      });
 
-      // Verify createAccount was NOT called
+      // Verify createAccount was NOT called during the automatic user check
       expect(authStore.createAccount).not.toHaveBeenCalled();
     });
   });
@@ -208,25 +195,20 @@ describe('SignInCore - Registration with FullName Validation', () => {
         mockUserCheck: { exists: true, hasPasskey: false }
       });
 
-      // Click the sign-in button to trigger user check
-      const signInButton = container.querySelector('button[type="submit"]');
-      expect(signInButton).toBeTruthy();
-      await fireEvent.click(signInButton!);
-
-      // Wait for the component to transition to pin entry state for existing users
+      // Wait for automatic user check to complete
+      // Existing users should stay in userChecked state (not automatically transition to pinEntry)
       await waitFor(() => {
-        // For existing users, should transition to pin entry (email code input)
-        const pinInput = container.querySelector('#code-input');
-        expect(pinInput).toBeTruthy();
+        // Should show the email input form (still in userChecked state)
+        const emailInput = container.querySelector('#email-input');
+        expect(emailInput).toBeTruthy();
 
-        // FullName input should NOT be shown anywhere
+        // FullName input should NOT be shown for existing users
         const fullNameInput = container.querySelector('#fullName');
         expect(fullNameInput).toBeFalsy();
 
-        // Should show "Check your email" message
-        const emailMessage = container.querySelector('.auth-message');
-        expect(emailMessage).toBeTruthy();
-        expect(emailMessage?.textContent).toContain('Check your email');
+        // Should show sign-in button (not pin input yet)
+        const signInButton = container.querySelector('button[type="submit"]');
+        expect(signInButton).toBeTruthy();
       });
     });
   });

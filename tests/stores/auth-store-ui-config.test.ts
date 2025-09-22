@@ -1,3 +1,4 @@
+import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store.js';
 import type { AuthConfig } from '../../src/types/index.js';
@@ -41,50 +42,74 @@ describe('AuthStore UI Configuration', () => {
     };
 
     authStore = createAuthStore(mockConfig);
+    // Reset to clean state for each test
+    authStore.reset();
   });
 
   describe('getButtonConfig method', () => {
     describe('Default email pin button behavior', () => {
       it('should return email-code method for default configuration', () => {
-        const buttonConfig = authStore.getButtonConfig({
-          email: 'test@example.com',
-          loading: false,
-          userExists: null,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: false
-        });
+        // Set up store state
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+
+        const store = get(authStore);
+        expect(store.signInState).toBe('emailEntry');
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('email-code');
         expect(buttonConfig.primary.textKey).toBe('auth.sendPinByEmail');
         expect(buttonConfig.primary.loadingTextKey).toBe('auth.sendingPin');
         expect(buttonConfig.primary.supportsWebAuthn).toBe(false);
-        expect(buttonConfig.primary.disabled).toBe(false);
+        expect(buttonConfig.primary.disabled).toBe(true); // disabled only when loading
+        expect(buttonConfig.secondary).toBeNull();
+      });
+
+      it('should have enabled send code button when user is checked', () => {
+        // Set up store state
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: true,
+          hasPasskey: false,
+          hasValidPin: false,
+          pinRemainingMinutes: 0
+        });
+        const store = get(authStore);
+        expect(store.signInState).toBe('userChecked');
+
+        const buttonConfig = authStore.getButtonConfig();
+
+        expect(buttonConfig.primary.method).toBe('email-code');
+        expect(buttonConfig.primary.textKey).toBe('auth.sendPinByEmail');
+        expect(buttonConfig.primary.loadingTextKey).toBe('auth.sendingPin');
+        expect(buttonConfig.primary.supportsWebAuthn).toBe(false);
+        expect(buttonConfig.primary.disabled).toBe(false); // disabled only when loading
         expect(buttonConfig.secondary).toBeNull();
       });
 
       it('should disable button when email is empty', () => {
-        const buttonConfig = authStore.getButtonConfig({
-          email: '',
-          loading: false,
-          userExists: null,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: false
-        });
+        // Set up store state
+        authStore.setEmail('');
+        authStore.setLoading(false);
 
-        expect(buttonConfig.primary.disabled).toBe(true);
+        const store = get(authStore);
+        expect(store.signInState).toBe('emailEntry');
+
+        const buttonConfig = authStore.getButtonConfig();
+        expect(buttonConfig.primary.disabled).toBe(true); // disabled only when loading
       });
 
       it('should disable button when loading', () => {
-        const buttonConfig = authStore.getButtonConfig({
-          email: 'test@example.com',
-          loading: true,
-          userExists: null,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: false
-        });
+        // Set up store state
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(true);
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.disabled).toBe(true);
       });
@@ -92,14 +117,18 @@ describe('AuthStore UI Configuration', () => {
 
     describe('Passkey scenarios with primary and secondary buttons', () => {
       it('should show passkey as primary and email pin as secondary when user has passkeys', () => {
-        const buttonConfig = authStore.getButtonConfig({
+        // Set up store state for userChecked with passkeys
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: true,
-          hasPasskeys: true,
-          hasValidPin: false,
-          isNewUserSignin: false
+          exists: true,
+          hasPasskey: true,
+          hasValidPin: false
         });
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.primary.textKey).toBe('auth.signInWithPasskey');
@@ -107,26 +136,30 @@ describe('AuthStore UI Configuration', () => {
 
         expect(buttonConfig.secondary).not.toBeNull();
         if (buttonConfig.secondary) {
-          expect(buttonConfig.secondary.method).toBe('email-code');
-          expect(buttonConfig.secondary.textKey).toBe('auth.sendPinByEmail');
+          expect(buttonConfig.secondary.method).toBe('magic-link');
+          expect(buttonConfig.secondary.textKey).toBe('auth.sendMagicLink');
         }
       });
 
       it('should show email pin as secondary when user has both passkeys and valid pin', () => {
-        const buttonConfig = authStore.getButtonConfig({
+        // Set up store state for userChecked with passkeys and valid pin
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: true,
-          hasPasskeys: true,
-          hasValidPin: true,
-          isNewUserSignin: false
+          exists: true,
+          hasPasskey: true,
+          hasValidPin: true
         });
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.secondary).not.toBeNull();
         if (buttonConfig.secondary) {
-          expect(buttonConfig.secondary.method).toBe('email-code');
-          expect(buttonConfig.secondary.textKey).toBe('auth.sendPinByEmail');
+          expect(buttonConfig.secondary.method).toBe('magic-link');
+          expect(buttonConfig.secondary.textKey).toBe('auth.sendMagicLink');
         }
       });
 
@@ -135,14 +168,18 @@ describe('AuthStore UI Configuration', () => {
         const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
         const storeWithoutAppCode = createAuthStore(configWithMagicLinks);
 
-        const buttonConfig = storeWithoutAppCode.getButtonConfig({
+        // Set up store state for userChecked with passkeys
+        storeWithoutAppCode.setEmail('test@example.com');
+        storeWithoutAppCode.setLoading(false);
+        storeWithoutAppCode.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: true,
-          hasPasskeys: true,
-          hasValidPin: false,
-          isNewUserSignin: false
+          exists: true,
+          hasPasskey: true,
+          hasValidPin: false
         });
+
+        const buttonConfig = storeWithoutAppCode.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.secondary).not.toBeNull();
@@ -154,28 +191,36 @@ describe('AuthStore UI Configuration', () => {
 
     describe('New user scenarios', () => {
       it('should show single button without secondary when user does not exist', () => {
-        const buttonConfig = authStore.getButtonConfig({
+        // Set up store state for userChecked with non-existent user
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: false,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: true
+          exists: false,
+          hasPasskey: false,
+          hasValidPin: false
         });
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('email-code');
         expect(buttonConfig.secondary).toBeNull();
       });
 
       it('should not show passkey option for non-existent users even with passkey support', () => {
-        const buttonConfig = authStore.getButtonConfig({
+        // Set up store state for userChecked with non-existent user
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: false,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: true
+          exists: false,
+          hasPasskey: false,
+          hasValidPin: false
         });
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('email-code');
         expect(buttonConfig.primary.supportsWebAuthn).toBe(false);
@@ -183,33 +228,34 @@ describe('AuthStore UI Configuration', () => {
     });
 
     describe('Configuration-based behavior', () => {
-      it('should fallback to magic link when appCode not available', () => {
+      it('should fallback to email code when appCode not available', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
         const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
         const storeWithoutAppCode = createAuthStore(configWithMagicLinks);
 
-        const buttonConfig = storeWithoutAppCode.getButtonConfig({
-          email: 'test@example.com',
-          loading: false,
-          userExists: null,
-          hasPasskeys: false,
-          hasValidPin: false,
-          isNewUserSignin: false
-        });
+        // Set up store state for emailEntry (initial state)
+        storeWithoutAppCode.setEmail('test@example.com');
+        storeWithoutAppCode.setLoading(false);
 
-        expect(buttonConfig.primary.method).toBe('magic-link');
-        expect(buttonConfig.primary.textKey).toBe('auth.sendMagicLink');
+        const buttonConfig = storeWithoutAppCode.getButtonConfig();
+
+        expect(buttonConfig.primary.method).toBe('email-code');
+        expect(buttonConfig.primary.textKey).toBe('auth.sendPinByEmail');
       });
 
       it('should prefer passkeys over other methods when available', () => {
-        const buttonConfig = authStore.getButtonConfig({
+        // Set up store state for userChecked with passkeys
+        authStore.setEmail('test@example.com');
+        authStore.setLoading(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
           email: 'test@example.com',
-          loading: false,
-          userExists: true,
-          hasPasskeys: true,
-          hasValidPin: true,
-          isNewUserSignin: false
+          exists: true,
+          hasPasskey: true,
+          hasValidPin: true
         });
+
+        const buttonConfig = authStore.getButtonConfig();
 
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.primary.supportsWebAuthn).toBe(true);
@@ -225,11 +271,6 @@ describe('AuthStore UI Configuration', () => {
             loadingKey: 'auth.sendingPin'
           },
           {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingKey: 'auth.sendingMagicLink'
-          },
-          {
             method: 'passkey',
             textKey: 'auth.signInWithPasskey',
             loadingKey: 'auth.authenticating'
@@ -237,20 +278,25 @@ describe('AuthStore UI Configuration', () => {
         ];
 
         for (const { method, textKey, loadingKey } of testCases) {
-          const config =
-            method === 'magic-link'
-              ? { ...mockConfig, appCode: undefined, enableMagicLinks: true }
-              : mockConfig;
-          const store = createAuthStore(config);
+          const store = createAuthStore(mockConfig);
 
-          const buttonConfig = store.getButtonConfig({
-            email: 'test@example.com',
-            loading: false,
-            userExists: method === 'passkey' ? true : null,
-            hasPasskeys: method === 'passkey',
-            hasValidPin: false,
-            isNewUserSignin: false
-          });
+          // Set up store state based on method
+          store.setEmail('test@example.com');
+          store.setLoading(false);
+
+          if (method === 'passkey') {
+            // For passkey, need userChecked state with passkeys
+            store.sendSignInEvent({
+              type: 'USER_CHECKED',
+              email: 'test@example.com',
+              exists: true,
+              hasPasskey: true,
+              hasValidPin: false
+            });
+          }
+          // For email-code and magic-link, emailEntry state is fine
+
+          const buttonConfig = store.getButtonConfig();
 
           expect(buttonConfig.primary.method).toBe(method);
           expect(buttonConfig.primary.textKey).toBe(textKey);
@@ -263,35 +309,47 @@ describe('AuthStore UI Configuration', () => {
   describe('getStateMessageConfig method', () => {
     describe('Email entry state messages', () => {
       it('should return null for initial email entry state', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'emailEntry',
-          userExists: null,
-          emailCodeSent: false,
-          hasValidPin: false
-        });
+        // Set up store state for emailEntry (initial state)
+        authStore.setEmail('test@example.com');
+        authStore.setEmailCodeSent(false);
+        // emailEntry is the default state
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         expect(messageConfig).toBeNull();
       });
 
       it('should return null for user found message when user exists', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'userChecked',
-          userExists: true,
-          emailCodeSent: false,
+        // Set up store state for userChecked with existing user
+        authStore.setEmail('test@example.com');
+        authStore.setEmailCodeSent(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: true,
+          hasPasskey: false,
           hasValidPin: false
         });
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         // Based on implementation, userChecked with userExists=true returns null
         expect(messageConfig).toBeNull();
       });
 
       it('should return null for new users in userChecked state', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'userChecked',
-          userExists: false,
-          emailCodeSent: false,
+        // Set up store state for userChecked with new user
+        authStore.setEmail('test@example.com');
+        authStore.setEmailCodeSent(false);
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: false,
+          hasPasskey: false,
           hasValidPin: false
         });
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         // Based on implementation, userChecked with userExists=false returns null unless login-only mode
         expect(messageConfig).toBeNull();
@@ -300,12 +358,19 @@ describe('AuthStore UI Configuration', () => {
 
     describe('PIN-related state messages', () => {
       it('should show pin sent message when email code is sent', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'pinEntry',
-          userExists: true,
-          emailCodeSent: true,
+        // Set up store state: first userChecked, then pinEntry with email code sent
+        authStore.setEmail('test@example.com');
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: true,
+          hasPasskey: false,
           hasValidPin: false
         });
+        authStore.setEmailCodeSent(true);
+        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         expect(messageConfig).not.toBeNull();
         if (messageConfig) {
@@ -315,12 +380,21 @@ describe('AuthStore UI Configuration', () => {
       });
 
       it('should show valid pin message when user has valid pin', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'pinEntry',
-          userExists: true,
-          emailCodeSent: false,
+        // Set up store state for pinEntry with valid pin
+        authStore.setEmail('test@example.com');
+        authStore.setEmailCodeSent(false);
+        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+        // Need to set hasValidPin through USER_CHECKED first, then transition to pinEntry
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: true,
+          hasPasskey: false,
           hasValidPin: true
         });
+        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         expect(messageConfig).not.toBeNull();
         if (messageConfig) {
@@ -335,13 +409,18 @@ describe('AuthStore UI Configuration', () => {
         const loginOnlyConfig = { ...mockConfig, signInMode: 'login-only' as const };
         const loginOnlyStore = createAuthStore(loginOnlyConfig);
 
-        const messageConfig = loginOnlyStore.getStateMessageConfig({
-          signInState: 'userChecked',
-          userExists: false,
-          emailCodeSent: false,
-          hasValidPin: false,
-          signInMode: 'login-only'
+        // Set up store state for userChecked with non-existent user in login-only mode
+        loginOnlyStore.setEmail('test@example.com');
+        loginOnlyStore.setEmailCodeSent(false);
+        loginOnlyStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: false,
+          hasPasskey: false,
+          hasValidPin: false
         });
+
+        const messageConfig = loginOnlyStore.getStateMessageConfig();
 
         expect(messageConfig).not.toBeNull();
         if (messageConfig) {
@@ -353,12 +432,19 @@ describe('AuthStore UI Configuration', () => {
 
     describe('State message configuration properties', () => {
       it('should include proper type, textKey, and optional properties', () => {
-        const messageConfig = authStore.getStateMessageConfig({
-          signInState: 'emailVerification',
-          userExists: true,
-          emailCodeSent: false,
+        // Set up store state: first userChecked, then pinEntry with email code sent to get a message
+        authStore.setEmail('test@example.com');
+        authStore.sendSignInEvent({
+          type: 'USER_CHECKED',
+          email: 'test@example.com',
+          exists: true,
+          hasPasskey: false,
           hasValidPin: false
         });
+        authStore.setEmailCodeSent(true);
+        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+
+        const messageConfig = authStore.getStateMessageConfig();
 
         expect(messageConfig).not.toBeNull();
         if (messageConfig) {
@@ -367,8 +453,9 @@ describe('AuthStore UI Configuration', () => {
           expect(['info', 'success', 'warning', 'error']).toContain(messageConfig.type);
           expect(typeof messageConfig.textKey).toBe('string');
           expect(messageConfig.textKey.length).toBeGreaterThan(0);
-          expect(messageConfig.type).toBe('info');
-          expect(messageConfig.textKey).toBe('registration.required');
+          // For pinEntry with emailCodeSent=true, expect success type and checkEmail key
+          expect(messageConfig.type).toBe('success');
+          expect(messageConfig.textKey).toBe('status.checkEmail');
         }
       });
     });

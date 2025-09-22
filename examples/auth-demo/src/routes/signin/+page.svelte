@@ -18,7 +18,13 @@ let authStore = null;
 // Initialize authStore from context once
 if (authStoreContext && browser) {
   authStore = $authStoreContext;
-  console.log('📦 Auth store from context:', { authStore: !!authStore, isAuthenticated, user: !!user });
+  console.log('📦 [SIGNIN] Auth store from context:', {
+    authStore: !!authStore,
+    debugId: authStore?._debugId,
+    signInState: authStore ? $authStore.signInState : 'none',
+    isAuthenticated,
+    user: !!user
+  });
 }
 
 // Optional SvelteKit props
@@ -148,10 +154,12 @@ $: {
       lastLoggedState = storeValue.state;
     }
 
-    // Update our local variables
+    // Update our local variables to stay synchronized with the store
     signInState = storeValue.signInState || 'emailEntry';
     hasValidPinStatus = hasValidPin(storeValue);
     pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
+    authState = storeValue.state;
+    currentUser = storeValue.user;
   }
 }
 
@@ -199,6 +207,21 @@ $: combinedTranslations = selectedClientVariant === 'custom'
       ...customTranslationOverrides
     };
 
+// Update authStore config when controls change
+$: if (authStore && authStore.updateConfig) {
+  authStore.updateConfig({
+    enablePasskeys,
+    enableMagicLinks,
+    signInMode,
+    language: selectedLanguage,
+    fallbackLanguage: 'en',
+    branding: {
+      ...authConfig?.branding,
+      companyName: currentClientVariant.companyName
+    }
+  });
+}
+
 // Create reactive config that updates when controls change
 $: dynamicAuthConfig = authConfig ? {
   ...authConfig,
@@ -214,6 +237,90 @@ $: dynamicAuthConfig = authConfig ? {
     companyName: currentClientVariant.companyName
   }
 } : null;
+
+// Handle clicks on the SignIn state machine diagram
+function handleSignInStateClick(clickedState) {
+  console.log('🎯 [SIGNIN] State machine clicked:', clickedState, 'Current state:', signInState);
+
+  if (!authStore) {
+    console.warn('No auth store available for state transition - store is still initializing');
+    return;
+  }
+
+  try {
+    // Determine appropriate event based on clicked state and current state
+    let event = null;
+
+    switch (clickedState) {
+      case 'emailEntry':
+        // Reset to email entry
+        event = { type: 'RESET' };
+        break;
+
+      case 'userChecked':
+        // Simulate user check
+        event = { type: 'USER_CHECKED' };
+        break;
+
+      case 'passkeyPrompt':
+        // Simulate passkey prompt
+        event = { type: 'PASSKEY_AVAILABLE' };
+        break;
+
+      case 'pinEntry':
+        // Simulate PIN entry
+        event = { type: 'SENT_PIN_EMAIL' };
+        break;
+
+      case 'emailVerification':
+        // Simulate email verification required
+        event = { type: 'EMAIL_VERIFICATION_REQUIRED' };
+        break;
+
+      case 'passkeyRegistration':
+        // Simulate passkey registration
+        event = { type: 'REGISTER_PASSKEY' };
+        break;
+
+      case 'signedIn':
+        // Simulate successful authentication
+        event = {
+          type: 'EMAIL_VERIFIED',
+          session: {
+            accessToken: 'demo-token',
+            refreshToken: 'demo-refresh',
+            user: { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' },
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+            lastActivity: Date.now()
+          }
+        };
+        break;
+
+      case 'generalError':
+        // Simulate error
+        event = {
+          type: 'ERROR',
+          error: {
+            code: 'DEMO_ERROR',
+            message: 'Demo error triggered from state machine click',
+            type: 'demo',
+            retryable: true
+          }
+        };
+        break;
+    }
+
+    if (event) {
+      console.log('🚀 [SIGNIN] Sending event to auth store:', event);
+      const newState = authStore.sendSignInEvent(event);
+      console.log('✅ [SIGNIN] State transition complete:', signInState, '->', newState);
+    } else {
+      console.log('⚠️ [SIGNIN] No valid transition from', signInState, 'to', clickedState);
+    }
+  } catch (error) {
+    console.error('❌ [SIGNIN] Error in state transition:', error);
+  }
+}
 
 // Dynamic component loading
 onMount(async () => {
@@ -290,6 +397,42 @@ onMount(async () => {
             <div class="state-section">
               <span class="config-label">PIN:</span>
               <span class="pin-badge">Valid ({pinRemainingMinutes}min)</span>
+            </div>
+          {/if}
+
+          <!-- New Store Properties Pills -->
+          {#if authStore}
+            <div class="state-section">
+              <span class="config-label">Store Props:</span>
+              <div class="pills-container">
+                <span class="pill {$authStore.loading ? 'active' : 'inactive'}">
+                  {$authStore.loading ? '⏳' : '✅'} loading
+                </span>
+                <span class="pill {$authStore.emailCodeSent ? 'active' : 'inactive'}">
+                  {$authStore.emailCodeSent ? '📧' : '📭'} codeSent
+                </span>
+                <span class="pill {$authStore.userExists === true ? 'active' : $authStore.userExists === false ? 'inactive' : 'neutral'}">
+                  {$authStore.userExists === true ? '👤' : $authStore.userExists === false ? '👻' : '❓'} userExists
+                </span>
+                <span class="pill {$authStore.hasPasskeys ? 'active' : 'inactive'}">
+                  {$authStore.hasPasskeys ? '🔑' : '🚫'} passkeys
+                </span>
+                <span class="pill {$authStore.conditionalAuthActive ? 'active' : 'inactive'}">
+                  {$authStore.conditionalAuthActive ? '🔄' : '⏸️'} conditional-auth
+                </span>
+                <span class="pill {$authStore.platformAuthenticatorAvailable ? 'active' : 'inactive'}">
+                  {$authStore.platformAuthenticatorAvailable ? '📱' : '💻'} platform-auth
+                </span>
+                <span class="pill {$authStore.hasValidPin ? 'active' : 'inactive'}">
+                  {$authStore.hasValidPin ? '🔢' : '❌'} valid-pin
+                </span>
+                <span class="pill">
+                  email: {$authStore.email}
+                </span>
+                <span class="pill">
+                  code: {$authStore.emailCode}
+                </span>
+              </div>
             </div>
           {/if}
         </div>
@@ -535,6 +678,27 @@ onMount(async () => {
                 on:stateClick={(e) => console.log('Auth state clicked event:', e.detail)}
               />
             </div>
+
+            <!-- Sign-In State Machine (Interactive) -->
+            {#if SignInStateMachineComponent}
+              <div class="compact-machine">
+                <svelte:component this={SignInStateMachineComponent}
+                  currentSignInState={signInState}
+                  width={280}
+                  height={200}
+                  onStateClick={(state) => {
+                    console.log('Sign-in state clicked:', state);
+                    handleSignInStateClick(state);
+                  }}
+                  on:stateClick={(e) => {
+                    console.log('Sign-in state clicked event:', e.detail);
+                    if (e.detail && e.detail.state) {
+                      handleSignInStateClick(e.detail.state);
+                    }
+                  }}
+                />
+              </div>
+            {/if}
 
             <!-- Current Auth State Display -->
             <div class="compact-machine">
@@ -895,6 +1059,42 @@ onMount(async () => {
     background: #dcfce7;
     color: #15803d;
     border: 1px solid #bbf7d0;
+  }
+
+  /* Pills Container */
+  .pills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Pill Styles */
+  .pill {
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .pill.active {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
+
+  .pill.inactive {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: #d1d5db;
+  }
+
+  .pill.neutral {
+    background: #fef3c7;
+    color: #d97706;
+    border-color: #fed7aa;
   }
 
   /* Sign-in components */

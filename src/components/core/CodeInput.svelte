@@ -193,7 +193,7 @@ $: helpText = `Enter ${maxlength}-digit verification code`;
 
 <div class="space-y-2 {className}">
   {#if showLabel}
-    <label for={showDigits ? "digit-0" : "code-input"} class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+  <label for={showDigits ? "digit-0" : "code-input"} class="block text-sm text-left font-medium text-gray-700 dark:text-gray-300">
       {displayLabel}
     </label>
   {/if}

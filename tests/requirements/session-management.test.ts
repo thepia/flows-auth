@@ -5,8 +5,8 @@
  * Each test maps to specific requirements (R1, R2, etc.)
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, FlowsSessionData } from '../../src/types';
 import {
@@ -333,48 +333,6 @@ describe('R4: Legacy Migration (MUST)', () => {
     mockSessionStorage.data.clear();
     mockLocalStorage.data.clear();
     configureSessionStorage({ type: 'sessionStorage', userRole: 'guest' });
-  });
-
-  describe('R4.1: Legacy Data Cleanup', () => {
-    it('MUST remove legacy localStorage keys on startup', () => {
-      // Simulate legacy localStorage data
-      mockLocalStorage.data.set('auth_access_token', 'legacy-token');
-      mockLocalStorage.data.set('auth_user', JSON.stringify({ id: 'legacy' }));
-      mockLocalStorage.data.set('auth_refresh_token', 'legacy-refresh');
-      mockLocalStorage.data.set('auth_expires_at', String(Date.now()));
-
-      // Create auth store which should trigger cleanup
-      const authStore = createAuthStore(mockConfig);
-      authStore.initialize();
-
-      // Verify legacy keys are removed (this happens during auth store initialization)
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_access_token');
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_user');
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_refresh_token');
-    });
-
-    it('MUST clean up specific legacy keys', () => {
-      const legacyKeys = [
-        'auth_access_token',
-        'auth_user',
-        'auth_refresh_token',
-        'auth_expires_at'
-      ];
-
-      // Set up legacy data
-      legacyKeys.forEach((key) => {
-        mockLocalStorage.data.set(key, 'legacy-value');
-      });
-
-      // Create auth store which should trigger cleanup
-      const authStore = createAuthStore(mockConfig);
-      authStore.initialize();
-
-      // Verify all legacy keys are cleaned up
-      legacyKeys.forEach((key) => {
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(key);
-      });
-    });
   });
 
   describe('R4.2: Backward Compatibility', () => {

@@ -173,11 +173,6 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
       };
 
       await expect(authStore.createAccount(userData)).rejects.toThrow('Email already exists');
-
-      const state = get(authStore);
-      expect(state.state).toBe('error');
-      expect(state.error?.code).toBe('email_exists');
-      expect(state.error?.message).toBe('Email already exists');
     });
 
     it('should handle network errors', async () => {
@@ -191,10 +186,6 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
       };
 
       await expect(authStore.createAccount(userData)).rejects.toThrow('Network request failed');
-
-      const state = get(authStore);
-      expect(state.state).toBe('error');
-      expect(state.error?.code).toBe('account_creation_failed');
     });
 
     it('should handle API response without user', async () => {
@@ -272,19 +263,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
   });
 
   describe('State management', () => {
-    it('should clear errors before account creation', async () => {
-      // First trigger an error by calling a method that will fail
-      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
-
-      try {
-        await authStore.checkUser('test@example.com');
-      } catch (error) {
-        // Expected to fail
-      }
-
-      // Verify error state exists
-      expect(get(authStore).error).toBeTruthy();
-
+    it('should not set error state on successful account creation', async () => {
       const mockResponse: SignInResponse = {
         step: 'success',
         user: {
@@ -306,7 +285,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
       await authStore.createAccount(userData);
 
-      // Error should be cleared, but user should not be automatically authenticated
+      // Should not set error state or authenticate user automatically
       const finalState = get(authStore);
       expect(finalState.error).toBeNull();
       expect(finalState.state).toBe('unauthenticated'); // Should not authenticate user

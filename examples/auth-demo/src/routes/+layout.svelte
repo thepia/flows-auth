@@ -57,7 +57,9 @@ onMount(() => {
 
     // Create auth store and update context
     authStore = createAuthStore(authConfig);
-    console.log('🔧 Auth store created');
+    // Add unique identifier for debugging
+    authStore._debugId = 'layout-' + Date.now();
+    console.log('🔧 Auth store created:', authStore._debugId);
     
     // Update context with the created auth store
     authStoreContext.set(authStore);
@@ -71,7 +73,11 @@ onMount(() => {
     const unsubscribe = authStore.subscribe((state) => {
       isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
       user = state.user;
-      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+      console.log('🔄 [LAYOUT] Auth state changed:', {
+        state: state.state,
+        signInState: state.signInState,
+        user: !!state.user
+      });
     });
 
     isAuthLoading = false;

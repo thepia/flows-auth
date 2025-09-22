@@ -15,7 +15,7 @@ export const m = new Proxy(
   {
     get: (target, key) => {
       return (vars?: object) => {
-        const libraryMessages: { [key: string]: (vars?: object) => string } = messages;
+        const libraryMessages = messages as unknown as { [key: string]: (vars?: object) => string };
         const appMessage = appMessages?.[key as string];
         const libraryMessage = libraryMessages[key as string];
 

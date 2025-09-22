@@ -60,10 +60,15 @@
   "webauthn.cancelled": "Godkendelse annulleret",
   "webauthn.notSupported": "WebAuthn understøttes ikke på denne enhed",
 
-  "security.passwordlessExplanation": "🔐 {companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.",
-  "security.passwordlessGeneric": "🔐 Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.",
-  "security.passwordlessWithPin": "🔐 {companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.",
-  "security.passwordlessWithPinGeneric": "🔐 Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.",
+  "security.passwordlessExplanation": "{companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.",
+  "security.passwordlessGeneric": "Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail links for øget sikkerhed og bekvemmelighed.",
+  "security.passwordlessWithPin": "{companyName} bruger adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.",
+  "security.passwordlessWithPinGeneric": "Adgangskodeløs godkendelse med biometriske passkeys eller sikre e-mail pins for øget sikkerhed og bekvemmelighed.",
+
+  "explainer.features.securePasskey": "Sikker passkey godkendelse",
+  "explainer.features.privacyCompliant": "Privatlivs-kompatibel adgang",
+  "explainer.features.employeeVerification": "Medarbejderverifikation påkrævet",
+  "explainer.features.userVerification": "Brugerverifikation påkrævet",
 
   "action.retry": "Prøv igen",
   "action.back": "Tilbage",

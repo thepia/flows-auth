@@ -32,6 +32,10 @@ export {
   SignInCore
 } from './components/core';
 
+// Icon system
+export { default as Icon } from './components/icons/Icon.svelte';
+export type { IconProps, IconVariant, IconSize, IconWeight } from './components/icons/types';
+
 // State Machine
 
 // Stores

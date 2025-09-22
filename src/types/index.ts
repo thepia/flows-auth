@@ -585,6 +585,14 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     signInMode?: 'login-only' | 'login-or-register';
   }) => StateMessageConfig | null;
 
+  getExplainerConfig: (params: {
+    signInState: SignInState;
+    userExists: boolean | null;
+    hasPasskeys: boolean;
+    hasValidPin: boolean;
+    explainFeatures?: boolean;
+  }) => ExplainerConfig | null;
+
   // Cleanup
   destroy: () => void;
 }
@@ -621,5 +629,25 @@ export interface StateMessageConfig {
   className?: string;
 }
 
+// Explainer configuration types
+export interface ExplainerFeature {
+  iconName: string; // Phosphor icon name (e.g., 'Lock', 'Shield', 'BadgeCheck')
+  textKey: string; // Translation key for the feature text
+  iconWeight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'; // Phosphor icon weight
+}
+
+export interface ExplainerConfig {
+  type: 'paragraph' | 'features';
+  // For paragraph type
+  textKey?: string; // Translation key for paragraph text
+  iconName?: string; // Optional icon for paragraph
+  iconWeight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+  useCompanyName?: boolean; // Whether to pass companyName parameter for translation interpolation
+  companyName?: string; // Company name to pass to translation function
+  // For features type
+  features?: ExplainerFeature[];
+  className?: string;
+}
+
 // Re-export i18n utilities for convenience
-export { m, setI18nMessages, getLocale } from '../utils/i18n';
+export { m, setI18nMessages } from '../utils/i18n';

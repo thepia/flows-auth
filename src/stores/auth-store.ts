@@ -19,8 +19,10 @@ import type {
   AuthStore,
   ButtonConfig,
   CompleteAuthStore,
+  ExplainerConfig,
   InvitationTokenData,
   RegistrationResponse,
+  SessionData,
   SessionMigrationResult,
   SignInEvent,
   SignInResponse,
@@ -264,8 +266,12 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         email: response.user.email,
         name: response.user.name || response.user.email,
         initials: generateInitials(response.user.name || response.user.email),
-        avatar: (response.user as any).avatar || (response.user as any).picture,
-        preferences: (response.user as any).preferences || (response.user as any).metadata
+        avatar:
+          ((response.user as unknown as Record<string, unknown>).avatar as string) ||
+          ((response.user as unknown as Record<string, unknown>).picture as string),
+        preferences:
+          (response.user as unknown as Record<string, unknown>).preferences ||
+          (response.user as unknown as Record<string, unknown>).metadata
       },
       tokens: {
         accessToken: response.accessToken,
@@ -439,22 +445,30 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       try {
         // Handle both old format (step: 'success') and new format (success: true)
-        const isSuccess = response.step === 'success' || (response as any).success;
-        const accessToken = response.accessToken || (response as any).tokens?.accessToken;
-        const refreshToken = response.refreshToken || (response as any).tokens?.refreshToken;
-        const expiresAt = (response as any).tokens?.expiresAt;
+        const responseWithTokens = response as Record<string, unknown> & {
+          step?: string;
+          accessToken?: string;
+          refreshToken?: string;
+          tokens?: Record<string, unknown>;
+        };
+        const isSuccess = response.step === 'success' || responseWithTokens.success;
+        const accessToken =
+          response.accessToken || (responseWithTokens.tokens?.accessToken as string);
+        const refreshToken =
+          response.refreshToken || (responseWithTokens.tokens?.refreshToken as string);
+        const expiresAt = responseWithTokens.tokens?.expiresAt;
 
         console.log('🔍 DEBUG: Processing signInWithPasskey response:', {
           responseKeys: Object.keys(response),
           hasStep: 'step' in response,
           stepValue: response.step,
           hasSuccess: 'success' in response,
-          successValue: (response as any).success,
+          successValue: responseWithTokens.success,
           isSuccess,
           hasUser: !!response.user,
           hasAccessToken: !!accessToken,
-          hasTokensObject: !!(response as any).tokens,
-          tokensKeys: (response as any).tokens ? Object.keys((response as any).tokens) : null,
+          hasTokensObject: !!responseWithTokens.tokens,
+          tokensKeys: responseWithTokens.tokens ? Object.keys(responseWithTokens.tokens) : null,
           fullResponse: response
         });
 
@@ -513,9 +527,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return response;
     } catch (error: unknown) {
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
-        code: (error as any)?.code || 'passkey_failed',
-        message: (error as any)?.message || 'Passkey authentication failed'
+        code: errorWithCode?.code || 'passkey_failed',
+        message: errorWithCode?.message || 'Passkey authentication failed'
       };
 
       reportAuthState({
@@ -536,7 +551,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       sendSignInEvent({
         type: 'PASSKEY_FAILED',
         error: {
-          name: (error as any)?.name || 'PasskeyError',
+          name: errorWithCode?.name || 'PasskeyError',
           message: authError.message,
           timing: Date.now() - startTime,
           type: 'credential-not-found'
@@ -576,9 +591,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return response;
     } catch (error: unknown) {
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
-        code: (error as any)?.code || 'unknown_error',
-        message: (error as any)?.message || 'Magic link request failed'
+        code: errorWithCode?.code || 'unknown_error',
+        message: errorWithCode?.message || 'Magic link request failed'
       };
 
       reportAuthState({
@@ -709,7 +725,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         userId: result.userId,
         emailVerified: result.emailVerified,
         invitationTokenHash: result.invitationTokenHash,
-        lastPinExpiry: result.lastPinExpiry as any
+        lastPinExpiry:
+          typeof result.lastPinExpiry === 'string'
+            ? Number.parseInt(result.lastPinExpiry, 10)
+            : result.lastPinExpiry
       };
 
       // Send USER_CHECKED event with user data
@@ -779,9 +798,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return response;
     } catch (error: unknown) {
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
-        code: (error as any)?.code || 'registration_failed',
-        message: (error as any)?.message || 'User registration failed'
+        code: errorWithCode?.code || 'registration_failed',
+        message: errorWithCode?.message || 'User registration failed'
       };
 
       reportAuthState({
@@ -851,10 +871,13 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       };
     } catch (error: unknown) {
       console.error('❌ Individual user registration failed:', error);
-      const authError = error instanceof Error ? error.message : 'Registration failed';
+      const authError: AuthError = {
+        code: 'registration_failed',
+        message: error instanceof Error ? error.message : 'Registration failed'
+      };
       updateState({
         state: 'error',
-        error: authError as any // Fix type issue
+        error: authError
       });
       throw error;
     }
@@ -920,9 +943,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return registrationResponse;
     } catch (error: unknown) {
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
-        code: (error as any)?.code || 'account_creation_failed',
-        message: (error as any)?.message || 'Failed to create user account'
+        code: errorWithCode?.code || 'account_creation_failed',
+        message: errorWithCode?.message || 'Failed to create user account'
       };
 
       reportAuthState({
@@ -932,7 +956,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         duration: Date.now() - startTime,
         context: {
           operation: 'createAccount',
-          errorCode: (error as any)?.code
+          errorCode: errorWithCode?.code
         }
       });
 
@@ -1103,22 +1127,23 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return completeAuthResponse;
     } catch (error: unknown) {
+      const errorWithCode = error as Error & { code?: string; name?: string };
       const authError: AuthError = {
-        code: (error as any)?.code || 'account_creation_failed',
-        message: (error as any)?.message || 'Account creation failed'
+        code: errorWithCode?.code || 'account_creation_failed',
+        message: errorWithCode?.message || 'Account creation failed'
       };
 
       // Enhanced error handling for WebAuthn-specific errors
-      if ((error as any)?.name === 'NotAllowedError') {
+      if (errorWithCode?.name === 'NotAllowedError') {
         authError.message =
           'Passkey creation was cancelled. Please try again and allow the passkey creation when prompted.';
-      } else if ((error as any)?.name === 'NotSupportedError') {
+      } else if (errorWithCode?.name === 'NotSupportedError') {
         authError.message =
           'Passkey authentication is not supported on this device. Please use a device with biometric authentication.';
-      } else if ((error as any)?.name === 'SecurityError') {
+      } else if (errorWithCode?.name === 'SecurityError') {
         authError.message =
           'Security error during passkey creation. Please ensure you are using HTTPS and try again.';
-      } else if ((error as any)?.name === 'InvalidStateError') {
+      } else if (errorWithCode?.name === 'InvalidStateError') {
         authError.message =
           'A passkey for this account may already exist. Please try signing in instead.';
       }
@@ -1130,8 +1155,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         duration: Date.now() - startTime,
         context: {
           operation: 'createAccount',
-          errorName: (error as any)?.name,
-          errorCode: (error as any)?.code
+          errorName: errorWithCode?.name,
+          errorCode: errorWithCode?.code
         }
       });
 
@@ -1391,9 +1416,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       return false;
     } catch (error: unknown) {
       // Conditional auth should fail silently for most errors
+      const errorWithMessage = error as Error;
       console.log(
         '⚠️ Conditional authentication failed (this is expected if no passkeys exist):',
-        (error as any)?.message
+        errorWithMessage?.message
       );
 
       reportAuthState({
@@ -1659,8 +1685,12 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     } catch (error: unknown) {
       console.error('App email sign-in failed:', error);
 
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
-        code: error instanceof Error && 'code' in error ? (error as any).code : 'UNKNOWN_ERROR',
+        code:
+          error instanceof Error && 'code' in error
+            ? errorWithCode.code || 'UNKNOWN_ERROR'
+            : 'UNKNOWN_ERROR',
         message: error instanceof Error ? error.message : 'Failed to send email code',
         timestamp: new Date().toISOString()
       };
@@ -1741,9 +1771,12 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     } catch (error: unknown) {
       console.error('Organization email code verification failed:', error);
 
+      const errorWithCode = error as Error & { code?: string };
       const authError: AuthError = {
         code:
-          error instanceof Error && 'code' in error ? (error as any).code : 'VERIFICATION_FAILED',
+          error instanceof Error && 'code' in error
+            ? errorWithCode.code || 'VERIFICATION_FAILED'
+            : 'VERIFICATION_FAILED',
         message: error instanceof Error ? error.message : 'Failed to verify email code',
         timestamp: new Date().toISOString()
       };
@@ -1791,7 +1824,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
     // SignIn flow control methods
     notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
-    notifyPinVerified: (sessionData: any) =>
+    notifyPinVerified: (sessionData: SessionData) =>
       sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
     sendSignInEvent, // Expose for components to send custom events
 
@@ -1919,7 +1952,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
               textKey: 'status.checkEmail',
               showIcon: true
             };
-          } else if (hasValidPin) {
+          }
+          if (hasValidPin) {
             return {
               type: 'info',
               textKey: 'status.pinDetected',
@@ -1938,6 +1972,93 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         default:
           return null;
       }
+    },
+
+    // Explainer configuration
+    getExplainerConfig: (params: {
+      signInState: SignInState;
+      userExists: boolean | null;
+      hasPasskeys: boolean;
+      hasValidPin: boolean;
+      explainFeatures?: boolean;
+    }): ExplainerConfig | null => {
+      const { signInState, userExists, hasPasskeys, hasValidPin, explainFeatures } = params;
+
+      // Only show explainer during email entry and user checked states
+      if (signInState !== 'emailEntry' && signInState !== 'userChecked') {
+        return null;
+      }
+
+      // Determine if we should show features list or paragraph
+      const shouldShowFeatures =
+        explainFeatures !== undefined
+          ? explainFeatures
+          : userExists === true && (hasPasskeys || hasValidPin);
+
+      if (shouldShowFeatures) {
+        // Show features list when user exists and has advanced auth methods
+        const features = [];
+
+        if (hasPasskeys) {
+          features.push({
+            iconName: 'Lock',
+            textKey: 'explainer.features.securePasskey',
+            iconWeight: 'duotone' as const
+          });
+        }
+
+        features.push({
+          iconName: 'Shield',
+          textKey: 'explainer.features.privacyCompliant',
+          iconWeight: 'duotone' as const
+        });
+
+        if (config.branding?.companyName) {
+          features.push({
+            iconName: 'BadgeCheck',
+            textKey: 'explainer.features.employeeVerification',
+            iconWeight: 'duotone' as const
+          });
+        } else {
+          features.push({
+            iconName: 'UserCheck',
+            textKey: 'explainer.features.userVerification',
+            iconWeight: 'duotone' as const
+          });
+        }
+
+        return {
+          type: 'features',
+          features,
+          className: 'explainer-features-list'
+        };
+      }
+      // Show paragraph for new users or simple auth scenarios
+      let textKey: string;
+
+      if (config.branding?.companyName) {
+        if (config.appCode) {
+          textKey = 'security.passwordlessWithPin';
+        } else {
+          textKey = 'security.passwordlessExplanation';
+        }
+      } else {
+        if (config.appCode) {
+          textKey = 'security.passwordlessWithPinGeneric';
+        } else {
+          textKey = 'security.passwordlessGeneric';
+        }
+      }
+
+      return {
+        type: 'paragraph',
+        textKey,
+        iconName: 'Lock',
+        iconWeight: 'duotone' as const,
+        useCompanyName: !!config.branding?.companyName,
+        companyName: config.branding?.companyName,
+        className: 'explainer-paragraph'
+      };
     },
 
     // Cleanup

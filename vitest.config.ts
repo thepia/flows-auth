@@ -10,10 +10,18 @@ export default defineConfig({
       hot: !process.env.VITEST
     })
   ],
+  optimizeDeps: {
+    include: ['phosphor-svelte']
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    server: {
+      deps: {
+        external: ['phosphor-svelte']
+      }
+    },
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

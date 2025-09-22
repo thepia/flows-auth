@@ -5,6 +5,7 @@ import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
 // Paraglide i18n setup
 import * as m from '../../paraglide/messages';
+import { getLocale } from '../../paraglide/runtime.js';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 export let isAuthenticated = false;
@@ -23,10 +24,13 @@ if (authStoreContext && browser) {
 // Optional SvelteKit props
 export let params = {};
 
-// Component state  
+// Component state
 let currentUser = null;
 let authState = 'unauthenticated'; // Start with unauthenticated, not loading
 let stateMachineState = null;
+
+// 🔑 Reactive locale tracking for component rerenders
+$: currentLocale = getLocale();
 let stateMachineContext = null;
 let authSubscribed = false;
 
@@ -235,6 +239,8 @@ onMount(async () => {
 });
 </script>
 
+<!-- 🔑 Conditional wrapper forces rerender when locale changes -->
+{#if currentLocale}
 <div class="signin-page">
   <div class="page-header">
     <h1>{m["signIn.title"]()}</h1>
@@ -433,6 +439,7 @@ onMount(async () => {
               variant={formVariant}
               popupPosition={popupPosition}
               className="demo-signin-form"
+              explainFeatures={true}
 
               on:success={(e) => handleSignInSuccess(e.detail)}
               on:error={(e) => handleSignInError(e.detail)}
@@ -455,6 +462,7 @@ onMount(async () => {
                     variant={formVariant}
                     popupPosition={popupPosition}
                     className="demo-signin-form"
+                    explainFeatures={true}
 
                     on:success={(e) => handleSignInSuccess(e.detail)}
                     on:error={(e) => handleSignInError(e.detail)}
@@ -486,6 +494,7 @@ onMount(async () => {
                       authStore={authStore}
                       initialEmail={emailInput}
                       className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
+                      explainFeatures={true}
 
                       on:success={(e) => handleSignInSuccess(e.detail)}
                       on:error={(e) => handleSignInError(e.detail)}
@@ -649,6 +658,7 @@ onMount(async () => {
     </div>
   </div>
 </div>
+{/if}
 
 <style>
   .signin-page {

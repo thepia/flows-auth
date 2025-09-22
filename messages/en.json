@@ -60,10 +60,15 @@
   "webauthn.cancelled": "Authentication was cancelled",
   "webauthn.notSupported": "WebAuthn is not supported on this device",
 
-  "security.passwordlessExplanation": "🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.",
-  "security.passwordlessGeneric": "🔐 Passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.",
-  "security.passwordlessWithPin": "🔐 {companyName} uses passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.",
-  "security.passwordlessWithPinGeneric": "🔐 Passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.",
+  "security.passwordlessExplanation": "{companyName} uses passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.",
+  "security.passwordlessGeneric": "Passwordless authentication with biometric passkeys or secure email links for enhanced security and convenience.",
+  "security.passwordlessWithPin": "{companyName} uses passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.",
+  "security.passwordlessWithPinGeneric": "Passwordless authentication with biometric passkeys or secure email pins for enhanced security and convenience.",
+
+  "explainer.features.securePasskey": "Secure passkey authentication",
+  "explainer.features.privacyCompliant": "Privacy-compliant access",
+  "explainer.features.employeeVerification": "Employee verification required",
+  "explainer.features.userVerification": "User verification required",
 
   "action.retry": "Try again",
   "action.back": "Back",

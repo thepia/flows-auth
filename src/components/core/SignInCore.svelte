@@ -11,16 +11,13 @@ import type { AuthConfig, AuthError, AuthMethod, User, SignInState, SignInEvent 
 import { isPlatformAuthenticatorAvailable } from '../../utils/webauthn';
 import { m } from '../../utils/i18n';
 import {
-  "security.passwordlessExplanation" as securityPasswordlessExplanation,
-  "security.passwordlessGeneric" as securityPasswordlessGeneric,
-  "security.passwordlessWithPin" as securityPasswordlessWithPin,
-  "security.passwordlessWithPinGeneric" as securityPasswordlessWithPinGeneric,
   "status.emailSent" as statusEmailSent,
   "status.pinDirectAction" as statusPinDirectAction,
   "status.pinValid" as statusPinValid
 } from '../../paraglide/messages';
 
 import AuthButton from './AuthButton.svelte';
+import AuthExplainer from './AuthExplainer.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import EmailInput from './EmailInput.svelte';
 import CodeInput from './CodeInput.svelte';
@@ -30,6 +27,7 @@ import UserManagement from '../UserManagement.svelte';
 // Props - only presentational props, no auth logic props
 export let initialEmail = '';
 export let className = '';
+export let explainFeatures = false; // Whether to show features list in explainer
 
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
@@ -625,6 +623,15 @@ $: stateMessageConfig = store ? store.getStateMessageConfig({
   signInMode: authConfig?.signInMode
 }) : null;
 
+// Explainer configuration (centralized in AuthStore)
+$: explainerConfig = store ? store.getExplainerConfig({
+  signInState: currentSignInState,
+  userExists,
+  hasPasskeys,
+  hasValidPin,
+  explainFeatures
+}) : null;
+
 $: emailInputWebAuthnEnabled = authConfig ? getEmailInputWebAuthnEnabled(authConfig, passkeysEnabled) : false;
 
 // Keep track of last checked email to avoid duplicate calls
@@ -738,22 +745,8 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
         /> -->
       {/if}
       
-      <!-- Security explanation message -->
-      <div class="security-message">
-        {#if authConfig?.branding?.companyName}
-          {#if authConfig.appCode}
-            {securityPasswordlessWithPin({ companyName: authConfig.branding.companyName })}
-          {:else}
-            {securityPasswordlessExplanation({ companyName: authConfig.branding.companyName })}
-          {/if}
-        {:else}
-          {#if authConfig.appCode}
-            {securityPasswordlessWithPinGeneric()}
-          {:else}
-            {securityPasswordlessGeneric()}
-          {/if}
-        {/if}
-      </div>
+      <!-- Auth explainer component -->
+      <AuthExplainer config={explainerConfig} />
     </form>
 
   {:else if currentSignInState === 'pinEntry'}
@@ -944,15 +937,7 @@ function getEmailInputWebAuthnEnabled(authConfig: AuthConfig | null | undefined,
   }
   
 
-  /* Security message styling - matches thepia.com */
-  .security-message {
-    margin-top: 16px;
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--auth-text-secondary, #6b7280);
-    line-height: 1.4;
-    opacity: 0.8;
-  }
+
 
 
 </style>

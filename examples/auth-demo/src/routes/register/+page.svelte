@@ -1,11 +1,12 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
-import { ChevronRight, User, Mail, Key, Shield, Activity, Settings } from 'lucide-svelte';
+import { CaretRight as ChevronRight, User, Envelope, Key, Shield, Pulse as Activity, Gear as Settings } from 'phosphor-svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
 // Paraglide i18n setup
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
 export let isAuthenticated = false;
@@ -20,6 +21,9 @@ let SessionStateMachineComponent = null;
 // Registration state
 let emailInput = '';
 let testEmail = 'demo@example.com';
+
+// 🔑 Reactive locale tracking for component rerenders
+$: currentLocale = getLocale();
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
 let userStateResult = null;
@@ -262,6 +266,8 @@ async function updateDomain() {
 }
 </script>
 
+<!-- 🔑 Conditional wrapper forces rerender when locale changes -->
+{#if currentLocale}
 <div class="demo-container">
   <!-- Demo Content -->
   <div class="demo-content">
@@ -379,7 +385,7 @@ async function updateDomain() {
                     <p class="action-note">User doesn't exist. Create new account with passkey.</p>
                   {:else if getRecommendedAction(userStateResult) === 'verify-email'}
                     <button class="btn btn-secondary" on:click={registerIndividualUser}>
-                      <Mail size={16} />
+                      <Envelope size={16} />
                       Send Verification Email
                     </button>
                     <p class="action-note">User exists but email not verified. Send verification email first.</p>
@@ -501,6 +507,7 @@ async function updateDomain() {
     </div>
   </div>
 </div>
+{/if}
 
 <style>
   .demo-container {

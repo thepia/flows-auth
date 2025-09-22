@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   // Paraglide demo translations
   import * as m from '../../paraglide/messages.js';
-  import { Activity, User, Mail } from 'lucide-svelte';
+  import { Pulse as Activity, User, Envelope } from 'phosphor-svelte';
 
   // Tab configuration with Paraglide functions
   $: tabs = [
@@ -25,7 +25,7 @@
       id: 'register',
       title: m.tabs_register_title(),
       description: m.tabs_register_description(),
-      icon: Mail,
+      icon: Envelope,
       href: '/register'
     }
   ];

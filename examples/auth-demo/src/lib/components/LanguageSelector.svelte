@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { Globe } from 'lucide-svelte';
+  import { Globe } from 'phosphor-svelte';
   import { baseLocale, setLocale, getLocale } from '../../paraglide/runtime.js';
 
   // Paraglide language management

@@ -944,10 +944,6 @@ const dispatch = createEventDispatcher<{
     margin-top: 16px;
   }
 
-  .business-fields .input-group {
-    margin-bottom: 16px;
-  }
-
   .warning-banner {
     background: #fef3c7;
     border: 1px solid #f59e0b;

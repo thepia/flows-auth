@@ -188,11 +188,6 @@ function handleSignOut() {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .management-card.primary {
-    border-color: var(--auth-primary-color, #3b82f6);
-    background: var(--auth-primary-light-bg, #eff6ff);
-  }
-
   .card-header {
     display: flex;
     justify-content: space-between;
@@ -253,11 +248,6 @@ function handleSignOut() {
     border-color: var(--auth-primary-dark, #2563eb);
   }
 
-  .action-button.large {
-    padding: 12px 24px;
-    font-size: 1rem;
-    font-weight: 600;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 640px) {

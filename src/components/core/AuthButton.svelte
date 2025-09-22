@@ -6,6 +6,7 @@
 import { createEventDispatcher } from 'svelte';
 import type { SingleButtonConfig } from '../../types';
 import { m } from '../../utils/i18n';
+import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
 // Props
 export let type: 'submit' | 'button' = 'submit';
@@ -57,7 +58,7 @@ $: {
   effectiveSupportsWebAuthn; loading; text; loadingText; buttonConfig; isAppleDevice; isAppCodeBased;
   displayText = getDisplayText();
 }
-$: displayIcon = getDisplayIcon();
+$: displayIconComponent = getDisplayIconComponent();
 
 function getDisplayText(): string {
   console.log('AuthButton getDisplayText debug:', {
@@ -137,21 +138,26 @@ function detectAppleDevice(): boolean {
 // Note: Specific Touch ID/Face ID detection removed in favor of generic biometric text
 // This provides better reliability and follows WebAuthn privacy principles
 
-function getDisplayIcon(): string {
-  if (loading) return '';
-  if (icon) return icon;
+function getDisplayIconComponent() {
+  if (loading) return null;
+  if (icon) return null; // Legacy string icon support - will be displayed as text
 
   switch (buttonConfig.method) {
     case 'passkey':
-      // Use generic biometric icon for Apple devices, passkey icon for others
-      return isAppleDevice ? '👆' : '🔑'; // Touch ID icon for Apple, passkey for others
+      // Use fingerprint icon for Apple devices, key icon for others
+      return isAppleDevice ? Fingerprint : Key;
     case 'email':
     case 'email-code':
-    case 'magic-link': return '✉️';
-    case 'continue-touchid': return '👆';
-    case 'continue-faceid': return '😊';
-    case 'continue-biometric': return '👆'; // Generic Touch ID icon for biometric
-    default: return '';
+    case 'magic-link':
+      return Envelope;
+    case 'continue-touchid':
+      return Fingerprint;
+    case 'continue-faceid':
+      return SmileyWink;
+    case 'continue-biometric':
+      return Fingerprint; // Generic fingerprint icon for biometric
+    default:
+      return null;
   }
 }
 
@@ -204,8 +210,12 @@ function getButtonClasses(): string {
   {#if loading}
     <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
     <span id="button-loading-text" class="sr-only">Signing in...</span>
-  {:else if showIcon && displayIcon}
-    <span aria-hidden="true">{displayIcon}</span>
+  {:else if showIcon && (displayIconComponent || icon)}
+    {#if displayIconComponent}
+      <svelte:component this={displayIconComponent} size={16} weight="bold" aria-hidden="true" />
+    {:else if icon}
+      <span aria-hidden="true">{icon}</span>
+    {/if}
   {/if}
   
   <span>{displayText}</span>

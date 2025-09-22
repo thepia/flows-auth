@@ -18,6 +18,55 @@ vi.mock('../src/utils/errorReporter', () => ({
   getErrorReportQueueSize: vi.fn(() => 0)
 }));
 
+// Mock phosphor-svelte icons to prevent ES module import issues
+vi.mock('phosphor-svelte', () => {
+  // Create a proper mock Svelte component
+  const MockIcon = class {
+    constructor() {
+      this.$$ = {
+        fragment: null,
+        ctx: [],
+        callbacks: {},
+        dirty: () => {},
+        bound: {},
+        update: () => {},
+        before_update: [],
+        after_update: [],
+        context: new Map(),
+        on_mount: [],
+        on_destroy: [],
+        skip_bound: false
+      };
+    }
+
+    $destroy() {}
+    $on() {
+      return () => {};
+    }
+    $set() {}
+  };
+
+  return {
+    Lock: MockIcon,
+    Shield: MockIcon,
+    Certificate: MockIcon,
+    Key: MockIcon,
+    UserCheck: MockIcon,
+    ShieldCheck: MockIcon,
+    Fingerprint: MockIcon,
+    DeviceMobile: MockIcon,
+    Globe: MockIcon,
+    CheckCircle: MockIcon,
+    WarningCircle: MockIcon,
+    User: MockIcon,
+    Envelope: MockIcon,
+    SmileyWink: MockIcon,
+    Heart: MockIcon,
+    Star: MockIcon,
+    Settings: MockIcon
+  };
+});
+
 // Mock browser APIs for testing
 const localStorageMock = {
   store: new Map(),

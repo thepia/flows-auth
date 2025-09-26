@@ -48,7 +48,7 @@
   }
 </script>
 
-<nav class="tab-navigation" role="tablist" aria-label="Demo navigation">
+<nav class="tab-navigation" aria-label="Demo navigation">
   <div class="tab-container">
     <div class="tab-list">
       {#each tabs as tab}

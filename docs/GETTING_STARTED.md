@@ -228,7 +228,19 @@ interface AuthStore {
   accessToken: string | null;
   refreshToken: string | null;
   expiresAt: number | null;
-  error: string | null;
+  apiError: ApiError | null;
+}
+
+interface ApiError {
+  code: AuthErrorCode; // Translation key for the error message
+  message: string; // Technical error message for debugging
+  retryable: boolean; // Whether the error can be retried
+  timestamp: number; // When the error occurred
+  context?: {
+    method?: string; // Which API method failed
+    email?: string; // Email context if relevant
+    attempt?: number; // Retry attempt number
+  };
 }
 ```
 
@@ -237,6 +249,7 @@ interface AuthStore {
 ```svelte
 <script>
   import { createAuthStore } from '@thepia/flows-auth';
+  import { m } from '../paraglide/messages.js';
 
   const authStore = createAuthStore(config);
 
@@ -244,13 +257,18 @@ interface AuthStore {
   $: user = $authStore.user;
   $: isAuthenticated = $authStore.state === 'authenticated';
   $: isLoading = $authStore.state === 'authenticating';
-  $: error = $authStore.error;
+  $: apiError = $authStore.apiError;
 </script>
 
 {#if isLoading}
   <div class="loading">Signing in...</div>
-{:else if error}
-  <div class="error">Error: {error}</div>
+{:else if apiError}
+  <div class="error" role="alert">
+    {m[apiError.code]()}
+    {#if apiError.retryable}
+      <button on:click={() => authStore.retryLastFailedRequest()}>Try Again</button>
+    {/if}
+  </div>
 {:else if isAuthenticated}
   <div class="authenticated">Welcome, {user.name}!</div>
 {:else}
@@ -288,10 +306,15 @@ const token = authStore.getAccessToken();
 
 ## Error Handling
 
+The library uses a centralized **ApiError architecture** with translation-based error messages for internationalization support.
+
+### Centralized Error Management
+
 ```svelte
 <script>
-  import { createAuthStore, SignInForm } from '@thepia/flows-auth';
-  
+  import { createAuthStore, SignInCore } from '@thepia/flows-auth';
+  import { m } from '../paraglide/messages.js';
+
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
@@ -300,70 +323,91 @@ const token = authStore.getAccessToken();
     domain: 'thepia.net'
   });
 
-  // React to auth store errors
-  $: authError = $authStore.error;
-  $: if (authError) {
-    handleAuthStoreError(authError);
+  // React to centralized API errors
+  $: apiError = $authStore.apiError;
+  $: if (apiError) {
+    handleApiError(apiError);
   }
 
-  function handleAuthStoreError(error) {
+  function handleApiError(error) {
+    console.error('API Error:', {
+      code: error.code,
+      message: error.message,
+      retryable: error.retryable,
+      timestamp: new Date(error.timestamp)
+    });
+
+    // Optionally handle specific error types
     switch (error.code) {
-      case 'passkey_failed':
-        console.error('Passkey authentication failed:', error.message);
-        // Could automatically fallback to magic link
+      case 'error_usernotfound2':
+        // User doesn't exist - could trigger registration flow
         break;
-      case 'invalid_credentials':
-        console.error('Invalid credentials:', error.message);
+      case 'error_networkerror1':
+        // Network issue - could show offline indicator
         break;
-      case 'network_error':
-        console.error('Network error:', error.message);
+      case 'error_authenticationfailed1':
+        // Auth failed - could suggest alternative methods
         break;
-      default:
-        console.error('Authentication error:', error.message);
     }
   }
 
-  function handleComponentError(event) {
-    const { error } = event.detail;
-    console.error('Component error:', error);
-    
-    // Handle specific component-level errors
-    if (error.code === 'passkey_not_supported') {
-      // Show message about passkey support
-      alert('Passkeys are not supported on this device. Please use email authentication.');
-    }
+  // Clear errors when user takes action
+  function clearError() {
+    authStore.clearApiError();
   }
 
-  // Example of calling auth methods with proper error handling
-  async function tryPasskeyAuth() {
-    try {
-      await authStore.signInWithPasskey('user@example.com');
-      console.log('Passkey authentication successful');
-    } catch (error) {
-      console.error('Passkey auth failed:', error);
-      // Fallback to magic link
-      try {
-        await authStore.signInWithMagicLink('user@example.com');
-        console.log('Magic link sent as fallback');
-      } catch (fallbackError) {
-        console.error('Both auth methods failed:', fallbackError);
-      }
+  // Retry failed operations
+  async function retryLastOperation() {
+    const success = await authStore.retryLastFailedRequest();
+    if (!success) {
+      console.log('Retry failed or no operation to retry');
     }
   }
 </script>
 
-<!-- Display auth errors in UI -->
-{#if authError}
-  <div class="error-banner">
-    <p>Authentication Error: {authError.message}</p>
-    <button on:click={() => authStore.reset()}>Try Again</button>
+<!-- Display persistent API errors with translations -->
+{#if apiError}
+  <div class="error-banner" role="alert">
+    <p>{m[apiError.code]()}</p>
+    <div class="error-actions">
+      {#if apiError.retryable}
+        <button on:click={retryLastOperation}>Try Again</button>
+      {/if}
+      <button on:click={clearError}>Dismiss</button>
+    </div>
   </div>
 {/if}
 
-<SignInForm 
-  {authStore}
-  on:error={handleComponentError}
-/>
+<!-- SignInCore automatically displays apiError with translations -->
+<SignInCore {config} {authStore} />
+```
+
+### Error Types and Translation Keys
+
+The library uses these error codes as translation keys:
+
+- `error_usernotfound2` - No account found for email
+- `error_serviceunavailable1` - Service temporarily unavailable
+- `error_authenticationcancelled1` - User cancelled authentication
+- `error_authenticationfailed1` - Authentication failed
+- `error_networkerror1` - Network connection failed
+- `error_ratelimited1` - Too many attempts
+- `error_invalidinput1` - Invalid input provided
+- `error_unknownerror1` - Unexpected error occurred
+
+### Simplified Component Integration
+
+Components no longer need error handling - errors are managed centrally:
+
+```svelte
+<script>
+  // No try/catch needed - errors handled by AuthStore
+  async function handleSignIn() {
+    // This will set apiError on failure, no exception thrown
+    await authStore.checkUser(email);
+    await authStore.signInWithPasskey(email);
+  }
+</script>
 ```
 
 ## Styling and Theming

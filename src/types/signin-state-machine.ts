@@ -27,7 +27,6 @@ export type SignInEvent =
   | { type: 'SENT_PIN_EMAIL' } // PIN email sent successfully, transition to pin entry
   | { type: 'PIN_REQUESTED' } // PIN authentication requested - used by state machine
   | { type: 'PASSKEY_AVAILABLE' } // WebAuthn credentials found
-  | { type: 'VALID_PIN_DETECTED'; remainingMinutes: number } // Valid PIN detected for user
   | { type: 'EMAIL_CODE_ENTERED'; code: string } // User entered email code
   | { type: 'PASSKEY_SELECTED' } // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any } // WebAuthn authentication succeeded

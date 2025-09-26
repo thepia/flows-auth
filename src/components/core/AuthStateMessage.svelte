@@ -13,12 +13,16 @@ export let showIcon = true;
 export let dismissible = false;
 export let className = '';
 export let animate = true;
+export let variant: 'default' | 'pin-status' = 'default';
 
 // Internal state
 let visible = true;
 
 // Computed message - use Paraglide message functions directly
 $: displayMessage = getDisplayMessage();
+
+// Check if we have slot content
+$: hasSlotContent = $$slots.default;
 
 function getDisplayMessage(): string {
   // If explicit message is provided, use it
@@ -61,9 +65,9 @@ $: if (type === 'success' && displayMessage) {
 }
 </script>
 
-{#if visible && displayMessage}
+{#if visible && (displayMessage || hasSlotContent)}
   <div
-    class="auth-message type-{type} {className}"
+    class="auth-message type-{type} variant-{variant} {className}"
     class:animate
     role={type === 'error' ? 'alert' : 'status'}
     aria-live={type === 'error' ? 'assertive' : 'polite'}
@@ -75,7 +79,13 @@ $: if (type === 'success' && displayMessage) {
         </span>
       {/if}
 
-      <span class="message-text">{displayMessage}</span>
+      <span class="message-text">
+        {#if hasSlotContent}
+          <slot />
+        {:else}
+          {displayMessage}
+        {/if}
+      </span>
       
       {#if dismissible}
         <button 
@@ -128,6 +138,7 @@ $: if (type === 'success' && displayMessage) {
   .message-text {
     flex: 1;
     word-wrap: break-word;
+    text-align: left;
   }
 
   .dismiss-button {
@@ -164,6 +175,55 @@ $: if (type === 'success' && displayMessage) {
     color: var(--auth-warning-text, #d97706);
   }
 
+  /* Pin status variant - matches SignInCore pin-status-message styling */
+  .variant-pin-status {
+    padding: 12px 16px;
+    margin: 12px 0;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #0369a1;
+    line-height: 1.4;
+  }
+
+  .variant-pin-status .message-content {
+    gap: 8px;
+  }
+
+  .variant-pin-status .message-icon {
+    font-size: 16px;
+    margin-top: 2px;
+  }
+
+  .variant-pin-status .message-text {
+    flex: 1;
+  }
+
+  /* Pin direct link styles (for buttons within pin-status variant) */
+  .variant-pin-status :global(.pin-direct-link) {
+    background: none;
+    border: none;
+    color: #0369a1;
+    font-size: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    margin: 0 0 0 4px;
+    transition: color 0.2s;
+  }
+
+  .variant-pin-status :global(.pin-direct-link:hover:not(:disabled)) {
+    color: #075985;
+  }
+
+  .variant-pin-status :global(.pin-direct-link:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
     .type-error {
@@ -180,6 +240,20 @@ $: if (type === 'success' && displayMessage) {
 
     .type-warning {
       color: var(--auth-warning-text-dark, #fbbf24);
+    }
+
+    .variant-pin-status {
+      background: #0c1821;
+      border-color: #1e3a8a;
+      color: #60a5fa;
+    }
+
+    .variant-pin-status :global(.pin-direct-link) {
+      color: #60a5fa;
+    }
+
+    .variant-pin-status :global(.pin-direct-link:hover:not(:disabled)) {
+      color: #93c5fd;
     }
   }
 </style>

@@ -149,17 +149,6 @@ describe('Auth Store State Centralization', () => {
       // expect(state.signInState).toBe('userChecked');
     });
 
-    it('should handle VALID_PIN_DETECTED event (when implemented)', () => {
-      // const pinDetectedEvent = {
-      //   type: 'VALID_PIN_DETECTED' as const,
-      //   remainingMinutes: 10
-      // };
-      // authStore.sendSignInEvent(pinDetectedEvent);
-      // const state = get(authStore);
-      // expect(state.hasValidPin).toBe(true);
-      // expect(state.pinRemainingMinutes).toBe(10);
-    });
-
     it('should handle EMAIL_CODE_ENTERED event (when implemented)', () => {
       // const codeEnteredEvent = {
       //   type: 'EMAIL_CODE_ENTERED' as const,

@@ -354,18 +354,60 @@ export interface AuthError {
   timestamp?: string;
 }
 
+// New ApiError interface for centralized error management
+export interface ApiError {
+  code: AuthErrorCode; // Translation key for the error message
+  message: string; // Technical error message for debugging
+  retryable: boolean; // Whether the error can be retried
+  timestamp: number; // When the error occurred
+  context?: {
+    method?: string; // Which API method failed
+    email?: string; // Email context if relevant
+    attempt?: number; // Retry attempt number
+  };
+}
+
 export type AuthErrorCode =
-  | 'user_not_found'
-  | 'email_not_verified'
-  | 'passkey_not_supported'
-  | 'passkey_failed'
-  | 'passkey_cancelled'
-  | 'passkey_timeout'
-  | 'magic_link_expired'
-  | 'magic_link_failed'
-  | 'rate_limited'
-  | 'network_error'
-  | 'unknown_error';
+  | 'error.userNotFound'
+  | 'error.serviceUnavailable'
+  | 'error.authCancelled'
+  | 'error.authFailed'
+  | 'error.network'
+  | 'error.rateLimited'
+  | 'error.invalidInput'
+  | 'error.unknown';
+
+/**
+ * User check data structure - aligned with actual API server implementation
+ * Based on checkUser function in thepia.com/src/api/workos.ts:234-265
+ */
+export interface UserCheckData {
+  // Core response (always present)
+  exists: boolean;
+  hasWebAuthn: boolean;       // Note: API uses hasWebAuthn, not hasPasskey
+  
+  // Optional fields (only present if user exists)
+  userId?: string;            // WorkOS user ID
+  emailVerified?: boolean;    // From WorkOS user profile
+  
+  // Pin validation fields (from user metadata)
+  lastPinExpiry?: string;     // ISO string from user.metadata.lastPinExpiry  
+  lastPinSentAt?: string;     // ISO string from user.metadata.lastPinSentAt
+  
+  // Invitation system
+  invitationTokenHash?: string; // For invitation token validation
+  
+  // Organization context (added by check-user.ts:60-67)
+  organization?: {
+    code: string;             // App code (e.g., "demo") 
+    name: string;             // Organization name
+    provider: string;         // "workos"
+    features?: {
+      webauthn?: boolean;
+      sso?: boolean;
+    };
+  };
+}
 
 // Events
 export interface AuthEventData {
@@ -478,7 +520,7 @@ export interface AuthStore {
   accessToken: string | null;
   refreshToken: string | null;
   expiresAt: number | null;
-  error: AuthError | null;
+  apiError: ApiError | null; // Centralized API error management
   passkeysEnabled: boolean; // Added: Centralized passkey availability determination
 
   // UI State (moved from SignInCore)
@@ -530,7 +572,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     userId?: string;
     emailVerified?: boolean;
     invitationTokenHash?: string;
-    lastPinExpiry?: number;
+    lastPinExpiry?: string; // ISO date string from API
   }>;
   registerUser: (userData: {
     email: string;
@@ -607,6 +649,11 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   setLoading: (loading: boolean) => void;
   setConditionalAuthActive: (active: boolean) => void;
   setEmailCodeSent: (sent: boolean) => void;
+
+  // Error management methods
+  setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
+  clearApiError: () => void;
+  retryLastFailedRequest: () => Promise<boolean>;
 
   // Cleanup
   destroy: () => void;

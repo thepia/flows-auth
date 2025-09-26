@@ -93,7 +93,7 @@ describe('Paraglide Build Verification', () => {
         'auth.signingIn',
         'code.label',
         'code.placeholder',
-        'error.authentication',
+        'error.authFailed',
         'error.network'
       ];
 
@@ -240,7 +240,7 @@ describe('Paraglide Build Verification', () => {
       }
 
       // Test a few key functions (using dot notation for aliased exports)
-      const testFunctions = ['email.label', 'auth.signIn', 'error.authentication'];
+      const testFunctions = ['email.label', 'auth.signIn', 'error.authFailed'];
 
       for (const funcName of testFunctions) {
         if (generatedMessages[funcName]) {

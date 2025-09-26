@@ -16,6 +16,7 @@ import type {
   SignInRequest,
   SignInResponse,
   User,
+  UserCheckData,
   UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
@@ -393,14 +394,7 @@ export class AuthApiClient {
   /**
    * Check if email exists with rate limiting and caching
    */
-  async checkEmail(email: string): Promise<{
-    exists: boolean;
-    hasPasskey: boolean;
-    userId?: string;
-    emailVerified?: boolean;
-    invitationTokenHash?: string;
-    lastPinExpiry?: string;
-  }> {
+  async checkEmail(email: string): Promise<UserCheckData> {
     // Check cache first
     const cachedResult = globalUserCache.get(email);
     if (cachedResult) {
@@ -428,14 +422,7 @@ export class AuthApiClient {
 
     // Use rate-limited request with Origin header for RPID determination
     // Using GET method with email as query parameter (API server supports this)
-    const response = await this.rateLimitedRequest<{
-      exists: boolean;
-      hasWebAuthn: boolean;
-      userId?: string;
-      emailVerified?: boolean;
-      invitationTokenHash?: string;
-      lastPinExpiry?: string;
-    }>(`${endpoint}?email=${encodeURIComponent(email)}`, {
+    const response = await this.rateLimitedRequest<UserCheckData>(`${endpoint}?email=${encodeURIComponent(email)}`, {
       method: 'GET',
       headers: {
         Origin: origin
@@ -449,15 +436,8 @@ export class AuthApiClient {
       timestamp: new Date().toISOString()
     });
 
-    // Map API response to expected format
-    const result = {
-      exists: response.exists,
-      hasPasskey: response.hasWebAuthn || false,
-      userId: response.userId,
-      emailVerified: response.emailVerified || false,
-      invitationTokenHash: response.invitationTokenHash,
-      lastPinExpiry: response.lastPinExpiry
-    };
+    // Return the response directly since it's already in UserCheckData format
+    const result: UserCheckData = response;
 
     // Cache the result
     globalUserCache.set(email, result);

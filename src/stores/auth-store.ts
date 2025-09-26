@@ -9,10 +9,12 @@ import { derived, get, writable } from 'svelte/store';
 const browser = typeof window !== 'undefined';
 import { AuthApiClient } from '../api/auth-api';
 import type {
+  ApiError,
   ApplicationContext,
   AuthButtonMethod,
   AuthConfig,
   AuthError,
+  AuthErrorCode,
   AuthEventData,
   AuthEventType,
   AuthMethod,
@@ -64,6 +66,127 @@ const LEGACY_STORAGE_KEYS = {
   EXPIRES_AT: 'auth_expires_at',
   USER: 'auth_user'
 } as const;
+
+/**
+ * Classify technical errors into user-friendly ApiError objects
+ */
+function classifyError(error: unknown, context?: { method?: string; email?: string }): ApiError {
+  const message = error instanceof Error ? error.message : String(error);
+  const timestamp = Date.now();
+
+  // Network and service availability errors
+  if (
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('Failed to fetch')
+  ) {
+    return {
+      code: 'error.network',
+      message,
+      retryable: true,
+      timestamp,
+      context
+    };
+  }
+
+  // Service unavailable (API endpoints not found, server errors)
+  if (
+    message.includes('404') ||
+    message.includes('endpoint') ||
+    message.includes('not found') ||
+    message.includes('500') ||
+    message.includes('502') ||
+    message.includes('503')
+  ) {
+    return {
+      code: 'error.serviceUnavailable',
+      message,
+      retryable: true,
+      timestamp,
+      context
+    };
+  }
+
+  // User not found errors
+  if (
+    message.includes('user not found') ||
+    message.includes('User not found') ||
+    (message.includes('404') && context?.method === 'checkUser')
+  ) {
+    return {
+      code: 'error.userNotFound',
+      message,
+      retryable: false,
+      timestamp,
+      context
+    };
+  }
+
+  // WebAuthn cancellation
+  if (
+    message.includes('NotAllowedError') ||
+    message.includes('cancelled') ||
+    message.includes('aborted')
+  ) {
+    return {
+      code: 'error.authCancelled',
+      message,
+      retryable: true,
+      timestamp,
+      context
+    };
+  }
+
+  // WebAuthn and passkey failures
+  if (
+    message.includes('webauthn') ||
+    message.includes('passkey') ||
+    message.includes('credential')
+  ) {
+    return {
+      code: 'error.authFailed',
+      message,
+      retryable: true,
+      timestamp,
+      context
+    };
+  }
+
+  // Rate limiting
+  if (
+    message.includes('rate limit') ||
+    message.includes('too many requests') ||
+    message.includes('429')
+  ) {
+    return {
+      code: 'error.rateLimited',
+      message,
+      retryable: true,
+      timestamp,
+      context
+    };
+  }
+
+  // Invalid input
+  if (message.includes('invalid') || message.includes('validation') || message.includes('400')) {
+    return {
+      code: 'error.invalidInput',
+      message,
+      retryable: false,
+      timestamp,
+      context
+    };
+  }
+
+  // Default unknown error
+  return {
+    code: 'error.unknown',
+    message,
+    retryable: true,
+    timestamp,
+    context
+  };
+}
 
 // Create auth store with state machine integration
 function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): CompleteAuthStore {
@@ -131,7 +254,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
-    error: null,
+    apiError: null,
     passkeysEnabled: determinePasskeysEnabled(),
 
     // UI State
@@ -167,6 +290,52 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
   function emit(type: AuthEventType, data: AuthEventData = {}) {
     const handlers = eventHandlers.get(type) || [];
     handlers.forEach((handler) => handler(data));
+  }
+
+  // Error management state
+  let lastFailedRequest: { method: string; args: unknown[] } | null = null;
+
+  /**
+   * Set API error in the store
+   */
+  function setApiError(error: unknown, context?: { method?: string; email?: string }) {
+    const apiError = classifyError(error, context);
+    updateStore((s) => ({ ...s, apiError }));
+
+    // Store the failed request for retry capability
+    if (context?.method) {
+      lastFailedRequest = { method: context.method, args: [] };
+    }
+  }
+
+  /**
+   * Clear API error from the store
+   */
+  function clearApiError() {
+    updateStore((s) => ({ ...s, apiError: null }));
+    lastFailedRequest = null;
+  }
+
+  /**
+   * Retry the last failed request if available and retryable
+   */
+  async function retryLastFailedRequest(): Promise<boolean> {
+    const currentState = get(store);
+    if (!currentState.apiError || !currentState.apiError.retryable || !lastFailedRequest) {
+      return false;
+    }
+
+    clearApiError();
+
+    try {
+      // This would need to be implemented based on the specific method
+      // For now, just clear the error and return true
+      console.log('Retrying last failed request:', lastFailedRequest.method);
+      return true;
+    } catch (error) {
+      setApiError(error, { method: lastFailedRequest.method });
+      return false;
+    }
   }
 
   /**
@@ -266,13 +435,6 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
             hasPasskeys: event.hasPasskey,
             hasValidPin: event.hasValidPin || false,
             pinRemainingMinutes: event.pinRemainingMinutes || 0
-          };
-          break;
-        case 'VALID_PIN_DETECTED':
-          updatedStore = {
-            ...updatedStore,
-            hasValidPin: true,
-            pinRemainingMinutes: event.remainingMinutes
           };
           break;
         case 'EMAIL_CODE_ENTERED':
@@ -400,7 +562,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     }
 
     if (!conditional) {
-      updateState({ error: null }); // Clear errors but don't change state
+      clearApiError(); // Clear errors but don't change state
       emit('sign_in_started', { method: 'passkey' });
       reportAuthState({
         event: 'webauthn-start',
@@ -501,7 +663,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
               (normalizedResponse.expiresIn
                 ? Date.now() + normalizedResponse.expiresIn * 1000
                 : Date.now() + 24 * 60 * 60 * 1000),
-            error: null
+            apiError: null
           });
           scheduleTokenRefresh();
           emit('sign_in_success', { user: response.user, method: 'passkey' });
@@ -534,22 +696,30 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       return response;
     } catch (error: unknown) {
       const errorWithCode = error as Error & { code?: string };
-      const authError: AuthError = {
-        code: errorWithCode?.code || 'passkey_failed',
-        message: errorWithCode?.message || 'Passkey authentication failed'
-      };
+
+      // Set API error using new error management
+      setApiError(error, { method: 'signInWithPasskey', email });
 
       reportAuthState({
         event: 'webauthn-failure',
         email,
         authMethod: 'passkey',
-        error: authError.message,
+        error: errorWithCode?.message || 'Passkey authentication failed',
         duration: Date.now() - startTime,
         context: { conditional }
       });
 
       if (!conditional) {
-        emit('sign_in_error', { error: authError, method: 'passkey' });
+        const currentState = get(store);
+        emit('sign_in_error', {
+          error: currentState.apiError
+            ? {
+                code: currentState.apiError.code,
+                message: currentState.apiError.message
+              }
+            : undefined,
+          method: 'passkey'
+        });
       }
 
       // Send SignInEvent for passkey failure
@@ -557,13 +727,13 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         type: 'PASSKEY_FAILED',
         error: {
           name: errorWithCode?.name || 'PasskeyError',
-          message: authError.message,
+          message: errorWithCode?.message || 'Passkey authentication failed',
           timing: Date.now() - startTime,
           type: 'credential-not-found'
         }
       });
 
-      throw authError;
+      throw error;
     }
   }
 
@@ -573,7 +743,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
   async function signInWithMagicLink(email: string): Promise<SignInResponse> {
     const startTime = Date.now();
 
-    updateState({ error: null }); // Clear errors but don't change state
+    clearApiError(); // Clear errors but don't change state
     emit('sign_in_started', { method: 'magic-link' });
 
     reportAuthState({
@@ -585,7 +755,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     try {
       const response = await api.signInWithMagicLink({ email });
 
-      updateState({ state: 'unauthenticated', error: null });
+      updateState({ state: 'unauthenticated', apiError: null });
 
       reportAuthState({
         event: 'magic-link-sent',
@@ -596,22 +766,28 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       return response;
     } catch (error: unknown) {
-      const errorWithCode = error as Error & { code?: string };
-      const authError: AuthError = {
-        code: errorWithCode?.code || 'unknown_error',
-        message: errorWithCode?.message || 'Magic link request failed'
-      };
+      const apiError = classifyError(error as Error, {
+        method: 'signInWithMagicLink',
+        email
+      });
+
+      setApiError(apiError);
 
       reportAuthState({
         event: 'magic-link-failure',
         email,
         authMethod: 'email',
-        error: authError.message,
+        error: apiError.message,
         duration: Date.now() - startTime
       });
 
-      emit('sign_in_error', { error: authError, method: 'magic-link' });
-      throw authError;
+      emit('sign_in_error', {
+        error: { code: apiError.code, message: apiError.message },
+        method: 'magic-link'
+      });
+
+      // Return empty response instead of throwing
+      return { step: 'error' } as SignInResponse;
     }
   }
 
@@ -639,7 +815,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         accessToken: null,
         refreshToken: null,
         expiresAt: null,
-        error: null
+        apiError: null
       });
       emit('sign_out');
     }
@@ -674,7 +850,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: response.accessToken,
           refreshToken: response.refreshToken || currentState.refreshToken,
           expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
-          error: null
+          apiError: null
         });
         scheduleTokenRefresh();
         emit('token_refreshed');
@@ -713,7 +889,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       accessToken: null,
       refreshToken: null,
       expiresAt: null,
-      error: null
+      apiError: null
     });
   }
 
@@ -767,17 +943,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     try {
       updateStore((s) => ({ ...s, loading: true }));
       const result = await api.checkEmail(email);
-      const userData = {
-        exists: result.exists,
-        hasWebAuthn: result.hasPasskey,
-        userId: result.userId,
-        emailVerified: result.emailVerified,
-        invitationTokenHash: result.invitationTokenHash,
-        lastPinExpiry:
-          typeof result.lastPinExpiry === 'string'
-            ? Number.parseInt(result.lastPinExpiry, 10)
-            : result.lastPinExpiry
-      };
+      const userData = result; // UserCheckData is already in the correct format
       updateStore((s) => ({ ...s, loading: false }));
 
       // Send USER_CHECKED event with user data
@@ -785,7 +951,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         type: 'USER_CHECKED',
         email,
         exists: result.exists,
-        hasPasskey: !!result.hasPasskey,
+        hasPasskey: !!result.hasWebAuthn,
         hasValidPin: checkForValidPin(userData),
         pinRemainingMinutes: getRemainingPinMinutes(userData)
       });
@@ -802,6 +968,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     } catch (error: unknown) {
       updateStore((s) => ({ ...s, loading: false }));
       console.error('Error checking user:', error);
+
+      // Set API error for user not found or service unavailable
+      setApiError(error, { method: 'checkUser', email });
+
       return { exists: false, hasWebAuthn: false, emailVerified: false };
     }
   }
@@ -813,6 +983,20 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     try {
       const expiryTime = new Date(userCheck.lastPinExpiry);
       const now = new Date();
+
+      // Debug logging for time zone issues
+      console.log('🕐 Pin validation time check:', {
+        lastPinExpiry: userCheck.lastPinExpiry,
+        expiryTimeUTC: expiryTime.toISOString(),
+        expiryTimeLocal: expiryTime.toString(),
+        nowUTC: now.toISOString(),
+        nowLocal: now.toString(),
+        expiryMs: expiryTime.getTime(),
+        nowMs: now.getTime(),
+        isValid: expiryTime > now,
+        diffMinutes: Math.floor((expiryTime.getTime() - now.getTime()) / (1000 * 60))
+      });
+
       return expiryTime > now; // Pin is still valid if expiry is in the future
     } catch (error) {
       console.error('Error parsing pin expiry time:', error);
@@ -872,7 +1056,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
           expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
-          error: null
+          apiError: null
         });
         scheduleTokenRefresh();
         emit('registration_success', { user: response.user });
@@ -947,7 +1131,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       updateState({
         state: 'unauthenticated', // Not authenticated until email clicked
         user: null, // Not authenticated until email clicked
-        error: null
+        apiError: null
       });
 
       return {
@@ -1151,7 +1335,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: verificationResult.tokens.accessToken,
           refreshToken: verificationResult.tokens.refreshToken,
           expiresAt: verificationResult.tokens.expiresAt,
-          error: null
+          apiError: null
         });
         scheduleTokenRefresh();
         emit('registration_success', { user: user });
@@ -1183,7 +1367,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: null,
           refreshToken: null,
           expiresAt: null,
-          error: null
+          apiError: null
         });
         emit('registration_success', { user: user });
 
@@ -1263,9 +1447,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       // Base user check result
       const userCheck = {
         exists: result.exists,
-        hasPasskey: result.hasPasskey,
-        hasWebAuthn: result.hasPasskey, // Alias for compatibility
-        invitationTokenHash: result.invitationTokenHash,
+        hasPasskey: result.hasWebAuthn,
+        hasWebAuthn: result.hasWebAuthn,
         userId: result.userId,
         requiresPasskeySetup: false,
         registrationMode: 'sign_in' as const
@@ -1277,7 +1460,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       }
 
       // If user exists but no passkey, and invitation token is provided
-      if (result.exists && !result.hasPasskey && invitationOptions.token) {
+      if (result.exists && !result.hasWebAuthn && invitationOptions.token) {
         // Verify token hash if available (security check)
         if (result.invitationTokenHash && !invitationOptions.skipTokenValidation) {
           const { hashInvitationToken } = await import('../utils/invitation-tokens');
@@ -1471,7 +1654,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
           expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
-          error: null
+          apiError: null
         });
         scheduleTokenRefresh();
         emit('sign_in_success', { user: response.user, method: 'passkey' });
@@ -1732,7 +1915,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       };
     }
 
-    updateState({ error: null }); // Clear errors but don't change state
+    clearApiError(); // Clear errors but don't change state
     emit('app_email_started', { email, appCode: getEffectiveAppCode() });
 
     try {
@@ -1755,7 +1938,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         timestamp: response.timestamp
       });
 
-      updateState({ state: 'unauthenticated', error: null });
+      updateState({ state: 'unauthenticated', apiError: null });
 
       return response;
     } catch (error: unknown) {
@@ -1813,7 +1996,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
           expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
-          error: null
+          apiError: null
         });
         scheduleTokenRefresh();
         emit('app_email_verify_success', {
@@ -2083,7 +2266,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           if (emailCodeSent && !hasValidPin) {
             return {
               type: 'success',
-              textKey: 'status.checkEmail',
+              textKey: 'status.emailSent',
               showIcon: true
             };
           }
@@ -2229,6 +2412,11 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       store.update((s) => ({ ...s, emailCodeSent: sent }));
     },
 
+    // Error management methods
+    setApiError,
+    clearApiError,
+    retryLastFailedRequest,
+
     // Cleanup
     destroy: () => {
       // Note: No longer need to unsubscribe from state machine
@@ -2246,7 +2434,7 @@ export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthS
     user: derived(authStore, ($auth) => $auth.user),
     isAuthenticated: derived(authStore, ($auth) => $auth.state === 'authenticated'),
     isLoading: derived(authStore, () => false), // No loading state exists
-    error: derived(authStore, ($auth) => $auth.error),
+    apiError: derived(authStore, ($auth) => $auth.apiError),
 
     // Sign-in state derived stores
     signInState: derived(authStore, ($auth) => $auth.signInState),

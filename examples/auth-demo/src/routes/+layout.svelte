@@ -13,7 +13,7 @@ import '../app.css';
 import '@thepia/flows-auth/style.css';
 
 // Optional SvelteKit props
-export let params = {};
+export const params = {};
 
 // Auth state for reactivity
 let isAuthenticated = false;

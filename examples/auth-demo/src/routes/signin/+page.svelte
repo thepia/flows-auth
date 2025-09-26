@@ -7,6 +7,9 @@ import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 import * as m from '../../paraglide/messages';
 import { getLocale } from '../../paraglide/runtime.js';
 
+// Error testing components
+import ErrorTestMenu from '$lib/components/ErrorTestMenu.svelte';
+
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 export let isAuthenticated = false;
 export let user = null;
@@ -28,7 +31,7 @@ if (authStoreContext && browser) {
 }
 
 // Optional SvelteKit props
-export let params = {};
+export const params = {};
 
 // Component state
 let currentUser = null;
@@ -36,7 +39,7 @@ let authState = 'unauthenticated'; // Start with unauthenticated, not loading
 let stateMachineState = null;
 
 // 🔑 Reactive locale tracking for component rerenders
-$: currentLocale = getLocale();
+$: currentLocale = getLocale() || 'en'; // Fallback to 'en' if locale not ready
 let stateMachineContext = null;
 let authSubscribed = false;
 
@@ -823,6 +826,9 @@ onMount(async () => {
   </div>
 </div>
 {/if}
+
+<!-- Floating Error Test Menu (outside conditional block) -->
+<ErrorTestMenu />
 
 <style>
   .signin-page {

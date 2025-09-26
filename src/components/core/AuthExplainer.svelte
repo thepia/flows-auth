@@ -14,13 +14,18 @@
     Fingerprint,
     DeviceMobile,
     Globe,
-    CheckCircle
+    CheckCircle,
+
+    Pulse
+
   } from 'phosphor-svelte';
-  import type { ExplainerConfig } from '../../types';
+  import type { ApiError, ExplainerConfig } from '../../types';
   import { m } from '../../utils/i18n';
+    import Icon from '../icons/Icon.svelte';
 
   // Props
   export let config: ExplainerConfig | null = null;
+  export let apiError: ApiError | null = null;
 
   // Type the m object for dynamic access
   const messages = m as Record<string, (params?: any) => string>;
@@ -93,6 +98,21 @@
             </span>
           </div>
         {/each}
+
+      {#if apiError}
+        <div class="feature-item">
+          <Icon weight="duotone" size={20} ariaLabel="Error icon" variant="error" color="error" icon={Pulse} />
+          <span class="feature-text">
+            {m[apiError.code]()}
+          <!-- {#if apiError.retryable}
+            <button type="button" class="retry-button" on:click={() => store.retryLastFailedRequest()}>
+              Try Again
+            </button>
+          {/if} -->
+          </span>
+        </div>
+      {/if}
+
       </div>
     {/if}
   </div>

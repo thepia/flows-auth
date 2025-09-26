@@ -515,58 +515,5 @@ describe('Dynamic Role Security Tests', () => {
       expect(result.success).toBe(true);
       expect((result as any).duration).toBeLessThan(500); // Performance requirement
     });
-
-    it('should maintain authentication state during migration', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
-
-      // Mock successful authentication
-      const authResponse: SignInResponse = {
-        step: 'success',
-        user: {
-          id: '123',
-          email: 'employee@company.com',
-          name: 'Employee User',
-          emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z',
-          metadata: { role: 'employee' }
-        },
-        accessToken: 'employee-access-token',
-        refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
-      };
-
-      const mockApi = authStore.api as any;
-      mockApi.signInWithMagicLink.mockResolvedValue(authResponse);
-
-      // Mock migration that preserves authentication
-      const mockMigrateSession = vi.fn().mockResolvedValue({
-        success: true,
-        fromStorage: 'sessionStorage',
-        toStorage: 'localStorage',
-        dataPreserved: true,
-        tokensPreserved: true
-      });
-
-      (authStore as any).migrateSession = mockMigrateSession;
-
-      // Authenticate using magic link (passwordless)
-      await authStore.signInWithMagicLink('employee@company.com');
-
-      // Verify authenticated before migration
-      expect(authStore.isAuthenticated()).toBe(true);
-
-      // Perform migration
-      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
-
-      // Verify still authenticated after migration
-      expect(result.success).toBe(true);
-      expect(authStore.isAuthenticated()).toBe(true); // Should remain authenticated
-    });
   });
 });

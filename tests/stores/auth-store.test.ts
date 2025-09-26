@@ -83,7 +83,7 @@ describe('Auth Store', () => {
       expect(state.user).toBeNull();
       expect(state.accessToken).toBeNull();
       expect(state.refreshToken).toBeNull();
-      expect(state.error).toBeNull();
+      expect(state.apiError).toBeNull();
     });
 
     it('should restore state from session if valid session exists', async () => {
@@ -141,7 +141,7 @@ describe('Auth Store', () => {
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
       expect(state.accessToken).toBeNull();
-      expect(state.error).toBeNull();
+      expect(state.apiError).toBeNull();
     });
 
     it('should handle authentication errors', async () => {
@@ -150,16 +150,22 @@ describe('Auth Store', () => {
 
       mockApiClient.signInWithMagicLink.mockRejectedValue(mockError);
 
-      await expect(authStore.signInWithMagicLink('test@example.com')).rejects.toThrow(
-        'Invalid credentials'
-      );
+      // New architecture doesn't throw - it sets apiError instead
+      const result = await authStore.signInWithMagicLink('test@example.com');
 
       const state = get(authStore);
-      expect(state.state).toBe('error');
-      expect(state.error).toEqual({
-        code: 'invalid_credentials',
-        message: 'Invalid credentials'
+      expect(state.state).toBe('unauthenticated');
+      expect(state.apiError).toEqual({
+        code: 'error.authFailed',
+        message: 'Invalid credentials',
+        retryable: true,
+        timestamp: expect.any(Number),
+        context: {
+          method: 'signInWithMagicLink',
+          email: 'test@example.com'
+        }
       });
+      expect(result.step).toBe('error');
     });
 
     it('should handle magic link sign in', async () => {
@@ -685,10 +691,21 @@ describe('Auth Store', () => {
       const mockError = new Error('Network error');
       mockApiClient.sendAppEmailCode.mockRejectedValue(mockError);
 
-      await expect(authStore.sendEmailCode('test@example.com')).rejects.toThrow('Network error');
+      // New architecture doesn't throw - it sets apiError instead
+      await authStore.sendEmailCode('test@example.com');
 
       const state = get(authStore);
-      expect(state.state).toBe('error');
+      expect(state.state).toBe('unauthenticated');
+      expect(state.apiError).toEqual({
+        code: 'error.network',
+        message: 'Network error',
+        retryable: true,
+        timestamp: expect.any(Number),
+        context: {
+          method: 'sendEmailCode',
+          email: 'test@example.com'
+        }
+      });
     });
 
     it('should handle email code verification errors gracefully', async () => {
@@ -702,10 +719,20 @@ describe('Auth Store', () => {
       const mockError = new Error('Invalid code');
       mockApiClient.verifyAppEmailCode.mockRejectedValue(mockError);
 
-      await expect(authStore.verifyEmailCode('123456')).rejects.toThrow('Invalid code');
+      // New architecture doesn't throw - it sets apiError instead
+      await authStore.verifyEmailCode('123456');
 
       const state = get(authStore);
-      expect(state.state).toBe('error');
+      expect(state.state).toBe('unauthenticated');
+      expect(state.apiError).toEqual({
+        code: 'error.authFailed',
+        message: 'Invalid code',
+        retryable: true,
+        timestamp: expect.any(Number),
+        context: {
+          method: 'verifyEmailCode'
+        }
+      });
     });
   });
 });

@@ -47,7 +47,6 @@ $: console.log('🔍 SignInCore: store =', !!store, store);
 // Component state (minimal - most state now in store)
 let email = initialEmail;
 let emailCode = '';
-let error: string | null = null;
 
 // Get current state from store reactively
 $: currentSignInState = store ? $store.signInState : 'emailEntry';
@@ -76,8 +75,9 @@ async function checkUserForEmail(emailValue: string) {
       }
       await store.checkUser(emailValue.trim());
 
-    } catch (error) {
-      console.warn('Error in reactive email pin check:', error);
+    } catch (err) {
+      console.error('check-user error:', err);
+      // Error handling is now managed by AuthStore
     }
   }, 400); // 400ms debounce to avoid too many API calls while typing
 }
@@ -128,7 +128,7 @@ async function handleEmailChange(event: CustomEvent<{value: string}>) {
 
   // Update local email variable to ensure reactive statement triggers
   email = event.detail.value;
-  error = null; // Clear errors when user types
+  // Error clearing is now handled by AuthStore
 
   console.log('📝 Email changed:', {
     newEmail: event.detail.value,
@@ -190,7 +190,6 @@ async function handleSecondaryAction() {
   if (!email.trim() || !buttonConfig || !buttonConfig.secondary) return;
 
   store.setLoading(true);
-  error = null;
 
   try {
     const secondaryMethod = buttonConfig.secondary.method;
@@ -214,8 +213,8 @@ async function handleSecondaryAction() {
     }
   } catch (err: any) {
     store.setLoading(false);
-    error = getUserFriendlyErrorMessage(err);
     console.error('Secondary authentication error:', err);
+    // Error handling is now managed by AuthStore
   }
 }
 
@@ -224,7 +223,6 @@ async function handleSignIn() {
   if (!email.trim()) return;
 
   store.setLoading(true);
-  error = null;
 
   try {
     // Check what auth methods are available for this email (the user check is a bit redundant here)
@@ -233,7 +231,7 @@ async function handleSignIn() {
     // Handle non-existing users based on config
     if (!userCheck.exists) {
       if (authConfig?.signInMode === 'login-only') {
-        error = 'No account found for this email address. Please check your email or create an account.';
+        // Error will be shown via AuthStore apiError
         store.setLoading(false);
         return;
       } else if ($store.fullName && $store.fullName.trim()) {
@@ -255,7 +253,7 @@ async function handleSignIn() {
           store.setLoading(false);
         } catch (registrationError: any) {
           console.error('❌ Account creation failed:', registrationError);
-          error = registrationError.message || 'Failed to create account. Please try again.';
+          // Error handling is now managed by AuthStore
           store.setLoading(false);
         }
         return;
@@ -298,14 +296,14 @@ async function handleSignIn() {
         break;
 
       default:
-        error = 'No authentication methods available for this email.';
+        // Error will be shown via AuthStore apiError
         store.setLoading(false);
     }
 
   } catch (err: any) {
     store.setLoading(false);
-    error = getUserFriendlyErrorMessage(err);
     console.error('Authentication error:', err);
+    // Error handling is now managed by AuthStore
   }
 }
 
@@ -347,7 +345,7 @@ async function handlePasskeyAuth() {
       });
     }
   } catch (err: any) {
-    error = getUserFriendlyErrorMessage(err);
+    // Error handling is now managed by AuthStore
     throw err;
   }
 }
@@ -362,7 +360,7 @@ async function handleMagicLinkAuth() {
       // setLocalStep('magicLinkSent');
     }
   } catch (err: any) {
-    error = err.message || 'Failed to send magic link';
+    // Error handling is now managed by AuthStore
     throw err;
   }
 }
@@ -382,7 +380,7 @@ async function handleEmailCodeAuth() {
       throw new Error(result.message || 'Failed to send email code');
     }
   } catch (err: any) {
-    error = err.message || 'Failed to send email verification code';
+    // Error handling is now managed by AuthStore
     throw err;
   }
 }
@@ -390,12 +388,11 @@ async function handleEmailCodeAuth() {
 // Handle email code verification
 async function handleEmailCodeVerification() {
   if (!emailCode.trim()) {
-    error = 'Please enter the verification code';
+    // Input validation - could show via AuthStore if needed
     return;
   }
 
   store.setLoading(true);
-  error = null;
 
   try {
     const result = await store.verifyEmailCode(emailCode);
@@ -431,45 +428,14 @@ async function handleEmailCodeVerification() {
       throw new Error('Email code verification failed');
     }
   } catch (err: any) {
-    error = getUserFriendlyErrorMessage(err);
+    // Error handling is now managed by AuthStore
   }
 }
 
-// Convert technical errors to user-friendly messages
-function getUserFriendlyErrorMessage(err: any): string {
-  const message = err.message || '';
-  const status = err.status || 0;
-
-  if (message.includes('not found') || message.includes('404') || message.includes('endpoint')) {
-    return 'No passkey found for this email. Please register a new passkey or use a different sign-in method.';
-  }
-
-  if (message.includes('/auth/webauthn/authenticate') || message.includes('/auth/webauthn/challenge') || status === 404) {
-    return 'Authentication service temporarily unavailable. Please try again in a moment.';
-  }
-
-  if (message.includes('NotAllowedError') || message.includes('cancelled')) {
-    return 'Authentication was cancelled. Please try again.';
-  }
-
-  if (message.includes('NotSupportedError')) {
-    return 'Passkey authentication is not supported on this device.';
-  }
-
-  if (message.includes('SecurityError')) {
-    return "Security error occurred. Please ensure you're on a secure connection.";
-  }
-
-  if (message.includes('InvalidStateError')) {
-    return 'No passkey available on this device. Please register a new passkey.';
-  }
-
-  return 'Authentication failed. Please try again or use a different sign-in method.';
-}
+// Error handling is now centralized in AuthStore
 
 function resetForm() {
   sendSignInEvent({ type: 'RESET' });
-  error = null;
   // All state is now managed in the store and will be reset by the RESET event
 }
 
@@ -477,7 +443,7 @@ function resetForm() {
 $: buttonConfig = store && $store ? store.getButtonConfig() : null;
 
 // State message configuration (centralized in AuthStore)
-$: stateMessageConfig = store && $store ? store.getStateMessageConfig() : null;
+$: stateMessage = store && $store ? store.getStateMessageConfig() : null;
 
 // Explainer configuration (centralized in AuthStore)
 $: explainerConfig = store ? store.getExplainerConfig(explainFeatures) : null;
@@ -497,7 +463,6 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
         value={email}
         label="email.label"
         placeholder="email.placeholder"
-        {error}
         disabled={$store.loading}
         enableWebAuthn={$store.passkeysEnabled}
         on:change={handleEmailChange}
@@ -505,31 +470,31 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
       />
       
       {#if $store.hasValidPin && $store.pinRemainingMinutes > 0}
-        <div class="pin-status-message">
-          <span class="pin-status-icon">📧</span>
-          <span class="pin-status-text">
-            {m["status.pinValid"]({
-              minutes: $store.pinRemainingMinutes,
-              s: $store.pinRemainingMinutes !== 1 ? 's' : ''
-            })}
-            <button
-              type="button"
-              class="pin-direct-link"
-              on:click={goToPinInput}
-              disabled={$store.loading}
-            >
-              {m["status.pinDirectAction"]()}
-            </button>
-          </span>
-        </div>
+        <AuthStateMessage
+          type="info"
+          variant="pin-status"
+        >
+          📧 {m["status.pinValid"]({
+            minutes: $store.pinRemainingMinutes,
+            s: $store.pinRemainingMinutes !== 1 ? 's' : ''
+          })}
+          <button
+            type="button"
+            class="pin-direct-link"
+            on:click={goToPinInput}
+            disabled={$store.loading}
+          >
+            {m["status.pinDirectAction"]()}
+          </button>
+        </AuthStateMessage>
       {/if}
 
       {#if currentSignInState === 'userChecked' && $store.userExists === false}
-        {#if stateMessageConfig}
+        {#if stateMessage}
           <AuthStateMessage
-            type={stateMessageConfig.type}
-            tKey={stateMessageConfig.textKey}
-            showIcon={stateMessageConfig.showIcon}
+            type={stateMessage.type}
+            tKey={stateMessage.textKey}
+            showIcon={stateMessage.showIcon}
           />
         {/if}
         {#if authConfig?.signInMode !== 'login-only'}
@@ -565,7 +530,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
       {/if}
 
       <!-- Auth explainer component -->
-      <AuthExplainer config={explainerConfig} />
+      <AuthExplainer config={explainerConfig} apiError={$store.apiError} />
     </form>
 
   {:else if currentSignInState === 'pinEntry'}
@@ -576,31 +541,17 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
           bind:value={emailCode}
           label="code.label"
           placeholder="code.placeholder"
-          {error}
           disabled={$store.loading}
           maxlength={6}
         />
 
-      {#if stateMessageConfig}
-        <AuthStateMessage
-          type={stateMessageConfig.type}
-          tKey={stateMessageConfig.textKey}
-          showIcon={stateMessageConfig.showIcon}
-        />
-
-        {#if $store.emailCodeSent && !$store.hasValidPin}
-          <p class="email-code-message">
-            {m["status.emailSent"]()}<br>
-            <strong>{email}</strong>
-          </p>
-        {:else}
-          <p class="email-code-message">
-            Enter the verification code from your recent email<br>
-            <strong>{email}</strong>
-          </p>
+        {#if stateMessage}
+          <AuthStateMessage
+            type={stateMessage.type}
+            tKey={stateMessage.textKey}
+            showIcon={stateMessage.showIcon}
+          />
         {/if}
-      {/if}
-
 
         {#if buttonConfig}
           <div class="button-section">
@@ -643,11 +594,11 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     />
   {:else if currentSignInState === 'emailVerification'}
     <!-- Email verification required -->
-    {#if stateMessageConfig}
+    {#if stateMessage}
       <AuthStateMessage
-        type={stateMessageConfig.type}
-        tKey={stateMessageConfig.textKey}
-        showIcon={stateMessageConfig.showIcon}
+        type={stateMessage.type}
+        tKey={stateMessage.textKey}
+        showIcon={stateMessage.showIcon}
       />
     {/if}
   {/if}
@@ -691,66 +642,9 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     line-height: 1.5;
   }
 
-  .email-code-message strong,
-  .magic-link-message strong {
-    color: var(--auth-text-primary, #111827);
-  }
-
   /* Global styling hook for WebAuthn indicator */
   :global(.webauthn-indicator) {
     text-align: center;
     margin-top: 16px;
   }
-
-  .pin-status-message {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 12px 16px;
-    margin: 12px 0;
-    background: #f0f9ff;
-    border: 1px solid #bae6fd;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #0369a1;
-    line-height: 1.4;
-  }
-
-  .pin-status-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .pin-status-text {
-    flex: 1;
-  }
-
-  .pin-direct-link {
-    background: none;
-    border: none;
-    color: #0369a1;
-    font-size: inherit;
-    font-weight: 500;
-    text-decoration: underline;
-    cursor: pointer;
-    padding: 0;
-    margin: 0 0 0 4px;
-    transition: color 0.2s;
-  }
-
-  .pin-direct-link:hover:not(:disabled) {
-    color: #075985;
-  }
-
-  .pin-direct-link:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    text-decoration: none;
-  }
-  
-
-
-
-
 </style>

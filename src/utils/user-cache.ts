@@ -1,12 +1,12 @@
 /**
  * User Existence Cache
- * Reduces Auth0 API calls by caching user existence checks
+ * Reduces API calls by caching user check data
  */
 
-interface CacheEntry {
-  exists: boolean;
-  hasPasskey: boolean;
-  timestamp: number;
+import type { UserCheckData } from '../types';
+
+interface CacheEntry extends UserCheckData {
+  timestamp: number; // Required for cache expiry
 }
 
 export class UserCache {
@@ -45,7 +45,7 @@ export class UserCache {
   /**
    * Set cached user data
    */
-  set(email: string, data: Omit<CacheEntry, 'timestamp'>): void {
+  set(email: string, data: UserCheckData): void {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Implement simple LRU by removing oldest entries

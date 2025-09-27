@@ -140,6 +140,9 @@ export interface AuthConfig {
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
   fallbackLanguage?: string; // Fallback language (defaults to 'en')
+
+  // Development configuration
+  enableDevtools?: boolean; // Enable Zustand devtools integration
 }
 
 // Auth0 configuration
@@ -420,6 +423,11 @@ export interface AuthEventData {
   success?: boolean;
   timestamp?: number;
   requiresVerification?: boolean;
+  tokens?: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt?: number;
+  };
 }
 
 export type AuthEventType =
@@ -428,6 +436,7 @@ export type AuthEventType =
   | 'sign_in_error'
   | 'sign_out'
   | 'token_refreshed'
+  | 'session_expired'
   | 'passkey_created'
   | 'passkey_used'
   | 'registration_started'
@@ -653,6 +662,13 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
   setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
   clearApiError: () => void;
   retryLastFailedRequest: () => Promise<boolean>;
+
+  // App-specific email authentication
+  sendAppEmailCode: (email: string) => Promise<{ success: boolean; message: string }>;
+  verifyAppEmailCode: (email: string, code: string) => Promise<SignInResponse>;
+
+  // Direct state access
+  getState: () => AuthStore;
 
   // Cleanup
   destroy: () => void;

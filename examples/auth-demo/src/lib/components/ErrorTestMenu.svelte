@@ -60,7 +60,6 @@
   
   onMount(() => {
     // Install interceptor when component mounts
-    console.log('🧪 ErrorTestMenu mounting...');
     fetchInterceptor.install();
     isInstalled = true;
     updateActiveMappings();
@@ -131,9 +130,6 @@
 </script>
 
 <svelte:window on:click={handleClickOutside} />
-
-<!-- Debug: Component is rendering -->
-{console.log('🧪 ErrorTestMenu template rendering')}
 
 <div class="error-test-menu">
   <button 

@@ -38,7 +38,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Import after mocks are set up
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 
 /**
  * CRITICAL INTEGRATION TEST: API Response Format Compatibility

@@ -4,7 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 // Test configuration

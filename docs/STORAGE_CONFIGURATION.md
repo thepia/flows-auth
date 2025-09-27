@@ -323,7 +323,6 @@ authStore.subscribe(($auth) => {
 ### New Auth Store Methods
 
 - `updateStorageConfiguration(update: StorageConfigurationUpdate)` - Dynamically update storage configuration
-- `migrateSession(fromType: StorageType, toType: StorageType)` - Migrate session between storage types
 - `getApplicationContext()` - Get current application context hints
 
 ### Storage Types

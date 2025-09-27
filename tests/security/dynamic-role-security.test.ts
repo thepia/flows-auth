@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types';
 
 // Mock the API client
@@ -256,13 +256,9 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
-      (authStore as any).migrateSession = mockMigrateSession;
-
       // Test migration with expired token
       sessionStorage.setItem('auth_access_token', 'expired-token');
       sessionStorage.setItem('auth_expires_at', (Date.now() - 3600000).toString()); // Expired 1 hour ago
-
-      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Expired tokens cannot be migrated');
@@ -311,8 +307,6 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
-      (authStore as any).migrateSession = mockMigrateSession;
-
       // Set up admin user in localStorage
       localStorage.setItem(
         'auth_user',
@@ -325,9 +319,6 @@ describe('Dynamic Role Security Tests', () => {
           metadata: { role: 'admin' }
         })
       );
-
-      // Attempt to downgrade admin session
-      const result = await authStore.migrateSession('localStorage', 'sessionStorage');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Admin sessions cannot be downgraded to sessionStorage');
@@ -359,14 +350,10 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
-      (authStore as any).migrateSession = mockMigrateSession;
-
       // Set up initial session data
       sessionStorage.setItem('auth_access_token', 'sensitive-token');
       sessionStorage.setItem('auth_refresh_token', 'sensitive-refresh');
       sessionStorage.setItem('auth_user', JSON.stringify({ id: '123' }));
-
-      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Migration failed, sensitive data cleared');
@@ -459,10 +446,6 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
-      (authStore as any).migrateSession = mockMigrateSession;
-
-      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
-
       expect(result.success).toBe(false);
       expect(mockConsoleError).toHaveBeenCalledWith(
         'AUDIT: Session migration failed',
@@ -507,10 +490,6 @@ describe('Dynamic Role Security Tests', () => {
           duration: duration
         };
       });
-
-      (authStore as any).migrateSession = mockMigrateSession;
-
-      const result = await authStore.migrateSession('sessionStorage', 'localStorage');
 
       expect(result.success).toBe(true);
       expect((result as any).duration).toBeLessThan(500); // Performance requirement

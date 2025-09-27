@@ -8,7 +8,7 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 import {
   PerformanceTestUtils,

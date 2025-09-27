@@ -298,10 +298,17 @@ describe('Bundle API Validation (Integration)', () => {
       const authStore = createAuthStore(config);
 
       expect(authStore).toBeDefined();
-      expect(typeof authStore.subscribe).toBe('function');
-      expect(typeof authStore.signInWithPasskey).toBe('function');
-      expect(typeof authStore.checkUser).toBe('function');
-      expect(typeof authStore.getButtonConfig).toBe('function');
+      
+      // New modular store interface
+      expect(authStore.api).toBeDefined();
+      expect(typeof authStore.api.signInWithPasskey).toBe('function');
+      expect(typeof authStore.api.checkUser).toBe('function');
+      expect(typeof authStore.api.isAuthenticated).toBe('function');
+      
+      // Store access
+      expect(authStore.core).toBeDefined();
+      expect(authStore.ui).toBeDefined();
+      expect(typeof authStore.destroy).toBe('function');
     });
 
     it('should be able to create API client from built bundle', async () => {

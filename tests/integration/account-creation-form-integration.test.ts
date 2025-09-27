@@ -11,7 +11,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
 // Mock WebAuthn API

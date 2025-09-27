@@ -41,7 +41,6 @@ graph TD
 
 #### Auth Store Extensions
 - `updateStorageConfiguration()` - Dynamic configuration updates
-- `migrateSession()` - Session data migration between storage types
 - `getApplicationContext()` - Application-level role hints
 
 #### Session Migration
@@ -64,7 +63,6 @@ interface AuthStore {
 
   // NEW: Dynamic configuration methods
   updateStorageConfiguration(update: StorageConfigurationUpdate): Promise<void>;
-  migrateSession(fromType: StorageType, toType: StorageType): Promise<SessionMigrationResult>;
   getApplicationContext(): ApplicationContext | null;
 }
 ```

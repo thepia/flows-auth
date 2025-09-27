@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores-new';
 import type { AuthConfig, ExplainerConfig } from '../../src/types';
 
 describe('AuthStore getExplainerConfig', () => {

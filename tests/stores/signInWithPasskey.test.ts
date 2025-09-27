@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores-new';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Only mock external dependencies that we can't test in isolation

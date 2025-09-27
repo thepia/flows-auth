@@ -1,9 +1,8 @@
 /**
- * Debug test for auth store issues in Svelte 5 migration
- * This test will help us understand what's happening with the auth store
+ * Debug test for auth store modular architecture
+ * This test helps understand the new Zustand-based modular auth store
  */
 
-import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock browser environment
@@ -26,7 +25,7 @@ Object.defineProperty(global, 'window', {
   writable: true
 });
 
-describe('Auth Store Debug Tests', () => {
+describe('Auth Store Debug Tests (New Modular Architecture)', () => {
   let createAuthStore;
   let authConfig;
 
@@ -34,9 +33,9 @@ describe('Auth Store Debug Tests', () => {
     // Clear all mocks
     vi.clearAllMocks();
 
-    // Import fresh modules
-    const authStoreModule = await import('../../src/stores/auth-store');
-    createAuthStore = authStoreModule.createAuthStore;
+    // Import fresh modules - NEW MODULAR ARCHITECTURE
+    const authStoreModule = await import('../../src/stores-new');
+    createAuthStore = authStoreModule.default;
 
     // Standard test config
     authConfig = {
@@ -46,150 +45,280 @@ describe('Auth Store Debug Tests', () => {
       appCode: 'debug-test',
       enablePasskeys: true,
       enableMagicLinks: false,
-      signInMode: 'login-or-register',
       language: 'en',
-      applicationContext: {
+      branding: {
         companyName: 'Debug Test'
       }
     };
   });
 
-  it('should create auth store without hanging', async () => {
-    console.log('🧪 Test: Creating auth store...');
+  it('should create composed auth store without hanging', async () => {
+    console.log('🧪 Test: Creating modular auth store...');
 
-    // This should not hang
-    const authStore = createAuthStore(authConfig);
+    // This should not hang - new architecture
+    const composedStore = createAuthStore(authConfig);
 
-    console.log('✅ Auth store created successfully');
-    console.log('📊 Auth store type:', typeof authStore);
-    console.log('📊 Auth store methods:', Object.keys(authStore));
-
-    expect(authStore).toBeDefined();
-    expect(typeof authStore.subscribe).toBe('function');
-    expect(typeof authStore.initialize).toBe('function');
-  });
-
-  it('should have correct initial state', async () => {
-    console.log('🧪 Test: Checking initial state...');
-
-    const authStore = createAuthStore(authConfig);
-
-    // Get initial state
-    const initialState = get(authStore);
-
-    console.log('📊 Initial state:', initialState);
-    console.log('📊 Initial state type:', typeof initialState);
-    console.log('📊 Initial state keys:', Object.keys(initialState || {}));
-
-    expect(initialState).toBeDefined();
-    expect(initialState.state).toBe('unauthenticated'); // Should be unauthenticated initially
-    expect(initialState.user).toBeNull();
-    expect(initialState.apiError).toBeNull();
-  });
-
-  it('should handle subscription correctly', async () => {
-    console.log('🧪 Test: Testing subscription...');
-
-    const authStore = createAuthStore(authConfig);
-
-    let subscriptionCallCount = 0;
-    let lastState = null;
-
-    const unsubscribe = authStore.subscribe((state) => {
-      subscriptionCallCount++;
-      lastState = state;
-      console.log(`📊 Subscription call #${subscriptionCallCount}:`, state?.state || 'undefined');
+    console.log('✅ Composed auth store created successfully');
+    console.log('📊 Store structure:', {
+      hasCore: !!composedStore.core,
+      hasUI: !!composedStore.ui,
+      hasPasskey: !!composedStore.passkey,
+      hasEmail: !!composedStore.email,
+      hasAPI: !!composedStore.api,
+      hasAdapters: !!composedStore.adapters
     });
 
-    // Wait a bit to see if subscription fires
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(composedStore).toBeDefined();
+    expect(composedStore.core).toBeDefined();
+    expect(composedStore.ui).toBeDefined();
+    expect(composedStore.api).toBeDefined();
+    expect(typeof composedStore.api.isAuthenticated).toBe('function');
 
-    console.log('📊 Total subscription calls:', subscriptionCallCount);
-    console.log('📊 Last state:', lastState);
-
-    expect(subscriptionCallCount).toBeGreaterThan(0);
-    expect(lastState).toBeDefined();
-
-    unsubscribe();
+    // Cleanup
+    composedStore.destroy();
   });
 
-  it('should handle initialize method', async () => {
-    console.log('🧪 Test: Testing initialize method...');
+  it('should have correct initial state across all stores', async () => {
+    console.log('🧪 Test: Checking initial state across modular stores...');
 
-    const authStore = createAuthStore(authConfig);
+    const composedStore = createAuthStore(authConfig);
 
-    // Get state before initialize
-    const stateBefore = get(authStore);
-    console.log('📊 State before initialize:', stateBefore.state);
+    // Get initial state from each store
+    const coreState = composedStore.core.getState();
+    const uiState = composedStore.ui.getState();
+    const passkeyState = composedStore.passkey.getState();
+    const emailState = composedStore.email.getState();
 
-    // Call initialize
-    await authStore.initialize();
-
-    // Get state after initialize
-    const stateAfter = get(authStore);
-    console.log('📊 State after initialize:', stateAfter.state);
-
-    expect(stateAfter).toBeDefined();
-  });
-
-  it('should handle context pattern like demo app', async () => {
-    console.log('🧪 Test: Testing context pattern...');
-
-    // Simulate the demo app pattern
-    const authStore = createAuthStore(authConfig);
-
-    // Simulate context usage
-    let contextState = null;
-    let subscriptionCount = 0;
-
-    const unsubscribe = authStore.subscribe((state) => {
-      subscriptionCount++;
-      contextState = state;
-      console.log(`📊 Context subscription #${subscriptionCount}:`, state?.state || 'undefined');
+    console.log('📊 Core state:', {
+      state: coreState.state,
+      authenticated: coreState.isAuthenticated(),
+      hasUser: !!coreState.user
     });
 
-    // Wait for initial subscription
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    console.log('📊 UI state:', {
+      signInState: uiState.signInState,
+      email: uiState.email,
+      userExists: uiState.userExists
+    });
 
-    // Initialize like demo app does
-    await authStore.initialize();
+    console.log('📊 Passkey state:', {
+      isSupported: passkeyState.isSupported,
+      isAuthenticating: passkeyState.isAuthenticating
+    });
 
-    // Wait for any state changes
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    console.log('📊 Email state:', {
+      isSendingCode: emailState.isSendingCode,
+      codeSent: emailState.codeSent
+    });
 
-    const currentState = get(authStore);
+    // Verify initial states
+    expect(coreState.state).toBe('unauthenticated');
+    expect(coreState.user).toBeNull();
+    expect(coreState.isAuthenticated()).toBe(false);
 
-    console.log('📊 Context state:', contextState);
-    console.log('📊 Current state:', currentState);
-    console.log('📊 Subscription count:', subscriptionCount);
+    expect(uiState.signInState).toBe('emailEntry');
+    expect(uiState.email).toBe('');
+    expect(uiState.userExists).toBeNull();
 
-    expect(currentState).toBeDefined();
-    expect(currentState.state).toBe('unauthenticated');
+    expect(passkeyState.isAuthenticating).toBe(false);
+    expect(emailState.isSendingCode).toBe(false);
+
+    // Cleanup
+    composedStore.destroy();
   });
 
-  it('should handle errors gracefully', async () => {
-    console.log('🧪 Test: Testing error handling...');
+  it('should handle store subscriptions correctly', async () => {
+    console.log('🧪 Test: Testing modular store subscriptions...');
 
-    // Test with invalid config to see if it throws
-    const invalidConfig = {
-      // Missing required fields
-      apiBaseUrl: 'https://api.test.com'
-      // Missing other required fields
-    };
+    const composedStore = createAuthStore(authConfig);
 
-    try {
-      const authStore = createAuthStore(invalidConfig as any);
-      const state = get(authStore);
+    let coreSubscriptionCalls = 0;
+    let uiSubscriptionCalls = 0;
+    let lastCoreState = null;
+    let lastUIState = null;
 
-      console.log('📊 Auth store created with invalid config');
-      console.log('📊 State with invalid config:', state);
+    // Subscribe to individual stores
+    const unsubscribeCore = composedStore.core.subscribe((state) => {
+      coreSubscriptionCalls++;
+      lastCoreState = state;
+      console.log(`📊 Core subscription call #${coreSubscriptionCalls}:`, state.state);
+    });
 
-      // Should not throw, but might have error state
-      expect(authStore).toBeDefined();
-    } catch (error) {
-      console.log('📊 Error caught:', error.message);
-      // If it throws, that's also acceptable behavior
-      expect(error).toBeDefined();
-    }
+    const unsubscribeUI = composedStore.ui.subscribe((state) => {
+      uiSubscriptionCalls++;
+      lastUIState = state;
+      console.log(`📊 UI subscription call #${uiSubscriptionCalls}:`, state.signInState);
+    });
+
+    // Wait a bit to see if subscriptions fire
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    console.log('📊 Core subscription calls:', coreSubscriptionCalls);
+    console.log('📊 UI subscription calls:', uiSubscriptionCalls);
+
+    expect(coreSubscriptionCalls).toBeGreaterThan(0);
+    expect(uiSubscriptionCalls).toBeGreaterThan(0);
+    expect(lastCoreState).toBeDefined();
+    expect(lastUIState).toBeDefined();
+
+    // Cleanup
+    unsubscribeCore();
+    unsubscribeUI();
+    composedStore.destroy();
+  });
+
+  it('should handle unified API methods', async () => {
+    console.log('🧪 Test: Testing unified API methods...');
+
+    const composedStore = createAuthStore(authConfig);
+
+    // Test unified API methods
+    console.log('📊 isAuthenticated():', composedStore.api.isAuthenticated());
+    console.log('📊 getAccessToken():', composedStore.api.getAccessToken());
+
+    expect(typeof composedStore.api.isAuthenticated).toBe('function');
+    expect(typeof composedStore.api.getAccessToken).toBe('function');
+    expect(typeof composedStore.api.setEmail).toBe('function');
+    expect(typeof composedStore.api.signInWithEmail).toBe('function');
+    expect(typeof composedStore.api.signInWithPasskey).toBe('function');
+
+    expect(composedStore.api.isAuthenticated()).toBe(false);
+    expect(composedStore.api.getAccessToken()).toBeNull();
+
+    // Test email setting via unified API
+    composedStore.api.setEmail('test@example.com');
+    const uiState = composedStore.ui.getState();
+    expect(uiState.email).toBe('test@example.com');
+
+    // Cleanup
+    composedStore.destroy();
+  });
+
+  it('should handle state coordination between stores', async () => {
+    console.log('🧪 Test: Testing state coordination...');
+
+    const composedStore = createAuthStore(authConfig);
+
+    // Test state changes across stores
+    console.log('📊 Testing UI state change...');
+    composedStore.ui.getState().setSignInState('userChecked');
+    expect(composedStore.ui.getState().signInState).toBe('userChecked');
+
+    console.log('📊 Testing passkey state change...');
+    composedStore.passkey.getState().setAuthenticating(true);
+    expect(composedStore.passkey.getState().isAuthenticating).toBe(true);
+
+    // Verify states remain independent
+    expect(composedStore.ui.getState().signInState).toBe('userChecked');
+    expect(composedStore.passkey.getState().isAuthenticating).toBe(true);
+    expect(composedStore.core.getState().state).toBe('unauthenticated'); // Unchanged
+
+    console.log('📊 State coordination working correctly');
+
+    // Cleanup
+    composedStore.destroy();
+  });
+
+  it('should handle framework adapters', async () => {
+    console.log('🧪 Test: Testing framework adapters...');
+
+    const composedStore = createAuthStore(authConfig);
+
+    // Test vanilla adapter
+    const vanillaState = composedStore.adapters.vanilla.getState();
+    console.log('📊 Vanilla adapter state:', {
+      state: vanillaState.state,
+      hasUser: !!vanillaState.user
+    });
+
+    expect(vanillaState).toBeDefined();
+    expect(vanillaState.state).toBe('unauthenticated');
+    expect(typeof composedStore.adapters.vanilla.getState).toBe('function');
+
+    // Test Svelte adapter
+    console.log('📊 Svelte adapter type:', typeof composedStore.adapters.svelte.subscribe);
+    expect(typeof composedStore.adapters.svelte.subscribe).toBe('function');
+
+    // Both should reflect same core state
+    expect(vanillaState.state).toBe(composedStore.core.getState().state);
+
+    // Cleanup
+    composedStore.destroy();
+  });
+
+  it('should handle destroy cleanup correctly', async () => {
+    console.log('🧪 Test: Testing destroy cleanup...');
+
+    const composedStore = createAuthStore(authConfig);
+
+    // Set some state
+    composedStore.ui.getState().setEmail('test@example.com');
+    composedStore.ui.getState().setSignInState('userChecked');
+    composedStore.passkey.getState().setAuthenticating(true);
+
+    // Verify state is set
+    expect(composedStore.ui.getState().email).toBe('test@example.com');
+    expect(composedStore.ui.getState().signInState).toBe('userChecked');
+    expect(composedStore.passkey.getState().isAuthenticating).toBe(true);
+
+    console.log('📊 State before destroy:', {
+      email: composedStore.ui.getState().email,
+      signInState: composedStore.ui.getState().signInState,
+      isAuthenticating: composedStore.passkey.getState().isAuthenticating
+    });
+
+    // Destroy should reset everything
+    composedStore.destroy();
+
+    console.log('📊 State after destroy:', {
+      email: composedStore.ui.getState().email,
+      signInState: composedStore.ui.getState().signInState,
+      isAuthenticating: composedStore.passkey.getState().isAuthenticating
+    });
+
+    // Verify cleanup
+    expect(composedStore.ui.getState().email).toBe('');
+    expect(composedStore.ui.getState().signInState).toBe('emailEntry');
+    expect(composedStore.passkey.getState().isAuthenticating).toBe(false);
+    expect(composedStore.core.getState().state).toBe('unauthenticated');
+
+    console.log('✅ Destroy cleanup working correctly');
+  });
+
+  it('should demonstrate single signInState architecture', async () => {
+    console.log('🧪 Test: Demonstrating single signInState architecture...');
+
+    const composedStore = createAuthStore(authConfig);
+
+    // Check that only UI store has signInState
+    const coreState = composedStore.core.getState();
+    const uiState = composedStore.ui.getState();
+    const passkeyState = composedStore.passkey.getState();
+    const emailState = composedStore.email.getState();
+
+    console.log('📊 Checking signInState ownership:', {
+      coreHasSignInState: 'signInState' in coreState,
+      uiHasSignInState: 'signInState' in uiState,
+      passkeyHasSignInState: 'signInState' in passkeyState,
+      emailHasSignInState: 'signInState' in emailState
+    });
+
+    // Only UI store should have signInState
+    expect('signInState' in uiState).toBe(true);
+    expect('signInState' in coreState).toBe(false);
+    expect('signInState' in passkeyState).toBe(false);
+    expect('signInState' in emailState).toBe(false);
+
+    // UI store owns master signInState
+    expect(uiState.signInState).toBe('emailEntry');
+
+    // Feature stores own their specific operational states
+    expect(passkeyState).toHaveProperty('isAuthenticating');
+    expect(emailState).toHaveProperty('isSendingCode');
+
+    console.log('✅ Single signInState architecture verified');
+
+    // Cleanup
+    composedStore.destroy();
   });
 });

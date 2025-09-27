@@ -32,7 +32,7 @@ export interface FlowsSessionData {
     refreshToken: string;
     expiresAt: number;
   };
-  authMethod: 'passkey' | 'password' | 'email-code';
+  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
   lastActivity: number;
 }
 
@@ -43,7 +43,7 @@ const EMAIL_PREFILL_KEY = 'thepia_email_prefill';
 interface LastUserData {
   email: string;
   name: string;
-  authMethod: 'passkey' | 'password' | 'email-code';
+  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
   lastLoginAt: number;
 }
 

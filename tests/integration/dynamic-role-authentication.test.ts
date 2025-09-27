@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type {
   ApplicationContext,
   AuthConfig,
@@ -457,7 +457,6 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       });
 
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
-      (authStore as any).migrateSession = mockMigrateSession;
 
       // Authenticate
       await authStore.signInWithMagicLink('employee@company.com');
@@ -525,7 +524,6 @@ describe('Dynamic Role Authentication Integration Tests', () => {
       });
 
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
-      (authStore as any).migrateSession = mockMigrateSession;
 
       // Authenticate
       await authStore.signInWithMagicLink('employee@company.com');

@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
-import type { AuthConfig, CompleteAuthStore } from '../../src/types';
+import type { AuthConfig } from '../../src/types';
 import { renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock dependencies

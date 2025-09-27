@@ -12,7 +12,6 @@
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src';
-import type { AuthStore } from '../../src/types';
 
 // Test configuration
 interface TestConfig {

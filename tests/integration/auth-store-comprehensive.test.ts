@@ -8,7 +8,7 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 // Following thepia.com pattern - real API server detection

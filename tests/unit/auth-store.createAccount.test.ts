@@ -4,7 +4,7 @@ import { get } from 'svelte/store';
  * Ensures basic account creation works without passkey requirements
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Mock the API client

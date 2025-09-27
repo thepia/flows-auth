@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthDerivedStores, createAuthStore } from '../../src/stores/auth-store';
+import { createAuthDerivedStores, createAuthStore } from '../../src/stores';
 import type { AuthConfig, AuthMachineState } from '../../src/types';
 
 // Import shared test configuration

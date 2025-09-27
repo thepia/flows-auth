@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores-new';
 import type { AuthConfig, SignInEvent, SignInState } from '../../src/types';
 
 describe('SignIn State Transitions', () => {

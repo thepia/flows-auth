@@ -55,7 +55,7 @@ const mockAuthStore = {
 };
 
 // Mock the createAuthStore function
-vi.mock('../../src/stores/auth-store', () => ({
+vi.mock('../../src/stores', () => ({
   createAuthStore: vi.fn(() => mockAuthStore)
 }));
 

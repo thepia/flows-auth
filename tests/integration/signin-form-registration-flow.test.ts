@@ -10,7 +10,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;

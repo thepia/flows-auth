@@ -42,7 +42,7 @@ describe('Auth Functionality Tests', () => {
     global.fetch.mockClear();
 
     // Import fresh modules
-    const authStoreModule = await import('../../src/stores/auth-store');
+    const authStoreModule = await import('../../src/stores-new');
     createAuthStore = authStoreModule.createAuthStore;
 
     // Standard test config

@@ -38,10 +38,24 @@ export type { IconProps, IconVariant, IconSize, IconWeight } from './components/
 
 // State Machine
 
-// Stores
+// New Modular Stores (Zustand-based)
+export {
+  createAuthStore,
+  createAuthCoreStore,
+  createSessionStore,
+  createErrorStore,
+  createEventStore,
+  createPasskeyStore,
+  createEmailAuthStore,
+  createUIStore,
+  createVanillaAdapter,
+  createSvelteAdapter
+} from './stores-new';
+
+// Legacy Store (for backward compatibility during transition)
 export {
   createAuthDerivedStores,
-  createAuthStore
+  createAuthStore as createLegacyAuthStore
 } from './stores/auth-store';
 
 // Global Auth Store Singleton (recommended approach)

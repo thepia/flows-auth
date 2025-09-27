@@ -41,16 +41,7 @@ let stateMachineState = null;
 // 🔑 Reactive locale tracking for component rerenders
 $: currentLocale = getLocale() || 'en'; // Fallback to 'en' if locale not ready
 let stateMachineContext = null;
-let authSubscribed = false;
 
-// Auth config will be retrieved from the auth store (created in layout)
-let authConfig = null;
-
-// Get authConfig from authStore when available
-$: if (authStore && authStore.getConfig) {
-  authConfig = authStore.getConfig();
-  console.log('⚙️ Auth config from authStore:', authConfig);
-}
 
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = null;
@@ -210,36 +201,8 @@ $: combinedTranslations = selectedClientVariant === 'custom'
       ...customTranslationOverrides
     };
 
-// Update authStore config when controls change
-$: if (authStore && authStore.updateConfig) {
-  authStore.updateConfig({
-    enablePasskeys,
-    enableMagicLinks,
-    signInMode,
-    language: selectedLanguage,
-    fallbackLanguage: 'en',
-    branding: {
-      ...authConfig?.branding,
-      companyName: currentClientVariant.companyName
-    }
-  });
-}
 
-// Create reactive config that updates when controls change
-$: dynamicAuthConfig = authConfig ? {
-  ...authConfig,
-  enablePasskeys,
-  enableMagicLinks,
-  signInMode,
-  // i18n configuration
-  language: selectedLanguage,
-  fallbackLanguage: 'en',
-  // Update branding with client variant
-  branding: {
-    ...authConfig.branding,
-    companyName: currentClientVariant.companyName
-  }
-} : null;
+// Config is now managed entirely through authStore.updateConfig() calls above
 
 // Handle clicks on the SignIn state machine diagram
 function handleSignInStateClick(clickedState) {
@@ -447,11 +410,13 @@ onMount(async () => {
           <span class="config-label">User Handling:</span>
           <div class="radio-group">
             <label class="radio-option">
-              <input type="radio" bind:group={signInMode} value="login-only" />
+              <input type="radio" bind:group={signInMode} value="login-only"
+                     on:change={() => authStore?.updateConfig?.({ signInMode })} />
               <span>Login Only (error for new users)</span>
             </label>
             <label class="radio-option">
-              <input type="radio" bind:group={signInMode} value="login-or-register" />
+              <input type="radio" bind:group={signInMode} value="login-or-register"
+                     on:change={() => authStore?.updateConfig?.({ signInMode })} />
               <span>Login or Register as Needed</span>
             </label>
           </div>
@@ -555,11 +520,13 @@ onMount(async () => {
           <div class="config-label">Authentication Methods:</div>
           <div class="checkbox-group">
             <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enablePasskeys} />
+              <input type="checkbox" bind:checked={enablePasskeys} 
+                     on:change={() => authStore?.updateConfig?.({ enablePasskeys })} />
               <span>Enable Passkeys</span>
             </label>
             <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enableMagicLinks} />
+              <input type="checkbox" bind:checked={enableMagicLinks}
+                     on:change={() => authStore?.updateConfig?.({ enableMagicLinks })} />
               <span>Enable Magic Links</span>
             </label>
           </div>
@@ -570,16 +537,15 @@ onMount(async () => {
     <!-- Main Demo Area -->
     <div class="demo-main">
       <!-- Live SignInCore Component -->
-      {#if authStore && dynamicAuthConfig}
+      {#if authStore}
         <!-- Debug: Log what should be shown -->
         {#if browser}
-          {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, dynamicAuthConfig: !!dynamicAuthConfig, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
+          {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
         {/if}
         {#if useSignInForm && formVariant === 'popup'}
           <!-- Popup SignInForm - no card wrapper to avoid double borders -->
           {#if browser && SignInFormComponent}
             <svelte:component this={SignInFormComponent}
-              config={dynamicAuthConfig}
               initialEmail={emailInput}
               size={formSize}
               variant={formVariant}
@@ -602,7 +568,6 @@ onMount(async () => {
               {#if useSignInForm}
                 {#if browser && SignInFormComponent}
                   <svelte:component this={SignInFormComponent}
-                    config={dynamicAuthConfig}
                     initialEmail={emailInput}
                     size={formSize}
                     variant={formVariant}
@@ -636,7 +601,6 @@ onMount(async () => {
                               {#if browser && SignInCoreComponent}
 
                                   <svelte:component this={SignInCoreComponent}
-                      config={dynamicAuthConfig}
                       authStore={authStore}
                       initialEmail={emailInput}
                       className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"

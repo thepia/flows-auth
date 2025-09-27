@@ -423,7 +423,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
           type="info"
           variant="pin-status"
         >
-          📧 {m["status.pinValid"]({
+          {m["status.pinValid"]({
             minutes: $store.pinRemainingMinutes,
             s: $store.pinRemainingMinutes !== 1 ? 's' : ''
           })}

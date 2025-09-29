@@ -7,7 +7,7 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, FlowsSessionData } from '../../src/types';
 import {
   clearSession,
@@ -127,7 +127,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       saveSession(session);
 
       // Auth store should find session through sessionManager
-      const authStore = createAuthStore(mockConfig);
+      const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
       authStore.initialize();
 
       // Should be authenticated since valid session exists
@@ -141,7 +141,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       mockLocalStorage.data.set('auth_user', JSON.stringify({ id: 'legacy' }));
 
       // Auth store should NOT find legacy localStorage data
-      const authStore = createAuthStore(mockConfig);
+      const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
       authStore.initialize();
 
       // Should be unauthenticated since no valid session exists
@@ -349,7 +349,7 @@ describe('R4: Legacy Migration (MUST)', () => {
     it('MUST gracefully handle missing configuration', () => {
       // Should not throw when no storage config is provided
       expect(() => {
-        const authStore = createAuthStore(mockConfig);
+        const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
         authStore.initialize();
       }).not.toThrow();
     });

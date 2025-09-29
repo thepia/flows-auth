@@ -41,34 +41,27 @@ export type { IconProps, IconVariant, IconSize, IconWeight } from './components/
 // New Modular Stores (Zustand-based)
 export {
   createAuthStore,
-  createAuthCoreStore,
-  createSessionStore,
-  createErrorStore,
-  createEventStore,
-  createPasskeyStore,
-  createEmailAuthStore,
-  createUIStore,
-  createVanillaAdapter,
-  createSvelteAdapter
-} from './stores-new';
-
-// Legacy Store (for backward compatibility during transition)
-export {
-  createAuthDerivedStores,
-  createAuthStore as createLegacyAuthStore
+  type ComposedAuthStore
 } from './stores/auth-store';
+
+// Svelte Adapter
+export {
+  makeSvelteCompatible
+} from './stores/adapters/svelte';
 
 // Global Auth Store Singleton (recommended approach)
 export {
   initializeAuth,
   getGlobalAuthStore,
-  isAuthStoreInitialized,
-  getGlobalAuthConfig,
   resetGlobalAuthStore,
-  updateGlobalAuthConfig,
-  getOrInitializeAuth,
   isGlobalAuthStore,
   assertAuthConfig,
+  createGlobalAuthStore,
+  isGlobalAuthStoreInitialized,
+  isAuthStoreInitialized,
+  getGlobalAuthConfig,
+  updateGlobalAuthConfig,
+  getOrInitializeAuth,
   type GlobalAuthStore,
   type AuthStoreInitializer,
   type AuthStoreGetter

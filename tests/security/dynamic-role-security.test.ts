@@ -38,13 +38,15 @@ describe('Dynamic Role Security Tests', () => {
 
   describe('Security-First Defaults', () => {
     it('should always start with conservative guest defaults', () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'all_employees',
-          domain: 'internal.company.com'
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'all_employees',
+            domain: 'internal.company.com'
+          }
+        })
+      );
 
       // Even for all_employees context, should start with conservative defaults
       const context = authStore.getApplicationContext();
@@ -55,20 +57,22 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should enforce forceGuestMode when specified', () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       const context = authStore.getApplicationContext();
       expect(context?.forceGuestMode).toBe(true);
     });
 
     it('should use secure session timeouts by default', () => {
-      const authStore = createAuthStore(mockConfig);
+      const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
       // Should default to 8 hours or less for security
       // Implementation should use sessionStorage with reasonable timeout
@@ -77,13 +81,15 @@ describe('Dynamic Role Security Tests', () => {
 
   describe('Role Verification Requirements', () => {
     it('should require verified authentication before role upgrades', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
@@ -105,13 +111,15 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should verify role from server response, not client claims', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock authentication response with server-verified role
       const serverVerifiedResponse: SignInResponse = {
@@ -148,13 +156,15 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should reject client-side role modifications', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock authentication response
       const authResponse: SignInResponse = {
@@ -208,13 +218,15 @@ describe('Dynamic Role Security Tests', () => {
 
   describe('Session Migration Security', () => {
     it('should validate tokens before migration', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock migration with token validation
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
@@ -265,13 +277,15 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should prevent downgrade attacks', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock migration with downgrade protection
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
@@ -325,13 +339,15 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should clear sensitive data on migration failure', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock migration with cleanup on failure
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
@@ -364,13 +380,15 @@ describe('Dynamic Role Security Tests', () => {
 
   describe('Audit and Logging Requirements', () => {
     it('should log all role changes for audit', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock console.log for audit capture
       const mockConsoleLog = vi.spyOn(console, 'log');
@@ -414,13 +432,15 @@ describe('Dynamic Role Security Tests', () => {
     });
 
     it('should track migration attempts and failures', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock console.error for failure tracking
       const mockConsoleError = vi.spyOn(console, 'error');
@@ -463,13 +483,15 @@ describe('Dynamic Role Security Tests', () => {
 
   describe('Performance and Reliability', () => {
     it('should complete migration within 500ms performance requirement', async () => {
-      const authStore = createAuthStore({
-        ...mockConfig,
-        applicationContext: {
-          userType: 'mixed',
-          forceGuestMode: true
-        }
-      });
+      const authStore = makeSvelteCompatible(
+        createAuthStore({
+          ...mockConfig,
+          applicationContext: {
+            userType: 'mixed',
+            forceGuestMode: true
+          }
+        })
+      );
 
       // Mock migration with performance tracking
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {

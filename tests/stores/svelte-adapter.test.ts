@@ -10,7 +10,7 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import createAuthStore from '../../src/stores-new';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 // Mock external dependencies
@@ -81,7 +81,8 @@ describe('Svelte Store Adapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSessionData = null;
-    store = createAuthStore(mockConfig);
+    const baseStore = createAuthStore(mockConfig);
+    store = makeSvelteCompatible(baseStore);
   });
 
   describe('Svelte Store Contract', () => {
@@ -155,10 +156,6 @@ describe('Svelte Store Adapter', () => {
       expect(typeof store.signInWithPasskey).toBe('function');
     });
 
-    it('should provide signInWithEmail method', () => {
-      expect(typeof store.signInWithEmail).toBe('function');
-    });
-
     it('should provide verifyEmailCode method', () => {
       expect(typeof store.verifyEmailCode).toBe('function');
     });
@@ -178,7 +175,7 @@ describe('Svelte Store Adapter', () => {
       expect(state.email).toBe('test@example.com');
 
       // Send code
-      await store.signInWithEmail('test@example.com');
+      await store.sendEmailCode('test@example.com');
 
       state = get(store);
       expect(state.emailCodeSent).toBe(true);
@@ -401,7 +398,7 @@ describe('Svelte Store Adapter', () => {
         'subscribe',
         'getConfig',
         'signInWithPasskey',
-        'signInWithEmail',
+        'sendEmailCode',
         'verifyEmailCode',
         'signOut',
         'checkUser',

@@ -34,8 +34,8 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
     vi.clearAllMocks();
 
     // Import fresh modules - NEW MODULAR ARCHITECTURE
-    const authStoreModule = await import('../../src/stores-new');
-    createAuthStore = authStoreModule.default;
+    const authStoreModule = await import('../../src/stores');
+    createAuthStore = authStoreModule.createAuthStore;
 
     // Standard test config
     authConfig = {
@@ -63,16 +63,13 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
       hasCore: !!composedStore.core,
       hasUI: !!composedStore.ui,
       hasPasskey: !!composedStore.passkey,
-      hasEmail: !!composedStore.email,
-      hasAPI: !!composedStore.api,
-      hasAdapters: !!composedStore.adapters
+      hasEmail: !!composedStore.email
     });
 
     expect(composedStore).toBeDefined();
     expect(composedStore.core).toBeDefined();
     expect(composedStore.ui).toBeDefined();
-    expect(composedStore.api).toBeDefined();
-    expect(typeof composedStore.api.isAuthenticated).toBe('function');
+    expect(typeof composedStore.isAuthenticated).toBe('function');
 
     // Cleanup
     composedStore.destroy();
@@ -173,20 +170,19 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
     const composedStore = createAuthStore(authConfig);
 
     // Test unified API methods
-    console.log('📊 isAuthenticated():', composedStore.api.isAuthenticated());
-    console.log('📊 getAccessToken():', composedStore.api.getAccessToken());
+    console.log('📊 isAuthenticated():', composedStore.isAuthenticated());
+    console.log('📊 getAccessToken():', composedStore.getAccessToken());
 
-    expect(typeof composedStore.api.isAuthenticated).toBe('function');
-    expect(typeof composedStore.api.getAccessToken).toBe('function');
-    expect(typeof composedStore.api.setEmail).toBe('function');
-    expect(typeof composedStore.api.signInWithEmail).toBe('function');
-    expect(typeof composedStore.api.signInWithPasskey).toBe('function');
+    expect(typeof composedStore.isAuthenticated).toBe('function');
+    expect(typeof composedStore.getAccessToken).toBe('function');
+    expect(typeof composedStore.setEmail).toBe('function');
+    expect(typeof composedStore.signInWithPasskey).toBe('function');
 
-    expect(composedStore.api.isAuthenticated()).toBe(false);
-    expect(composedStore.api.getAccessToken()).toBeNull();
+    expect(composedStore.isAuthenticated()).toBe(false);
+    expect(composedStore.getAccessToken()).toBeNull();
 
     // Test email setting via unified API
-    composedStore.api.setEmail('test@example.com');
+    composedStore.setEmail('test@example.com');
     const uiState = composedStore.ui.getState();
     expect(uiState.email).toBe('test@example.com');
 
@@ -214,33 +210,6 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
     expect(composedStore.core.getState().state).toBe('unauthenticated'); // Unchanged
 
     console.log('📊 State coordination working correctly');
-
-    // Cleanup
-    composedStore.destroy();
-  });
-
-  it('should handle framework adapters', async () => {
-    console.log('🧪 Test: Testing framework adapters...');
-
-    const composedStore = createAuthStore(authConfig);
-
-    // Test vanilla adapter
-    const vanillaState = composedStore.adapters.vanilla.getState();
-    console.log('📊 Vanilla adapter state:', {
-      state: vanillaState.state,
-      hasUser: !!vanillaState.user
-    });
-
-    expect(vanillaState).toBeDefined();
-    expect(vanillaState.state).toBe('unauthenticated');
-    expect(typeof composedStore.adapters.vanilla.getState).toBe('function');
-
-    // Test Svelte adapter
-    console.log('📊 Svelte adapter type:', typeof composedStore.adapters.svelte.subscribe);
-    expect(typeof composedStore.adapters.svelte.subscribe).toBe('function');
-
-    // Both should reflect same core state
-    expect(vanillaState.state).toBe(composedStore.core.getState().state);
 
     // Cleanup
     composedStore.destroy();

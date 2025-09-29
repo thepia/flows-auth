@@ -11,12 +11,12 @@
 
 import { getContext, setContext } from 'svelte';
 import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
-import { createAuthStore } from '../stores/auth-store';
 import {
   type GlobalAuthStore,
   assertAuthConfig,
   getGlobalAuthStore,
-  initializeAuth
+  initializeAuth,
+  createGlobalAuthStore
 } from '../stores/global-auth-store';
 import type { AuthConfig } from '../types';
 
@@ -32,8 +32,8 @@ import type { AuthConfig } from '../types';
 export function setAuthContext(config: AuthConfig): GlobalAuthStore {
   assertAuthConfig(config);
 
-  // Create a new store instance for this context
-  const authStore = createAuthStore(config);
+  // Create a new store instance for this context (Svelte-compatible)
+  const authStore = createGlobalAuthStore(config);
   setContext(AUTH_CONTEXT_KEY, authStore);
 
   console.log('🔐 Auth context initialized');

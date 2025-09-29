@@ -9,7 +9,7 @@ import { render } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { vi } from 'vitest';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 /**
@@ -52,8 +52,9 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
     })
   };
 
-  // Create the real auth store with test config and mock API
-  const authStore = createAuthStore(defaultAuthConfig, mockApiClient);
+  // Create the real auth store with test config and make it Svelte-compatible
+  const baseStore = createAuthStore(defaultAuthConfig);
+  const authStore = makeSvelteCompatible(baseStore);
   console.log('🔧 Created test auth store:', !!authStore, 'config:', defaultAuthConfig);
   return authStore;
 }
@@ -92,17 +93,15 @@ export function renderWithAuthContext(
     });
   }
 
-  // Component expects context to contain writable(authStore) based on working test examples
-  const authStoreContext = writable(authStore);
-  console.log('🔧 Created auth store context:', !!authStoreContext, 'contains:', !!authStore);
+  // Component expects context to contain the Svelte-compatible auth store directly
+  console.log('🔧 Created auth store context:', !!authStore, 'contains:', !!authStore);
 
   return {
     ...render(Component, {
       props,
-      context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
+      context: new Map([[AUTH_CONTEXT_KEY, authStore]])
     }),
-    authStore,
-    authStoreContext
+    authStore
   };
 }
 

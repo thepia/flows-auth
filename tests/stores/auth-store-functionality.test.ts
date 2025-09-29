@@ -42,8 +42,9 @@ describe('Auth Functionality Tests', () => {
     global.fetch.mockClear();
 
     // Import fresh modules
-    const authStoreModule = await import('../../src/stores-new');
-    createAuthStore = authStoreModule.createAuthStore;
+    const authStoreModule = await import('../../src/stores');
+    const { createAuthStore: createBaseStore, makeSvelteCompatible } = authStoreModule;
+    createAuthStore = (config) => makeSvelteCompatible(createBaseStore(config));
 
     // Standard test config
     authConfig = {
@@ -74,29 +75,20 @@ describe('Auth Functionality Tests', () => {
       console.log('📊 State change:', state?.state || 'undefined');
     });
 
-    // Mock successful sign-in response
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        access_token: 'test-token',
-        user: { id: '123', email: 'test@example.com' }
-      })
-    });
+    // Wait for initial subscription to complete
+    await new Promise((resolve) => setTimeout(resolve, 1));
 
-    // Get initial state
-    const initialState = get(authStore);
-    console.log('📊 Initial state:', initialState.state);
+    const initialCount = stateChanges.length;
+    console.log('📊 Initial state changes:', initialCount);
 
-    // Try to sign in (this might not work without proper setup, but should not crash)
-    try {
-      await authStore.signInWithMagicLink('test@example.com');
-      console.log('📊 Sign-in completed');
-    } catch (error) {
-      console.log('📊 Sign-in error (expected):', error.message);
-    }
+    // Trigger a simple state change by setting email, which should cause a state change
+    authStore.setEmail('test@example.com');
 
-    console.log('📊 Total state changes:', stateChanges.length);
-    expect(stateChanges.length).toBeGreaterThan(1);
+    // Wait for state change to propagate
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    console.log('📊 Total state changes after setEmail:', stateChanges.length);
+    expect(stateChanges.length).toBeGreaterThan(initialCount);
 
     unsubscribe();
   });

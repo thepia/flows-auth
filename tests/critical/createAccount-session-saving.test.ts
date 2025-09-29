@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, RegistrationRequest } from '../../src/types';
 import {
   getAccessToken,
@@ -75,7 +75,7 @@ describe('createAccount API Contract', () => {
       enableMagicPins: false
     };
 
-    authStore = createAuthStore(mockConfig);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
     // Mock the createAccount method to return successful contract response
     vi.spyOn(authStore, 'createAccount').mockResolvedValue({

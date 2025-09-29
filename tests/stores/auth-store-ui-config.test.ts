@@ -1,19 +1,25 @@
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store.js';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types/index.js';
 
 // Mock the API client for testing
+const mockCheckEmail = vi.fn();
+const mockSendAppEmailCode = vi.fn();
+const mockVerifyAppEmailCode = vi.fn();
+const mockSignInWithMagicLink = vi.fn();
+const mockSignInWithPasskey = vi.fn();
+
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
     signIn: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    signInWithPasskey: vi.fn(),
+    signInWithMagicLink: mockSignInWithMagicLink,
+    signInWithPasskey: mockSignInWithPasskey,
     refreshToken: vi.fn(),
     signOut: vi.fn(),
-    checkEmail: vi.fn(),
-    sendAppEmailCode: vi.fn(),
-    verifyAppEmailCode: vi.fn()
+    checkEmail: mockCheckEmail,
+    sendAppEmailCode: mockSendAppEmailCode,
+    verifyAppEmailCode: mockVerifyAppEmailCode
   }))
 }));
 
@@ -22,7 +28,8 @@ vi.mock('../../src/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true), // Enable WebAuthn for testing
-  isConditionalMediationSupported: vi.fn(() => true)
+  isConditionalMediationSupported: vi.fn(() => true),
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
 
 describe('AuthStore UI Configuration', () => {
@@ -41,7 +48,18 @@ describe('AuthStore UI Configuration', () => {
       language: 'en'
     };
 
-    authStore = createAuthStore(mockConfig);
+    // Reset all mocks
+    vi.clearAllMocks();
+
+    // Configure default mock return values
+    mockCheckEmail.mockResolvedValue({
+      exists: true,
+      hasWebAuthn: false,
+      emailVerified: true,
+      lastPinExpiry: null
+    });
+
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
     // Reset to clean state for each test
     authStore.reset();
   });
@@ -166,7 +184,7 @@ describe('AuthStore UI Configuration', () => {
       it('should not show secondary button when appCode is not configured', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
         const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
-        const storeWithoutAppCode = createAuthStore(configWithMagicLinks);
+        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithMagicLinks));
 
         // Set up store state for userChecked with passkeys
         storeWithoutAppCode.setEmail('test@example.com');
@@ -231,7 +249,7 @@ describe('AuthStore UI Configuration', () => {
       it('should fallback to email code when appCode not available', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
         const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
-        const storeWithoutAppCode = createAuthStore(configWithMagicLinks);
+        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithMagicLinks));
 
         // Set up store state for emailEntry (initial state)
         storeWithoutAppCode.setEmail('test@example.com');
@@ -407,7 +425,7 @@ describe('AuthStore UI Configuration', () => {
     describe('Sign-in mode specific messages', () => {
       it('should show login-only message when user not found in login-only mode', () => {
         const loginOnlyConfig = { ...mockConfig, signInMode: 'login-only' as const };
-        const loginOnlyStore = createAuthStore(loginOnlyConfig);
+        const loginOnlyStore = makeSvelteCompatible(createAuthStore(loginOnlyConfig));
 
         // Set up store state for userChecked with non-existent user in login-only mode
         loginOnlyStore.setEmail('test@example.com');

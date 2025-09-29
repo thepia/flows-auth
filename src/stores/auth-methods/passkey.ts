@@ -287,16 +287,27 @@ export function createPasskeyStore(options: StoreOptions) {
             // Authentication methods
             signIn: async (email: string, conditional = false) => {
               const startTime = Date.now();
-              
+
               if (!get().isSupported) {
                 throw new Error('Passkeys are not supported on this device');
               }
-              
+
+              // Validate email parameter
+              if (!email || typeof email !== 'string') {
+                throw new Error('Email is required');
+              }
+
+              // Basic email format validation
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(email)) {
+                throw new Error('Invalid email format');
+              }
+
               try {
                 set({ isAuthenticating: true, lastError: null });
-                
+
                 console.log('🔍 Passkey signIn called:', { email, conditional });
-                
+
                 // Get userId from email (mirrors thepia.com pattern)
                 const userCheck = await api.checkEmail(email);
                 if (!userCheck.exists || !userCheck.userId) {

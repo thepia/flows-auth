@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores-new';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, SignInEvent, SignInState } from '../../src/types';
 
 describe('SignIn State Transitions', () => {
@@ -21,7 +21,8 @@ describe('SignIn State Transitions', () => {
       enableMagicPins: true,
       appCode: 'test'
     };
-    authStore = createAuthStore(config);
+    const baseStore = createAuthStore(config);
+    authStore = makeSvelteCompatible(baseStore);
   });
 
   describe('EMAIL_VERIFIED event transitions', () => {

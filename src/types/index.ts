@@ -549,32 +549,23 @@ export interface AuthStore {
   platformAuthenticatorAvailable: boolean; // Whether platform authenticator is available
 }
 
-// Svelte store types
-export type Unsubscriber = () => void;
-export type Subscriber<T> = (value: T) => void;
-export type Readable<T> = {
-  subscribe: (run: Subscriber<T>) => Unsubscriber;
-};
-
-// Complete auth store type with all methods
-export interface CompleteAuthStore extends Readable<AuthStore> {
+export interface AuthStoreFunctions {
+  // Core authentication
   signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
   signInWithMagicLink: (email: string) => Promise<SignInResponse>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
-  isAuthenticated: () => boolean;
-  getAccessToken: () => string | null;
-  reset: () => void;
-  initialize: () => void;
   startConditionalAuthentication: (email: string) => Promise<boolean>;
-  // checkUserIfNeeded: (email: string) => Promise<{
-  //   exists: boolean;
-  //   hasWebAuthn: boolean;
-  //   userId?: string;
-  //   emailVerified?: boolean;
-  //   invitationTokenHash?: string;
-  //   lastPinExpiry?: number;
-  // }>;
+
+  // Email authentication
+  sendEmailCode: (email: string) => Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }>;
+  verifyEmailCode: (code: string) => Promise<SignInResponse>;
+
+  // User management
   checkUser: (email: string) => Promise<{
     exists: boolean;
     hasWebAuthn: boolean;
@@ -611,6 +602,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     verificationRequired: boolean;
     message: string;
   }>;
+
   checkUserWithInvitation: (
     email: string,
     invitationOptions?: {
@@ -620,58 +612,42 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     }
   ) => Promise<EnhancedUserCheck>;
   determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
-  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
-  api: AuthApiClient;
 
-  // SignIn flow control methods
-  notifyPinSent: () => void;
-  sendSignInEvent: (event: SignInEvent) => SignInState;
+  // State management
+  initialize: () => void;
+  reset: () => void;
+  isAuthenticated: () => boolean;
+  getAccessToken: () => string | null;
+  getState: () => AuthStore;
 
-  // Email-based authentication methods
-  sendEmailCode: (email: string) => Promise<{
-    success: boolean;
-    message: string;
-    timestamp: number;
-  }>;
-  verifyEmailCode: (code: string) => Promise<SignInResponse>;
-
-  // Dynamic role configuration methods
-  getApplicationContext: () => ApplicationContext | null;
-  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
-  migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
-
-  // Configuration access
-  getConfig: () => AuthConfig;
-  updateConfig: (updates: Partial<AuthConfig>) => void;
-
-  // UI Configuration (state-aware - accepts optional live email)
-  getButtonConfig: () => ButtonConfig;
-
-  getStateMessageConfig: () => StateMessageConfig | null;
-
-  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
-
-  // Direct UI state setters
+  // UI state setters
   setEmail: (email: string) => void;
   setFullName: (name: string) => void;
   setLoading: (loading: boolean) => void;
   setConditionalAuthActive: (active: boolean) => void;
   setEmailCodeSent: (sent: boolean) => void;
 
-  // Error management methods
+  // Error management
   setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
   clearApiError: () => void;
   retryLastFailedRequest: () => Promise<boolean>;
 
-  // App-specific email authentication
-  sendAppEmailCode: (email: string) => Promise<{ success: boolean; message: string }>;
-  verifyAppEmailCode: (email: string, code: string) => Promise<SignInResponse>;
+  // SignIn flow control methods
+  notifyPinSent: () => void;
+  notifyPinVerified: (sessionData: any) => void;
+  sendSignInEvent: (event: SignInEvent) => SignInState;
 
-  // Direct state access
-  getState: () => AuthStore;
+  // Configuration access
+  getConfig: () => AuthConfig;
+  updateConfig: (updates: Partial<AuthConfig>) => void;
 
-  // Cleanup
-  destroy: () => void;
+  // UI Configuration
+  getButtonConfig: () => ButtonConfig;
+  getStateMessageConfig: () => StateMessageConfig | null;
+  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
+
+  // Events
+  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
 }
 
 // Button configuration types

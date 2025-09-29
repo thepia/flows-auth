@@ -60,7 +60,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
     const { AuthApiClient } = await import('../../src/api/auth-api');
     const MockedAuthApiClient = AuthApiClient as any;
 
-    authStore = createAuthStore(mockConfig);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
     // Get the mocked API client instance
     mockApiClient =

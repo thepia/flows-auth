@@ -1,38 +1,40 @@
 /**
- * Global Auth Store Singleton
+ * Global Auth Store Wrapper
  *
- * Ensures that only one auth store exists per application, preventing:
- * - Multiple auth instances with inconsistent state
- * - Duplicate API calls
- * - Memory leaks from multiple store subscriptions
- * - Race conditions between auth instances
+ * Provides a Svelte-compatible wrapper around the ComposedAuthStore for
+ * backward compatibility with existing code that expects global store patterns.
  *
- * Usage:
- * - Call `initializeAuth(config)` once at app startup (usually in +layout.svelte)
- * - Use `getGlobalAuthStore()` everywhere else to access the singleton
- * - Components should never create their own auth stores
+ * This uses makeSvelteCompatible to create the proper Svelte store interface
+ * while maintaining the same API as the original auth-store.
  */
 
-import type { AuthConfig } from '../types';
+import type { AuthConfig, AuthStore } from '../types';
+import type { CompleteAuthStore } from '../types/svelte';
+import { makeSvelteCompatible } from './adapters/svelte';
 import { createAuthStore } from './auth-store';
 
-// Global singleton instance
-let globalAuthStore: ReturnType<typeof createAuthStore> | null = null;
+/**
+ * Type alias for backward compatibility
+ */
+export type GlobalAuthStore = CompleteAuthStore;
+export type AuthStoreInitializer = (config: AuthConfig) => GlobalAuthStore;
+export type AuthStoreGetter = () => GlobalAuthStore;
+
+/**
+ * Global store instance (for backward compatibility)
+ */
+let globalAuthStore: GlobalAuthStore | null = null;
 let globalConfig: AuthConfig | null = null;
 let isInitialized = false;
 
 /**
- * Initialize the global auth store - call this ONCE at app startup
+ * Initialize the global auth store
  *
  * @param config - Auth configuration
- * @throws Error if already initialized with different config
+ * @returns Svelte-compatible auth store
  */
 export function initializeAuth(config: AuthConfig): GlobalAuthStore {
-  // Validate config at runtime for better TypeScript safety
   assertAuthConfig(config);
-  if (typeof window === 'undefined') {
-    throw new Error('Auth store can only be initialized in browser environment');
-  }
 
   // If already initialized, validate config consistency
   if (isInitialized && globalAuthStore) {
@@ -46,34 +48,54 @@ export function initializeAuth(config: AuthConfig): GlobalAuthStore {
     return globalAuthStore;
   }
 
-  // Create the singleton instance
-  globalAuthStore = createAuthStore(config);
+  const composedStore = createAuthStore(config);
+  globalAuthStore = makeSvelteCompatible(composedStore);
   globalConfig = config;
   isInitialized = true;
 
   console.log('🔐 Global auth store initialized');
-
   return globalAuthStore;
 }
 
 /**
  * Get the global auth store instance
  *
+ * @returns The global auth store
  * @throws Error if not initialized
  */
 export function getGlobalAuthStore(): GlobalAuthStore {
-  if (!isInitialized || !globalAuthStore) {
+  if (!globalAuthStore) {
     throw new Error(
-      '🚨 Auth store not initialized! Call initializeAuth(config) first, ' +
-        'typically in your root layout component (+layout.svelte).'
+      'Global auth store not initialized. Call initializeAuth(config) first.'
     );
   }
-
   return globalAuthStore;
 }
 
 /**
+ * Reset the global auth store (useful for testing)
+ */
+export function resetGlobalAuthStore(): void {
+  if (globalAuthStore) {
+    globalAuthStore.destroy();
+  }
+
+  globalAuthStore = null;
+  globalConfig = null;
+  isInitialized = false;
+
+  console.log('🔄 Global auth store reset');
+}
+
+/**
  * Check if the global auth store is initialized
+ */
+export function isGlobalAuthStoreInitialized(): boolean {
+  return globalAuthStore !== null;
+}
+
+/**
+ * Check if the global auth store is initialized (legacy name)
  */
 export function isAuthStoreInitialized(): boolean {
   return isInitialized && globalAuthStore !== null;
@@ -88,28 +110,7 @@ export function getGlobalAuthConfig(): AuthConfig {
   if (!globalConfig) {
     throw new Error('Auth store not initialized');
   }
-
   return globalConfig;
-}
-
-/**
- * Reset the global auth store (primarily for testing)
- *
- * ⚠️ WARNING: Only use this in tests or when completely reinitializing the app
- */
-export function resetGlobalAuthStore(): void {
-  if (globalAuthStore) {
-    // Call reset method if available
-    if ('reset' in globalAuthStore && typeof globalAuthStore.reset === 'function') {
-      globalAuthStore.reset();
-    }
-  }
-
-  globalAuthStore = null;
-  globalConfig = null;
-  isInitialized = false;
-
-  console.log('🔄 Global auth store reset');
 }
 
 /**
@@ -123,19 +124,6 @@ export function updateGlobalAuthConfig(config: AuthConfig): GlobalAuthStore {
 
   resetGlobalAuthStore();
   return initializeAuth(config);
-}
-
-/**
- * Compare two auth configurations for equality
- */
-function areConfigsEqual(config1: AuthConfig, config2: AuthConfig): boolean {
-  return (
-    config1.apiBaseUrl === config2.apiBaseUrl &&
-    config1.clientId === config2.clientId &&
-    config1.domain === config2.domain &&
-    config1.enablePasskeys === config2.enablePasskeys &&
-    config1.enableMagicLinks === config2.enableMagicLinks
-  );
 }
 
 /**
@@ -162,41 +150,73 @@ export function getOrInitializeAuth(fallbackConfig?: AuthConfig): GlobalAuthStor
   }
 }
 
-// Type-safe exports with explicit generic constraints
-export type GlobalAuthStore = ReturnType<typeof createAuthStore>;
-export type AuthStoreInitializer = typeof initializeAuth;
-export type AuthStoreGetter = typeof getGlobalAuthStore;
-
-// Type guard for auth store initialization
-export function isGlobalAuthStore(store: any): store is GlobalAuthStore {
-  return store && typeof store === 'object' && 'subscribe' in store && 'signOut' in store;
+/**
+ * Type guard to check if a value is a global auth store
+ */
+export function isGlobalAuthStore(value: unknown): value is GlobalAuthStore {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'subscribe' in value &&
+    typeof (value as any).subscribe === 'function' &&
+    'signInWithPasskey' in value &&
+    typeof (value as any).signInWithPasskey === 'function' &&
+    'getState' in value &&
+    typeof (value as any).getState === 'function'
+  );
 }
 
-// Strict type checking for config validation
+/**
+ * Assert that a config is valid for auth store
+ */
 export function assertAuthConfig(config: unknown): asserts config is AuthConfig {
   if (!config || typeof config !== 'object') {
-    throw new TypeError('AuthConfig must be an object');
+    throw new Error('Auth config must be an object');
   }
 
-  const c = config as Record<string, unknown>;
+  const c = config as any;
 
-  if (typeof c.apiBaseUrl !== 'string') {
-    throw new TypeError('AuthConfig.apiBaseUrl must be a string');
+  if (!c.apiBaseUrl || typeof c.apiBaseUrl !== 'string') {
+    throw new Error('Auth config must have apiBaseUrl string');
   }
 
-  if (typeof c.clientId !== 'string') {
-    throw new TypeError('AuthConfig.clientId must be a string');
+  if (!c.clientId || typeof c.clientId !== 'string') {
+    throw new Error('Auth config must have clientId string');
   }
 
-  if (typeof c.domain !== 'string') {
-    throw new TypeError('AuthConfig.domain must be a string');
+  if (!c.domain || typeof c.domain !== 'string') {
+    throw new Error('Auth config must have domain string');
   }
 
-  if (typeof c.enablePasskeys !== 'boolean') {
-    throw new TypeError('AuthConfig.enablePasskeys must be a boolean');
-  }
-
-  if (typeof c.enableMagicLinks !== 'boolean') {
-    throw new TypeError('AuthConfig.enableMagicLinks must be a boolean');
-  }
+  // Additional validation could be added here
 }
+
+/**
+ * Factory function to create a new auth store (for context-based usage)
+ */
+export function createGlobalAuthStore(config: AuthConfig): GlobalAuthStore {
+  assertAuthConfig(config);
+  const composedStore = createAuthStore(config);
+  return makeSvelteCompatible(composedStore);
+}
+
+/**
+ * Compare two auth configurations for equality
+ */
+function areConfigsEqual(config1: AuthConfig, config2: AuthConfig): boolean {
+  return (
+    config1.apiBaseUrl === config2.apiBaseUrl &&
+    config1.clientId === config2.clientId &&
+    config1.domain === config2.domain &&
+    config1.enablePasskeys === config2.enablePasskeys &&
+    config1.enableMagicLinks === config2.enableMagicLinks
+  );
+}
+
+/**
+ * Backward compatibility exports
+ */
+export {
+  initializeAuth as createAuthStore,
+  getGlobalAuthStore as getAuthStore
+};

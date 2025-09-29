@@ -10,7 +10,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;
@@ -40,7 +40,7 @@ describe('SignInForm Registration Flow Regression', () => {
 
     if (apiServerRunning) {
       // Initialize auth store and API client
-      authStore = createAuthStore(TEST_CONFIG);
+      authStore = makeSvelteCompatible(createAuthStore(TEST_CONFIG));
       apiClient = new AuthApiClient(TEST_CONFIG);
     }
   });

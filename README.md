@@ -13,6 +13,14 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 - 🎯 **TypeScript** - Full type safety
 - 🌍 **SSR Compatible** - Works with SvelteKit
 
+## Architecture
+
+Modular Zustand-based state management:
+- `src/stores/core/` - Auth state, session, errors, events
+- `src/stores/auth-methods/` - Passkey and email authentication
+- `src/stores/ui/` - UI state and business logic
+- `src/stores/adapters/` - Svelte adapter for reactivity
+
 ## Quick Start
 
 ### Installation

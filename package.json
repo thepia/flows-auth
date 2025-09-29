@@ -16,29 +16,29 @@
       "default": "./dist/index.js"
     },
     "./stores": {
-      "types": "./src/stores-new/index.ts",
-      "import": "./src/stores-new/index.ts",
-      "default": "./src/stores-new/index.ts"
+      "types": "./src/stores/index.ts",
+      "import": "./src/stores/index.ts",
+      "default": "./src/stores/index.ts"
     },
     "./stores/core": {
-      "types": "./src/stores-new/core/index.ts",
-      "import": "./src/stores-new/core/index.ts",
-      "default": "./src/stores-new/core/index.ts"
+      "types": "./src/stores/core/index.ts",
+      "import": "./src/stores/core/index.ts",
+      "default": "./src/stores/core/index.ts"
     },
     "./stores/auth-methods": {
-      "types": "./src/stores-new/auth-methods/index.ts",
-      "import": "./src/stores-new/auth-methods/index.ts",
-      "default": "./src/stores-new/auth-methods/index.ts"
+      "types": "./src/stores/auth-methods/index.ts",
+      "import": "./src/stores/auth-methods/index.ts",
+      "default": "./src/stores/auth-methods/index.ts"
     },
     "./stores/ui": {
-      "types": "./src/stores-new/ui/index.ts",
-      "import": "./src/stores-new/ui/index.ts",
-      "default": "./src/stores-new/ui/index.ts"
+      "types": "./src/stores/ui/index.ts",
+      "import": "./src/stores/ui/index.ts",
+      "default": "./src/stores/ui/index.ts"
     },
     "./stores/adapters": {
-      "types": "./src/stores-new/adapters/index.ts",
-      "import": "./src/stores-new/adapters/index.ts",
-      "default": "./src/stores-new/adapters/index.ts"
+      "types": "./src/stores/adapters/index.ts",
+      "import": "./src/stores/adapters/index.ts",
+      "default": "./src/stores/adapters/index.ts"
     },
     "./src": {
       "types": "./src/index.ts",

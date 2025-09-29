@@ -25,7 +25,7 @@ describe('CRITICAL: Auth Store Registration Methods', () => {
       requireEmailVerification: true
     };
 
-    authStore = createAuthStore(authConfig);
+    authStore = makeSvelteCompatible(createAuthStore(authConfig));
   });
 
   describe('createAccount Method', () => {

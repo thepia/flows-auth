@@ -6,7 +6,7 @@
  * with the new Zustand-based modular architecture.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import createAuthStore from '../../src/stores-new';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Only mock external dependencies that we can't test in isolation
@@ -165,10 +165,10 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
   describe('Authentication', () => {
     it('should handle successful email code send via unified API', async () => {
       // Set email first to trigger user discovery
-      composedStore.api.setEmail('test@example.com');
+      composedStore.setEmail('test@example.com');
 
       // Simulate email code sending
-      const result = await composedStore.api.signInWithEmail('test@example.com');
+      const result = await composedStore.sendEmailCode('test@example.com');
 
       // Test that UI state transitions correctly
       const uiState = composedStore.ui.getState();
@@ -185,13 +185,13 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       let errorReceived: any = null;
 
       // Listen for authentication errors
-      const unsubscribe = composedStore.api.on('sign_in_error', (data) => {
+      const unsubscribe = composedStore.on('sign_in_error', (data) => {
         errorReceived = data;
       });
 
       try {
         // Trigger an authentication error (this will depend on mocked API behavior)
-        await composedStore.api.signInWithEmail('invalid@example.com');
+        await composedStore.sendEmailCode('invalid@example.com');
       } catch (error) {
         // Error handling via events, not exceptions in new architecture
       }
@@ -217,7 +217,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // Even if passkeys aren't supported in test environment,
       // we can test the API structure
-      expect(typeof composedStore.api.signInWithPasskey).toBe('function');
+      expect(typeof composedStore.signInWithPasskey).toBe('function');
 
       // Test that passkey store has correct initial state
       expect(passkeyState.isAuthenticating).toBe(false);
@@ -233,7 +233,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
   describe('Unified API Methods', () => {
     it('should correctly identify authenticated state via unified API', () => {
       // Test initial unauthenticated state
-      expect(composedStore.api.isAuthenticated()).toBe(false);
+      expect(composedStore.isAuthenticated()).toBe(false);
       expect(composedStore.core.getState().isAuthenticated()).toBe(false);
 
       // Simulate authentication by directly setting core state
@@ -256,13 +256,13 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       composedStore.core.getState().updateTokens(mockTokens);
 
       // Test that authentication is now detected
-      expect(composedStore.api.isAuthenticated()).toBe(true);
+      expect(composedStore.isAuthenticated()).toBe(true);
       expect(composedStore.core.getState().isAuthenticated()).toBe(true);
     });
 
     it('should return access token when authenticated via unified API', () => {
       // Test initial null access token
-      expect(composedStore.api.getAccessToken()).toBeNull();
+      expect(composedStore.getAccessToken()).toBeNull();
       expect(composedStore.core.getState().getAccessToken()).toBeNull();
 
       // Simulate authentication by setting tokens
@@ -275,7 +275,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       composedStore.core.getState().updateTokens(mockTokens);
 
       // Test that access token is now available
-      expect(composedStore.api.getAccessToken()).toBe('test-access-token');
+      expect(composedStore.getAccessToken()).toBe('test-access-token');
       expect(composedStore.core.getState().getAccessToken()).toBe('test-access-token');
     });
 
@@ -302,10 +302,10 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       composedStore.ui.getState().setSignInState('signedIn');
 
       // Verify we're authenticated
-      expect(composedStore.api.isAuthenticated()).toBe(true);
+      expect(composedStore.isAuthenticated()).toBe(true);
 
       // Reset via unified API
-      composedStore.api.reset();
+      composedStore.reset();
 
       // Verify all stores are reset
       const coreState = composedStore.core.getState();
@@ -317,7 +317,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(uiState.signInState).toBe('emailEntry');
       expect(uiState.email).toBe('');
 
-      expect(composedStore.api.isAuthenticated()).toBe(false);
+      expect(composedStore.isAuthenticated()).toBe(false);
     });
   });
 
@@ -333,9 +333,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(composedStore.events).toBeDefined();
 
       // Unified API provides backward compatibility
-      expect(composedStore.api).toBeDefined();
-      expect(typeof composedStore.api.signInWithEmail).toBe('function');
-      expect(typeof composedStore.api.signInWithPasskey).toBe('function');
+      expect(typeof composedStore.sendEmailCode).toBe('function');
+      expect(typeof composedStore.signInWithPasskey).toBe('function');
     });
 
     it('should maintain single signInState with modular operation states', () => {
@@ -360,12 +359,12 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       let eventReceived: any = null;
 
       // Listen for events
-      const unsubscribe = composedStore.api.on('sign_in_success', (data) => {
+      const unsubscribe = composedStore.on('sign_in_success', (data) => {
         eventReceived = data;
       });
 
       // Emit event
-      composedStore.api.emit('sign_in_success', {
+      composedStore.emit('sign_in_success', {
         method: 'passkey',
         user: { id: '123', email: 'test@example.com' }
       });
@@ -378,20 +377,6 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       unsubscribe();
     });
-
-    it('should provide framework-agnostic adapters', () => {
-      // Vanilla adapter provides getState method
-      const vanillaState = composedStore.adapters.vanilla.getState();
-      expect(vanillaState.state).toBe('unauthenticated');
-      expect(vanillaState.user).toBeNull();
-
-      // Svelte adapter provides subscribe method
-      expect(typeof composedStore.adapters.svelte.subscribe).toBe('function');
-
-      // Both adapt the same core state
-      expect(vanillaState.state).toBe(composedStore.core.getState().state);
-    });
-
     it('should cleanup all stores on destroy', () => {
       // Set some state across stores
       composedStore.ui.getState().setEmail('test@example.com');

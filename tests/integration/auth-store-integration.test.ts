@@ -5,7 +5,7 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthDerivedStores, createAuthStore } from '../../src/stores';
+import { createAuthDerivedStores, createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, AuthMachineState } from '../../src/types';
 
 // Import shared test configuration
@@ -199,7 +199,7 @@ describe('Auth Store Integration Tests', () => {
     localStorage.clear();
     vi.clearAllMocks();
 
-    authStore = createAuthStore(LOCAL_TEST_CONFIG);
+    authStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
     derivedStores = createAuthDerivedStores(authStore);
   });
 
@@ -510,7 +510,7 @@ describe('Auth Store Integration Tests', () => {
       localStorage.setItem('thepia_auth_user', JSON.stringify(mockUser));
 
       // Create new store instance
-      const newStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const newStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for initialization
 
@@ -531,7 +531,7 @@ describe('Auth Store Integration Tests', () => {
       localStorage.setItem('auth_access_token', 'expired-token');
       localStorage.setItem('auth_expires_at', (Date.now() - 1000).toString()); // Expired
 
-      const newStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const newStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -686,7 +686,7 @@ describe('Auth Store Integration Tests', () => {
     it('should not leak memory with multiple store creations', () => {
       const stores = Array(10)
         .fill(0)
-        .map(() => createAuthStore(LOCAL_TEST_CONFIG));
+        .map(() => makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG)));
 
       stores.forEach((store) => {
         if (store.destroy) {
@@ -720,7 +720,7 @@ describe('Auth Store E2E Scenarios', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    authStore = createAuthStore(LOCAL_TEST_CONFIG);
+    authStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
   });
 
   afterEach(() => {
@@ -868,7 +868,7 @@ describe('Auth Store E2E Scenarios', () => {
       authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
 
       // Create new store (simulating page refresh)
-      const refreshedStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const refreshedStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       // Should start from initial state and quickly transition to sessionInvalid when no valid session exists
       // Since we cleared localStorage in beforeEach, there's no valid session to restore

@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores-new';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, ExplainerConfig } from '../../src/types';
 
 describe('AuthStore getExplainerConfig', () => {
@@ -22,7 +22,7 @@ describe('AuthStore getExplainerConfig', () => {
       }
     };
 
-    authStore = createAuthStore(mockConfig);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
   });
 
   describe('Paragraph type scenarios', () => {
@@ -63,7 +63,7 @@ describe('AuthStore getExplainerConfig', () => {
 
     it('should use generic text when no company name is provided', () => {
       const configWithoutCompany = { ...mockConfig, branding: undefined };
-      const storeWithoutCompany = createAuthStore(configWithoutCompany);
+      const storeWithoutCompany = makeSvelteCompatible(createAuthStore(configWithoutCompany));
 
       // Set up store state for emailEntry
       storeWithoutCompany.setEmail('test@example.com');
@@ -77,7 +77,7 @@ describe('AuthStore getExplainerConfig', () => {
 
     it('should use explanation text when no appCode is provided', () => {
       const configWithoutAppCode = { ...mockConfig, appCode: undefined };
-      const storeWithoutAppCode = createAuthStore(configWithoutAppCode);
+      const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithoutAppCode));
 
       // Set up store state for emailEntry
       storeWithoutAppCode.setEmail('test@example.com');
@@ -150,7 +150,7 @@ describe('AuthStore getExplainerConfig', () => {
 
     it('should use user verification when no company name is provided', () => {
       const configWithoutCompany = { ...mockConfig, branding: undefined };
-      const storeWithoutCompany = createAuthStore(configWithoutCompany);
+      const storeWithoutCompany = makeSvelteCompatible(createAuthStore(configWithoutCompany));
 
       // Set up store state for userChecked with existing user and passkeys
       storeWithoutCompany.setEmail('test@example.com');

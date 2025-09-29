@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import { createEventDispatcher, onMount, getContext } from 'svelte';
-import type { createAuthStore } from '../../stores/auth-store';
+import type { CompleteAuthStore } from '../../types/svelte';
 import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
 import type { AuthError, AuthMethod, User, SignInEvent } from '../../types';
 import { m } from '../../utils/i18n';
@@ -35,11 +35,8 @@ const dispatch = createEventDispatcher<{
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
 
-// Get auth store from context using reactive pattern  
-const authStoreContext = getContext<any>(AUTH_CONTEXT_KEY);
-
-// Use reactive $store syntax - automatically subscribes and updates
-$: store = $authStoreContext as ReturnType<typeof createAuthStore>;
+// Get auth store from context directly (now Svelte-compatible)
+const store = getContext<CompleteAuthStore>(AUTH_CONTEXT_KEY);
 
 // Debug logging to see what's happening
 $: console.log('🔍 SignInCore: store =', !!store, store);

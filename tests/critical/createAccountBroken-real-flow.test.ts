@@ -54,7 +54,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     };
 
     // Create real auth store instance
-    authStore = createAuthStore(authConfig);
+    authStore = makeSvelteCompatible(createAuthStore(authConfig));
   });
 
   test('CRITICAL: createAccountBroken should complete full WebAuthn registration flow', async () => {

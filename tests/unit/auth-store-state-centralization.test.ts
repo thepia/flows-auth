@@ -23,7 +23,7 @@ describe('Auth Store State Centralization', () => {
       enableMagicLinks: true,
       appCode: 'test'
     };
-    authStore = createAuthStore(config);
+    authStore = makeSvelteCompatible(createAuthStore(config));
   });
 
   describe('UI State Management', () => {

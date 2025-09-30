@@ -422,12 +422,15 @@ export class AuthApiClient {
 
     // Use rate-limited request with Origin header for RPID determination
     // Using GET method with email as query parameter (API server supports this)
-    const response = await this.rateLimitedRequest<UserCheckData>(`${endpoint}?email=${encodeURIComponent(email)}`, {
-      method: 'GET',
-      headers: {
-        Origin: origin
+    const response = await this.rateLimitedRequest<UserCheckData>(
+      `${endpoint}?email=${encodeURIComponent(email)}`,
+      {
+        method: 'GET',
+        headers: {
+          Origin: origin
+        }
       }
-    });
+    );
 
     console.log(`[AuthApiClient] Raw API response:`, {
       email,

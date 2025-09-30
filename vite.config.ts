@@ -95,6 +95,24 @@ export default defineConfig({
           'svelte/internal': 'SvelteInternal',
           d3: 'D3'
         }
+      },
+      // Suppress dynamic import warnings for modules that are both statically and dynamically imported
+      onwarn(warning, warn) {
+        // Skip certain warnings
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+
+        // Skip dynamic import warnings for specific modules we know about
+        if (warning.message && warning.message.includes('dynamically imported') &&
+            (warning.message.includes('webauthn') ||
+             warning.message.includes('sessionManager') ||
+             warning.message.includes('invitation-tokens') ||
+             warning.message.includes('errorReporter') ||
+             warning.message.includes('api-detection'))) {
+          return;
+        }
+
+        // Use default for everything else
+        warn(warning);
       }
     },
     sourcemap: true,

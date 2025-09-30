@@ -1,6 +1,6 @@
 /**
  * Component Test Setup Helpers
- * 
+ *
  * Standardized helpers for testing components that require auth store context.
  * This ensures consistent test setup across all component tests.
  */
@@ -116,13 +116,13 @@ export const TEST_AUTH_CONFIGS = {
     enablePasskeys: true,
     enableMagicLinks: false
   },
-  
+
   /** Legacy config without app code (magic links only) */
   legacyMagicLinks: {
     enablePasskeys: true,
     enableMagicLinks: true
   },
-  
+
   /** Login-only mode (no registration) */
   loginOnly: {
     appCode: 'test-app',
@@ -130,7 +130,7 @@ export const TEST_AUTH_CONFIGS = {
     enablePasskeys: true,
     enableMagicLinks: false
   },
-  
+
   /** Passkeys disabled */
   noPasskeys: {
     appCode: 'test-app',

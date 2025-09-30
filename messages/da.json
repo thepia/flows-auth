@@ -61,7 +61,6 @@
   "error.noPasskeyAvailable": "Ingen passkey tilgængelig på denne enhed.",
   "error.registrationFailed": "Registrering mislykkedes",
 
-
   "auth.onlyRegisteredUsers": "Kun registrerede brugere kan logge ind. Kontakt support hvis du har brug for adgang.",
   "auth.fullName": "Fulde Navn",
   "auth.fullNamePlaceholder": "Indtast dit fulde navn",

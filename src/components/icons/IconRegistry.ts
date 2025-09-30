@@ -1,4 +1,4 @@
-import type { SemanticIconRegistry, IconThemeConfig, IconCSSProperties } from './types.js';
+import type { IconCSSProperties, IconThemeConfig, SemanticIconRegistry } from './types.js';
 
 /**
  * Semantic icon registry with descriptions for each icon's purpose
@@ -13,9 +13,9 @@ export const SEMANTIC_ICON_REGISTRY: SemanticIconRegistry = {
     user: 'User profile, account',
     'user-check': 'Verified user, authenticated',
     fingerprint: 'Biometric authentication',
-    mail: 'Email authentication, magic links',
+    mail: 'Email authentication, magic links'
   },
-  
+
   navigation: {
     'chevron-right': 'Forward navigation, next step',
     'chevron-left': 'Back navigation, previous step',
@@ -24,9 +24,9 @@ export const SEMANTIC_ICON_REGISTRY: SemanticIconRegistry = {
     menu: 'Hamburger menu, navigation',
     x: 'Close, cancel, dismiss',
     settings: 'Configuration, preferences',
-    home: 'Dashboard, main page',
+    home: 'Dashboard, main page'
   },
-  
+
   status: {
     check: 'Success, completed, verified',
     'check-circle': 'Success state with emphasis',
@@ -35,9 +35,9 @@ export const SEMANTIC_ICON_REGISTRY: SemanticIconRegistry = {
     info: 'Information, help',
     loader: 'Loading, processing',
     clock: 'Pending, waiting',
-    activity: 'System activity, monitoring',
+    activity: 'System activity, monitoring'
   },
-  
+
   business: {
     building: 'Company, organization',
     users: 'Team, multiple users',
@@ -47,24 +47,24 @@ export const SEMANTIC_ICON_REGISTRY: SemanticIconRegistry = {
     search: 'Find, discover',
     filter: 'Sort, organize',
     download: 'Export, save',
-    upload: 'Import, add',
+    upload: 'Import, add'
   },
-  
+
   communication: {
     bell: 'Notifications, alerts',
     'message-circle': 'Chat, communication',
     phone: 'Contact, call',
     video: 'Video call, meeting',
     share: 'Share, distribute',
-    link: 'URL, connection',
-  },
+    link: 'URL, connection'
+  }
 };
 
 /**
  * Get all semantic icon names as a flat array
  */
 export function getAllSemanticIconNames(): string[] {
-  return Object.values(SEMANTIC_ICON_REGISTRY).flatMap(category => Object.keys(category));
+  return Object.values(SEMANTIC_ICON_REGISTRY).flatMap((category) => Object.keys(category));
 }
 
 /**
@@ -97,24 +97,26 @@ export function isSemanticIcon(iconName: string): boolean {
  * Default icon theme configuration
  */
 export const DEFAULT_ICON_THEME: IconThemeConfig = {
-  primary: '#988ACA',     // Thepia lavender
-  secondary: '#4A90A4',   // Secondary blue
-  accent: '#F7931E',      // Orange accent
-  success: '#38A169',     // Green
-  warning: '#D69E2E',     // Yellow
-  error: '#E53E3E',       // Red
-  muted: '#6b7280',       // Gray
+  primary: '#988ACA', // Thepia lavender
+  secondary: '#4A90A4', // Secondary blue
+  accent: '#F7931E', // Orange accent
+  success: '#38A169', // Green
+  warning: '#D69E2E', // Yellow
+  error: '#E53E3E', // Red
+  muted: '#6b7280', // Gray
   hoverScale: 1.05,
   activeScale: 0.95,
-  transition: 'all 0.2s ease',
+  transition: 'all 0.2s ease'
 };
 
 /**
  * Generate CSS custom properties from theme config
  */
-export function generateIconCSSProperties(theme: Partial<IconThemeConfig> = {}): Partial<IconCSSProperties> {
+export function generateIconCSSProperties(
+  theme: Partial<IconThemeConfig> = {}
+): Partial<IconCSSProperties> {
   const mergedTheme = { ...DEFAULT_ICON_THEME, ...theme };
-  
+
   return {
     // Size variables (fixed)
     '--icon-size-xs': '12px',
@@ -123,7 +125,7 @@ export function generateIconCSSProperties(theme: Partial<IconThemeConfig> = {}):
     '--icon-size-lg': '24px',
     '--icon-size-xl': '32px',
     '--icon-size-2xl': '48px',
-    
+
     // Color variables (themeable)
     '--icon-color-primary': mergedTheme.primary!,
     '--icon-color-secondary': mergedTheme.secondary!,
@@ -132,16 +134,16 @@ export function generateIconCSSProperties(theme: Partial<IconThemeConfig> = {}):
     '--icon-color-warning': mergedTheme.warning!,
     '--icon-color-error': mergedTheme.error!,
     '--icon-color-muted': mergedTheme.muted!,
-    
+
     // Interaction variables (themeable)
     '--icon-hover-scale': mergedTheme.hoverScale!.toString(),
     '--icon-active-scale': mergedTheme.activeScale!.toString(),
     '--icon-transition': mergedTheme.transition!,
-    
+
     // Spacing variables (fixed)
     '--icon-gap-sm': '0.25rem',
     '--icon-gap-md': '0.5rem',
-    '--icon-gap-lg': '1rem',
+    '--icon-gap-lg': '1rem'
   };
 }
 
@@ -150,10 +152,10 @@ export function generateIconCSSProperties(theme: Partial<IconThemeConfig> = {}):
  */
 export function applyIconTheme(theme: Partial<IconThemeConfig> = {}): void {
   if (typeof document === 'undefined') return;
-  
+
   const properties = generateIconCSSProperties(theme);
   const root = document.documentElement;
-  
+
   Object.entries(properties).forEach(([property, value]) => {
     if (value) {
       root.style.setProperty(property, value);
@@ -166,11 +168,11 @@ export function applyIconTheme(theme: Partial<IconThemeConfig> = {}): void {
  */
 export function removeIconTheme(): void {
   if (typeof document === 'undefined') return;
-  
+
   const properties = generateIconCSSProperties();
   const root = document.documentElement;
-  
-  Object.keys(properties).forEach(property => {
+
+  Object.keys(properties).forEach((property) => {
     root.style.removeProperty(property);
   });
 }
@@ -180,10 +182,10 @@ export function removeIconTheme(): void {
  */
 export function getCurrentIconTheme(): Partial<IconThemeConfig> {
   if (typeof document === 'undefined') return {};
-  
+
   const root = document.documentElement;
   const computedStyle = getComputedStyle(root);
-  
+
   return {
     primary: computedStyle.getPropertyValue('--icon-color-primary').trim() || undefined,
     secondary: computedStyle.getPropertyValue('--icon-color-secondary').trim() || undefined,
@@ -192,9 +194,11 @@ export function getCurrentIconTheme(): Partial<IconThemeConfig> {
     warning: computedStyle.getPropertyValue('--icon-color-warning').trim() || undefined,
     error: computedStyle.getPropertyValue('--icon-color-error').trim() || undefined,
     muted: computedStyle.getPropertyValue('--icon-color-muted').trim() || undefined,
-    hoverScale: parseFloat(computedStyle.getPropertyValue('--icon-hover-scale')) || undefined,
-    activeScale: parseFloat(computedStyle.getPropertyValue('--icon-active-scale')) || undefined,
-    transition: computedStyle.getPropertyValue('--icon-transition').trim() || undefined,
+    hoverScale:
+      Number.parseFloat(computedStyle.getPropertyValue('--icon-hover-scale')) || undefined,
+    activeScale:
+      Number.parseFloat(computedStyle.getPropertyValue('--icon-active-scale')) || undefined,
+    transition: computedStyle.getPropertyValue('--icon-transition').trim() || undefined
   };
 }
 
@@ -202,11 +206,14 @@ export function getCurrentIconTheme(): Partial<IconThemeConfig> {
  * Validate that all required Lucide icons are available
  * This helps catch missing icon imports during development
  */
-export function validateIconAvailability(iconNames: string[]): { available: string[]; missing: string[] } {
+export function validateIconAvailability(iconNames: string[]): {
+  available: string[];
+  missing: string[];
+} {
   const available: string[] = [];
   const missing: string[] = [];
-  
-  iconNames.forEach(iconName => {
+
+  iconNames.forEach((iconName) => {
     try {
       // This would need to be implemented based on how Lucide icons are imported
       // For now, we'll assume all icons are available
@@ -215,7 +222,7 @@ export function validateIconAvailability(iconNames: string[]): { available: stri
       missing.push(iconName);
     }
   });
-  
+
   return { available, missing };
 }
 
@@ -224,8 +231,8 @@ export function validateIconAvailability(iconNames: string[]): { available: stri
  * Useful for creating strict typing in applications
  */
 export function generateIconTypeDefinitions(iconNames: string[]): string {
-  const typeUnion = iconNames.map(name => `'${name}'`).join(' | ');
-  
+  const typeUnion = iconNames.map((name) => `'${name}'`).join(' | ');
+
   return `// Auto-generated icon type definitions
 export type AvailableIconName = ${typeUnion};
 

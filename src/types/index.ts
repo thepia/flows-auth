@@ -384,24 +384,24 @@ export type AuthErrorCode =
 export interface UserCheckData {
   // Core response (always present)
   exists: boolean;
-  hasWebAuthn: boolean;       // Note: API uses hasWebAuthn, not hasPasskey
-  
+  hasWebAuthn: boolean; // Note: API uses hasWebAuthn, not hasPasskey
+
   // Optional fields (only present if user exists)
-  userId?: string;            // WorkOS user ID
-  emailVerified?: boolean;    // From WorkOS user profile
-  
+  userId?: string; // WorkOS user ID
+  emailVerified?: boolean; // From WorkOS user profile
+
   // Pin validation fields (from user metadata)
-  lastPinExpiry?: string;     // ISO string from user.metadata.lastPinExpiry  
-  lastPinSentAt?: string;     // ISO string from user.metadata.lastPinSentAt
-  
+  lastPinExpiry?: string; // ISO string from user.metadata.lastPinExpiry
+  lastPinSentAt?: string; // ISO string from user.metadata.lastPinSentAt
+
   // Invitation system
   invitationTokenHash?: string; // For invitation token validation
-  
+
   // Organization context (added by check-user.ts:60-67)
   organization?: {
-    code: string;             // App code (e.g., "demo") 
-    name: string;             // Organization name
-    provider: string;         // "workos"
+    code: string; // App code (e.g., "demo")
+    name: string; // Organization name
+    provider: string; // "workos"
     features?: {
       webauthn?: boolean;
       sso?: boolean;
@@ -616,7 +616,6 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
 
   // SignIn flow control methods
   notifyPinSent: () => void;
-  notifyPinVerified: (sessionData: any) => void;
   sendSignInEvent: (event: SignInEvent) => SignInState;
 
   // Email-based authentication methods

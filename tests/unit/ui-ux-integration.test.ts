@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
  * proper behavior of AuthSection and landing page interactions.
  *
  * These tests MUST PASS to ensure correct user experience.
- * 
+ *
  * This needs to be replaced by an actual test. It currently tests a local function.
  */
 describe('UI/UX Integration Requirements - CRITICAL', () => {

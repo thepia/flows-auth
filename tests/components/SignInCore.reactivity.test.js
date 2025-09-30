@@ -8,15 +8,18 @@
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext, TEST_AUTH_CONFIGS } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Using real auth store - no mocking needed
 describe('SignInCore Configuration Reactivity', () => {
-
   describe('Configuration Change Detection', () => {
     it('should re-render button text when enablePasskeys changes', async () => {
       const { component, getByRole } = renderWithAuthContext(SignInCore, {
-        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, enablePasskeys: true, enableMagicLinks: false }
+        authConfig: {
+          ...TEST_AUTH_CONFIGS.withAppCode,
+          enablePasskeys: true,
+          enableMagicLinks: false
+        }
       });
 
       // Initial state: should show passkey button (when WebAuthn is available)
@@ -40,7 +43,11 @@ describe('SignInCore Configuration Reactivity', () => {
     it('should update authentication method UI when config changes', async () => {
       const { component, container } = renderWithAuthContext(SignInCore, {
         props: { initialEmail: 'test@example.com' },
-        authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, enablePasskeys: true, enableMagicLinks: false }
+        authConfig: {
+          ...TEST_AUTH_CONFIGS.withAppCode,
+          enablePasskeys: true,
+          enableMagicLinks: false
+        }
       });
 
       // Should have email input
@@ -79,7 +86,6 @@ describe('SignInCore Configuration Reactivity', () => {
 
       // Test that component renders successfully with real auth store
       expect(component).toBeDefined();
-
     });
 
     it('should validate reactive statement pattern', () => {

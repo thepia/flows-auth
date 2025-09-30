@@ -52,7 +52,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
           expect.objectContaining({
             method: 'GET',
             headers: expect.objectContaining({
-              'Origin': expect.any(String)
+              Origin: expect.any(String)
             })
           })
         );

@@ -1,7 +1,6 @@
 // tailwind.config.js
 import thepiaPlugin from '@thepia/branding/tailwind/source';
 
-
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -23,7 +22,7 @@ export default {
     'font-brand-mono'
   ],
   plugins: [
-    thepiaPlugin,
+    thepiaPlugin
     // other plugins...
   ]
-}
+};

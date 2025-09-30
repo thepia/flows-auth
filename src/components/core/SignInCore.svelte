@@ -51,14 +51,6 @@ let emailCode = '';
 // Get current state from store reactively
 $: currentSignInState = store ? $store.signInState : 'emailEntry';
 
-// Helper to send SignInEvents to the auth store
-function sendSignInEvent(event: SignInEvent) {
-  if (store) {
-    return store.sendSignInEvent(event);
-  }
-  return 'emailEntry';
-}
-
 // Debounced function to check email for existing pins (reactive statement compatible)
 let emailCheckTimeout: ReturnType<typeof setTimeout> | undefined;
 async function checkUserForEmail(emailValue: string) {
@@ -173,17 +165,6 @@ async function startConditionalAuthentication() {
   }));
 }
 
-// Direct action to go to pin input when pin status message is clicked
-function goToPinInput() {
-  if (!$store.hasValidPin || !email.trim()) {
-    return;
-  }
-
-  // We should already be in userChecked state from reactive email checking
-  // Just send SENT_PIN_EMAIL to transition to pinEntry
-  store.setEmailCodeSent(true); // Mark as sent since we have a valid pin
-  sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
-}
 
 // Handle secondary action (pin fallback when passkey is primary)
 async function handleSecondaryAction() {
@@ -199,9 +180,8 @@ async function handleSecondaryAction() {
       if ($store.hasValidPin) {
         // Skip sending new code, go directly to verification step
         console.log('🔢 Secondary action: Valid pin detected, going to verification step');
-        store.setEmailCodeSent(true);
         store.setLoading(false);
-        sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+        store.notifyPinSent();
       } else {
         // Send new pin
         console.log('📧 Secondary action: Sending new pin');
@@ -283,9 +263,8 @@ async function handleSignIn() {
         if ($store.hasValidPin) {
           // Skip sending new code, go directly to verification step
           console.log('🔢 Valid pin detected, skipping email send and going to verification step');
-          store.setEmailCodeSent(true);
           store.setLoading(false);
-          sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+          store.notifyPinSent();
         } else {
           await handleEmailCodeAuth();
         }
@@ -374,8 +353,6 @@ async function handleEmailCodeAuth() {
     if (result.success) {
       // Notify auth store that PIN was sent to drive state transition
       store.notifyPinSent();
-
-      store.setEmailCodeSent(true);
     } else {
       throw new Error(result.message || 'Failed to send email code');
     }
@@ -399,27 +376,6 @@ async function handleEmailCodeVerification() {
 
     store.setLoading(false);
     if (result.step === 'success' && result.user) {
-      // Notify auth store that PIN was verified to drive state transition
-      const sessionData = {
-        accessToken: result.accessToken || '',
-        refreshToken: result.refreshToken || '',
-        user: {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name || '',
-          emailVerified: result.user.emailVerified || false
-        },
-        expiresAt: result.expiresIn ? Date.now() + (result.expiresIn * 1000) : Date.now() + (24 * 60 * 60 * 1000),
-        lastActivity: Date.now()
-      };
-      store.notifyPinVerified(sessionData);
-
-      // Send event to clear pin state after successful verification
-      sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
-
-      // Pin should be invalidated server-side by the API after successful verification
-      // The /{appCode}/verify-email endpoint should clear lastPinExpiry on the WorkOS user record
-
       dispatch('success', {
         user: result.user,
         method: 'email-code' as AuthMethod
@@ -430,13 +386,6 @@ async function handleEmailCodeVerification() {
   } catch (err: any) {
     // Error handling is now managed by AuthStore
   }
-}
-
-// Error handling is now centralized in AuthStore
-
-function resetForm() {
-  sendSignInEvent({ type: 'RESET' });
-  // All state is now managed in the store and will be reset by the RESET event
 }
 
 // Determine authentication method and button configuration (with null guards)
@@ -481,7 +430,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
           <button
             type="button"
             class="pin-direct-link"
-            on:click={goToPinInput}
+            on:click={() => store.notifyPinSent()}
             disabled={$store.loading}
           >
             {m["status.pinDirectAction"]()}
@@ -568,7 +517,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
                 variant="secondary"
                 buttonConfig={buttonConfig.secondary}
                 loading={$store.loading}
-                on:click={resetForm}
+                on:click={store.reset}
               />
             {/if}
           </div>

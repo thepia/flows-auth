@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import { globalUserCache } from '../../src/utils/user-cache';
 import type { AuthConfig } from '../../src/types';
+import { globalUserCache } from '../../src/utils/user-cache';
 
 // Mock fetch for API calls
 global.fetch = vi.fn();
@@ -13,14 +13,14 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalUserCache.clearAll();
-    
+
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
       appCode: 'test-app',
       enablePasskeys: true,
       enableMagicLinks: false
     };
-    
+
     apiClient = new AuthApiClient(mockConfig);
   });
 
@@ -44,7 +44,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
 
       // Call checkEmail to populate cache with "user doesn't exist"
       await apiClient.checkEmail(email);
-      
+
       // Verify cache contains the "doesn't exist" entry
       const cachedResult = globalUserCache.get(email);
       expect(cachedResult).toBeTruthy();
@@ -198,7 +198,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
       // Should not throw error even if cache entry doesn't exist
       const result = await apiClient.verifyAppEmailCode(email, code);
       expect(result.step).toBe('success');
-      
+
       // Cache should still be empty (clearing non-existent entry is safe)
       expect(globalUserCache.get(email)).toBeNull();
     });

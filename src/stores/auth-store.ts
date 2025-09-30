@@ -54,7 +54,9 @@ import {
 } from '../utils/sessionManager';
 import {
   authenticateWithPasskey,
+  createCredential,
   isConditionalMediationSupported,
+  isPlatformAuthenticatorAvailable,
   isWebAuthnSupported,
   serializeCredential
 } from '../utils/webauthn';
@@ -247,6 +249,27 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     return isWebAuthnSupported();
   };
 
+  const resetSignInState: Partial<AuthStore> = {
+    signInState: 'emailEntry',
+    apiError: null,
+
+    // UI State
+    email: '',
+    loading: false,
+    emailCodeSent: false,
+    fullName: '',
+
+    // User Discovery State
+    userExists: null,
+    hasPasskeys: false,
+    hasValidPin: false,
+    pinRemainingMinutes: 0,
+
+    // WebAuthn State
+    conditionalAuthActive: false,
+    platformAuthenticatorAvailable: false
+  };
+
   const initialState: AuthStore = {
     state: isValidSession ? 'authenticated' : 'unauthenticated',
     signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
@@ -254,8 +277,9 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     accessToken: isValidSession ? existingSession.tokens.accessToken : null,
     refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
-    apiError: null,
     passkeysEnabled: determinePasskeysEnabled(),
+
+    apiError: null,
 
     // UI State
     email: '',
@@ -363,7 +387,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
    * Update store state
    */
   function updateState(updates: Partial<AuthStore>) {
-    store.update((state) => ({ ...state, ...updates }));
+    return store.update((state) => ({ ...state, ...updates }));
   }
 
   /**
@@ -449,16 +473,14 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           break;
         case 'RESET':
           // Reset UI state to initial values
+          clearAuthSession();
           updatedStore = {
             ...updatedStore,
-            email: '',
-            emailCodeSent: false,
-            fullName: '',
-            userExists: null,
-            hasPasskeys: false,
-            hasValidPin: false,
-            pinRemainingMinutes: 0,
-            loading: false
+            state: 'unauthenticated',
+            ...resetSignInState,
+            accessToken: null,
+            refreshToken: null,
+            expiresAt: null
           };
           break;
       }
@@ -885,11 +907,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     clearAuthSession();
     updateState({
       state: 'unauthenticated',
-      user: null,
+      ...resetSignInState,
       accessToken: null,
       refreshToken: null,
-      expiresAt: null,
-      apiError: null
+      expiresAt: null
     });
   }
 
@@ -1255,7 +1276,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       }
 
       const platformAvailable = browser
-        ? await (await import('../utils/webauthn')).isPlatformAuthenticatorAvailable()
+        ? await isPlatformAuthenticatorAvailable()
         : false;
       if (!platformAvailable) {
         throw new Error(
@@ -1296,8 +1317,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       // Step 3: Create WebAuthn credential using browser API
       console.log('🔄 Step 3: Creating WebAuthn authentication...');
-      const webauthnUtils = await import('../utils/webauthn');
-      const credential = await webauthnUtils.createCredential(registrationOptions);
+      const credential = await createCredential(registrationOptions);
 
       console.log('✅ WebAuthn authentication created');
 
@@ -1758,8 +1778,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         migrateExistingSession: update.migrateExistingSession
       };
 
-      // Import storage manager for dynamic configuration
-      const { configureSessionStorage } = await import('../utils/sessionManager');
+      // Update storage configuration
       configureSessionStorage(newStorageConfig);
 
       // Perform session migration if requested
@@ -1847,8 +1866,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         migrateExistingSession: false // Prevent recursion
       };
 
-      // Import storage manager for migration
-      const { configureSessionStorage } = await import('../utils/sessionManager');
+      // Update storage configuration for migration
       configureSessionStorage(newStorageConfig);
 
       // Save session in new storage type
@@ -2020,7 +2038,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
             : Date.now() + 24 * 60 * 60 * 1000, // Default 24h
           lastActivity: Date.now()
         };
-        sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData }); // Will transition to 'signedIn'
+        sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
 
         return response;
       }
@@ -2205,9 +2223,11 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     api,
 
     // SignIn flow control methods
-    notifyPinSent: () => sendSignInEvent({ type: 'SENT_PIN_EMAIL' }),
-    notifyPinVerified: (sessionData: SessionData) =>
-      sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData }),
+    notifyPinSent: () => {
+      // Consolidate all PIN sent logic here
+      updateState({ emailCodeSent: true });
+      return sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+    },
     sendSignInEvent, // Expose for components to send custom events
 
     // Email-based authentication methods (transparently uses app endpoints if configured)

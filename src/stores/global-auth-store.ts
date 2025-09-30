@@ -9,14 +9,14 @@
  */
 
 import type { AuthConfig, AuthStore } from '../types';
-import type { CompleteAuthStore } from '../types/svelte';
+import type { SvelteAuthStore } from '../types/svelte';
 import { makeSvelteCompatible } from './adapters/svelte';
 import { createAuthStore } from './auth-store';
 
 /**
  * Type alias for backward compatibility
  */
-export type GlobalAuthStore = CompleteAuthStore;
+export type GlobalAuthStore = SvelteAuthStore;
 export type AuthStoreInitializer = (config: AuthConfig) => GlobalAuthStore;
 export type AuthStoreGetter = () => GlobalAuthStore;
 
@@ -65,9 +65,7 @@ export function initializeAuth(config: AuthConfig): GlobalAuthStore {
  */
 export function getGlobalAuthStore(): GlobalAuthStore {
   if (!globalAuthStore) {
-    throw new Error(
-      'Global auth store not initialized. Call initializeAuth(config) first.'
-    );
+    throw new Error('Global auth store not initialized. Call initializeAuth(config) first.');
   }
   return globalAuthStore;
 }
@@ -216,7 +214,4 @@ function areConfigsEqual(config1: AuthConfig, config2: AuthConfig): boolean {
 /**
  * Backward compatibility exports
  */
-export {
-  initializeAuth as createAuthStore,
-  getGlobalAuthStore as getAuthStore
-};
+export { initializeAuth as createAuthStore, getGlobalAuthStore as getAuthStore };

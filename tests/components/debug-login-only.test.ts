@@ -4,9 +4,9 @@ import { render } from '@testing-library/svelte';
  * This test will help identify exactly why the message isn't showing
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../src/types';
-import { renderWithAuthContext } from './helpers/component-test-setup';
+import SignInCore from '../../src/components/core/SignInCore.svelte';
+import type { AuthConfig } from '../../src/types';
+import { renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../src/utils/webauthn', () => ({

@@ -4,7 +4,7 @@ import { onMount } from 'svelte';
 import { writable } from 'svelte/store';
 import { setContext } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, setI18nMessages } from '@thepia/flows-auth'; // ✅ Static imports
+import { createAuthStore, makeSvelteCompatible, setI18nMessages } from '@thepia/flows-auth'; // ✅ Static imports
 // TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
 const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
 import TabNavigation from '$lib/components/TabNavigation.svelte';
@@ -23,6 +23,7 @@ let isAuthLoading = true;
 let initError = null;
 
 // Create context immediately during component initialization
+// Context contains a writable that will hold the SvelteAuthStore
 const authStoreContext = writable(null);
 setContext(AUTH_CONTEXT_KEY, authStoreContext);
 
@@ -55,12 +56,13 @@ onMount(() => {
     };
     console.log('⚙️ Auth config created:', authConfig);
 
-    // Create auth store and update context
-    authStore = createAuthStore(authConfig);
+    // Create auth store and make it Svelte-compatible
+    const zustandStore = createAuthStore(authConfig);
+    authStore = makeSvelteCompatible(zustandStore);
     // Add unique identifier for debugging
     authStore._debugId = 'layout-' + Date.now();
     console.log('🔧 Auth store created:', authStore._debugId);
-    
+
     // Update context with the created auth store
     authStoreContext.set(authStore);
     console.log('🔄 Auth store context updated');

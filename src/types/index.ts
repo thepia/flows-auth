@@ -454,6 +454,129 @@ export type AuthEventType =
   | 'app_email_verify_success'
   | 'app_email_verify_error';
 
+/**
+ * Typed event data for each auth event type
+ * This provides type-safe event emission and handling
+ */
+export interface AuthEvents {
+  sign_in_started: {
+    method: 'passkey' | 'magic-link' | 'email-code';
+    email?: string;
+  };
+
+  sign_in_success: {
+    user: User;
+    method: 'passkey' | 'magic-link' | 'email-code';
+    duration?: number;
+  };
+
+  sign_in_error: {
+    error?: {
+      code: string;
+      message: string;
+    };
+    method: 'passkey' | 'magic-link' | 'email-code';
+  };
+
+  sign_out: {
+    reason?: 'user_action' | 'session_expired' | 'token_refresh_failed';
+  };
+
+  token_refreshed: {
+    expiresAt: number;
+  };
+
+  session_expired: {
+    lastActivity: number;
+  };
+
+  passkey_used: {
+    user: User;
+    conditional?: boolean;
+  };
+
+  passkey_created: {
+    user: User;
+    credentialId?: string;
+  };
+
+  registration_started: {
+    email: string;
+    method?: 'passkey' | 'email-code';
+  };
+
+  registration_success: {
+    user: User;
+    requiresVerification?: boolean;
+  };
+
+  registration_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+  };
+
+  email_verification_sent: {
+    email: string;
+  };
+
+  email_verification_success: {
+    user: User;
+  };
+
+  email_verification_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+  };
+
+  terms_accepted: {
+    user: User;
+  };
+
+  welcome_email_sent: {
+    email: string;
+  };
+
+  app_email_started: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_sent: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+    appCode: string;
+  };
+
+  app_email_verify_started: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_verify_success: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_verify_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+    appCode: string;
+  };
+}
+
 // Component props
 export interface SignInFormProps {
   config: AuthConfig;

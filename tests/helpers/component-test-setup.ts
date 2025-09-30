@@ -56,6 +56,8 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
   const baseStore = createAuthStore(defaultAuthConfig);
   const authStore = makeSvelteCompatible(baseStore);
   console.log('🔧 Created test auth store:', !!authStore, 'config:', defaultAuthConfig);
+  console.log('🔧 Auth store has subscribe:', typeof authStore.subscribe);
+  console.log('🔧 Auth store methods:', Object.keys(authStore).slice(0, 10));
   return authStore;
 }
 
@@ -93,13 +95,15 @@ export function renderWithAuthContext(
     });
   }
 
-  // Component expects context to contain the Svelte-compatible auth store directly
+  // Component expects context to contain a Svelte writable store containing the auth store
+  const storeContext = writable(authStore);
   console.log('🔧 Created auth store context:', !!authStore, 'contains:', !!authStore);
+  console.log('🔧 Store context is writable:', typeof storeContext.subscribe);
 
   return {
     ...render(Component, {
       props,
-      context: new Map([[AUTH_CONTEXT_KEY, authStore]])
+      context: new Map([[AUTH_CONTEXT_KEY, storeContext]])
     }),
     authStore
   };

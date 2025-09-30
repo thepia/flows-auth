@@ -6,7 +6,6 @@ import { writable } from 'svelte/store';
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig, CompleteAuthStore } from '../../src/types';
 import { renderWithAuthContext } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utils

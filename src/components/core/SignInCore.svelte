@@ -5,9 +5,10 @@
 -->
 <script lang="ts">
 import { createEventDispatcher, onMount, getContext } from 'svelte';
-import type { CompleteAuthStore } from '../../types/svelte';
+import type { Writable } from 'svelte/store';
+import type { SvelteAuthStore } from '../../types/svelte';
 import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
-import type { AuthError, AuthMethod, User, SignInEvent } from '../../types';
+import type { AuthError, AuthMethod, User } from '../../types';
 import { m } from '../../utils/i18n';
 
 import AuthButton from './AuthButton.svelte';
@@ -25,8 +26,14 @@ export let explainFeatures = false; // Whether to show features list in explaine
 
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
+// Get auth store from context (writable containing SvelteAuthStore)
+const storeContext = getContext<Writable<SvelteAuthStore | null>>(AUTH_CONTEXT_KEY);
+
+// Create a reactive reference to the store for easier access
+$: store = $storeContext;
+
 // Get config from auth store context only
-$: authConfig = store?.getConfig();
+$: authConfig = store?.getConfig?.();
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -34,9 +41,6 @@ const dispatch = createEventDispatcher<{
   error: { error: AuthError };
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
-
-// Get auth store from context directly (now Svelte-compatible)
-const store = getContext<CompleteAuthStore>(AUTH_CONTEXT_KEY);
 
 // Debug logging to see what's happening
 $: console.log('🔍 SignInCore: store =', !!store, store);

@@ -9,6 +9,7 @@ import type {
   AuthConfig,
   AuthEventData,
   AuthEventType,
+  AuthEvents,
   ButtonConfig,
   ExplainerConfig,
   SignInEvent,
@@ -17,8 +18,7 @@ import type {
   StateMessageConfig,
   User
 } from '../types';
-
-import type { CompleteAuthStore } from '../types/svelte';
+import type { SessionData } from './core/session';
 
 // Re-export core types for convenience
 export type { AuthConfig, User, ApiError, SignInState };
@@ -76,13 +76,7 @@ export interface SessionState {
  * Session store actions
  */
 export interface SessionActions {
-  saveSession: (data: {
-    accessToken: string;
-    refreshToken?: string;
-    user: User;
-    expiresAt?: number;
-    lastActivity?: number;
-  }) => void;
+  saveSession: (data: SessionData) => void;
   clearSession: () => void;
   isSessionValid: () => boolean;
   updateLastActivity: () => void;
@@ -134,7 +128,7 @@ export interface EventState {
  */
 export interface EventActions {
   on: (type: AuthEventType, handler: AuthEventHandler) => () => void;
-  emit: (type: AuthEventType, data?: AuthEventData) => void;
+  emit: <K extends keyof AuthEvents>(type: K, data: AuthEvents[K]) => void;
   off: (type: AuthEventType, handler: AuthEventHandler) => void;
   removeAllListeners: (type?: AuthEventType) => void;
 }
@@ -207,115 +201,13 @@ export interface UIActions {
   // UI Configuration methods
   getStateMessageConfig: () => StateMessageConfig | null;
   getButtonConfig: () => ButtonConfig;
-  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
+  getExplainerConfig: (explainFeatures?: boolean) => ExplainerConfig | null;
 }
 
 /**
  * Combined UI store interface
  */
 export interface UIStore extends UIState, UIActions {}
-
-/**
- * Svelte-specific auth store interface that extends the base CompleteAuthStore
- * Adds access to underlying stores and Svelte-specific functionality
- */
-export interface SvelteAuthStore extends CompleteAuthStore {
-  // Configuration
-  getConfig: () => AuthConfig;
-
-  // Additional authentication methods not in base interface
-  createAccount: (userData: {
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    acceptedTerms: boolean;
-    acceptedPrivacy: boolean;
-    invitationToken?: string;
-  }) => Promise<SignInResponse>;
-
-  // UI state management
-  setEmail: (email: string) => void;
-  setFullName: (fullName: string) => void;
-  setLoading: (loading: boolean) => void;
-
-  // UI Configuration methods
-  getButtonConfig: () => ButtonConfig;
-  getStateMessageConfig: () => StateMessageConfig | null;
-  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
-
-  // UI state setters
-  setConditionalAuthActive: (active: boolean) => void;
-  setEmailCodeSent: (sent: boolean) => void;
-
-  // Error management
-  setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
-  clearApiError: () => void;
-  retryLastFailedRequest: () => Promise<boolean>;
-
-  // State access - must match AuthStore interface exactly
-  // Base problem is the mixed in additional state vars
-  getState: () => {
-    // Core auth state (from AuthStore)
-    state: 'authenticated' | 'unauthenticated';
-    signInState: SignInState;
-    user: User | null;
-    accessToken: string | null;
-    refreshToken: string | null;
-    expiresAt: number | null;
-    apiError: ApiError | null;
-    passkeysEnabled: boolean;
-
-    // UI State (from AuthStore)
-    email: string;
-    loading: boolean;
-    emailCodeSent: boolean;
-    fullName: string;
-
-    // User Discovery State (from AuthStore)
-    userExists: boolean | null;
-    hasPasskeys: boolean;
-    hasValidPin: boolean;
-    pinRemainingMinutes: number;
-
-    // WebAuthn State (from AuthStore)
-    conditionalAuthActive: boolean;
-    platformAuthenticatorAvailable: boolean;
-
-    // Additional operation states (not in AuthStore but in our implementation)
-    isAuthenticating: boolean;
-    isSendingCode: boolean;
-    isVerifyingCode: boolean;
-
-    // Config
-    config: AuthConfig;
-  };
-  getUser: () => User | null;
-
-  // SignIn flow control methods
-  notifyPinSent: () => void;
-  notifyPinVerified: (sessionData: {
-    user?: User;
-    accessToken?: string;
-    refreshToken?: string;
-    expiresAt?: number;
-  }) => void;
-
-  // Event handling (for components that use legacy events)
-  sendSignInEvent: (event: SignInEvent) => SignInState;
-
-  // Access to underlying stores for advanced usage
-  core: AuthCoreStore;
-  ui: UIStore;
-  email: unknown; // EmailAuthStore - complex type, keeping generic for now
-  passkey: unknown; // PasskeyStore - complex type, keeping generic for now
-  error: ErrorStore;
-  session: SessionStore;
-  events: EventStore;
-  api: AuthApiClient;
-
-  // Legacy compatibility - deprecated, use getState() instead
-  state: unknown;
-}
 
 /**
  * Framework adapter interfaces
@@ -339,4 +231,5 @@ export interface StoreOptions {
   config: AuthConfig;
   devtools?: boolean;
   name?: string;
+  api: AuthApiClient;
 }

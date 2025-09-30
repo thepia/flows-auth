@@ -3,10 +3,9 @@
  * Verifies notifyPinSent, PIN_VERIFIED, and EMAIL_VERIFIED events
  */
 
-import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
 import { AuthApiClient } from '../../src/api/auth-api';
+import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Mock the API client
@@ -52,7 +51,7 @@ describe('Auth Store PIN Notification', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicPins: true,
+      enableMagicLinks: false,
       appCode: 'test'
     };
 
@@ -64,7 +63,7 @@ describe('Auth Store PIN Notification', () => {
       // Setup: Get to userChecked state first
       await authStore.checkUser('test@example.com');
 
-      const beforeState = get(authStore);
+      const beforeState = authStore.getState();
       expect(beforeState.signInState).toBe('userChecked');
       expect(beforeState.emailCodeSent).toBe(false);
 
@@ -72,7 +71,7 @@ describe('Auth Store PIN Notification', () => {
       const newState = authStore.notifyPinSent();
 
       // Assert: Check both effects happened
-      const afterState = get(authStore);
+      const afterState = authStore.getState();
       expect(afterState.emailCodeSent).toBe(true);
       expect(afterState.signInState).toBe('pinEntry');
       expect(newState).toBe('pinEntry'); // Return value should be new state
@@ -82,7 +81,7 @@ describe('Auth Store PIN Notification', () => {
       // Setup: User with valid existing PIN
       await authStore.checkUser('test@example.com');
 
-      const beforeState = get(authStore);
+      const beforeState = authStore.getState();
       expect(beforeState.hasValidPin).toBe(true);
       expect(beforeState.pinRemainingMinutes).toBeGreaterThan(0);
 
@@ -90,7 +89,7 @@ describe('Auth Store PIN Notification', () => {
       authStore.notifyPinSent();
 
       // Assert: Should still transition to pinEntry
-      const afterState = get(authStore);
+      const afterState = authStore.getState();
       expect(afterState.emailCodeSent).toBe(true);
       expect(afterState.signInState).toBe('pinEntry');
     });
@@ -107,10 +106,10 @@ describe('Auth Store PIN Notification', () => {
 
       // Act: Call notifyPinSent multiple times
       authStore.notifyPinSent();
-      const firstState = get(authStore);
+      const firstState = authStore.getState();
 
       authStore.notifyPinSent();
-      const secondState = get(authStore);
+      const secondState = authStore.getState();
 
       // Assert: State should remain stable
       expect(firstState.signInState).toBe('pinEntry');
@@ -132,7 +131,7 @@ describe('Auth Store PIN Notification', () => {
       });
       authStore.notifyPinSent();
 
-      expect(get(authStore).signInState).toBe('pinEntry');
+      expect(authStore.getState().signInState).toBe('pinEntry');
 
       // Act: Send PIN_VERIFIED event
       const sessionData = {
@@ -151,13 +150,13 @@ describe('Auth Store PIN Notification', () => {
       authStore.sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
 
       // Assert: Should be signed in
-      const afterState = get(authStore);
+      const afterState = authStore.getState();
       expect(afterState.signInState).toBe('signedIn');
     });
 
     it('should not transition from wrong states', () => {
       // Setup: Start in emailEntry state
-      const initialState = get(authStore);
+      const initialState = authStore.getState();
       expect(initialState.signInState).toBe('emailEntry');
 
       // Act: Try to send PIN_VERIFIED from wrong state
@@ -177,7 +176,7 @@ describe('Auth Store PIN Notification', () => {
       authStore.sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
 
       // Assert: Should remain in emailEntry (no transition)
-      expect(get(authStore).signInState).toBe('emailEntry');
+      expect(authStore.getState().signInState).toBe('emailEntry');
     });
   });
 
@@ -195,7 +194,7 @@ describe('Auth Store PIN Notification', () => {
       authStore.notifyPinSent();
       authStore.sendSignInEvent({ type: 'EMAIL_VERIFICATION_REQUIRED' });
 
-      expect(get(authStore).signInState).toBe('emailVerification');
+      expect(authStore.getState().signInState).toBe('emailVerification');
 
       // Act: Send EMAIL_VERIFIED event
       const sessionData = {
@@ -214,7 +213,7 @@ describe('Auth Store PIN Notification', () => {
       authStore.sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData });
 
       // Assert: Should be signed in
-      expect(get(authStore).signInState).toBe('signedIn');
+      expect(authStore.getState().signInState).toBe('signedIn');
     });
 
     it('should not transition from pinEntry (wrong state)', () => {
@@ -228,7 +227,7 @@ describe('Auth Store PIN Notification', () => {
       });
       authStore.notifyPinSent();
 
-      expect(get(authStore).signInState).toBe('pinEntry');
+      expect(authStore.getState().signInState).toBe('pinEntry');
 
       // Act: Try EMAIL_VERIFIED from pinEntry (should not work)
       const sessionData = {
@@ -247,7 +246,7 @@ describe('Auth Store PIN Notification', () => {
       authStore.sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData });
 
       // Assert: Should remain in pinEntry
-      expect(get(authStore).signInState).toBe('pinEntry');
+      expect(authStore.getState().signInState).toBe('pinEntry');
     });
   });
 
@@ -267,7 +266,7 @@ describe('Auth Store PIN Notification', () => {
       await authStore.verifyEmailCode('123456');
 
       // Assert: Should transition to signedIn via PIN_VERIFIED
-      const afterState = get(authStore);
+      const afterState = authStore.getState();
       expect(afterState.signInState).toBe('signedIn');
       expect(afterState.state).toBe('authenticated');
       expect(afterState.user).toBeDefined();
@@ -278,23 +277,26 @@ describe('Auth Store PIN Notification', () => {
       // Setup: Mock API to fail
       mockApiClient.verifyAppEmailCode.mockRejectedValue(new Error('Invalid code'));
 
-      authStore.setEmail('test@example.com');
       authStore.sendSignInEvent({
         type: 'USER_CHECKED',
         email: 'test@example.com',
         exists: true,
         hasPasskey: false
       });
+      expect(authStore.getState().signInState).toBe('userChecked');
       authStore.notifyPinSent();
 
-      const beforeState = get(authStore);
+      const beforeState = authStore.getState();
       expect(beforeState.signInState).toBe('pinEntry');
+
+      // Configure mock to reject with error
+      mockApiClient.verifyAppEmailCode.mockRejectedValueOnce(new Error('Invalid code'));
 
       // Act: Try to verify with wrong code
       await expect(authStore.verifyEmailCode('wrong')).rejects.toThrow('Invalid code');
 
       // Assert: Should remain in pinEntry
-      const afterState = get(authStore);
+      const afterState = authStore.getState();
       expect(afterState.signInState).toBe('pinEntry');
       expect(afterState.state).toBe('unauthenticated');
     });
@@ -303,37 +305,37 @@ describe('Auth Store PIN Notification', () => {
   describe('Complete authentication flow', () => {
     it('should handle full PIN authentication flow', async () => {
       // 1. Start with email entry
-      expect(get(authStore).signInState).toBe('emailEntry');
+      expect(authStore.getState().signInState).toBe('emailEntry');
 
       // 2. Check user
       await authStore.checkUser('test@example.com');
-      expect(get(authStore).signInState).toBe('userChecked');
+      expect(authStore.getState().signInState).toBe('userChecked');
 
       // 3. Send PIN (or use existing)
       authStore.notifyPinSent();
-      expect(get(authStore).signInState).toBe('pinEntry');
-      expect(get(authStore).emailCodeSent).toBe(true);
+      expect(authStore.getState().signInState).toBe('pinEntry');
+      expect(authStore.getState().emailCodeSent).toBe(true);
 
       // 4. Verify PIN
       await authStore.verifyEmailCode('123456');
-      expect(get(authStore).signInState).toBe('signedIn');
-      expect(get(authStore).state).toBe('authenticated');
+      expect(authStore.getState().signInState).toBe('signedIn');
+      expect(authStore.getState().state).toBe('authenticated');
     });
 
     it('should handle flow with existing valid PIN', async () => {
       // 1. Check user (has valid PIN)
       await authStore.checkUser('test@example.com');
-      const userState = get(authStore);
+      const userState = authStore.getState();
       expect(userState.hasValidPin).toBe(true);
       expect(userState.pinRemainingMinutes).toBeGreaterThan(0);
 
       // 2. Go directly to PIN entry (skip sending)
       authStore.notifyPinSent();
-      expect(get(authStore).signInState).toBe('pinEntry');
+      expect(authStore.getState().signInState).toBe('pinEntry');
 
       // 3. Verify existing PIN
       await authStore.verifyEmailCode('123456');
-      expect(get(authStore).signInState).toBe('signedIn');
+      expect(authStore.getState().signInState).toBe('signedIn');
     });
   });
 });

@@ -19,8 +19,8 @@ import type {
   AuthEventType,
   AuthMethod,
   AuthStore,
+  AuthStoreFunctions,
   ButtonConfig,
-  CompleteAuthStore,
   ExplainerConfig,
   InvitationTokenData,
   RegistrationResponse,
@@ -35,6 +35,7 @@ import type {
   StorageType,
   User
 } from '../types';
+import type { Readable } from '../types/svelte';
 import {
   initializeErrorReporter,
   reportApiError,
@@ -68,6 +69,24 @@ const LEGACY_STORAGE_KEYS = {
   EXPIRES_AT: 'auth_expires_at',
   USER: 'auth_user'
 } as const;
+
+/**
+ * Complete auth store type with all methods
+ * @deprecated Use SvelteAuthStore instead - this type is from the old store architecture
+ */
+export interface CompleteAuthStore extends Readable<AuthStore>, AuthStoreFunctions {
+  api: AuthApiClient;
+
+  // Dynamic role configuration methods
+  getApplicationContext: () => ApplicationContext | null;
+  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
+
+  // Direct state access
+  getState: () => AuthStore;
+
+  // Cleanup
+  destroy: () => void;
+}
 
 /**
  * Classify technical errors into user-friendly ApiError objects
@@ -2235,7 +2254,6 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     // Dynamic role configuration methods
     getApplicationContext,
     updateStorageConfiguration,
-    migrateSession,
 
     // Configuration access
     getConfig: () => config,
@@ -2434,6 +2452,14 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     setApiError,
     clearApiError,
     retryLastFailedRequest,
+
+    // State access
+    getState: () => get(store),
+
+    // Legacy notification method (no-op for backward compatibility)
+    notifyPinVerified: () => {
+      // No longer needed with new state machine
+    },
 
     // Cleanup
     destroy: () => {

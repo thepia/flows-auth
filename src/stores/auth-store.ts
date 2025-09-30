@@ -11,6 +11,7 @@
 import type {
   ApplicationContext,
   AuthConfig,
+  AuthEvents,
   AuthStoreFunctions,
   StorageConfigurationUpdate
 } from '../types';
@@ -22,9 +23,8 @@ import { createErrorStore } from './core/error';
 import { createEventStore, createTypedEventEmitters } from './core/events';
 import { createSessionData, createSessionStore, initializeSessionStore } from './core/session';
 
-import { createEmailAuthStore } from './auth-methods/email-auth';
 // Feature stores
-import { createPasskeyStore } from './auth-methods/passkey';
+import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
 
 // UI stores
 import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state';
@@ -48,6 +48,9 @@ export interface ComposedAuthStore extends AuthStoreFunctions {
   // API client access
   api: AuthApiClient;
 
+  // Event methods
+  emit: <K extends keyof AuthEvents>(type: K, data: AuthEvents[K]) => void;
+
   // Dynamic role configuration methods
   getApplicationContext: () => ApplicationContext | null;
   updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
@@ -58,9 +61,16 @@ export interface ComposedAuthStore extends AuthStoreFunctions {
 
 /**
  * Create the composed auth store system
+ *
+ * @param config - Auth configuration
+ * @param apiClient - Optional API client for dependency injection (primarily for testing)
  */
-export function createAuthStore(config: AuthConfig): ComposedAuthStore {
+export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): ComposedAuthStore {
+  // Create shared API client - use injected one or create new
+  const api = apiClient || new AuthApiClient(config);
+
   const storeOptions: StoreOptions = {
+    api,
     config,
     devtools: config.enableDevtools || false
   };
@@ -87,9 +97,6 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
   });
 
   console.log('✅ All modular stores created');
-
-  // Create shared API client for registration methods
-  const apiClient = new AuthApiClient(config);
 
   // Initialize with existing session if available
   const existingAuth = initializeSessionStore(session);
@@ -156,7 +163,7 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
     passkey,
     email,
     ui,
-    api: apiClient,
+    api,
 
     // Core authentication methods (moved from api wrapper)
     signInWithPasskey: async (emailAddress: string, conditional = false) => {
@@ -205,7 +212,7 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
     signInWithMagicLink: async (emailAddress: string) => {
       try {
         eventEmitters.signInStarted({ method: 'magic-link', email: emailAddress });
-        const response = await apiClient.signInWithMagicLink({ email: emailAddress });
+        const response = await api.signInWithMagicLink({ email: emailAddress });
 
         if (response.step === 'success' && response.user && response.accessToken) {
           authenticateUser(core, response.user, {
@@ -341,6 +348,7 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
       // Enhanced result with invitation-specific properties
       return {
         ...basicCheck,
+        hasPasskey: basicCheck.hasWebAuthn, // Alias for consistency
         invitationValid: true, // Stub implementation
         invitationTokenData: invitationOptions?.tokenData || null,
         requiresTermsAcceptance: !basicCheck.exists
@@ -353,9 +361,17 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
         ? await email.getState().checkUser(emailAddress) // Use basic check for now
         : await email.getState().checkUser(emailAddress);
 
+      // Determine mode based on user state
+      let mode: 'sign_in' | 'register' | 'complete_passkey';
+      if (userCheck.exists) {
+        mode = userCheck.hasWebAuthn ? 'sign_in' : 'complete_passkey';
+      } else {
+        mode = 'register';
+      }
+
       return {
         flow: userCheck.exists ? 'sign-in' : 'register',
-        mode: userCheck.exists ? 'authentication' : 'registration',
+        mode,
         userExists: userCheck.exists,
         hasPasskeys: userCheck.hasWebAuthn || false,
         requiresInvitation: !!invitationToken,
@@ -377,7 +393,7 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
           method: 'passkey'
         });
 
-        const response = await apiClient.registerUser(userData);
+        const response = await api.registerUser(userData);
 
         if (response.step === 'success' && response.user && response.accessToken) {
           authenticateUser(core, response.user, {
@@ -426,9 +442,9 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
           method: 'email-code'
         });
 
-        const response = await apiClient.registerUser(userData);
+        const response = await api.registerUser(userData);
 
-        if (response.step === 'success') {
+        if (response.step === 'success' && response.user) {
           eventEmitters.registrationSuccess({
             user: response.user,
             requiresVerification: true
@@ -500,14 +516,16 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
     setEmailCodeSent: (sent: boolean) => ui.getState().setEmailCodeSent(sent),
 
     // Error management
-    setApiError: (error: unknown, context?: { method?: string; email?: string }) =>
-      error.getState().setApiError(error, context),
+    setApiError: (err: unknown, context?: { method?: string; email?: string }) =>
+      error.getState().setApiError(err, context),
     clearApiError: () => error.getState().clearApiError(),
     retryLastFailedRequest: () => error.getState().retryLastRequest(),
 
     // Events
     on: (event: AuthEventType, handler: (data: AuthEventData) => void) =>
       events.getState().on(event, handler),
+    emit: <K extends keyof AuthEvents>(type: K, data: AuthEvents[K]) =>
+      events.getState().emit(type, data),
 
     // Configuration access
     getConfig: () => config,
@@ -579,9 +597,14 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
 
     // SignIn flow control methods
     notifyPinSent: () => {
-      ui.getState().setSignInState('pinEntry');
-      ui.getState().setEmailCodeSent(true);
-      console.log('📧 PIN email sent notification processed');
+      const uiState = ui.getState();
+      uiState.setSignInState('pinEntry');
+      uiState.setEmailCodeSent(true);
+
+      // updateState({ emailCodeSent: true });
+      // return uiState.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+
+      return 'pinEntry';
     },
 
     notifyPinVerified: (sessionData: any) => {
@@ -599,7 +622,9 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
           {
             accessToken: sessionData.accessToken,
             refreshToken: sessionData.refreshToken,
-            expiresIn: sessionData.expiresAt ? Math.floor((sessionData.expiresAt - Date.now()) / 1000) : undefined
+            expiresIn: sessionData.expiresAt
+              ? Math.floor((sessionData.expiresAt - Date.now()) / 1000)
+              : undefined
           },
           'email-code'
         );
@@ -615,6 +640,7 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
     // Legacy event system for backward compatibility
     sendSignInEvent: (event: any) => {
       console.log('🔄 Processing legacy signin event:', event.type);
+      const { signInState } = ui.getState();
 
       switch (event.type) {
         case 'USER_CHECKED':
@@ -642,7 +668,13 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
           }
           break;
         case 'PASSKEY_SUCCESS':
+          signInStateTransitions.authenticationSuccess(ui);
+          break;
         case 'PIN_VERIFIED':
+          if (signInState === 'pinEntry') {
+            signInStateTransitions.authenticationSuccess(ui);
+          }
+          break;
         case 'EMAIL_VERIFIED':
           signInStateTransitions.authenticationSuccess(ui);
           break;
@@ -657,10 +689,10 @@ export function createAuthStore(config: AuthConfig): ComposedAuthStore {
     },
 
     // UI Configuration methods
-    getButtonConfig: () => ui.getState().getButtonConfig(config),
-    getStateMessageConfig: () => ui.getState().getStateMessageConfig(config),
-    getExplainerConfig: (explainFeatures: boolean) =>
-      ui.getState().getExplainerConfig(config, explainFeatures),
+    getButtonConfig: () => ui.getState().getButtonConfig(),
+    getStateMessageConfig: () => ui.getState().getStateMessageConfig(),
+    getExplainerConfig: (explainFeatures = true) =>
+      ui.getState().getExplainerConfig(explainFeatures),
 
     destroy: () => {
       console.log('🧹 Destroying auth store...');

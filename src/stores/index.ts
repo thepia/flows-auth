@@ -4,9 +4,8 @@ import { createErrorStore } from './core/error';
 import { createEventStore } from './core/events';
 import { createSessionStore } from './core/session';
 
-import { createEmailAuthStore } from './auth-methods/email-auth';
 // Feature stores
-import { createPasskeyStore } from './auth-methods/passkey';
+import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
 
 // UI stores
 import { createUIStore } from './ui/ui-state';

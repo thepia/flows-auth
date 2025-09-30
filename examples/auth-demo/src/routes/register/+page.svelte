@@ -8,12 +8,15 @@ import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 
-// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
+// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 export let isAuthenticated = false;
 export let user = null;
 
-// Auth store from context
-let authStore = null;
+// Get authStore from context
+const authStoreContext = getContext(AUTH_CONTEXT_KEY);
+
+// Create reactive reference to the auth store
+$: authStore = $authStoreContext;
 
 // Component references for dynamic imports
 let SessionStateMachineComponent = null;
@@ -56,25 +59,23 @@ onMount(async () => {
     SessionStateMachineComponent = SessionStateMachineFlow;
     
     console.log('✅ Registration components loaded');
-    
-    // Get auth store from context
-    const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-    if (authStoreContext) {
-      authStore = authStoreContext;
-      authConfig = authStore.config;
+
+    // Auth store is now available from context (reactive)
+    if (authStore) {
+      authConfig = authStore.getConfig();
       console.log('🔐 Auth store available from context');
-      
+
       // Subscribe to auth state changes
       authStore.subscribe((state) => {
         currentUser = state.user;
         authState = state.state;
-        console.log('📊 Auth state update:', { 
-          state: state.state, 
+        console.log('📊 Auth state update:', {
+          state: state.state,
           signInState: state.signInState,
-          user: !!state.user 
+          user: !!state.user
         });
       });
-      
+
       console.log('✅ Auth store subscriptions configured');
     } else {
       console.log('⏳ Auth store not yet available - will be provided by layout');

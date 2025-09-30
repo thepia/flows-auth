@@ -1,12 +1,23 @@
 /**
  * Authentication Methods Store Modules
- * 
+ *
  * Exports authentication method stores for tree-shaking
  */
 
-export { createPasskeyStore, isPasskeyAvailableForUser, getPasskeyReadiness } from './passkey';
-export { createEmailAuthStore } from './email-auth';
+export {
+  createPasskeyStore,
+  isPasskeyAvailableForUser,
+  getPasskeyReadiness,
+  type PasskeyState,
+  type PasskeyActions,
+  type PasskeyStore
+} from './passkey';
 
-// Re-export types
-export type { PasskeyState, PasskeyActions, PasskeyStore } from './passkey';
-export type * from '../types';
+export {
+  createEmailAuthStore,
+  getEmailAuthCapabilities,
+  isEmailOperationInProgress,
+  type EmailAuthState,
+  type EmailAuthActions,
+  type EmailAuthStore
+} from './email-auth';

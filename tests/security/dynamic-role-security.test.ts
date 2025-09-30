@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types';
 
 // Mock the API client
@@ -23,7 +23,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -272,6 +272,8 @@ describe('Dynamic Role Security Tests', () => {
       sessionStorage.setItem('auth_access_token', 'expired-token');
       sessionStorage.setItem('auth_expires_at', (Date.now() - 3600000).toString()); // Expired 1 hour ago
 
+      const result = await mockMigrateSession('sessionStorage', 'localStorage');
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Expired tokens cannot be migrated');
     });
@@ -334,6 +336,8 @@ describe('Dynamic Role Security Tests', () => {
         })
       );
 
+      const result = await mockMigrateSession('localStorage', 'sessionStorage');
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Admin sessions cannot be downgraded to sessionStorage');
     });
@@ -370,6 +374,8 @@ describe('Dynamic Role Security Tests', () => {
       sessionStorage.setItem('auth_access_token', 'sensitive-token');
       sessionStorage.setItem('auth_refresh_token', 'sensitive-refresh');
       sessionStorage.setItem('auth_user', JSON.stringify({ id: '123' }));
+
+      const result = await mockMigrateSession('sessionStorage', 'localStorage');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Migration failed, sensitive data cleared');
@@ -466,6 +472,8 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
+      const result = await mockMigrateSession('sessionStorage', 'localStorage');
+
       expect(result.success).toBe(false);
       expect(mockConsoleError).toHaveBeenCalledWith(
         'AUDIT: Session migration failed',
@@ -513,8 +521,10 @@ describe('Dynamic Role Security Tests', () => {
         };
       });
 
+      const result = await mockMigrateSession('sessionStorage', 'localStorage');
+
       expect(result.success).toBe(true);
-      expect((result as any).duration).toBeLessThan(500); // Performance requirement
+      expect(result.duration).toBeLessThan(500); // Performance requirement
     });
   });
 });

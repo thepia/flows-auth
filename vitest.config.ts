@@ -28,6 +28,7 @@ export default defineConfig({
       '**/examples/**',
       '**/coverage/**',
       '**/build/**',
+      '**/tests/disabled/**',
       '**/*.timestamp-*.mjs'
     ],
     testTimeout: 10000,

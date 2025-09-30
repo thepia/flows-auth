@@ -3,12 +3,11 @@
  * Tests both the reset() method and RESET event handling
  */
 
-import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
 import { AuthApiClient } from '../../src/api/auth-api';
+import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
-import { saveSession, getSession, clearSession } from '../../src/utils/sessionManager';
+import { clearSession, getSession, saveSession } from '../../src/utils/sessionManager';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');
@@ -65,7 +64,7 @@ describe('Auth Store reset() Method', () => {
       authStore.setEmailCodeSent(true);
 
       // Verify states are set
-      const beforeReset = get(authStore);
+      const beforeReset = authStore.getState();
       expect(beforeReset.email).toBe('test@example.com');
       expect(beforeReset.fullName).toBe('Test User');
       expect(beforeReset.loading).toBe(true);
@@ -75,7 +74,7 @@ describe('Auth Store reset() Method', () => {
       authStore.reset();
 
       // Assert: All UI state should be cleared
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.email).toBe('');
       expect(afterReset.fullName).toBe('');
       expect(afterReset.loading).toBe(false);
@@ -86,7 +85,7 @@ describe('Auth Store reset() Method', () => {
       // Setup: Check user to populate discovery state
       await authStore.checkUser('test@example.com');
 
-      const beforeReset = get(authStore);
+      const beforeReset = authStore.getState();
       expect(beforeReset.userExists).toBe(true);
       expect(beforeReset.hasValidPin).toBe(true);
       expect(beforeReset.pinRemainingMinutes).toBeGreaterThan(0);
@@ -95,7 +94,7 @@ describe('Auth Store reset() Method', () => {
       authStore.reset();
 
       // Assert: Discovery state cleared
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.userExists).toBeNull();
       expect(afterReset.hasPasskeys).toBe(false);
       expect(afterReset.hasValidPin).toBe(false);
@@ -105,7 +104,7 @@ describe('Auth Store reset() Method', () => {
     it('should reset authentication state', () => {
       // Setup: Manually set authenticated state
       authStore.subscribe((state) => state); // Subscribe to trigger store initialization
-      const storeUpdate = get(authStore);
+      const storeUpdate = authStore.getState();
 
       // Simulate authentication
       const authenticatedState = {
@@ -130,7 +129,7 @@ describe('Auth Store reset() Method', () => {
       authStore.reset();
 
       // Assert: Authentication cleared
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.state).toBe('unauthenticated');
       expect(afterReset.user).toBeNull();
       expect(afterReset.accessToken).toBeNull();
@@ -174,14 +173,14 @@ describe('Auth Store reset() Method', () => {
       await authStore.checkUser('test@example.com');
       authStore.notifyPinSent();
 
-      const beforeReset = get(authStore);
+      const beforeReset = authStore.getState();
       expect(beforeReset.signInState).toBe('pinEntry');
 
       // Act: Reset
       authStore.reset();
 
       // Assert: Back to emailEntry
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.signInState).toBe('emailEntry');
     });
 
@@ -195,20 +194,20 @@ describe('Auth Store reset() Method', () => {
       };
 
       // Directly update store to set error
-      const currentState = get(authStore);
+      const currentState = authStore.getState();
       authStore.subscribe.set({
         ...currentState,
         apiError: testError
       });
 
-      const beforeReset = get(authStore);
+      const beforeReset = authStore.getState();
       expect(beforeReset.apiError).toBeDefined();
 
       // Act: Reset
       authStore.reset();
 
       // Assert: Error cleared
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.apiError).toBeNull();
     });
   });
@@ -225,13 +224,13 @@ describe('Auth Store reset() Method', () => {
         hasPasskey: false
       });
 
-      const afterSetup = get(authStore);
+      const afterSetup = authStore.getState();
       expect(afterSetup.email).toBe('test@example.com');
       expect(afterSetup.signInState).toBe('userChecked');
 
       // Method 1: Use reset() method
       authStore.reset();
-      const afterResetMethod = get(authStore);
+      const afterResetMethod = authStore.getState();
 
       // Setup again for comparison
       authStore.setEmail('test@example.com');
@@ -245,7 +244,7 @@ describe('Auth Store reset() Method', () => {
 
       // Method 2: Use RESET event
       authStore.sendSignInEvent({ type: 'RESET' });
-      const afterResetEvent = get(authStore);
+      const afterResetEvent = authStore.getState();
 
       // Assert: Both should have same result
       expect(afterResetMethod.signInState).toBe('emailEntry');
@@ -259,12 +258,12 @@ describe('Auth Store reset() Method', () => {
 
   describe('reset() in different states', () => {
     it('should work from emailEntry state', () => {
-      const initial = get(authStore);
+      const initial = authStore.getState();
       expect(initial.signInState).toBe('emailEntry');
 
       authStore.reset();
 
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.signInState).toBe('emailEntry');
     });
 
@@ -276,11 +275,11 @@ describe('Auth Store reset() Method', () => {
         hasPasskey: false
       });
 
-      expect(get(authStore).signInState).toBe('userChecked');
+      expect(authStore.getState().signInState).toBe('userChecked');
 
       authStore.reset();
 
-      expect(get(authStore).signInState).toBe('emailEntry');
+      expect(authStore.getState().signInState).toBe('emailEntry');
     });
 
     it('should work from pinEntry state', async () => {
@@ -288,11 +287,11 @@ describe('Auth Store reset() Method', () => {
       await authStore.checkUser('test@example.com');
       authStore.notifyPinSent();
 
-      expect(get(authStore).signInState).toBe('pinEntry');
+      expect(authStore.getState().signInState).toBe('pinEntry');
 
       authStore.reset();
 
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.signInState).toBe('emailEntry');
       expect(afterReset.emailCodeSent).toBe(false);
     });
@@ -322,11 +321,11 @@ describe('Auth Store reset() Method', () => {
         }
       });
 
-      expect(get(authStore).signInState).toBe('signedIn');
+      expect(authStore.getState().signInState).toBe('signedIn');
 
       authStore.reset();
 
-      expect(get(authStore).signInState).toBe('emailEntry');
+      expect(authStore.getState().signInState).toBe('emailEntry');
     });
 
     it('should work from error states', () => {
@@ -338,18 +337,21 @@ describe('Auth Store reset() Method', () => {
         hasPasskey: true
       });
       // Simulate passkey prompt then failure
-      authStore.sendSignInEvent({ type: 'PASSKEY_FAILED', error: {
-        name: 'NotAllowedError',
-        message: 'User cancelled',
-        timing: 1000,
-        type: 'user-cancelled'
-      }});
+      authStore.sendSignInEvent({
+        type: 'PASSKEY_FAILED',
+        error: {
+          name: 'NotAllowedError',
+          message: 'User cancelled',
+          timing: 1000,
+          type: 'user-cancelled'
+        }
+      });
 
-      expect(get(authStore).signInState).toBe('generalError');
+      expect(authStore.getState().signInState).toBe('generalError');
 
       authStore.reset();
 
-      expect(get(authStore).signInState).toBe('emailEntry');
+      expect(authStore.getState().signInState).toBe('emailEntry');
     });
   });
 
@@ -361,13 +363,13 @@ describe('Auth Store reset() Method', () => {
 
       // Call reset multiple times
       authStore.reset();
-      const firstReset = get(authStore);
+      const firstReset = authStore.getState();
 
       authStore.reset();
-      const secondReset = get(authStore);
+      const secondReset = authStore.getState();
 
       authStore.reset();
-      const thirdReset = get(authStore);
+      const thirdReset = authStore.getState();
 
       // All should have same clean state
       expect(firstReset.signInState).toBe('emailEntry');
@@ -396,12 +398,12 @@ describe('Auth Store reset() Method', () => {
     });
 
     it('should preserve passkeysEnabled determination', () => {
-      const initial = get(authStore);
+      const initial = authStore.getState();
       const initialPasskeysEnabled = initial.passkeysEnabled;
 
       authStore.reset();
 
-      const afterReset = get(authStore);
+      const afterReset = authStore.getState();
       expect(afterReset.passkeysEnabled).toBe(initialPasskeysEnabled);
     });
   });

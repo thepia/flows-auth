@@ -211,7 +211,7 @@ cd examples/tasks-app-demo && pnpm dev             # Task management demo
         apiBaseUrl: 'https://api.thepia.com',
         domain: 'thepia.net',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
     } catch (error) {
       console.error('Failed to load auth:', error);

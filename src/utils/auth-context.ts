@@ -4,9 +4,16 @@
  * Implements the context + store pattern recommended in ADR 0004.
  * Provides SSR-safe auth store access with explicit component dependencies.
  *
- * Usage:
- * 1. Call setAuthContext(config) in root layout component
+ * 📋 AUTHORITY: ADR 0004 - Global Svelte Store Architecture
+ * 📖 Complete guide: docs/adr/0004-global-svelte-store-architecture.md
+ *
+ * Usage for Pure Svelte Apps:
+ * 1. Call setAuthContext(config) in root component during initialization
  * 2. Use useAuth() in any child component to access the store
+ *
+ * Usage for SvelteKit Apps:
+ * - Consider explicit prop passing (see ADR 0004) for maximum reliability
+ * - Use context only when synchronous initialization is guaranteed
  */
 
 import { getContext, setContext } from 'svelte';
@@ -14,9 +21,9 @@ import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
 import {
   type GlobalAuthStore,
   assertAuthConfig,
+  createGlobalAuthStore,
   getGlobalAuthStore,
-  initializeAuth,
-  createGlobalAuthStore
+  initializeAuth
 } from '../stores/global-auth-store';
 import type { AuthConfig } from '../types';
 

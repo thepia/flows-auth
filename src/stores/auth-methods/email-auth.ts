@@ -1,6 +1,6 @@
 /**
  * Email Authentication Store
- * 
+ *
  * Handles email-based authentication methods:
  * - PIN code generation and verification
  * - App-based email authentication
@@ -8,11 +8,11 @@
  * - Organization-specific email flows
  */
 
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { subscribeWithSelector, devtools } from 'zustand/middleware';
-import type { StoreOptions } from '../types';
-import type { SignInResponse } from '../../types';
 import { AuthApiClient } from '../../api/auth-api';
+import type { SignInResponse } from '../../types';
+import type { StoreOptions } from '../types';
 
 /**
  * Email auth store state
@@ -22,19 +22,19 @@ export interface EmailAuthState {
   isSendingCode: boolean;
   isVerifyingCode: boolean;
   isSendingMagicLink: boolean;
-  
+
   // Email flow state
   codeSent: boolean;
   codeVerified: boolean;
   magicLinkSent: boolean;
   lastCodeSentTime: number | null;
   lastMagicLinkSentTime: number | null;
-  
+
   // Rate limiting and cooldowns
   canResendCode: boolean;
   resendCooldownSeconds: number;
   resendAttempts: number;
-  
+
   // Last operation results
   lastSentEmail: string | null;
   lastError: Error | null;
@@ -49,10 +49,10 @@ export interface EmailAuthActions {
   sendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
   verifyCode: (email: string, code: string) => Promise<SignInResponse>;
   resendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
-  
+
   // Magic link methods
   sendMagicLink: (email: string) => Promise<SignInResponse>;
-  
+
   // User check methods
   checkUser: (email: string) => Promise<{
     exists: boolean;
@@ -61,7 +61,7 @@ export interface EmailAuthActions {
     hasValidPin?: boolean;
     pinRemainingMinutes?: number;
   }>;
-  
+
   // State management
   setCodeSent: (sent: boolean) => void;
   setCodeVerified: (verified: boolean) => void;
@@ -93,18 +93,15 @@ const initialState: EmailAuthState = {
   resendAttempts: 0,
   lastSentEmail: null,
   lastError: null,
-  lastSuccessfulAuth: null,
+  lastSuccessfulAuth: null
 };
 
 /**
  * Create the email authentication store
  */
 export function createEmailAuthStore(options: StoreOptions) {
-  const { config, devtools: enableDevtools = false, name = 'email-auth' } = options;
-  
-  // Initialize API client
-  const api = new AuthApiClient(config);
-  
+  const { config, devtools: enableDevtools = false, name = 'email-auth', api } = options;
+
   // Helper function to get effective app code
   const getEffectiveAppCode = (): string | undefined => {
     if (config.appCode === false || config.appCode === null || config.appCode === undefined) {
@@ -119,464 +116,234 @@ export function createEmailAuthStore(options: StoreOptions) {
     return undefined;
   };
 
+  const storeImpl = (
+    set: (
+      partial: Partial<EmailAuthStore> | ((state: EmailAuthStore) => Partial<EmailAuthStore>)
+    ) => void,
+    get: () => EmailAuthStore
+  ) => ({
+    ...initialState,
+
+    // Same implementation as above for non-devtools version
+    sendCode: async (email: string) => {
+      try {
+        set({
+          isSendingCode: true,
+          lastError: null,
+          lastSentEmail: email
+        });
+
+        console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
+
+        let response;
+        if (getEffectiveAppCode()) {
+          response = await api.sendAppEmailCode(email);
+        } else {
+          const magicResponse = await api.signInWithMagicLink({ email });
+          response = {
+            success: magicResponse.step === 'magic-link' || !!magicResponse.magicLinkSent,
+            message: 'Magic link sent to your email',
+            timestamp: Date.now()
+          };
+        }
+
+        if (response?.success) {
+          set({
+            isSendingCode: false,
+            codeSent: true,
+            lastCodeSentTime: Date.now(),
+            resendAttempts: get().resendAttempts + 1
+          });
+
+          get().startResendCooldown();
+        }
+
+        console.log('✅ Email code sent successfully');
+        return response || { success: true, message: 'Code sent', timestamp: Date.now() };
+      } catch (error) {
+        const sendError = error as Error;
+
+        set({
+          isSendingCode: false,
+          lastError: sendError
+        });
+
+        console.error('❌ Failed to send email code:', sendError);
+        throw error;
+      }
+    },
+
+    verifyCode: async (email: string, code: string) => {
+      try {
+        set({
+          isVerifyingCode: true,
+          lastError: null
+        });
+
+        console.log('🔍 Verifying email code:', { email, hasCode: !!code });
+
+        if (!getEffectiveAppCode()) {
+          throw new Error(
+            'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
+          );
+        }
+
+        const response = await api.verifyAppEmailCode(email, code);
+
+        if (response.step === 'success' && response.user && response.accessToken) {
+          set({
+            isVerifyingCode: false,
+            codeVerified: true,
+            lastSuccessfulAuth: Date.now(),
+            lastError: null
+          });
+
+          console.log('✅ Email code verified successfully');
+          return response;
+        }
+
+        throw new Error('Invalid response from email code verification');
+      } catch (error) {
+        const verifyError = error as Error;
+
+        set({
+          isVerifyingCode: false,
+          lastError: verifyError
+        });
+
+        console.error('❌ Email code verification failed:', verifyError);
+        throw error;
+      }
+    },
+
+    resendCode: async (email: string) => {
+      const state = get();
+
+      if (!state.canResendCode) {
+        throw new Error(`Please wait ${state.resendCooldownSeconds} seconds before resending`);
+      }
+
+      if (state.resendAttempts >= 3) {
+        throw new Error('Maximum resend attempts reached. Please try again later.');
+      }
+
+      return await get().sendCode(email);
+    },
+
+    sendMagicLink: async (email: string) => {
+      try {
+        set({
+          isSendingMagicLink: true,
+          lastError: null,
+          lastSentEmail: email
+        });
+
+        console.log('🔗 Sending magic link:', { email });
+
+        const response = await api.signInWithMagicLink({ email });
+
+        set({
+          isSendingMagicLink: false,
+          magicLinkSent: true,
+          lastMagicLinkSentTime: Date.now()
+        });
+
+        console.log('✅ Magic link sent successfully');
+        return response;
+      } catch (error) {
+        const linkError = error as Error;
+
+        set({
+          isSendingMagicLink: false,
+          lastError: linkError
+        });
+
+        console.error('❌ Failed to send magic link:', linkError);
+        throw error;
+      }
+    },
+
+    checkUser: async (email: string) => {
+      try {
+        console.log('🔍 Checking user:', { email });
+
+        const result = await api.checkEmail(email);
+
+        if (!result) {
+          console.error('❌ Error checking user: No result from API');
+          throw new Error('Failed to check user - no response from API');
+        }
+
+        const hasValidPin = checkForValidPin(result);
+        const pinRemainingMinutes = getRemainingPinMinutes(result);
+
+        console.log('✅ User check completed:', {
+          exists: result.exists,
+          hasWebAuthn: result.hasWebAuthn,
+          hasValidPin,
+          pinRemainingMinutes
+        });
+
+        return {
+          exists: result.exists,
+          hasWebAuthn: result.hasWebAuthn || false,
+          emailVerified: result.emailVerified || false,
+          hasValidPin,
+          pinRemainingMinutes
+        };
+      } catch (error) {
+        console.error('❌ Error checking user:', error);
+        return {
+          exists: false,
+          hasWebAuthn: false,
+          emailVerified: false
+        };
+      }
+    },
+
+    setCodeSent: (sent: boolean) => {
+      set({ codeSent: sent });
+    },
+
+    setCodeVerified: (verified: boolean) => {
+      set({ codeVerified: verified });
+    },
+
+    setMagicLinkSent: (sent: boolean) => {
+      set({ magicLinkSent: sent });
+    },
+
+    startResendCooldown: (seconds = 30) => {
+      set({
+        canResendCode: false,
+        resendCooldownSeconds: seconds
+      });
+
+      const interval = setInterval(() => {
+        const currentSeconds = get().resendCooldownSeconds;
+        if (currentSeconds <= 1) {
+          set({
+            canResendCode: true,
+            resendCooldownSeconds: 0
+          });
+          clearInterval(interval);
+        } else {
+          set({ resendCooldownSeconds: currentSeconds - 1 });
+        }
+      }, 1000);
+    },
+
+    clearError: () => {
+      set({ lastError: null });
+    },
+
+    reset: () => {
+      set(initialState);
+    }
+  });
+
   const store = createStore<EmailAuthStore>()(
-    subscribeWithSelector(
-      enableDevtools 
-        ? devtools(
-            (set, get) => ({
-              ...initialState,
-              
-              // PIN code methods
-              sendCode: async (email: string) => {
-                try {
-                  set({ 
-                    isSendingCode: true, 
-                    lastError: null,
-                    lastSentEmail: email 
-                  });
-                  
-                  console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
-                  
-                  // Use app email endpoint if configured, otherwise magic link
-                  let response;
-                  if (getEffectiveAppCode()) {
-                    response = await api.sendAppEmailCode(email);
-                  } else {
-                    // Fallback to magic link for backward compatibility
-                    const magicResponse = await api.signInWithMagicLink({ email });
-                    response = {
-                      success: magicResponse.step === 'magic-link' || !!magicResponse.magicLinkSent,
-                      message: 'Magic link sent to your email',
-                      timestamp: Date.now()
-                    };
-                  }
-                  
-                  if (response?.success) {
-                    set({
-                      isSendingCode: false,
-                      codeSent: true,
-                      lastCodeSentTime: Date.now(),
-                      resendAttempts: get().resendAttempts + 1
-                    });
-                    
-                    // Start resend cooldown
-                    get().startResendCooldown();
-                  }
-                  
-                  console.log('✅ Email code sent successfully');
-                  return response || { success: true, message: 'Code sent', timestamp: Date.now() };
-                  
-                } catch (error) {
-                  const sendError = error as Error;
-                  
-                  set({
-                    isSendingCode: false,
-                    lastError: sendError
-                  });
-                  
-                  console.error('❌ Failed to send email code:', sendError);
-                  throw error;
-                }
-              },
-              
-              verifyCode: async (email: string, code: string) => {
-                try {
-                  set({ 
-                    isVerifyingCode: true, 
-                    lastError: null 
-                  });
-                  
-                  console.log('🔍 Verifying email code:', { email, hasCode: !!code });
-                  
-                  // Use app email verification if configured
-                  if (!getEffectiveAppCode()) {
-                    throw new Error(
-                      'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
-                    );
-                  }
-                  
-                  const response = await api.verifyAppEmailCode(email, code);
-                  
-                  if (response.step === 'success' && response.user && response.accessToken) {
-                    set({
-                      isVerifyingCode: false,
-                      codeVerified: true,
-                      lastSuccessfulAuth: Date.now(),
-                      lastError: null
-                    });
-                    
-                    console.log('✅ Email code verified successfully');
-                    return response;
-                  }
-                  
-                  throw new Error('Invalid response from email code verification');
-                  
-                } catch (error) {
-                  const verifyError = error as Error;
-                  
-                  set({
-                    isVerifyingCode: false,
-                    lastError: verifyError
-                  });
-                  
-                  console.error('❌ Email code verification failed:', verifyError);
-                  throw error;
-                }
-              },
-              
-              resendCode: async (email: string) => {
-                const state = get();
-                
-                if (!state.canResendCode) {
-                  throw new Error(`Please wait ${state.resendCooldownSeconds} seconds before resending`);
-                }
-                
-                if (state.resendAttempts >= 3) {
-                  throw new Error('Maximum resend attempts reached. Please try again later.');
-                }
-                
-                return await get().sendCode(email);
-              },
-              
-              // Magic link methods
-              sendMagicLink: async (email: string) => {
-                try {
-                  set({ 
-                    isSendingMagicLink: true, 
-                    lastError: null,
-                    lastSentEmail: email 
-                  });
-                  
-                  console.log('🔗 Sending magic link:', { email });
-                  
-                  const response = await api.signInWithMagicLink({ email });
-                  
-                  set({
-                    isSendingMagicLink: false,
-                    magicLinkSent: true,
-                    lastMagicLinkSentTime: Date.now()
-                  });
-                  
-                  console.log('✅ Magic link sent successfully');
-                  return response;
-                  
-                } catch (error) {
-                  const linkError = error as Error;
-                  
-                  set({
-                    isSendingMagicLink: false,
-                    lastError: linkError
-                  });
-                  
-                  console.error('❌ Failed to send magic link:', linkError);
-                  throw error;
-                }
-              },
-              
-              // User check methods
-              checkUser: async (email: string) => {
-                try {
-                  console.log('🔍 Checking user:', { email });
-                  
-                  const result = await api.checkEmail(email);
-                  
-                  // Check for valid PIN
-                  const hasValidPin = checkForValidPin(result);
-                  const pinRemainingMinutes = getRemainingPinMinutes(result);
-                  
-                  console.log('✅ User check completed:', {
-                    exists: result.exists,
-                    hasWebAuthn: result.hasWebAuthn,
-                    hasValidPin,
-                    pinRemainingMinutes
-                  });
-                  
-                  return {
-                    exists: result.exists,
-                    hasWebAuthn: result.hasWebAuthn || false,
-                    emailVerified: result.emailVerified || false,
-                    hasValidPin,
-                    pinRemainingMinutes
-                  };
-                  
-                } catch (error) {
-                  console.error('❌ Error checking user:', error);
-                  return { 
-                    exists: false, 
-                    hasWebAuthn: false, 
-                    emailVerified: false 
-                  };
-                }
-              },
-              
-              // State management
-              setCodeSent: (sent: boolean) => {
-                set({ codeSent: sent });
-              },
-              
-              setCodeVerified: (verified: boolean) => {
-                set({ codeVerified: verified });
-              },
-              
-              setMagicLinkSent: (sent: boolean) => {
-                set({ magicLinkSent: sent });
-              },
-              
-              startResendCooldown: (seconds = 30) => {
-                set({ 
-                  canResendCode: false, 
-                  resendCooldownSeconds: seconds 
-                });
-                
-                const interval = setInterval(() => {
-                  const currentSeconds = get().resendCooldownSeconds;
-                  if (currentSeconds <= 1) {
-                    set({ 
-                      canResendCode: true, 
-                      resendCooldownSeconds: 0 
-                    });
-                    clearInterval(interval);
-                  } else {
-                    set({ resendCooldownSeconds: currentSeconds - 1 });
-                  }
-                }, 1000);
-              },
-              
-              clearError: () => {
-                set({ lastError: null });
-              },
-              
-              reset: () => {
-                set(initialState);
-              }
-            }),
-            { name }
-          )
-        : (set, get) => ({
-            ...initialState,
-            
-            // Same implementation as above for non-devtools version
-            sendCode: async (email: string) => {
-              try {
-                set({ 
-                  isSendingCode: true, 
-                  lastError: null,
-                  lastSentEmail: email 
-                });
-                
-                console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
-                
-                let response;
-                if (getEffectiveAppCode()) {
-                  response = await api.sendAppEmailCode(email);
-                } else {
-                  const magicResponse = await api.signInWithMagicLink({ email });
-                  response = {
-                    success: magicResponse.step === 'magic-link' || !!magicResponse.magicLinkSent,
-                    message: 'Magic link sent to your email',
-                    timestamp: Date.now()
-                  };
-                }
-                
-                if (response?.success) {
-                  set({
-                    isSendingCode: false,
-                    codeSent: true,
-                    lastCodeSentTime: Date.now(),
-                    resendAttempts: get().resendAttempts + 1
-                  });
-                  
-                  get().startResendCooldown();
-                }
-                
-                console.log('✅ Email code sent successfully');
-                return response || { success: true, message: 'Code sent', timestamp: Date.now() };
-                
-              } catch (error) {
-                const sendError = error as Error;
-                
-                set({
-                  isSendingCode: false,
-                  lastError: sendError
-                });
-                
-                console.error('❌ Failed to send email code:', sendError);
-                throw error;
-              }
-            },
-            
-            verifyCode: async (email: string, code: string) => {
-              try {
-                set({ 
-                  isVerifyingCode: true, 
-                  lastError: null 
-                });
-                
-                console.log('🔍 Verifying email code:', { email, hasCode: !!code });
-                
-                if (!getEffectiveAppCode()) {
-                  throw new Error(
-                    'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
-                  );
-                }
-                
-                const response = await api.verifyAppEmailCode(email, code);
-                
-                if (response.step === 'success' && response.user && response.accessToken) {
-                  set({
-                    isVerifyingCode: false,
-                    codeVerified: true,
-                    lastSuccessfulAuth: Date.now(),
-                    lastError: null
-                  });
-                  
-                  console.log('✅ Email code verified successfully');
-                  return response;
-                }
-                
-                throw new Error('Invalid response from email code verification');
-                
-              } catch (error) {
-                const verifyError = error as Error;
-                
-                set({
-                  isVerifyingCode: false,
-                  lastError: verifyError
-                });
-                
-                console.error('❌ Email code verification failed:', verifyError);
-                throw error;
-              }
-            },
-            
-            resendCode: async (email: string) => {
-              const state = get();
-              
-              if (!state.canResendCode) {
-                throw new Error(`Please wait ${state.resendCooldownSeconds} seconds before resending`);
-              }
-              
-              if (state.resendAttempts >= 3) {
-                throw new Error('Maximum resend attempts reached. Please try again later.');
-              }
-              
-              return await get().sendCode(email);
-            },
-            
-            sendMagicLink: async (email: string) => {
-              try {
-                set({ 
-                  isSendingMagicLink: true, 
-                  lastError: null,
-                  lastSentEmail: email 
-                });
-                
-                console.log('🔗 Sending magic link:', { email });
-                
-                const response = await api.signInWithMagicLink({ email });
-                
-                set({
-                  isSendingMagicLink: false,
-                  magicLinkSent: true,
-                  lastMagicLinkSentTime: Date.now()
-                });
-                
-                console.log('✅ Magic link sent successfully');
-                return response;
-                
-              } catch (error) {
-                const linkError = error as Error;
-                
-                set({
-                  isSendingMagicLink: false,
-                  lastError: linkError
-                });
-                
-                console.error('❌ Failed to send magic link:', linkError);
-                throw error;
-              }
-            },
-            
-            checkUser: async (email: string) => {
-              try {
-                console.log('🔍 Checking user:', { email });
-                
-                const result = await api.checkEmail(email);
-                
-                if (!result) {
-                  console.error('❌ Error checking user: No result from API');
-                  throw new Error('Failed to check user - no response from API');
-                }
-                
-                const hasValidPin = checkForValidPin(result);
-                const pinRemainingMinutes = getRemainingPinMinutes(result);
-                
-                console.log('✅ User check completed:', {
-                  exists: result.exists,
-                  hasWebAuthn: result.hasWebAuthn,
-                  hasValidPin,
-                  pinRemainingMinutes
-                });
-                
-                return {
-                  exists: result.exists,
-                  hasWebAuthn: result.hasWebAuthn || false,
-                  emailVerified: result.emailVerified || false,
-                  hasValidPin,
-                  pinRemainingMinutes
-                };
-                
-              } catch (error) {
-                console.error('❌ Error checking user:', error);
-                return { 
-                  exists: false, 
-                  hasWebAuthn: false, 
-                  emailVerified: false 
-                };
-              }
-            },
-            
-            setCodeSent: (sent: boolean) => {
-              set({ codeSent: sent });
-            },
-            
-            setCodeVerified: (verified: boolean) => {
-              set({ codeVerified: verified });
-            },
-            
-            setMagicLinkSent: (sent: boolean) => {
-              set({ magicLinkSent: sent });
-            },
-            
-            startResendCooldown: (seconds = 30) => {
-              set({ 
-                canResendCode: false, 
-                resendCooldownSeconds: seconds 
-              });
-              
-              const interval = setInterval(() => {
-                const currentSeconds = get().resendCooldownSeconds;
-                if (currentSeconds <= 1) {
-                  set({ 
-                    canResendCode: true, 
-                    resendCooldownSeconds: 0 
-                  });
-                  clearInterval(interval);
-                } else {
-                  set({ resendCooldownSeconds: currentSeconds - 1 });
-                }
-              }, 1000);
-            },
-            
-            clearError: () => {
-              set({ lastError: null });
-            },
-            
-            reset: () => {
-              set(initialState);
-            }
-          })
-    )
+    subscribeWithSelector(enableDevtools ? devtools(storeImpl, { name }) : storeImpl)
   );
 
   return store;
@@ -605,7 +372,7 @@ function getRemainingPinMinutes(userCheck: any): number {
     const expiryTime = new Date(userCheck.lastPinExpiry);
     const now = new Date();
     const remainingMs = expiryTime.getTime() - now.getTime();
-    
+
     if (Number.isNaN(remainingMs)) return 0;
     return Math.max(0, Math.ceil(remainingMs / (1000 * 60)));
   } catch (error) {
@@ -622,9 +389,10 @@ export function getEmailAuthCapabilities(
   config: { appCode?: string | boolean; enableMagicLinks?: boolean }
 ) {
   const state = emailStore.getState();
-  
-  const hasAppCode = !!config.appCode && (typeof config.appCode === 'string' || config.appCode === true);
-  
+
+  const hasAppCode =
+    !!config.appCode && (typeof config.appCode === 'string' || config.appCode === true);
+
   return {
     canSendCode: hasAppCode,
     canSendMagicLink: config.enableMagicLinks || !hasAppCode,

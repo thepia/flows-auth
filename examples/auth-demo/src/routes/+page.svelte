@@ -14,15 +14,16 @@ export let user = null;
 
 // Get authStore from context instead of props
 const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-let authStore = null;
 
-// Initialize authStore from context once
-if (authStoreContext && browser) {
-  authStore = $authStoreContext;
+// Create reactive reference to the auth store
+$: authStore = $authStoreContext;
+
+// Debug logging
+$: if (authStore && browser) {
   console.log('📦 [OVERVIEW] Auth store from context:', {
     authStore: !!authStore,
     debugId: authStore?._debugId,
-    signInState: authStore ? $authStore.signInState : 'none',
+    signInState: $authStore?.signInState,
     isAuthenticated,
     user: !!user
   });

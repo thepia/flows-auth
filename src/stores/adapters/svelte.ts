@@ -7,7 +7,7 @@ import { derived, readable, writable } from 'svelte/store';
 import type { Readable, Unsubscriber, Writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
 import type { AuthStore } from '../../types';
-import type { CompleteAuthStore } from '../../types/svelte';
+import type { SvelteAuthStore } from '../../types/svelte';
 import type { ComposedAuthStore } from '../auth-store';
 
 /**
@@ -171,7 +171,7 @@ export function createReactiveForm<T extends Record<string, unknown>>(
      * Update a single field
      */
     updateField: <K extends keyof T>(field: K, value: T[K]) => {
-      updateAction({ [field]: value } as Partial<T>);
+      updateAction({ [field]: value } as unknown as Partial<T>);
     },
 
     /**
@@ -236,14 +236,20 @@ export function createComputedStore<T, U>(
 
 /**
  * Make a ComposedAuthStore compatible with Svelte's store contract
- * Returns CompleteAuthStore with proper Readable<AuthStore> contract
+ *
+ * Returns SvelteAuthStore which:
+ * - Implements Readable<AuthStore> for reactive state ($store.signInState)
+ * - Includes all methods from ComposedAuthStore (store.checkUser(), etc.)
+ *
+ * @param store - The Zustand-based ComposedAuthStore to wrap
+ * @returns A Svelte-compatible store with reactive state and all auth methods
  */
-export function makeSvelteCompatible(store: ComposedAuthStore): CompleteAuthStore {
+export function makeSvelteCompatible(store: ComposedAuthStore): SvelteAuthStore {
   const subscribers = new Set<(value: AuthStore) => void>();
   let cleanup: (() => void) | null = null;
 
-  // Create the Svelte-compatible store that implements CompleteAuthStore
-  const svelteStore: CompleteAuthStore = {
+  // Create the Svelte-compatible store that implements SvelteAuthStore
+  const svelteStore: SvelteAuthStore = {
     // All methods from the composed store preserved as-is
     ...store,
 

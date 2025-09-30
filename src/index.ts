@@ -45,9 +45,10 @@ export {
 } from './stores/auth-store';
 
 // Svelte Adapter
-export {
-  makeSvelteCompatible
-} from './stores/adapters/svelte';
+export { makeSvelteCompatible } from './stores/adapters/svelte';
+
+// Svelte Store Types
+export type { SvelteAuthStore } from './types/svelte';
 
 // Global Auth Store Singleton (recommended approach)
 export {

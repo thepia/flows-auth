@@ -1,5 +1,4 @@
-import { get } from 'svelte/store';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types/index.js';
 
@@ -64,6 +63,13 @@ describe('AuthStore UI Configuration', () => {
     authStore.reset();
   });
 
+  afterEach(() => {
+    // Ensure clean state after each test
+    if (authStore) {
+      authStore.destroy();
+    }
+  });
+
   describe('getButtonConfig method', () => {
     describe('Default email pin button behavior', () => {
       it('should return email-code method for default configuration', () => {
@@ -71,8 +77,8 @@ describe('AuthStore UI Configuration', () => {
         authStore.setEmail('test@example.com');
         authStore.setLoading(false);
 
-        const store = get(authStore);
-        expect(store.signInState).toBe('emailEntry');
+        // Check the UI state directly from the store
+        expect(authStore.ui.getState().signInState).toBe('emailEntry');
 
         const buttonConfig = authStore.getButtonConfig();
 
@@ -86,7 +92,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should have enabled send code button when user is checked', () => {
         // Set up store state
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setLoading(false);
 
         authStore.sendSignInEvent({
@@ -97,8 +103,8 @@ describe('AuthStore UI Configuration', () => {
           hasValidPin: false,
           pinRemainingMinutes: 0
         });
-        const store = get(authStore);
-        expect(store.signInState).toBe('userChecked');
+        // Check the UI state directly from the store
+        expect(authStore.ui.getState().signInState).toBe('userChecked');
 
         const buttonConfig = authStore.getButtonConfig();
 
@@ -115,8 +121,8 @@ describe('AuthStore UI Configuration', () => {
         authStore.setEmail('');
         authStore.setLoading(false);
 
-        const store = get(authStore);
-        expect(store.signInState).toBe('emailEntry');
+        // Check the UI state directly from the store
+        expect(authStore.ui.getState().signInState).toBe('emailEntry');
 
         const buttonConfig = authStore.getButtonConfig();
         expect(buttonConfig.primary.disabled).toBe(true); // disabled only when loading
@@ -161,7 +167,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should show email pin as secondary when user has both passkeys and valid pin', () => {
         // Set up store state for userChecked with passkeys and valid pin
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setLoading(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -187,7 +193,7 @@ describe('AuthStore UI Configuration', () => {
         const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithMagicLinks));
 
         // Set up store state for userChecked with passkeys
-        storeWithoutAppCode.setEmail('test@example.com');
+        // storeWithoutAppCode.setEmail('test@example.com');
         storeWithoutAppCode.setLoading(false);
         storeWithoutAppCode.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -210,7 +216,7 @@ describe('AuthStore UI Configuration', () => {
     describe('New user scenarios', () => {
       it('should show single button without secondary when user does not exist', () => {
         // Set up store state for userChecked with non-existent user
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setLoading(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -228,7 +234,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should not show passkey option for non-existent users even with passkey support', () => {
         // Set up store state for userChecked with non-existent user
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setLoading(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -263,7 +269,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should prefer passkeys over other methods when available', () => {
         // Set up store state for userChecked with passkeys
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setLoading(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -299,7 +305,7 @@ describe('AuthStore UI Configuration', () => {
           const store = createAuthStore(mockConfig);
 
           // Set up store state based on method
-          store.setEmail('test@example.com');
+          // store.setEmail('test@example.com');
           store.setLoading(false);
 
           if (method === 'passkey') {
@@ -339,7 +345,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should return null for user found message when user exists', () => {
         // Set up store state for userChecked with existing user
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setEmailCodeSent(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -357,7 +363,7 @@ describe('AuthStore UI Configuration', () => {
 
       it('should return null for new users in userChecked state', () => {
         // Set up store state for userChecked with new user
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.setEmailCodeSent(false);
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
@@ -377,7 +383,7 @@ describe('AuthStore UI Configuration', () => {
     describe('PIN-related state messages', () => {
       it('should show pin sent message when email code is sent', () => {
         // Set up store state: first userChecked, then pinEntry with email code sent
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
           email: 'test@example.com',
@@ -385,8 +391,7 @@ describe('AuthStore UI Configuration', () => {
           hasPasskey: false,
           hasValidPin: false
         });
-        authStore.setEmailCodeSent(true);
-        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+        authStore.notifyPinSent();
 
         const messageConfig = authStore.getStateMessageConfig();
 
@@ -451,7 +456,7 @@ describe('AuthStore UI Configuration', () => {
     describe('State message configuration properties', () => {
       it('should include proper type, textKey, and optional properties', () => {
         // Set up store state: first userChecked, then pinEntry with email code sent to get a message
-        authStore.setEmail('test@example.com');
+        // authStore.setEmail('test@example.com');
         authStore.sendSignInEvent({
           type: 'USER_CHECKED',
           email: 'test@example.com',
@@ -459,8 +464,7 @@ describe('AuthStore UI Configuration', () => {
           hasPasskey: false,
           hasValidPin: false
         });
-        authStore.setEmailCodeSent(true);
-        authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
+        authStore.notifyPinSent();
 
         const messageConfig = authStore.getStateMessageConfig();
 

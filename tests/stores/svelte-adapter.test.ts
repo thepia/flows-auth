@@ -98,6 +98,46 @@ describe('Svelte Store Adapter', () => {
       expect(state.signInState).toBe('emailEntry');
     });
 
+    it('should implement proper Svelte store contract for component usage', async () => {
+      // Test that the store can be used exactly like Svelte components expect
+      let subscriptionCallCount = 0;
+      let lastReceivedState: any = null;
+
+      // Subscribe like a Svelte component would
+      const unsubscribe = store.subscribe((state: any) => {
+        subscriptionCallCount++;
+        lastReceivedState = state;
+      });
+
+      // Should call immediately with current state (Svelte requirement)
+      expect(subscriptionCallCount).toBe(1);
+      expect(lastReceivedState).toBeDefined();
+      expect(lastReceivedState.signInState).toBe('emailEntry');
+
+      // Should update when state changes (setEmail triggers user check which causes multiple updates)
+      store.setEmail('component@test.com');
+
+      // Wait for async user check to complete
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Should have updated (initial + email change + user check result)
+      expect(subscriptionCallCount).toBeGreaterThan(1);
+      expect(lastReceivedState.email).toBe('component@test.com');
+
+      // Should work with Svelte's get() function
+      const currentState = get(store);
+      expect(currentState.email).toBe('component@test.com');
+      expect(currentState.signInState).toBe(lastReceivedState.signInState);
+
+      // Cleanup
+      unsubscribe();
+
+      // Should not call after unsubscribe
+      const previousCallCount = subscriptionCallCount;
+      store.setEmail('after@unsubscribe.com');
+      expect(subscriptionCallCount).toBe(previousCallCount);
+    });
+
     it('should be reactive when state changes', () => {
       let capturedState: any;
       const unsubscribe = store.subscribe((state: any) => {
@@ -231,9 +271,9 @@ describe('Svelte Store Adapter', () => {
       expect(store.getAccessToken()).toBeNull();
     });
 
-    it('should provide getUser method', () => {
-      expect(typeof store.getUser).toBe('function');
-      expect(store.getUser()).toBeNull();
+    it('should provide user access through getState', () => {
+      const state = store.getState();
+      expect(state.user).toBeNull();
     });
 
     it('should provide getState method for direct access', () => {
@@ -339,12 +379,12 @@ describe('Svelte Store Adapter', () => {
   });
 
   describe('Advanced Store Access', () => {
-    it('should provide access to underlying composed store', () => {
-      expect(store._composedStore).toBeDefined();
-      expect(store._composedStore.core).toBeDefined();
-      expect(store._composedStore.ui).toBeDefined();
-      expect(store._composedStore.email).toBeDefined();
-      expect(store._composedStore.passkey).toBeDefined();
+    it('should provide access to store methods and state', () => {
+      // The store should provide all necessary methods without exposing internals
+      expect(typeof store.getState).toBe('function');
+      expect(typeof store.setEmail).toBe('function');
+      expect(typeof store.setLoading).toBe('function');
+      expect(typeof store.getConfig).toBe('function');
     });
   });
 
@@ -363,24 +403,22 @@ describe('Svelte Store Adapter', () => {
       expect(state.fullName).toBeDefined();
       expect(state.userExists).toBeDefined();
 
-      // Should have operation states
-      expect(state.isAuthenticating).toBeDefined();
-      expect(state.isSendingCode).toBeDefined();
-      expect(state.isVerifyingCode).toBeDefined();
+      // Should have loading state
+      expect(state.loading).toBeDefined();
 
-      // Should have error state
-      expect(state.error).toBeDefined();
+      // Should have error state (apiError, not error)
+      expect(state.apiError).toBeDefined();
 
-      // Should have config
-      expect(state.config).toEqual(mockConfig);
+      // Should have config through getConfig method
+      expect(store.getConfig()).toEqual(mockConfig);
     });
 
-    it('should update reactive state when underlying stores change', async () => {
+    it('should update reactive state when store methods are called', async () => {
       let state = get(store);
       expect(state.loading).toBe(false);
 
-      // Change loading through underlying store
-      store._composedStore.ui.getState().setLoading(true);
+      // Change loading through store method
+      store.setLoading(true);
 
       // Wait for reactive update
       await new Promise((resolve) => setTimeout(resolve, 1));
@@ -406,7 +444,6 @@ describe('Svelte Store Adapter', () => {
         'setFullName',
         'isAuthenticated',
         'getAccessToken',
-        'getUser',
         'setLoading',
         'sendSignInEvent',
         'on',

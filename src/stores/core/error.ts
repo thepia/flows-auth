@@ -1,6 +1,6 @@
 /**
  * Error Management Store
- * 
+ *
  * Handles API errors, error classification, and retry logic:
  * - Error classification into user-friendly types
  * - API error state management
@@ -8,22 +8,17 @@
  * - Error reporting and logging
  */
 
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { subscribeWithSelector, devtools } from 'zustand/middleware';
-import type { 
-  ErrorState, 
-  ErrorActions, 
-  ErrorStore,
-  StoreOptions 
-} from '../types';
 import type { ApiError } from '../../types';
+import type { ErrorActions, ErrorState, ErrorStore, StoreOptions } from '../types';
 
 /**
  * Initial state for the error store
  */
 const initialState: ErrorState = {
   apiError: null,
-  lastFailedRequest: null,
+  lastFailedRequest: null
 };
 
 /**
@@ -32,105 +27,58 @@ const initialState: ErrorState = {
 export function createErrorStore(options: StoreOptions) {
   const { devtools: enableDevtools = false, name = 'error' } = options;
 
+  const storeImpl = (
+    set: (partial: Partial<ErrorStore> | ((state: ErrorStore) => Partial<ErrorStore>)) => void,
+    get: () => ErrorStore
+  ) => ({
+    ...initialState,
+
+    setApiError: (error: unknown, context?: { method?: string; email?: string }) => {
+      const apiError = classifyError(error, context);
+
+      set({
+        apiError,
+        lastFailedRequest: context?.method
+          ? { method: context.method, args: [] }
+          : get().lastFailedRequest
+      });
+
+      // Log error for debugging
+      console.error('API Error:', apiError);
+    },
+
+    clearApiError: () => {
+      set({
+        apiError: null,
+        lastFailedRequest: null
+      });
+    },
+
+    retryLastRequest: async () => {
+      const state = get();
+
+      if (!state.apiError || !state.apiError.retryable || !state.lastFailedRequest) {
+        return false;
+      }
+
+      // Clear error state for retry
+      set({ apiError: null });
+
+      try {
+        // This would need to be implemented based on the specific method
+        // For now, just clear the error and return true
+        console.log('Retrying last failed request:', state.lastFailedRequest.method);
+        return true;
+      } catch (error) {
+        // Restore error state if retry fails
+        get().setApiError(error, { method: state.lastFailedRequest.method });
+        return false;
+      }
+    }
+  });
+
   const store = createStore<ErrorStore>()(
-    subscribeWithSelector(
-      enableDevtools 
-        ? devtools(
-            (set, get) => ({
-              ...initialState,
-              
-              setApiError: (error: unknown, context?: { method?: string; email?: string }) => {
-                const apiError = classifyError(error, context);
-                
-                set({
-                  apiError,
-                  lastFailedRequest: context?.method 
-                    ? { method: context.method, args: [] }
-                    : get().lastFailedRequest
-                });
-                
-                // Log error for debugging
-                console.error('API Error:', apiError);
-              },
-              
-              clearApiError: () => {
-                set({
-                  apiError: null,
-                  lastFailedRequest: null
-                });
-              },
-              
-              retryLastRequest: async () => {
-                const state = get();
-                
-                if (!state.apiError || !state.apiError.retryable || !state.lastFailedRequest) {
-                  return false;
-                }
-                
-                // Clear error state for retry
-                set({ apiError: null });
-                
-                try {
-                  // This would need to be implemented based on the specific method
-                  // For now, just clear the error and return true
-                  console.log('Retrying last failed request:', state.lastFailedRequest.method);
-                  return true;
-                } catch (error) {
-                  // Restore error state if retry fails
-                  get().setApiError(error, { method: state.lastFailedRequest.method });
-                  return false;
-                }
-              }
-            }),
-            { name }
-          )
-        : (set, get) => ({
-            ...initialState,
-            
-            setApiError: (error: unknown, context?: { method?: string; email?: string }) => {
-              const apiError = classifyError(error, context);
-              
-              set({
-                apiError,
-                lastFailedRequest: context?.method 
-                  ? { method: context.method, args: [] }
-                  : get().lastFailedRequest
-              });
-              
-              // Log error for debugging
-              console.error('API Error:', apiError);
-            },
-            
-            clearApiError: () => {
-              set({
-                apiError: null,
-                lastFailedRequest: null
-              });
-            },
-            
-            retryLastRequest: async () => {
-              const state = get();
-              
-              if (!state.apiError || !state.apiError.retryable || !state.lastFailedRequest) {
-                return false;
-              }
-              
-              // Clear error state for retry
-              set({ apiError: null });
-              
-              try {
-                // This would need to be implemented based on the specific method
-                // For now, just clear the error and return true
-                console.log('Retrying last failed request:', state.lastFailedRequest.method);
-                return true;
-              } catch (error) {
-                // Restore error state if retry fails
-                get().setApiError(error, { method: state.lastFailedRequest.method });
-                return false;
-              }
-            }
-          })
-    )
+    subscribeWithSelector(enableDevtools ? devtools(storeImpl, { name }) : storeImpl)
   );
 
   return store;
@@ -262,14 +210,17 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
  * Helper to check if an error is retryable
  */
 export function isErrorRetryable(error: ApiError): boolean {
-  return error.retryable && [
-    'error.network',
-    'error.serviceUnavailable',
-    'error.authCancelled',
-    'error.authFailed',
-    'error.rateLimited',
-    'error.unknown'
-  ].includes(error.code);
+  return (
+    error.retryable &&
+    [
+      'error.network',
+      'error.serviceUnavailable',
+      'error.authCancelled',
+      'error.authFailed',
+      'error.rateLimited',
+      'error.unknown'
+    ].includes(error.code)
+  );
 }
 
 /**
@@ -279,25 +230,25 @@ export function getUserFriendlyErrorMessage(error: ApiError): string {
   switch (error.code) {
     case 'error.network':
       return 'Network connection issue. Please check your internet connection and try again.';
-    
+
     case 'error.serviceUnavailable':
       return 'Service temporarily unavailable. Please try again in a few minutes.';
-    
+
     case 'error.userNotFound':
       return 'User account not found. Please check your email address or register for a new account.';
-    
+
     case 'error.authCancelled':
       return 'Authentication was cancelled. Please try again.';
-    
+
     case 'error.authFailed':
       return 'Authentication failed. Please try again or use a different method.';
-    
+
     case 'error.rateLimited':
       return 'Too many requests. Please wait a moment before trying again.';
-    
+
     case 'error.invalidInput':
       return 'Invalid input. Please check your information and try again.';
-    
+
     default:
       return 'An unexpected error occurred. Please try again.';
   }
@@ -322,9 +273,9 @@ export function logError(error: ApiError, additionalContext?: Record<string, any
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
     timestamp: new Date().toISOString()
   };
-  
+
   console.error('Auth Error:', logData);
-  
+
   // In production, this could send to error reporting service
   if (process.env.NODE_ENV === 'production') {
     // Send to error reporting service (e.g., Sentry, LogRocket, etc.)
@@ -338,7 +289,7 @@ export function logError(error: ApiError, additionalContext?: Record<string, any
 export function createApiError(
   code: ApiError['code'],
   message: string,
-  retryable: boolean = false,
+  retryable = false,
   context?: { method?: string; email?: string }
 ): ApiError {
   return {
@@ -357,17 +308,17 @@ export const errorRecoveryStrategies = {
   /**
    * Exponential backoff for retryable errors
    */
-  exponentialBackoff: (attempt: number, baseDelay: number = 1000): number => {
+  exponentialBackoff: (attempt: number, baseDelay = 1000): number => {
     return Math.min(baseDelay * Math.pow(2, attempt), 30000); // Max 30 seconds
   },
-  
+
   /**
    * Check if error should trigger a retry based on attempt count
    */
-  shouldRetry: (error: ApiError, attemptCount: number, maxRetries: number = 3): boolean => {
+  shouldRetry: (error: ApiError, attemptCount: number, maxRetries = 3): boolean => {
     return error.retryable && attemptCount < maxRetries;
   },
-  
+
   /**
    * Get suggested retry delay based on error type
    */
@@ -375,13 +326,13 @@ export const errorRecoveryStrategies = {
     switch (error.code) {
       case 'error.rateLimited':
         return 5000 * (attemptCount + 1); // 5s, 10s, 15s...
-      
+
       case 'error.network':
         return errorRecoveryStrategies.exponentialBackoff(attemptCount, 500);
-      
+
       case 'error.serviceUnavailable':
         return errorRecoveryStrategies.exponentialBackoff(attemptCount, 2000);
-      
+
       default:
         return errorRecoveryStrategies.exponentialBackoff(attemptCount);
     }

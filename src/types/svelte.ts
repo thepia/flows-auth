@@ -6,6 +6,7 @@ import type {
   StorageConfigurationUpdate
 } from '.';
 import type { AuthApiClient } from '../api/auth-api';
+import type { ComposedAuthStore } from '../stores/auth-store';
 
 // Svelte store types
 export type Unsubscriber = () => void;
@@ -14,17 +15,27 @@ export type Readable<T> = {
   subscribe: (run: Subscriber<T>) => Unsubscriber;
 };
 
-// Complete auth store type with all methods
-export interface CompleteAuthStore extends Readable<AuthStore>, AuthStoreFunctions {
-  api: AuthApiClient;
-
-  // Dynamic role configuration methods
-  getApplicationContext: () => ApplicationContext | null;
-  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
-
-  // Direct state access
-  getState: () => AuthStore;
-
-  // Cleanup
-  destroy: () => void;
+/**
+ * Svelte-compatible auth store returned by makeSvelteCompatible()
+ *
+ * This type represents the proper Svelte store contract:
+ * - Implements Readable<AuthStore> for reactive state subscriptions ($store.signInState, etc.)
+ * - Includes all methods from ComposedAuthStore for actions (store.checkUser(), etc.)
+ *
+ * Usage pattern:
+ * ```svelte
+ * const store = getContext<Writable<SvelteAuthStore | null>>(AUTH_CONTEXT_KEY);
+ *
+ * // Access state reactively
+ * $: signInState = $store?.signInState;
+ *
+ * // Call methods directly
+ * await $store?.checkUser(email);
+ * const config = $store?.getConfig();
+ * ```
+ */
+export interface SvelteAuthStore extends Readable<AuthStore>, ComposedAuthStore {
+  // Inherits:
+  // - subscribe() from Readable<AuthStore> - for Svelte reactivity
+  // - All methods from ComposedAuthStore - for actions and state access
 }

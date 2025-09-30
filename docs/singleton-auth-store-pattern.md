@@ -1,5 +1,7 @@
 # Global Auth Store Singleton Pattern
 
+> **📋 AUTHORITY**: This document implements the patterns defined in [ADR 0004: Global Svelte Store Architecture](./adr/0004-global-svelte-store-architecture.md). For complete architectural context and framework-specific prescriptions, see the ADR.
+
 ## 🚨 Critical Svelte Context Limitations
 
 **IMPORTANT**: `setAuthContext()` uses Svelte's `setContext()` internally, which has **severe limitations**:
@@ -9,6 +11,8 @@
 - ❌ **CANNOT be called in lifecycle hooks** - Context must be set before component mounts
 - ❌ **CANNOT be called asynchronously** - Even `.then()` callbacks are too late
 - ❌ **CANNOT be used with async imports** - `await import()` moves execution outside initialization
+
+**📖 See [ADR 0004](./adr/0004-global-svelte-store-architecture.md) for complete technical analysis and proven implementation patterns.**
 
 ### ⚠️ When Svelte Context Won't Work
 

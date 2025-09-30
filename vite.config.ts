@@ -87,12 +87,11 @@ export default defineConfig({
       formats: ['es', 'cjs']
     },
     rollupOptions: {
-      external: ['svelte', 'svelte/store', 'svelte/internal', 'd3'],
+      external: ['svelte', 'svelte/store', 'd3'],
       output: {
         globals: {
           svelte: 'Svelte',
           'svelte/store': 'SvelteStore',
-          'svelte/internal': 'SvelteInternal',
           d3: 'D3'
         }
       },
@@ -102,12 +101,15 @@ export default defineConfig({
         if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
 
         // Skip dynamic import warnings for specific modules we know about
-        if (warning.message && warning.message.includes('dynamically imported') &&
-            (warning.message.includes('webauthn') ||
-             warning.message.includes('sessionManager') ||
-             warning.message.includes('invitation-tokens') ||
-             warning.message.includes('errorReporter') ||
-             warning.message.includes('api-detection'))) {
+        if (
+          warning.message &&
+          warning.message.includes('dynamically imported') &&
+          (warning.message.includes('webauthn') ||
+            warning.message.includes('sessionManager') ||
+            warning.message.includes('invitation-tokens') ||
+            warning.message.includes('errorReporter') ||
+            warning.message.includes('api-detection'))
+        ) {
           return;
         }
 

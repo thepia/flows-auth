@@ -8,7 +8,7 @@
 import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, FlowsSessionData } from '../../src/types';
+import type { AuthConfig, SignInData } from '../../src/types';
 import {
   clearSession,
   configureSessionStorage,
@@ -39,10 +39,10 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true
+  enableMagicLinks: false
 };
 
-const createTestSession = (): FlowsSessionData => ({
+const createTestSession = (): SignInData => ({
   user: {
     id: 'test-user-id',
     email: 'test@example.com',
@@ -236,7 +236,7 @@ describe('R3: Session Validation (MUST)', () => {
 
   describe('R3.1: Token Expiration', () => {
     it('MUST check tokens.expiresAt against current time', () => {
-      const expiredSession: FlowsSessionData = {
+      const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
           accessToken: 'expired-token',
@@ -249,7 +249,7 @@ describe('R3: Session Validation (MUST)', () => {
     });
 
     it('MUST clear expired sessions automatically', () => {
-      const expiredSession: FlowsSessionData = {
+      const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
           accessToken: 'expired-token',
@@ -274,7 +274,7 @@ describe('R3: Session Validation (MUST)', () => {
         userRole: 'guest'
       });
 
-      const inactiveSession: FlowsSessionData = {
+      const inactiveSession: SignInData = {
         ...createTestSession(),
         lastActivity: Date.now() - 2000 // 2 seconds ago
       };
@@ -289,7 +289,7 @@ describe('R3: Session Validation (MUST)', () => {
         userRole: 'guest'
       });
 
-      const inactiveSession: FlowsSessionData = {
+      const inactiveSession: SignInData = {
         ...createTestSession(),
         lastActivity: Date.now() - 2000
       };

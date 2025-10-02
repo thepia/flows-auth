@@ -11,30 +11,12 @@
  * - Role-based storage strategy
  */
 
-import type { StorageConfig } from '../types';
+import type { SignInData, StorageConfig } from '../types';
 import {
   getOptimalStorageConfig,
   getStorageManager,
   initializeStorageManager
 } from './storageManager';
-
-export interface FlowsSessionData {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    initials: string;
-    avatar?: string;
-    preferences?: Record<string, any>;
-  };
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresAt: number;
-  };
-  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
-  lastActivity: number;
-}
 
 const SESSION_KEY = 'thepia_auth_session';
 const LAST_USER_KEY = 'thepia_last_user';
@@ -47,13 +29,13 @@ interface LastUserData {
   lastLoginAt: number;
 }
 
-export function getSession(): FlowsSessionData | null {
+export function getSession(): SignInData | null {
   try {
     const storage = getStorageManager();
     const sessionData = storage.getItem(SESSION_KEY);
     if (!sessionData) return null;
 
-    const session = JSON.parse(sessionData) as FlowsSessionData;
+    const session = JSON.parse(sessionData) as SignInData;
 
     // Check if session is expired
     if (session.tokens.expiresAt < Date.now()) {
@@ -76,7 +58,7 @@ export function getSession(): FlowsSessionData | null {
   }
 }
 
-export function saveSession(sessionData: FlowsSessionData): void {
+export function saveSession(sessionData: SignInData): void {
   try {
     const storage = getStorageManager();
     storage.setItem(SESSION_KEY, JSON.stringify(sessionData));
@@ -125,14 +107,19 @@ export function clearSession(): void {
 }
 
 export function generateInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part.charAt(0).toUpperCase())
-    .slice(0, 2)
-    .join('');
+  const words = name.split(' ').filter(word => word.length > 0);
+
+  if (words.length === 0) return '';
+  if (words.length === 1) return words[0].charAt(0).toUpperCase();
+
+  // Use first and last word for multiple names
+  const firstInitial = words[0].charAt(0).toUpperCase();
+  const lastInitial = words[words.length - 1].charAt(0).toUpperCase();
+
+  return firstInitial + lastInitial;
 }
 
-export function isSessionValid(session: FlowsSessionData | null): boolean {
+export function isSessionValid(session: SignInData | null): boolean {
   if (!session) return false;
 
   // Check token expiration
@@ -180,7 +167,7 @@ export function getLastUser(): LastUserData | null {
   }
 }
 
-export function saveLastUser(sessionData: FlowsSessionData): void {
+export function saveLastUser(sessionData: SignInData): void {
   try {
     const lastUserData: LastUserData = {
       email: sessionData.user.email,
@@ -242,7 +229,7 @@ export function isAuthenticated(): boolean {
 /**
  * Get current user from session
  */
-export function getCurrentUser(): FlowsSessionData['user'] | null {
+export function getCurrentUser(): SignInData['user'] | null {
   const session = getSession();
   return session?.user || null;
 }

@@ -21,7 +21,7 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true

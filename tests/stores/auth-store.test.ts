@@ -7,7 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import type { AuthConfig, SignInData, SignInResponse } from '../../src/types';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
@@ -37,18 +37,18 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock session manager
-let mockSessionData: any = null;
+let mockSignInData: any = null;
 vi.mock('../../src/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
-  getSession: vi.fn(() => mockSessionData),
-  getCurrentSession: vi.fn(() => mockSessionData),
+  getSession: vi.fn(() => mockSignInData),
+  getCurrentSession: vi.fn(() => mockSignInData),
   isSessionValid: vi.fn((session) => !!session && session.tokens?.expiresAt > Date.now()),
   saveSession: vi.fn((data) => {
-    mockSessionData = data;
+    mockSignInData = data;
   }),
   clearSession: vi.fn(() => {
-    mockSessionData = null;
+    mockSignInData = null;
   }),
   generateInitials: vi.fn((name: string) => name.charAt(0).toUpperCase())
 }));
@@ -83,7 +83,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    mockSessionData = null; // Clear mock session data
+    mockSignInData = null; // Clear mock session data
 
     // Create the composed store with new architecture
     composedStore = createAuthStore(mockConfig);
@@ -118,7 +118,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Set up a valid session in localStorage (using real session manager)
       const { saveSession } = await import('../../src/utils/sessionManager');
 
-      const sessionData = {
+      const sessionData: SignInData = {
         user: {
           id: '123',
           email: 'test@example.com',

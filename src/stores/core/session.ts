@@ -1,6 +1,6 @@
 /**
  * Session Management Store
- * 
+ *
  * Handles session persistence, storage configuration, and session lifecycle:
  * - Session data persistence (sessionStorage/localStorage)
  * - Session validation and expiry
@@ -8,17 +8,10 @@
  * - Session activity tracking
  */
 
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { subscribeWithSelector, devtools } from 'zustand/middleware';
-import type { 
-  SessionState, 
-  SessionActions, 
-  SessionStore,
-  StoreOptions 
-} from '../types';
-import type { User } from '../../types';
-import { 
-  type FlowsSessionData,
+import type { SignInData, User } from '../../types';
+import {
   clearSession as clearSessionUtil,
   configureSessionStorage,
   generateInitials,
@@ -27,27 +20,7 @@ import {
   isSessionValid as isSessionValidUtil,
   saveSession as saveSessionUtil
 } from '../../utils/sessionManager';
-
-/**
- * Session data interface for the store
- */
-export interface SessionData {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    initials: string;
-    avatar?: string;
-    preferences?: Record<string, any>;
-  };
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresAt: number;
-  };
-  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
-  lastActivity: number;
-}
+import type { SessionActions, SessionState, SessionStore, StoreOptions } from '../types';
 
 /**
  * Initial state for the session store
@@ -55,7 +28,7 @@ export interface SessionData {
 const initialState: SessionState = {
   lastActivity: null,
   sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours default
-  storageType: 'sessionStorage',
+  storageType: 'sessionStorage'
 };
 
 /**
@@ -63,7 +36,7 @@ const initialState: SessionState = {
  */
 export function createSessionStore(options: StoreOptions) {
   const { config, devtools: enableDevtools = false, name = 'session' } = options;
-  
+
   // Configure session storage based on config or optimal defaults
   if (typeof window !== 'undefined') {
     const storageConfig = config.storage || getOptimalSessionConfig();
@@ -72,15 +45,15 @@ export function createSessionStore(options: StoreOptions) {
 
   const store = createStore<SessionStore>()(
     subscribeWithSelector(
-      enableDevtools 
+      enableDevtools
         ? devtools(
             (set, get) => ({
               ...initialState,
-              
-              saveSession: (data: SessionData) => {
+
+              saveSession: (data: SignInData) => {
                 if (typeof window === 'undefined') return;
-                
-                const sessionData: FlowsSessionData = {
+
+                const sessionData: SignInData = {
                   user: {
                     id: data.user.id,
                     email: data.user.email,
@@ -97,34 +70,34 @@ export function createSessionStore(options: StoreOptions) {
                   authMethod: data.authMethod,
                   lastActivity: Date.now()
                 };
-                
+
                 saveSessionUtil(sessionData);
-                
+
                 set({
                   lastActivity: Date.now()
                 });
               },
-              
+
               clearSession: () => {
                 if (typeof window === 'undefined') return;
-                
+
                 clearSessionUtil();
-                
+
                 set({
                   lastActivity: null
                 });
               },
-              
+
               isSessionValid: () => {
                 if (typeof window === 'undefined') return false;
-                
+
                 const session = getSessionUtil();
                 return isSessionValidUtil(session);
               },
-              
+
               updateLastActivity: () => {
                 const now = Date.now();
-                
+
                 // Update session last activity if session exists
                 if (typeof window !== 'undefined') {
                   const session = getSessionUtil();
@@ -133,18 +106,18 @@ export function createSessionStore(options: StoreOptions) {
                     saveSessionUtil(session);
                   }
                 }
-                
+
                 set({
                   lastActivity: now
                 });
               },
-              
+
               configureStorage: (config) => {
                 set((state) => ({
                   ...state,
                   ...config
                 }));
-                
+
                 // Apply configuration to session storage utility
                 if (typeof window !== 'undefined') {
                   configureSessionStorage({
@@ -161,11 +134,11 @@ export function createSessionStore(options: StoreOptions) {
           )
         : (set, get) => ({
             ...initialState,
-            
-            saveSession: (data: SessionData) => {
+
+            saveSession: (data: SignInData) => {
               if (typeof window === 'undefined') return;
-              
-              const sessionData: FlowsSessionData = {
+
+              const sessionData: SignInData = {
                 user: {
                   id: data.user.id,
                   email: data.user.email,
@@ -182,34 +155,34 @@ export function createSessionStore(options: StoreOptions) {
                 authMethod: data.authMethod,
                 lastActivity: Date.now()
               };
-              
+
               saveSessionUtil(sessionData);
-              
+
               set({
                 lastActivity: Date.now()
               });
             },
-            
+
             clearSession: () => {
               if (typeof window === 'undefined') return;
-              
+
               clearSessionUtil();
-              
+
               set({
                 lastActivity: null
               });
             },
-            
+
             isSessionValid: () => {
               if (typeof window === 'undefined') return false;
-              
+
               const session = getSessionUtil();
               return isSessionValidUtil(session);
             },
-            
+
             updateLastActivity: () => {
               const now = Date.now();
-              
+
               // Update session last activity if session exists
               if (typeof window !== 'undefined') {
                 const session = getSessionUtil();
@@ -218,18 +191,18 @@ export function createSessionStore(options: StoreOptions) {
                   saveSessionUtil(session);
                 }
               }
-              
+
               set({
                 lastActivity: now
               });
             },
-            
+
             configureStorage: (config) => {
               set((state) => ({
                 ...state,
                 ...config
               }));
-              
+
               // Apply configuration to session storage utility
               if (typeof window !== 'undefined') {
                 configureSessionStorage({
@@ -251,7 +224,7 @@ export function createSessionStore(options: StoreOptions) {
 /**
  * Helper to get current session data
  */
-export function getCurrentSession(): FlowsSessionData | null {
+export function getCurrentSession(): SignInData | null {
   if (typeof window === 'undefined') return null;
   return getSessionUtil();
 }
@@ -262,7 +235,7 @@ export function getCurrentSession(): FlowsSessionData | null {
 export function isSessionExpired(): boolean {
   const session = getCurrentSession();
   if (!session) return true;
-  
+
   return !isSessionValidUtil(session);
 }
 
@@ -283,7 +256,7 @@ export function convertUserToSessionUser(user: User) {
 /**
  * Helper to convert session user to User format
  */
-export function convertSessionUserToUser(sessionUser: FlowsSessionData['user']): User {
+export function convertSessionUserToUser(sessionUser: SignInData['user']): User {
   return {
     id: sessionUser.id,
     email: sessionUser.email,
@@ -305,8 +278,8 @@ export function createSessionData(
     refreshToken?: string;
     expiresIn?: number;
   },
-  authMethod: SessionData['authMethod'] = 'passkey'
-): SessionData {
+  authMethod: SignInData['authMethod'] = 'passkey'
+): SignInData {
   return {
     user: convertUserToSessionUser(user),
     tokens: {
@@ -326,15 +299,15 @@ export function createSessionData(
  */
 export function initializeSessionStore(store: ReturnType<typeof createSessionStore>) {
   if (typeof window === 'undefined') return null;
-  
+
   const existingSession = getCurrentSession();
   if (!existingSession || !isSessionValidUtil(existingSession)) {
     return null;
   }
-  
+
   // Update last activity
   store.getState().updateLastActivity();
-  
+
   return {
     user: convertSessionUserToUser(existingSession.user),
     tokens: existingSession.tokens,

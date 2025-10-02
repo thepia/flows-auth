@@ -20,9 +20,22 @@ vi.mock('../../src/utils/errorReporter', () => ({
 describe('Auth Store RESET Event Handling', () => {
   let authStore: ReturnType<typeof createAuthStore>;
   let mockConfig: AuthConfig;
+  let mockApiClient: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockApiClient = {
+      registerUser: vi.fn(),
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refreshToken: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn()
+    };
 
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
@@ -35,18 +48,14 @@ describe('Auth Store RESET Event Handling', () => {
       signInMode: 'login-only'
     };
 
-    authStore = createAuthStore(mockConfig);
+    authStore = createAuthStore(mockConfig, mockApiClient);
   });
 
   it('should transition from userChecked to emailEntry on RESET', () => {
-    // Get current state
-    let currentState: any;
-    const unsubscribe = authStore.subscribe((state) => {
-      currentState = state;
-    });
-
-    console.log('🧪 Initial state:', currentState.signInState);
-    expect(currentState.signInState).toBe('emailEntry');
+    // Get initial state
+    const initialState = authStore.getState();
+    console.log('🧪 Initial state:', initialState.signInState);
+    expect(initialState.signInState).toBe('emailEntry');
 
     // Send USER_CHECKED to get to userChecked state
     const stateAfterUserCheck = authStore.sendSignInEvent({
@@ -57,27 +66,20 @@ describe('Auth Store RESET Event Handling', () => {
     });
     console.log('🧪 After USER_CHECKED:', stateAfterUserCheck);
     expect(stateAfterUserCheck).toBe('userChecked');
-    expect(currentState.signInState).toBe('userChecked');
+    expect(authStore.getState().signInState).toBe('userChecked');
 
     // Now send RESET - this should go back to emailEntry
     console.log('🧪 Sending RESET event...');
     const stateAfterReset = authStore.sendSignInEvent({ type: 'RESET' });
     console.log('🧪 After RESET:', stateAfterReset);
-    console.log('🧪 Store state after RESET:', currentState.signInState);
+    console.log('🧪 Store state after RESET:', authStore.getState().signInState);
 
     // This is the critical test - RESET should return emailEntry
     expect(stateAfterReset).toBe('emailEntry');
-    expect(currentState.signInState).toBe('emailEntry');
-
-    unsubscribe();
+    expect(authStore.getState().signInState).toBe('emailEntry');
   });
 
   it('should transition from pinEntry to emailEntry on RESET', () => {
-    let currentState: any;
-    const unsubscribe = authStore.subscribe((state) => {
-      currentState = state;
-    });
-
     // Get to pinEntry state: emailEntry -> userChecked -> pinEntry
     authStore.sendSignInEvent({
       type: 'USER_CHECKED',
@@ -85,29 +87,22 @@ describe('Auth Store RESET Event Handling', () => {
       exists: false,
       hasPasskey: false
     });
-    expect(currentState.signInState).toBe('userChecked');
+    expect(authStore.getState().signInState).toBe('userChecked');
 
     const stateAfterPinSent = authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
     console.log('🧪 After SENT_PIN_EMAIL:', stateAfterPinSent);
     expect(stateAfterPinSent).toBe('pinEntry');
-    expect(currentState.signInState).toBe('pinEntry');
+    expect(authStore.getState().signInState).toBe('pinEntry');
 
     // Now send RESET from pinEntry
     const stateAfterReset = authStore.sendSignInEvent({ type: 'RESET' });
     console.log('🧪 After RESET from pinEntry:', stateAfterReset);
 
     expect(stateAfterReset).toBe('emailEntry');
-    expect(currentState.signInState).toBe('emailEntry');
-
-    unsubscribe();
+    expect(authStore.getState().signInState).toBe('emailEntry');
   });
 
   it('should stay in current state for unhandled events', () => {
-    let currentState: any;
-    const unsubscribe = authStore.subscribe((state) => {
-      currentState = state;
-    });
-
     // Get to userChecked state
     authStore.sendSignInEvent({
       type: 'USER_CHECKED',
@@ -115,7 +110,7 @@ describe('Auth Store RESET Event Handling', () => {
       exists: false,
       hasPasskey: false
     });
-    expect(currentState.signInState).toBe('userChecked');
+    expect(authStore.getState().signInState).toBe('userChecked');
 
     // Send an invalid event
     const stateAfterInvalid = authStore.sendSignInEvent({ type: 'INVALID_EVENT' as any });
@@ -123,8 +118,6 @@ describe('Auth Store RESET Event Handling', () => {
 
     // Should stay in userChecked
     expect(stateAfterInvalid).toBe('userChecked');
-    expect(currentState.signInState).toBe('userChecked');
-
-    unsubscribe();
+    expect(authStore.getState().signInState).toBe('userChecked');
   });
 });

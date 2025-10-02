@@ -11,8 +11,9 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import { AuthApiClient } from '../../api/auth-api';
-import type { SignInResponse } from '../../types';
+import type { SignInData, User } from '../../types';
 import type { StoreOptions } from '../types';
+import { createSessionData } from '../core/session';
 
 /**
  * Email auth store state
@@ -47,11 +48,11 @@ export interface EmailAuthState {
 export interface EmailAuthActions {
   // PIN code methods
   sendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
-  verifyCode: (email: string, code: string) => Promise<SignInResponse>;
+  verifyCode: (email: string, code: string) => Promise<SignInData>;
   resendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
 
   // Magic link methods
-  sendMagicLink: (email: string) => Promise<SignInResponse>;
+  sendMagicLink: (email: string) => Promise<SignInData | null>;
 
   // User check methods
   checkUser: (email: string) => Promise<{
@@ -199,7 +200,19 @@ export function createEmailAuthStore(options: StoreOptions) {
           });
 
           console.log('✅ Email code verified successfully');
-          return response;
+
+          // Convert SignInResponse to SignInData immediately
+          const signInData = createSessionData(
+            response.user,
+            {
+              accessToken: response.accessToken,
+              refreshToken: response.refreshToken,
+              expiresIn: response.expiresIn
+            },
+            'email-code'
+          );
+
+          return signInData;
         }
 
         throw new Error('Invalid response from email code verification');
@@ -249,7 +262,10 @@ export function createEmailAuthStore(options: StoreOptions) {
         });
 
         console.log('✅ Magic link sent successfully');
-        return response;
+
+        // Magic link just sends email, no immediate auth data
+        // Return null - caller should wait for user to click link
+        return null;
       } catch (error) {
         const linkError = error as Error;
 

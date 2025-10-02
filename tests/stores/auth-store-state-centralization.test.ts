@@ -6,15 +6,28 @@
  */
 
 import { get } from 'svelte/store';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 describe('Auth Store State Centralization', () => {
   let authStore: ReturnType<typeof createAuthStore>;
   let config: AuthConfig;
+  let mockApiClient: any;
 
   beforeEach(() => {
+    mockApiClient = {
+      registerUser: vi.fn(),
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refreshToken: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn()
+    };
+
     config = {
       apiBaseUrl: 'https://api.thepia.com',
       clientId: 'test-client',
@@ -23,7 +36,7 @@ describe('Auth Store State Centralization', () => {
       enableMagicLinks: true,
       appCode: 'test'
     };
-    authStore = makeSvelteCompatible(createAuthStore(config));
+    authStore = makeSvelteCompatible(createAuthStore(config, mockApiClient));
   });
 
   describe('UI State Management', () => {

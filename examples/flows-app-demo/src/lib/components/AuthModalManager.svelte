@@ -77,7 +77,7 @@
       clientId: scenario.config.clientId,
       domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
       enablePasskeys: scenario.config.enablePasskeys,
-      enableMagicPins: scenario.config.enableMagicPins,
+      enableMagicLinks: scenario.config.enableMagicLinks,
       branding: {
         companyName: scenario.branding.companyName,
         logoUrl: '/thepia-logo.svg',
@@ -232,8 +232,8 @@
             {/if}
           </div>
           
-          <div class="feature-badge" class:enabled={currentScenario.config.enableMagicPins}>
-            {#if currentScenario.config.enableMagicPins}
+          <div class="feature-badge" class:enabled={currentScenario.config.enableMagicLinks}>
+            {#if currentScenario.config.enableMagicLinks}
               <svg class="feature-icon" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M3 4a2 2 0 0 1 2-2h1.007a1 1 0 0 1 .757.349L8.72 4.216A1 1 0 0 0 9.477 4.5h8.023a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Z"/>
               </svg>

@@ -254,7 +254,7 @@ const client = new AuthApiClient({
   apiBaseUrl: 'https://api.thepia.com',
   clientId: 'thepia-app', // Must be configured for passwordless strategy
   domain: 'thepia.net',
-  enableMagicPins: true, // Enable magic link support
+  enableMagicLinks: false, // Enable magic link support
   enablePasskeys: false, // Can be used together
   // ... other options
 });

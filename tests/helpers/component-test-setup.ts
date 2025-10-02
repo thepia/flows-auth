@@ -39,21 +39,21 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
     // Add checkEmail method for user existence checks
     checkEmail: vi.fn().mockResolvedValue({
       exists: false,
-      hasPasskey: false,
-      userId: null,
+      hasWebAuthn: false,
+      userId: undefined,
       emailVerified: false,
-      invitationTokenHash: null,
-      lastPinExpiry: null
+      invitationTokenHash: undefined,
+      lastPinExpiry: undefined
     }),
     // Add sendAppEmailCode method for email code sending
     sendAppEmailCode: vi.fn().mockResolvedValue({
       success: true,
       message: 'Email code sent'
     })
-  };
+  } as any; // Type assertion needed for mock
 
-  // Create the real auth store with test config and make it Svelte-compatible
-  const baseStore = createAuthStore(defaultAuthConfig);
+  // Create the real auth store with test config and mock API client
+  const baseStore = createAuthStore(defaultAuthConfig, mockApiClient);
   const authStore = makeSvelteCompatible(baseStore);
   console.log('🔧 Created test auth store:', !!authStore, 'config:', defaultAuthConfig);
   console.log('🔧 Auth store has subscribe:', typeof authStore.subscribe);
@@ -72,7 +72,7 @@ export function renderWithAuthContext(
     authConfig?: Partial<AuthConfig>;
     mockUserCheck?: {
       exists: boolean;
-      hasPasskey?: boolean;
+      hasPasskey?: boolean; // Accept hasPasskey for convenience
       userId?: string | null;
       emailVerified?: boolean;
       lastPinExpiry?: string | null;
@@ -85,13 +85,13 @@ export function renderWithAuthContext(
 
   // Configure mock API responses if provided
   if (mockUserCheck && authStore.api && authStore.api.checkEmail) {
-    authStore.api.checkEmail.mockResolvedValue({
+    vi.mocked(authStore.api.checkEmail).mockResolvedValue({
       exists: mockUserCheck.exists,
-      hasPasskey: mockUserCheck.hasPasskey || false,
-      userId: mockUserCheck.userId || null,
+      hasWebAuthn: mockUserCheck.hasPasskey || false, // Map hasPasskey to hasWebAuthn
+      userId: mockUserCheck.userId || undefined,
       emailVerified: mockUserCheck.emailVerified || false,
-      invitationTokenHash: null,
-      lastPinExpiry: mockUserCheck.lastPinExpiry || null
+      invitationTokenHash: undefined,
+      lastPinExpiry: mockUserCheck.lastPinExpiry || undefined
     });
   }
 

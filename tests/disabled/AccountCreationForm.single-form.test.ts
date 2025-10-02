@@ -54,7 +54,7 @@ describe('AccountCreationForm - Single Form Design', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: false,
+      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg'

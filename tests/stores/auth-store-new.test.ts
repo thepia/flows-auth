@@ -190,8 +190,10 @@ describe('New Modular Auth Store Architecture', () => {
     describe('Passkey Store', () => {
       let passkeyStore: ReturnType<typeof createPasskeyStore>;
 
-      beforeEach(() => {
+      beforeEach(async () => {
         passkeyStore = createPasskeyStore({ config: mockConfig });
+        // Wait for async capability detection to complete
+        await passkeyStore.getState().checkCapabilities();
       });
 
       it('should initialize with passkey capabilities', () => {

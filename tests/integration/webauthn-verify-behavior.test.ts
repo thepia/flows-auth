@@ -1,6 +1,9 @@
 /**
  * Integration tests for WebAuthn verification behavior
  * Tests current broken behavior (email vs userId) and validates the fix
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -13,7 +16,7 @@ const testConfig: AuthConfig = {
   clientId: 'test-flows-auth',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicPins: false,
+  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: false

@@ -370,13 +370,13 @@ async function handleEmailCodeVerification() {
     return;
   }
 
-  store.setLoading(true);
+  store?.setLoading(true);
 
   try {
-    const result = await store.verifyEmailCode(emailCode);
+    const result = await store?.verifyEmailCode(emailCode);
 
-    store.setLoading(false);
-    if (result.step === 'success' && result.user) {
+    store?.setLoading(false);
+    if (result?.step === 'success' && result.user) {
       dispatch('success', {
         user: result.user,
         method: 'email-code' as AuthMethod
@@ -385,7 +385,15 @@ async function handleEmailCodeVerification() {
       throw new Error('Email code verification failed');
     }
   } catch (err: any) {
+    // await expect(authStore.verifyEmailCode('wrong')).rejects.toThrow('Invalid code');
+    // TODO pass error to the CodeInput
     // Error handling is now managed by AuthStore
+    /*
+            eventEmitters.signInError({
+          error: { code: 'verification_failed', message: (err as Error).message },
+          method: 'email-code'
+        });
+    */
   }
 }
 
@@ -494,6 +502,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
           disabled={$store.loading}
           maxlength={6}
         />
+        <!-- TODO error from attempting to transition -->
 
         {#if stateMessage}
           <AuthStateMessage

@@ -4,23 +4,8 @@ import { get } from 'svelte/store';
  * Ensures basic account creation works without passkey requirements
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, SignInResponse } from '../../src/types';
-
-// Mock the API client
-vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    registerUser: vi.fn(),
-    signIn: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    signInWithPasskey: vi.fn(),
-    refreshToken: vi.fn(),
-    signOut: vi.fn(),
-    checkEmail: vi.fn(),
-    sendAppEmailCode: vi.fn(),
-    verifyAppEmailCode: vi.fn()
-  }))
-}));
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -56,15 +41,20 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
     localStorage.clear();
     sessionStorage.clear();
 
-    // Get the mocked API client constructor
-    const { AuthApiClient } = await import('../../src/api/auth-api');
-    const MockedAuthApiClient = AuthApiClient as any;
+    // Create mock API client
+    mockApiClient = {
+      registerUser: vi.fn(),
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refreshToken: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn()
+    };
 
-    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
-
-    // Get the mocked API client instance
-    mockApiClient =
-      MockedAuthApiClient.mock.results[MockedAuthApiClient.mock.results.length - 1].value;
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
   });
 
   describe('Successful account creation', () => {
@@ -201,9 +191,11 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
         acceptedPrivacy: true
       };
 
-      await expect(authStore.createAccount(userData)).rejects.toThrow(
-        'Failed to create user account'
-      );
+      // createAccount now returns the response even if step is 'error'
+      // The calling code is responsible for checking the step
+      const result = await authStore.createAccount(userData);
+      expect(result.step).toBe('error');
+      expect(result.user).toBeUndefined();
     });
   });
 
@@ -233,7 +225,10 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
       await authStore.createAccount(userData);
 
-      expect(registrationStartedHandler).toHaveBeenCalledWith({ email: 'test@example.com' });
+      expect(registrationStartedHandler).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        method: 'email-code'
+      });
     });
 
     it('should emit registration_error event on failure', async () => {
@@ -287,7 +282,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
       // Should not set error state or authenticate user automatically
       const finalState = get(authStore);
-      expect(finalState.error).toBeNull();
+      expect(finalState.error).toBeUndefined();
       expect(finalState.state).toBe('unauthenticated'); // Should not authenticate user
     });
 

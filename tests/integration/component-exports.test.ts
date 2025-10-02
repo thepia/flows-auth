@@ -118,7 +118,6 @@ describe('Component Exports', () => {
     const expectedExports = [
       'SignInForm',
       'createAuthStore',
-      'createAuthDerivedStores',
       'AuthApiClient',
       'isWebAuthnSupported',
       'isPlatformAuthenticatorAvailable',

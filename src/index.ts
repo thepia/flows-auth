@@ -131,7 +131,7 @@ export {
   shouldMigrateSession
 } from './utils/session-migrator';
 
-export type { FlowsSessionData } from './utils/sessionManager';
+export type { SignInData } from './types';
 export {
   clearSession,
   configureSessionStorage,

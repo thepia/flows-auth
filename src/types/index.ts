@@ -55,22 +55,50 @@ export type RegistrationStep =
   | 'email-verification-required'
   | 'email-verification-complete'
   | 'error';
-
-// New dual state machine types
-// Removed: session-state-machine types - SessionStateMachine removed
-// Note: signin-state-machine types exported at top of file
-
-export interface SessionData {
-  accessToken: string;
-  refreshToken: string;
+/**
+ * Sign-in authentication data
+ *
+ * Unified type used throughout the authentication flow:
+ * - API response from server after successful authentication
+ * - Session data stored in client storage
+ * - State machine event payload (PIN_VERIFIED, PASSKEY_AUTHENTICATED, etc.)
+ * - Current auth state in the client store
+ *
+ * Design principles:
+ * - Matches server API response structure (nested tokens)
+ * - Contains all data needed for client-side session management
+ * - No unnecessary transformations between API and storage
+ * - Uses numeric timestamps for expiration (timezone-independent)
+ * - Uses ISO string dates for user-facing fields (timezone-aware)
+ */
+export interface SignInData {
+  /** User information - combines server data with client-side fields */
   user: {
     id: string;
     email: string;
     name: string;
-    emailVerified: boolean;
+    emailVerified?: boolean;      // From server (optional for legacy data)
+    isNewUser?: boolean;          // From server
+    metadata?: Record<string, any>; // From server
+    // Client-side fields
+    initials: string;             // Generated from name
+    avatar?: string;              // From user profile or generated
+    preferences?: Record<string, any>; // Client-side preferences
   };
-  expiresAt: number;
-  lastActivity: number;
+
+  /** Authentication tokens (nested structure matching server API) */
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn?: number;    // Server provides duration in seconds
+    expiresAt: number;     // Absolute timestamp in milliseconds
+  };
+
+  /** Authentication method used */
+  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+
+  /** Client-side session management */
+  lastActivity: number;     // Timestamp of last activity (milliseconds)
 }
 
 // Storage configuration
@@ -674,8 +702,8 @@ export interface AuthStore {
 
 export interface AuthStoreFunctions {
   // Core authentication
-  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
-  signInWithMagicLink: (email: string) => Promise<SignInResponse>;
+  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInData>;
+  signInWithMagicLink: (email: string) => Promise<SignInData | null>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   startConditionalAuthentication: (email: string) => Promise<boolean>;
@@ -686,7 +714,7 @@ export interface AuthStoreFunctions {
     message: string;
     timestamp: number;
   }>;
-  verifyEmailCode: (code: string) => Promise<SignInResponse>;
+  verifyEmailCode: (code: string) => Promise<SignInData>;
 
   // User management
   checkUser: (email: string) => Promise<{
@@ -757,7 +785,7 @@ export interface AuthStoreFunctions {
 
   // SignIn flow control methods
   notifyPinSent: () => void;
-  notifyPinVerified: (sessionData: any) => void;
+  notifyPinVerified: (signInData: SignInData) => void;
   sendSignInEvent: (event: SignInEvent) => SignInState;
 
   // Configuration access

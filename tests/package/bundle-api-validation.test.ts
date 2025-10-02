@@ -110,18 +110,11 @@ describe('Bundle API Validation (Integration)', () => {
     });
 
     it('should export all store functions from ESM bundle', async () => {
-      const {
-        createAuthStore,
-        createAuthDerivedStores,
-        getGlobalAuthStore,
-        initializeAuth,
-        resetGlobalAuthStore
-      } = await import(DIST_ESM_PATH);
+      const { createAuthStore, getGlobalAuthStore, initializeAuth, resetGlobalAuthStore } =
+        await import(DIST_ESM_PATH);
 
       expect(createAuthStore).toBeDefined();
       expect(typeof createAuthStore).toBe('function');
-      expect(createAuthDerivedStores).toBeDefined();
-      expect(typeof createAuthDerivedStores).toBe('function');
       expect(getGlobalAuthStore).toBeDefined();
       expect(typeof getGlobalAuthStore).toBe('function');
       expect(initializeAuth).toBeDefined();
@@ -298,13 +291,13 @@ describe('Bundle API Validation (Integration)', () => {
       const authStore = createAuthStore(config);
 
       expect(authStore).toBeDefined();
-      
+
       // New modular store interface
       expect(authStore.api).toBeDefined();
-      expect(typeof authStore.api.signInWithPasskey).toBe('function');
-      expect(typeof authStore.api.checkUser).toBe('function');
-      expect(typeof authStore.api.isAuthenticated).toBe('function');
-      
+      expect(typeof authStore.signInWithPasskey).toBe('function');
+      expect(typeof authStore.checkUser).toBe('function');
+      expect(typeof authStore.isAuthenticated).toBe('function');
+
       // Store access
       expect(authStore.core).toBeDefined();
       expect(authStore.ui).toBeDefined();

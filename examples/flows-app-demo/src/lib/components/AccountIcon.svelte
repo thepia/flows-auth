@@ -42,7 +42,7 @@
         clientId: currentScenario.config.clientId,
         domain: 'dev.thepia.net',
         enablePasskeys: currentScenario.config.enablePasskeys,
-        enableMagicPins: currentScenario.config.enableMagicPins,
+        enableMagicLinks: currentScenario.config.enableMagicLinks,
         branding: {
           companyName: currentScenario.branding.companyName,
           logoUrl: '/thepia-logo.svg',

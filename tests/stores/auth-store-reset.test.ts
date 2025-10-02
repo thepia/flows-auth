@@ -6,8 +6,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig } from '../../src/types';
-import { clearSession, getSession, saveSession } from '../../src/utils/sessionManager';
+import type { AuthConfig, SignInData } from '../../src/types';
+import {
+  clearSession,
+  getSession,
+  saveSession
+} from '../../src/utils/sessionManager';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');
@@ -47,7 +51,7 @@ describe('Auth Store reset() Method', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicPins: true,
+      enableMagicLinks: false,
       appCode: 'test',
       signInMode: 'login-or-register'
     };
@@ -102,28 +106,38 @@ describe('Auth Store reset() Method', () => {
     });
 
     it('should reset authentication state', () => {
-      // Setup: Manually set authenticated state
-      authStore.subscribe((state) => state); // Subscribe to trigger store initialization
-      const storeUpdate = authStore.getState();
-
-      // Simulate authentication
-      const authenticatedState = {
-        ...storeUpdate,
-        state: 'authenticated' as const,
+      // Setup: Simulate authentication via PIN_VERIFIED event
+      authStore.sendSignInEvent({
+        type: 'USER_CHECKED',
+        email: 'test@example.com',
+        exists: true,
+        hasPasskey: false
+      });
+      authStore.notifyPinSent();
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true,
-          createdAt: new Date().toISOString()
+          initials: ''
         },
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
-        expiresAt: Date.now() + 3600000
-      };
+        authMethod: 'email-code',
+        lastActivity: Date.now(),
+        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // lastActivity: number;
 
-      // Update store with authenticated state
-      authStore.subscribe.set(authenticatedState);
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        }
+      };
+      authStore.notifyPinVerified(sessionData);
+
+      // Verify authenticated
+      const beforeReset = authStore.getState();
+      expect(beforeReset.state).toBe('authenticated');
+      expect(beforeReset.user).toBeDefined();
 
       // Act: Reset
       authStore.reset();
@@ -139,22 +153,23 @@ describe('Auth Store reset() Method', () => {
 
     it('should clear session storage', () => {
       // Setup: Create a session
-      const sessionData = {
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          initials: 'TU',
-          avatar: undefined,
-          preferences: undefined
+          initials: ''
         },
+        authMethod: 'email-code',
+        lastActivity: Date.now(),
+        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // lastActivity: number;
+
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
           expiresAt: Date.now() + 3600000
-        },
-        authMethod: 'passkey' as const,
-        lastActivity: Date.now()
+        }
       };
       saveSession(sessionData);
 
@@ -185,20 +200,9 @@ describe('Auth Store reset() Method', () => {
     });
 
     it('should clear API errors', () => {
-      // Setup: Set an API error
-      const testError = {
-        code: 'error.test',
-        message: 'Test error',
-        retryable: false,
-        timestamp: Date.now()
-      };
-
-      // Directly update store to set error
-      const currentState = authStore.getState();
-      authStore.subscribe.set({
-        ...currentState,
-        apiError: testError
-      });
+      // Setup: Set an API error using store method
+      const testError = new Error('Test error');
+      authStore.setApiError(testError, { method: 'test' });
 
       const beforeReset = authStore.getState();
       expect(beforeReset.apiError).toBeDefined();

@@ -12,13 +12,12 @@ import type {
   AuthEvents,
   ButtonConfig,
   ExplainerConfig,
+  SignInData,
   SignInEvent,
-  SignInResponse,
   SignInState,
   StateMessageConfig,
   User
 } from '../types';
-import type { SessionData } from './core/session';
 
 // Re-export core types for convenience
 export type { AuthConfig, User, ApiError, SignInState };
@@ -76,7 +75,7 @@ export interface SessionState {
  * Session store actions
  */
 export interface SessionActions {
-  saveSession: (data: SessionData) => void;
+  saveSession: (data: SignInData) => void;
   clearSession: () => void;
   isSessionValid: () => boolean;
   updateLastActivity: () => void;

@@ -4,6 +4,9 @@
  * Purpose: Test the thepia.com-style automatic user detection and flow switching
  * Context: Tests the new SignInForm automatic flow detection feature
  * Safe to remove: No - critical for preventing UX regressions
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';

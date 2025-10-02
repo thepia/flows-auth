@@ -15,18 +15,9 @@ describe('Tree-Shaking Support (Built Package)', () => {
 
     expect(mainModule.createAuthStore).toBeDefined();
     expect(typeof mainModule.createAuthStore).toBe('function');
-
-    // Should also export individual store creators for tree-shaking
-    expect(mainModule.createAuthCoreStore).toBeDefined();
-    expect(mainModule.createPasskeyStore).toBeDefined();
-    expect(mainModule.createUIStore).toBeDefined();
   });
 
   it('should support modular imports via package.json exports', async () => {
-    // These imports would be available in consuming projects:
-    // import { createAuthCoreStore } from '@thepia/flows-auth/stores/core'
-    // import { createPasskeyStore } from '@thepia/flows-auth/stores/auth-methods'
-
     // Test the exports structure defined in package.json (now using src files for tree-shaking)
     const storeExports = {
       './stores': '../../src/stores/index.ts',

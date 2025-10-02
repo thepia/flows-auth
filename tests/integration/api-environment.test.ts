@@ -268,11 +268,11 @@ describe('API Environment Integration', () => {
       expect(TEST_CONFIG.domain).toMatch(/\.auth0\.com$/);
       expect(TEST_CONFIG.clientId).toBeTruthy();
       expect(TEST_CONFIG.enablePasskeys).toBe(true);
-      expect(TEST_CONFIG.enableMagicPins).toBe(true);
+      expect(TEST_CONFIG.enableMagicLinks).toBe(false);
 
       console.log(`🔐 Auth0 Domain: ${TEST_CONFIG.domain}`);
       console.log(`🚀 Passkeys enabled: ${TEST_CONFIG.enablePasskeys}`);
-      console.log(`📧 Magic links enabled: ${TEST_CONFIG.enableMagicPins}`);
+      console.log(`📧 Magic links enabled: ${TEST_CONFIG.enableMagicLinks}`);
     });
 
     test('should have error reporting configured for testing', () => {

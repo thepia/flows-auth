@@ -19,7 +19,7 @@
           clientId: 'demo',
           domain: 'dev.thepia.net',
           enablePasskeys: true,
-          enableMagicPins: true,
+          enableMagicLinks: false,
           appCode: 'demo'
         });
         console.log('🔐 Global auth store initialized in layout');

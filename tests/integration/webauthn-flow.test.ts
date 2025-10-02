@@ -1,6 +1,9 @@
 /**
  * Integration tests for WebAuthn flow
  * These tests ensure the complete flow from UI to WebAuthn API works correctly
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { fireEvent, render, waitFor } from '@testing-library/svelte';

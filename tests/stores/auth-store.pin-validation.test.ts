@@ -4,7 +4,6 @@
  * Tests for pin expiry validation and remaining time calculation
  * in the auth store's checkUser functionality
  */
-import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
@@ -84,7 +83,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(true);
       expect(state.pinRemainingMinutes).toBe(5);
     });
@@ -102,7 +101,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
     });
@@ -120,7 +119,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
     });
@@ -138,7 +137,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
     });
@@ -156,7 +155,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(true);
       expect(state.pinRemainingMinutes).toBe(5); // Should round up to 5
     });
@@ -174,7 +173,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(true);
       expect(state.pinRemainingMinutes).toBe(1); // Should round up to 1
     });
@@ -192,7 +191,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
     });
@@ -210,7 +209,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
     });
@@ -242,7 +241,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.hasValidPin).toBe(true);
       expect(state.pinRemainingMinutes).toBe(7); // Should be ~6.4 minutes, rounded up to 7
       expect(state.userExists).toBe(true);
@@ -263,7 +262,7 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       // The bug would have parsed "2025-09-26..." as 2025 (the year)
       // which would create a date far in the future
       expect(state.hasValidPin).toBe(true);
@@ -286,14 +285,15 @@ describe('Auth Store Pin Validation', () => {
 
       await authStore.checkUser('test@example.com');
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.signInState).toBe('userChecked');
       expect(state.hasValidPin).toBe(true);
       expect(state.pinRemainingMinutes).toBe(5);
     });
 
     it('should clear pin status when email is cleared', () => {
-      // Set initial state with valid pin
+      // Set email first, then send USER_CHECKED event
+      authStore.setEmail('test@example.com');
       authStore.sendSignInEvent({
         type: 'USER_CHECKED',
         email: 'test@example.com',
@@ -303,13 +303,14 @@ describe('Auth Store Pin Validation', () => {
         pinRemainingMinutes: 5
       });
 
-      let state = get(authStore);
+      let state = authStore.getState();
       expect(state.hasValidPin).toBe(true);
+      expect(state.email).toBe('test@example.com');
 
-      // Clear email
+      // Clear email - should trigger reset because email changed from 'test@example.com' to ''
       authStore.setEmail('');
 
-      state = get(authStore);
+      state = authStore.getState();
       expect(state.hasValidPin).toBe(false);
       expect(state.pinRemainingMinutes).toBe(0);
       expect(state.email).toBe('');

@@ -11,7 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import { AuthApiClient } from '../../api/auth-api';
-import type { SignInResponse, User } from '../../types';
+import type { SignInData, User } from '../../types';
 import {
   authenticateWithPasskey,
   isConditionalMediationSupported,
@@ -20,6 +20,7 @@ import {
   serializeCredential
 } from '../../utils/webauthn';
 import type { StoreOptions } from '../types';
+import { createSessionData } from '../core/session';
 
 /**
  * Passkey store state
@@ -46,7 +47,7 @@ export interface PasskeyState {
  */
 export interface PasskeyActions {
   // Authentication
-  signIn: (email: string, conditional?: boolean) => Promise<SignInResponse>;
+  signIn: (email: string, conditional?: boolean) => Promise<SignInData>;
   startConditionalAuth: (email: string) => Promise<boolean>;
   stopConditionalAuth: () => void;
 
@@ -150,7 +151,22 @@ export function createPasskeyStore(options: StoreOptions) {
         });
 
         console.log('✅ Passkey authentication successful');
-        return response;
+
+        // Convert SignInResponse to SignInData immediately
+        if (response.step === 'success' && response.user && response.accessToken) {
+          const signInData = createSessionData(
+            response.user,
+            {
+              accessToken: response.accessToken,
+              refreshToken: response.refreshToken,
+              expiresIn: response.expiresIn
+            },
+            'passkey'
+          );
+          return signInData;
+        }
+
+        throw new Error('Passkey authentication succeeded but response missing required fields');
       } catch (error) {
         const authError = error as Error;
 

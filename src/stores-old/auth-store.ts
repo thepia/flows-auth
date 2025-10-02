@@ -44,7 +44,7 @@ import {
   updateErrorReporterConfig
 } from '../utils/errorReporter';
 import {
-  type FlowsSessionData,
+  type SessionData,
   clearSession,
   configureSessionStorage,
   generateInitials,
@@ -251,7 +251,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
   const isValidSession = existingSession && isSessionValid(existingSession);
 
   // Convert session user to AuthStore User format
-  const convertSessionUserToAuthUser = (sessionUser: FlowsSessionData['user']) => ({
+  const convertSessionUserToAuthUser = (sessionUser: SessionData['user']) => ({
     id: sessionUser.id,
     email: sessionUser.email,
     name: sessionUser.name,
@@ -525,7 +525,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
   ) {
     if (!browser || !response.user || !response.accessToken) return;
 
-    const sessionData: FlowsSessionData = {
+    const sessionData: SessionData = {
       user: {
         id: response.user.id,
         email: response.user.email,
@@ -2470,23 +2470,3 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
 // Export store creator
 export { createAuthStore };
-
-// Derived stores for common use cases
-export function createAuthDerivedStores(authStore: ReturnType<typeof createAuthStore>) {
-  return {
-    // Legacy derived stores
-    user: derived(authStore, ($auth) => $auth.user),
-    isAuthenticated: derived(authStore, ($auth) => $auth.state === 'authenticated'),
-    isLoading: derived(authStore, () => false), // No loading state exists
-    apiError: derived(authStore, ($auth) => $auth.apiError),
-
-    // Sign-in state derived stores
-    signInState: derived(authStore, ($auth) => $auth.signInState),
-    isEmailEntry: derived(authStore, ($auth) => $auth.signInState === 'emailEntry'),
-    isUserChecked: derived(authStore, ($auth) => $auth.signInState === 'userChecked'),
-    isPasskeyPrompt: derived(authStore, ($auth) => $auth.signInState === 'passkeyPrompt'),
-    isPinEntry: derived(authStore, ($auth) => $auth.signInState === 'pinEntry'),
-    isSignedIn: derived(authStore, ($auth) => $auth.signInState === 'signedIn'),
-    hasSignInError: derived(authStore, ($auth) => $auth.signInState === 'generalError')
-  };
-}

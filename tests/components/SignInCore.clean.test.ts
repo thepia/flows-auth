@@ -283,7 +283,7 @@ describe('SignInCore - Clean Architecture', () => {
           },
           context: new Map([[AUTH_CONTEXT_KEY, 'not-a-store']])
         });
-      }).toThrow("'authStoreContext' is not a store with a 'subscribe' method");
+      }).toThrow("'storeContext' is not a store with a 'subscribe' method");
     });
   });
 

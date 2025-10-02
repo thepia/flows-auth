@@ -4,6 +4,8 @@
  * Handles sign-in form UI flow and authentication process
  */
 
+import type { SignInData } from './index';
+
 export type SignInState =
   | 'emailEntry' // User entering/editing email (includes lookup spinner)
   | 'userChecked' // Email validated, user data retrieved
@@ -31,12 +33,12 @@ export type SignInEvent =
   | { type: 'PASSKEY_SELECTED' } // User chose passkey auth
   | { type: 'PASSKEY_SUCCESS'; credential: any } // WebAuthn authentication succeeded
   | { type: 'PASSKEY_FAILED'; error: WebAuthnError } // WebAuthn authentication failed
-  | { type: 'PIN_VERIFIED'; session: SessionData } // PIN verification success from server
+  | { type: 'PIN_VERIFIED'; session: SignInData } // PIN verification success from server
   | { type: 'REGISTER_PASSKEY' } // Start passkey registration
-  | { type: 'PASSKEY_REGISTERED'; session: SessionData } // Passkey registration complete
+  | { type: 'PASSKEY_REGISTERED'; session: SignInData } // Passkey registration complete
   | { type: 'EMAIL_VERIFICATION_REQUIRED' } // Email needs verification
   | { type: 'EMAIL_SENT' } // Email with PIN sent
-  | { type: 'EMAIL_VERIFIED'; session: SessionData } // Email verification complete(for newly created/registered user that never logged in with email)
+  | { type: 'EMAIL_VERIFIED'; session: SignInData } // Email verification complete(for newly created/registered user that never logged in with email)
   | { type: 'RESET' } // Reset to email entry
   | { type: 'ERROR'; error: SignInError }; // Generic error occurred
 
@@ -72,20 +74,6 @@ export interface SignInContext {
   retryCount: number;
   startTime: number | null;
   challengeId: string | null;
-}
-
-// SessionData type - moved here since session-state-machine was removed
-export interface SessionData {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    emailVerified: boolean;
-  };
-  expiresAt: number;
-  lastActivity: number;
 }
 
 /**

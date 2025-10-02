@@ -13,6 +13,7 @@ import type {
   AuthConfig,
   AuthEvents,
   AuthStoreFunctions,
+  SignInData,
   StorageConfigurationUpdate
 } from '../types';
 import type { AuthEventData, AuthEventHandler, AuthEventType, StoreOptions } from './types';
@@ -21,7 +22,12 @@ import type { AuthEventData, AuthEventHandler, AuthEventType, StoreOptions } fro
 import { authenticateUser, createAuthCoreStore } from './core/auth-core';
 import { createErrorStore } from './core/error';
 import { createEventStore, createTypedEventEmitters } from './core/events';
-import { createSessionData, createSessionStore, initializeSessionStore } from './core/session';
+import {
+  convertSessionUserToUser,
+  createSessionData,
+  createSessionStore,
+  initializeSessionStore
+} from './core/session';
 
 // Feature stores
 import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
@@ -170,36 +176,25 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       try {
         eventEmitters.signInStarted({ method: 'passkey', email: emailAddress });
 
-        const response = await passkey.getState().signIn(emailAddress, conditional);
+        const signInData = await passkey.getState().signIn(emailAddress, conditional);
 
-        if (response.step === 'success' && response.user && response.accessToken) {
-          // Update core auth state
-          authenticateUser(core, response.user, {
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : undefined
-          });
+        // Save session directly - already in SignInData format
+        session.getState().saveSession(signInData);
 
-          // Save session
-          const sessionData = createSessionData(
-            response.user,
-            {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              expiresIn: response.expiresIn
-            },
-            'passkey'
-          );
-          session.getState().saveSession(sessionData);
+        // Update core auth state from session data
+        authenticateUser(core, convertSessionUserToUser(signInData.user), {
+          accessToken: signInData.tokens.accessToken,
+          refreshToken: signInData.tokens.refreshToken,
+          expiresAt: signInData.tokens.expiresAt
+        });
 
-          // Emit success event
-          eventEmitters.signInSuccess({
-            user: response.user,
-            method: 'passkey'
-          });
-        }
+        // Emit success event
+        eventEmitters.signInSuccess({
+          user: convertSessionUserToUser(signInData.user),
+          method: 'passkey'
+        });
 
-        return response;
+        return signInData;
       } catch (err) {
         eventEmitters.signInError({
           error: { code: 'passkey_failed', message: (err as Error).message },
@@ -212,33 +207,15 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     signInWithMagicLink: async (emailAddress: string) => {
       try {
         eventEmitters.signInStarted({ method: 'magic-link', email: emailAddress });
-        const response = await api.signInWithMagicLink({ email: emailAddress });
 
-        if (response.step === 'success' && response.user && response.accessToken) {
-          authenticateUser(core, response.user, {
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : undefined
-          });
+        // Send magic link (returns null - user needs to click link)
+        await email.getState().sendMagicLink(emailAddress);
 
-          const sessionData = createSessionData(
-            response.user,
-            {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              expiresIn: response.expiresIn
-            },
-            'magic-link'
-          );
-          session.getState().saveSession(sessionData);
+        signInStateTransitions.emailCodeSent(ui); // Do this for now. TODO consider magicLinkSent()
 
-          eventEmitters.signInSuccess({
-            user: response.user,
-            method: 'magic-link'
-          });
-        }
-
-        return response;
+        // Magic link doesn't return auth data immediately
+        // User needs to click the link in their email
+        return null;
       } catch (err) {
         eventEmitters.signInError({
           error: { code: 'magic_link_failed', message: (err as Error).message },
@@ -275,33 +252,24 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     verifyEmailCode: async (code: string) => {
       try {
         const emailAddress = ui.getState().email;
-        const response = await email.getState().verifyCode(emailAddress, code);
+        const signInData = await email.getState().verifyCode(emailAddress, code);
 
-        if (response.step === 'success' && response.user && response.accessToken) {
-          authenticateUser(core, response.user, {
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : undefined
-          });
+        // Save session directly - already in SignInData format
+        session.getState().saveSession(signInData);
 
-          const sessionData = createSessionData(
-            response.user,
-            {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              expiresIn: response.expiresIn
-            },
-            'email-code'
-          );
-          session.getState().saveSession(sessionData);
+        // Update core auth state from session data
+        authenticateUser(core, convertSessionUserToUser(signInData.user), {
+          accessToken: signInData.tokens.accessToken,
+          refreshToken: signInData.tokens.refreshToken,
+          expiresAt: signInData.tokens.expiresAt
+        });
 
-          eventEmitters.signInSuccess({
-            user: response.user,
-            method: 'email-code'
-          });
-        }
+        eventEmitters.signInSuccess({
+          user: convertSessionUserToUser(signInData.user),
+          method: 'email-code'
+        });
 
-        return response;
+        return signInData;
       } catch (err) {
         eventEmitters.signInError({
           error: { code: 'verification_failed', message: (err as Error).message },
@@ -607,34 +575,21 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       return 'pinEntry';
     },
 
-    notifyPinVerified: (sessionData: any) => {
-      if (sessionData.user && sessionData.accessToken) {
-        // Update core auth state
-        authenticateUser(core, sessionData.user, {
-          accessToken: sessionData.accessToken,
-          refreshToken: sessionData.refreshToken,
-          expiresAt: sessionData.expiresAt
-        });
+    notifyPinVerified: (signInData: SignInData) => {
+      // SignInData is already in the correct format - save directly
+      session.getState().saveSession(signInData);
 
-        // Save session
-        const fullSessionData = createSessionData(
-          sessionData.user,
-          {
-            accessToken: sessionData.accessToken,
-            refreshToken: sessionData.refreshToken,
-            expiresIn: sessionData.expiresAt
-              ? Math.floor((sessionData.expiresAt - Date.now()) / 1000)
-              : undefined
-          },
-          'email-code'
-        );
-        session.getState().saveSession(fullSessionData);
+      // Update core auth state
+      authenticateUser(core, convertSessionUserToUser(signInData.user), {
+        accessToken: signInData.tokens.accessToken,
+        refreshToken: signInData.tokens.refreshToken,
+        expiresAt: signInData.tokens.expiresAt
+      });
 
-        // Update UI state
-        signInStateTransitions.authenticationSuccess(ui);
+      // Update UI state
+      signInStateTransitions.authenticationSuccess(ui);
 
-        console.log('✅ PIN verification notification processed');
-      }
+      console.log('✅ PIN verification notification processed');
     },
 
     // Legacy event system for backward compatibility

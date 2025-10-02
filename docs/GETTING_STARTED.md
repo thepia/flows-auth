@@ -20,7 +20,7 @@ pnpm add @thepia/flows-auth
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     domain: 'thepia.net' // or 'thepia.com'
   };
 
@@ -80,7 +80,7 @@ The flows-auth library is designed as a **client-only** solution that works in t
       const authConfig = {
         apiBaseUrl: 'https://api.thepia.com',
         enablePasskeys: true,
-        enableMagicPins: true,
+        enableMagicLinks: false,
         domain: 'thepia.net'
       };
 
@@ -136,7 +136,7 @@ The flows-auth library connects to the Thepia authentication API server. **Impor
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',  // Production API server
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -148,7 +148,7 @@ const authConfig = {
 const authConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443',  // Local development API
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -159,7 +159,7 @@ const authConfig = {
 interface AuthConfig {
   apiBaseUrl: string;           // API server URL
   enablePasskeys?: boolean;     // Enable WebAuthn passkeys (default: true)
-  enableMagicPins?: boolean;   // Enable magic link fallback (default: true)
+  enableMagicLinks?: boolean;   // Enable magic link fallback (default: true)
   domain?: string;              // Domain for storage scope (thepia.com or thepia.net)
 }
 ```
@@ -178,7 +178,7 @@ The library supports **passwordless-only** authentication:
 ```typescript
 {
   enablePasskeys: true,        // WebAuthn/passkey authentication (recommended)
-  enableMagicPins: true,      // Email-based fallback for unsupported devices
+  enableMagicLinks: false,      // Email-based fallback for unsupported devices
 
   // Enterprise options (when required by customers)
   enterprise: {
@@ -319,7 +319,7 @@ The library uses a centralized **ApiError architecture** with translation-based 
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     domain: 'thepia.net'
   });
 

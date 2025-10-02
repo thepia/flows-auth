@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import type { AuthConfig, SignInData, SignInResponse } from '../../src/types';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');
@@ -134,16 +134,19 @@ describe('Auth Store PIN Notification', () => {
       expect(authStore.getState().signInState).toBe('pinEntry');
 
       // Act: Send PIN_VERIFIED event
-      const sessionData = {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true
+          initials: 'TU'
         },
-        expiresAt: Date.now() + 3600000,
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        },
+        authMethod: 'email-code',
         lastActivity: Date.now()
       };
 
@@ -160,16 +163,19 @@ describe('Auth Store PIN Notification', () => {
       expect(initialState.signInState).toBe('emailEntry');
 
       // Act: Try to send PIN_VERIFIED from wrong state
-      const sessionData = {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true
+          initials: 'TU'
         },
-        expiresAt: Date.now() + 3600000,
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        },
+        authMethod: 'email-code',
         lastActivity: Date.now()
       };
 
@@ -181,9 +187,8 @@ describe('Auth Store PIN Notification', () => {
   });
 
   describe('EMAIL_VERIFIED event', () => {
-    it('should transition from emailVerification to signedIn', () => {
-      // Setup: Get to emailVerification state
-      // This requires: emailEntry -> userChecked -> pinEntry -> emailVerification
+    it('should transition from pinEntry to signedIn via EMAIL_VERIFIED', () => {
+      // Setup: Get to pinEntry state (current flow)
       authStore.setEmail('test@example.com');
       authStore.sendSignInEvent({
         type: 'USER_CHECKED',
@@ -192,21 +197,23 @@ describe('Auth Store PIN Notification', () => {
         hasPasskey: false
       });
       authStore.notifyPinSent();
-      authStore.sendSignInEvent({ type: 'EMAIL_VERIFICATION_REQUIRED' });
 
-      expect(authStore.getState().signInState).toBe('emailVerification');
+      expect(authStore.getState().signInState).toBe('pinEntry');
 
-      // Act: Send EMAIL_VERIFIED event
-      const sessionData = {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+      // Act: Send EMAIL_VERIFIED event (successful PIN verification)
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true
+          initials: 'TU'
         },
-        expiresAt: Date.now() + 3600000,
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        },
+        authMethod: 'email-code',
         lastActivity: Date.now()
       };
 
@@ -216,7 +223,7 @@ describe('Auth Store PIN Notification', () => {
       expect(authStore.getState().signInState).toBe('signedIn');
     });
 
-    it('should not transition from pinEntry (wrong state)', () => {
+    it.skip('should not transition from pinEntry (wrong state) - DEPRECATED: EMAIL_VERIFIED now works from pinEntry', () => {
       // Setup: Get to pinEntry state
       authStore.setEmail('test@example.com');
       authStore.sendSignInEvent({
@@ -230,16 +237,19 @@ describe('Auth Store PIN Notification', () => {
       expect(authStore.getState().signInState).toBe('pinEntry');
 
       // Act: Try EMAIL_VERIFIED from pinEntry (should not work)
-      const sessionData = {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true
+          initials: 'TU'
         },
-        expiresAt: Date.now() + 3600000,
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        },
+        authMethod: 'email-code',
         lastActivity: Date.now()
       };
 

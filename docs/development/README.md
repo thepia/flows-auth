@@ -63,7 +63,7 @@ const authStore = createAuthStore({
   apiBaseUrl: 'https://api.example.com',
   domain: 'example.com',
   enablePasskeys: true,
-  enableMagicPins: true
+  enableMagicLinks: false
 });
 ```
 

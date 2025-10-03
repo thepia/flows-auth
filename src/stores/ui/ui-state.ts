@@ -27,6 +27,7 @@ const initialState: UIState = {
   // Form inputs
   email: '',
   fullName: '',
+  emailCode: '', // PIN/code entered by user
   loading: false,
 
   // Master flow state - SINGLE SOURCE OF TRUTH
@@ -80,6 +81,10 @@ export function createUIStore(options: StoreOptions) {
 
     setFullName: (fullName: string) => {
       set({ fullName });
+    },
+
+    setEmailCode: (emailCode: string) => {
+      set({ emailCode });
     },
 
     setLoading: (loading: boolean) => {
@@ -232,12 +237,12 @@ export function createUIStore(options: StoreOptions) {
 
     getButtonConfig: (): ButtonConfig => {
       const currentState = get();
-      const { loading, userExists, hasPasskeys, signInState, email, fullName } = currentState;
+      const { loading, userExists, hasPasskeys, signInState, email, fullName, emailCode } = currentState;
       const passkeysEnabled = config.enablePasskeys && hasPasskeys;
 
       // Handle pinEntry state with specific button configs
       if (signInState === 'pinEntry') {
-        return getPinEntryButtonConfig(loading);
+        return getPinEntryButtonConfig(loading, emailCode);
       }
 
       // Smart button logic based on user state
@@ -247,13 +252,15 @@ export function createUIStore(options: StoreOptions) {
       return getEmailCodeOnlyButtonConfig(config, currentState);
 
       // Helper functions
-      function getPinEntryButtonConfig(loading: boolean): ButtonConfig {
+      function getPinEntryButtonConfig(loading: boolean, emailCode: string): ButtonConfig {
+        const expectedLength = config.emailCodeLength || 6;
+        const isPinValid = emailCode && emailCode.trim().length === expectedLength;
         const pinEntryConfig = {
           primary: {
             method: 'email-code' as const,
             textKey: 'code.verify',
             loadingTextKey: 'code.verifying',
-            disabled: loading, // Component will handle emailCode validation
+            disabled: loading || !isPinValid, // Validate 6-digit PIN
             supportsWebAuthn: false
           },
           secondary: {

@@ -595,8 +595,9 @@ function handleStepChange(detail) {
 </main>
 {/if}
 
-            {#if SignInFormComponent}
+            {#if SignInFormComponent && authStore}
               <svelte:component this={SignInFormComponent}
+                store={authStore}
                 initialEmail={emailInput}
                 className="demo-signin-form"
                 titleKey = 'flows.signIn.title'

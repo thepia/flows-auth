@@ -8,12 +8,12 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 describe('Auth Store Singleton Architecture', () => {
   it('SignInCore should accept authStore prop and use provided store', () => {
     // This should work without throwing
-    const { component } = renderWithAuthContext(SignInCore, {
+    const { component } = renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
@@ -27,7 +27,7 @@ describe('Auth Store Singleton Architecture', () => {
 
   it('SignInCore should create fallback store when authStore not provided', () => {
     // This should work for backward compatibility
-    const { component } = renderWithAuthContext(SignInCore, {
+    const { component } = renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
@@ -41,7 +41,7 @@ describe('Auth Store Singleton Architecture', () => {
 
   it('should prevent architectural violations - multiple store instances break reactivity', () => {
     // This test documents the architectural pattern using real auth stores
-    const { component } = renderWithAuthContext(SignInCore, {
+    const { component } = renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
@@ -55,7 +55,7 @@ describe('Auth Store Singleton Architecture', () => {
 
   it('should demonstrate correct shared store pattern', () => {
     // Multiple components using the SAME store instance through context
-    const component1 = renderWithAuthContext(SignInCore, {
+    const component1 = renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
@@ -64,7 +64,7 @@ describe('Auth Store Singleton Architecture', () => {
       }
     });
 
-    const component2 = renderWithAuthContext(SignInCore, {
+    const component2 = renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',

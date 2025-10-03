@@ -1732,14 +1732,6 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
   }
 
   /**
-   * Initialize store (check for existing session)
-   */
-  function initialize(): void {
-    // Note: Previously started state machine, now using direct signInState management
-    // Session checking is handled by existing session initialization above
-  }
-
-  /**
    * Get current application context
    */
   function getApplicationContext(): ApplicationContext | null {
@@ -2082,11 +2074,6 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       throw error;
     }
-  }
-
-  // Auto-initialize when store is created
-  if (browser) {
-    initialize();
   }
 
   function getPinEntryButtonConfig(loading: boolean): ButtonConfig {

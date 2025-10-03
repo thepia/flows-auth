@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import type { AuthConfig } from '../../src/types';
 import * as webauthnUtils from '../../src/utils/webauthn';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -48,7 +48,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
 
   describe('Default emailPin button behavior', () => {
     it('should show default "Send pin by email" button when no user state is known', async () => {
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: baseConfig
       });
 
@@ -59,7 +59,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
     });
 
     it('should enable emailPin button when valid email is entered', async () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'test@example.com'
@@ -91,7 +91,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'test@example.com'
@@ -116,7 +116,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           ...baseConfig,
           enablePasskeys: true
@@ -146,7 +146,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           ...baseConfig,
           enablePasskeys: true
@@ -174,7 +174,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           ...baseConfig,
           enablePasskeys: true
@@ -203,7 +203,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           ...baseConfig,
           signInMode: 'login-only'
@@ -230,7 +230,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'nonexistent@example.com'
@@ -264,7 +264,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         })
       });
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           ...baseConfig,
           enablePasskeys: true
@@ -301,7 +301,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
 
   describe('Loading and disabled states', () => {
     it('should show loading text during authentication', async () => {
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'test@example.com'
@@ -316,7 +316,7 @@ describe('SignInCore Button Texts(no passkeys)', () => {
     });
 
     it('should disable buttons when email is empty', async () => {
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: baseConfig
       });
 

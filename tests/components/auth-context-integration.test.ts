@@ -13,12 +13,13 @@ import SignInForm from '../../src/components/SignInForm.svelte';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
 import type { AuthConfig } from '../../src/types';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Mock dependencies
 vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  isWebAuthnSupported: vi.fn(() => false)
+  isWebAuthnSupported: vi.fn(() => false),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('Auth Context Integration', () => {
@@ -31,7 +32,7 @@ describe('Auth Context Integration', () => {
       // Test that SignInCore properly gets and uses auth store from context
       // This validates the clean architecture where SignInCore doesn't accept config props
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
@@ -50,7 +51,7 @@ describe('Auth Context Integration', () => {
     it('should demonstrate SignInForm uses context for logo display only', () => {
       // SignInForm should only use context for logo display, not auth logic
 
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
@@ -84,12 +85,12 @@ describe('Auth Context Integration', () => {
       expect(AUTH_CONTEXT_KEY).toBe('flows-auth-store');
 
       // Both components should work with the same context key
-      const { unmount: unmount1 } = renderWithAuthContext(SignInForm, {
+      const { unmount: unmount1 } = renderWithStoreProp(SignInForm, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: { initialEmail: 'test@example.com' }
       });
 
-      const { unmount: unmount2 } = renderWithAuthContext(SignInCore, {
+      const { unmount: unmount2 } = renderWithStoreProp(SignInCore, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: { initialEmail: 'test@example.com' }
       });
@@ -98,23 +99,22 @@ describe('Auth Context Integration', () => {
       unmount2();
     });
 
-    it('should fail gracefully when context key mismatch occurs', () => {
-      // Test that SignInCore shows loading state when context is missing
-      render(SignInCore, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
-        // No context provided - simulates context key mismatch
-      });
-
-      // SignInCore should show waiting message when it can't find context
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
+    it('should throw error when context key mismatch occurs', () => {
+      // Test that SignInCore throws error when context is missing (strict requirement)
+      expect(() => {
+        render(SignInCore, {
+          props: {
+            initialEmail: 'test@example.com'
+          }
+          // No context provided - simulates context key mismatch
+        });
+      }).toThrow('Auth store not found in context');
     });
   });
 
   describe('State Synchronization', () => {
     it('should set up subscription when auth store is available', () => {
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: {
           initialEmail: 'test@example.com'
@@ -128,12 +128,12 @@ describe('Auth Context Integration', () => {
     it('should handle multiple subscribers correctly (future extensibility)', () => {
       // Test that multiple SignInCore instances can subscribe to the same store
 
-      const { unmount: unmount1 } = renderWithAuthContext(SignInCore, {
+      const { unmount: unmount1 } = renderWithStoreProp(SignInCore, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: { initialEmail: 'test1@example.com' }
       });
 
-      const { unmount: unmount2 } = renderWithAuthContext(SignInCore, {
+      const { unmount: unmount2 } = renderWithStoreProp(SignInCore, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: { initialEmail: 'test2@example.com' }
       });
@@ -146,26 +146,23 @@ describe('Auth Context Integration', () => {
     });
   });
 
-  describe('Reactive Context Updates', () => {
-    it('should handle missing auth store gracefully', () => {
-      // Test reactive pattern with null store initially
-      const authStoreContext = writable(null);
-
-      render(SignInCore, {
-        props: {
-          initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
+  describe('Store Prop vs Context', () => {
+    it('should accept store via prop and ignore context', () => {
+      // Test that store prop takes precedence over context
+      const { container } = renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test@example.com' }
       });
 
-      // Initially should show loading state
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
+      // Component should render successfully with store prop
+      expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
+      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });
   });
 
   describe('Architecture Validation', () => {
     it('should demonstrate proper layered architecture', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
@@ -195,7 +192,7 @@ describe('Auth Context Integration', () => {
     it('should prevent component isolation by using shared context', () => {
       // Test that components use shared context store, not isolated instances
 
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: {
           initialEmail: 'test@example.com'

@@ -5,18 +5,19 @@ import { fireEvent, waitFor } from '@testing-library/svelte';
  */
 import { describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
-  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false))
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('SignInCore - Registration with FullName Validation', () => {
   describe('New user registration flow', () => {
     it('should disable sign-in button when fullName is empty for new users', async () => {
-      const { container, authStore } = renderWithAuthContext(SignInCore, {
+      const { container, authStore } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -36,7 +37,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should disable sign-in button when fullName has less than 3 characters', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -59,7 +60,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should enable sign-in button when fullName has 3 or more characters', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -83,7 +84,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should call createAccount with correct parameters when form is submitted', async () => {
-      const { container, authStore } = renderWithAuthContext(SignInCore, {
+      const { container, authStore } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -123,7 +124,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should show registration form only in login-or-register mode', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -144,7 +145,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
 
   describe('Login-only mode', () => {
     it('should not show fullName input in login-only mode', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.loginOnly },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -165,7 +166,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
     });
 
     it('should keep submit button disabled for non-existing users in login-only mode', async () => {
-      const { container, authStore } = renderWithAuthContext(SignInCore, {
+      const { container, authStore } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'newuser@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.loginOnly },
         mockUserCheck: { exists: false, hasPasskey: false }
@@ -189,7 +190,7 @@ describe('SignInCore - Registration with FullName Validation', () => {
 
   describe('Existing user flow', () => {
     it('should not show fullName input for existing users', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'existing@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, signInMode: 'login-or-register' },
         mockUserCheck: { exists: true, hasPasskey: false }

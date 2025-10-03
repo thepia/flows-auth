@@ -32,13 +32,13 @@ importers:
         version: 1.55.0
       '@sveltejs/adapter-auto':
         specifier: ^3.0.0
-        version: 3.3.1(@sveltejs/kit@2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))
+        version: 3.3.1(@sveltejs/kit@2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))
       '@sveltejs/adapter-static':
         specifier: ^3.0.9
-        version: 3.0.9(@sveltejs/kit@2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))
+        version: 3.0.9(@sveltejs/kit@2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))
       '@sveltejs/kit':
-        specifier: ^2.0.0
-        version: 2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
+        specifier: ~2.36.0
+        version: 2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
       '@sveltejs/vite-plugin-svelte':
         specifier: ^3.0.0
         version: 3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
@@ -397,8 +397,8 @@ packages:
     peerDependencies:
       svelte: ^3.55.0 || ^4.0.0 || ^5.0.0
 
-  '@sveltejs/acorn-typescript@1.0.5':
-    resolution: {integrity: sha512-IwQk4yfwLdibDlrXVE04jTZYlLnwsTT2PIOQQGNLWfjavGifnk1JD1LcZjZaBTRcxZu2FfPfNLOE04DSu9lqtQ==}
+  '@sveltejs/acorn-typescript@1.0.6':
+    resolution: {integrity: sha512-4awhxtMh4cx9blePWl10HRHj8Iivtqj+2QdDCSMDzxG+XKa9+VCNupQuCuvzEhYPzZSrX+0gC+0lHA/0fFKKQQ==}
     peerDependencies:
       acorn: ^8.9.0
 
@@ -412,8 +412,8 @@ packages:
     peerDependencies:
       '@sveltejs/kit': ^2.0.0
 
-  '@sveltejs/kit@2.37.0':
-    resolution: {integrity: sha512-xgKtpjQ6Ry4mdShd01ht5AODUsW7+K1iValPDq7QX8zI1hWOKREH9GjG8SRCN5tC4K7UXmMhuQam7gbLByVcnw==}
+  '@sveltejs/kit@2.36.3':
+    resolution: {integrity: sha512-MVzwZz1GFznEQbL3f0i2v9AIc3lZH01izQj6XfIrthmZAwOzyXJCgXbLRss8vk//HfYsE4w6Tz+ukbf3rScPNQ==}
     engines: {node: '>=18.13'}
     hasBin: true
     peerDependencies:
@@ -1288,8 +1288,8 @@ packages:
   set-cookie-parser@2.7.1:
     resolution: {integrity: sha512-IOc8uWeOZgnb3ptbCURJWNjWUPcO3ZnTTdzsurqERrP6nPyv+paC55vJM0LpOlT2ne+Ix+9+CRG1MNLlyZ4GjQ==}
 
-  sirv@3.0.1:
-    resolution: {integrity: sha512-FoqMu0NCGBLCcAkS1qA+XJIQTR6/JHfQXl+uGteNCQ76T91DMUjPa9xfmeqMY3z80nLSg9yQmNjK0Px6RWsH/A==}
+  sirv@3.0.2:
+    resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
 
   sorcery@0.11.1:
@@ -1712,23 +1712,23 @@ snapshots:
     dependencies:
       svelte: 4.2.20
 
-  '@sveltejs/acorn-typescript@1.0.5(acorn@8.15.0)':
+  '@sveltejs/acorn-typescript@1.0.6(acorn@8.15.0)':
     dependencies:
       acorn: 8.15.0
 
-  '@sveltejs/adapter-auto@3.3.1(@sveltejs/kit@2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))':
+  '@sveltejs/adapter-auto@3.3.1(@sveltejs/kit@2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))':
     dependencies:
-      '@sveltejs/kit': 2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
+      '@sveltejs/kit': 2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
       import-meta-resolve: 4.2.0
 
-  '@sveltejs/adapter-static@3.0.9(@sveltejs/kit@2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))':
+  '@sveltejs/adapter-static@3.0.9(@sveltejs/kit@2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))':
     dependencies:
-      '@sveltejs/kit': 2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
+      '@sveltejs/kit': 2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
 
-  '@sveltejs/kit@2.37.0(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))':
+  '@sveltejs/kit@2.36.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)))(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))':
     dependencies:
       '@standard-schema/spec': 1.0.0
-      '@sveltejs/acorn-typescript': 1.0.5(acorn@8.15.0)
+      '@sveltejs/acorn-typescript': 1.0.6(acorn@8.15.0)
       '@sveltejs/vite-plugin-svelte': 3.1.2(svelte@4.2.20)(vite@5.4.19(@types/node@24.5.2)(lightningcss@1.30.1))
       '@types/cookie': 0.6.0
       acorn: 8.15.0
@@ -1740,7 +1740,7 @@ snapshots:
       mrmime: 2.0.1
       sade: 1.8.1
       set-cookie-parser: 2.7.1
-      sirv: 3.0.1
+      sirv: 3.0.2
       svelte: 4.2.20
       vite: 5.4.19(@types/node@24.5.2)(lightningcss@1.30.1)
 
@@ -2614,7 +2614,7 @@ snapshots:
 
   set-cookie-parser@2.7.1: {}
 
-  sirv@3.0.1:
+  sirv@3.0.2:
     dependencies:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1

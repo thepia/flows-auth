@@ -175,9 +175,6 @@ describe('Auth Functionality Tests', () => {
     // Wait for initial subscription
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    // Initialize to trigger state changes
-    await authStore.initialize();
-
     // Wait for any additional state changes
     await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -215,9 +212,6 @@ describe('Auth Functionality Tests', () => {
 
     // Wait for initial subscription
     await new Promise((resolve) => setTimeout(resolve, 10));
-
-    // Initialize like demo app
-    await authStore.initialize();
 
     // Simulate user interaction
     try {

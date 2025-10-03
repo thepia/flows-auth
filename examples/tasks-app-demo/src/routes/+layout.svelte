@@ -41,12 +41,7 @@ if (browser) {
         user = state.user;
         console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
       });
-      
-      // Initialize the auth store (check for existing session)
-      authStore.initialize();
-      
-      console.log('✅ Tasks app initialization complete');
-      
+            
     } catch (error) {
       console.error('❌ Failed to initialize tasks app:', error);
     }

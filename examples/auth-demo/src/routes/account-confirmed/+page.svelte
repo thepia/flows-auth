@@ -131,10 +131,6 @@ onMount(async () => {
     
     console.log('💾 Saving verified authentication session...');
     
-    // Since the API call was successful, the auth store should handle the session automatically
-    // Force a refresh of the auth store to pick up the authenticated state
-    await authStore.initialize();
-    
     console.log('✅ Token saved successfully');
     success = true;
     

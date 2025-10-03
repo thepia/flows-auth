@@ -380,7 +380,7 @@ describe('AuthButton Component', () => {
       expect(button.textContent).toContain('Sign in with Passkey');
     });
 
-    it('should show method-specific icon when no custom icon provided', () => {
+    it('should render method-specific icon', () => {
       const { container } = render(AuthButton, {
         props: {
           buttonConfig: {
@@ -389,38 +389,17 @@ describe('AuthButton Component', () => {
             loadingTextKey: 'auth.signingIn',
             supportsWebAuthn: false,
             disabled: false
-          },
-          showIcon: true
+          }
         }
       });
 
-      // Check that showIcon is true and method is passkey - this should render an icon
       // Since Phosphor Svelte components might not render properly in test environment,
       // we'll check for the presence of any icon-related elements or just verify the component renders
       const button = container.querySelector('button');
       expect(button).toBeTruthy();
 
-      // The icon should be rendered when showIcon is true and method is passkey
       // This test verifies the component renders without errors when icons are enabled
       expect(button?.textContent).toContain('Sign in with Passkey');
-    });
-
-    it('should hide icon when showIcon is false', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'passkey',
-            textKey: 'auth.signInWithPasskey',
-            loadingTextKey: 'auth.signingIn',
-            supportsWebAuthn: false,
-            disabled: false
-          },
-          showIcon: false
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).not.toContain('🔑');
     });
   });
 

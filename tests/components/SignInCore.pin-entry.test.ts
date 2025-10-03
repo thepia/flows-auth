@@ -6,12 +6,13 @@ import { writable } from 'svelte/store';
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utils
 vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  isWebAuthnSupported: vi.fn(() => false)
+  isWebAuthnSupported: vi.fn(() => false),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('SignInCore PIN Entry', () => {
@@ -20,7 +21,7 @@ describe('SignInCore PIN Entry', () => {
   });
 
   it('should render "Enter pin here" button when user has valid PIN', async () => {
-    renderWithAuthContext(SignInCore, {
+    renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
@@ -37,7 +38,7 @@ describe('SignInCore PIN Entry', () => {
   });
 
   it('should send SENT_PIN_EMAIL event when "Enter pin here" button is clicked', async () => {
-    renderWithAuthContext(SignInCore, {
+    renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
@@ -54,7 +55,7 @@ describe('SignInCore PIN Entry', () => {
   });
 
   it('should not send event if hasValidPin is false', async () => {
-    renderWithAuthContext(SignInCore, {
+    renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
@@ -71,7 +72,7 @@ describe('SignInCore PIN Entry', () => {
   });
 
   it('should transition to pinEntry state when SENT_PIN_EMAIL event is processed', async () => {
-    renderWithAuthContext(SignInCore, {
+    renderWithStoreProp(SignInCore, {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',

@@ -6,11 +6,13 @@
  */
 
 import { render } from '@testing-library/svelte';
+import { getContext } from 'svelte';
 import { writable } from 'svelte/store';
 import { vi } from 'vitest';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
+import type { SvelteAuthStore } from '../../src/types/svelte';
 
 /**
  * Creates a real auth store with test configuration and optional mock API client
@@ -61,11 +63,43 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
   return authStore;
 }
 
+export function renderWithContext(
+  Component: any,
+  options: {
+    props?: Record<string, any>;
+    authConfig?: Partial<AuthConfig>;
+    mockUserCheck?: {
+      exists: boolean;
+      hasPasskey?: boolean; // Accept hasPasskey for convenience
+      userId?: string | null;
+      emailVerified?: boolean;
+      lastPinExpiry?: string | null;
+    };
+  } = {}
+) {
+  const { props = {} } = options;
+
+  let authStore = getContext<SvelteAuthStore>(AUTH_CONTEXT_KEY);
+  if (!authStore) {
+    authStore = createTestAuthStore(options.authConfig);
+  }
+
+  return {
+    ...render(Component, {
+      props: {
+        ...props,
+        store: authStore
+      }
+    }),
+    authStore
+  };
+}
+
 /**
- * Renders a component with proper auth store context using REAL auth store
+ * Renders a component with auth store passed as prop
  * This is the standard way to test components that depend on auth store
  */
-export function renderWithAuthContext(
+export function renderWithStoreProp(
   Component: any,
   options: {
     props?: Record<string, any>;
@@ -95,15 +129,15 @@ export function renderWithAuthContext(
     });
   }
 
-  // Component expects context to contain a Svelte writable store containing the auth store
-  const storeContext = writable(authStore);
-  console.log('🔧 Created auth store context:', !!authStore, 'contains:', !!authStore);
-  console.log('🔧 Store context is writable:', typeof storeContext.subscribe);
+  console.log('🔧 Created auth store:', !!authStore);
+  console.log('🔧 Auth store has subscribe:', typeof authStore.subscribe);
 
   return {
     ...render(Component, {
-      props,
-      context: new Map([[AUTH_CONTEXT_KEY, storeContext]])
+      props: {
+        ...props,
+        store: authStore
+      }
     }),
     authStore
   };

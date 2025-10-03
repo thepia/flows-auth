@@ -4,11 +4,10 @@
   Handles auth state machine integration
 -->
 <script lang="ts">
-import { createEventDispatcher, onMount, getContext } from 'svelte';
-import type { Writable } from 'svelte/store';
+import { createEventDispatcher, onMount } from 'svelte';
 import type { SvelteAuthStore } from '../../types/svelte';
-import { AUTH_CONTEXT_KEY } from '../../constants/context-keys';
 import type { AuthError, AuthMethod, User } from '../../types';
+import { getAuthStoreFromContext } from '../../utils/auth-context';
 import { m } from '../../utils/i18n';
 
 import AuthButton from './AuthButton.svelte';
@@ -19,21 +18,22 @@ import CodeInput from './CodeInput.svelte';
 import AuthNewUserInfo from './AuthNewUserInfo.svelte';
 import UserManagement from '../UserManagement.svelte';
 
-// Props - only presentational props, no auth logic props
+// Props
+export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
 export let initialEmail = '';
 export let className = '';
 export let explainFeatures = false; // Whether to show features list in explainer
 
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
-// Get auth store from context (writable containing SvelteAuthStore)
-const storeContext = getContext<Writable<SvelteAuthStore | null>>(AUTH_CONTEXT_KEY);
+// Auth store - use prop or fallback to context
+const authStore = store || getAuthStoreFromContext();
 
-// Create a reactive reference to the store for easier access
-$: store = $storeContext;
+if (!authStore) {
+  throw new Error('SignInCore requires store prop or auth store in context');
+}
 
-// Get config from auth store context only
-$: authConfig = store?.getConfig?.();
+$: authConfig = authStore?.getConfig?.();
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -43,14 +43,17 @@ const dispatch = createEventDispatcher<{
 }>();
 
 // Debug logging to see what's happening
-$: console.log('🔍 SignInCore: store =', !!store, store);
+$: console.log('🔍 SignInCore: authStore =', !!authStore, authStore);
 
 // Component state (minimal - most state now in store)
 let email = initialEmail;
-let emailCode = '';
+// emailCode is now in the store, not local state
 
 // Get current state from store reactively
-$: currentSignInState = store ? $store.signInState : 'emailEntry';
+let currentSignInState = 'emailEntry';
+$: if (authStore) {
+  currentSignInState = $authStore.signInState;
+}
 
 // Debounced function to check email for existing pins (reactive statement compatible)
 let emailCheckTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -64,9 +67,9 @@ async function checkUserForEmail(emailValue: string) {
     try {
       console.log('🔍 Reactive email pin check for:', emailValue.trim());
       if (!email || !email.trim()) {
-        store.setEmail('');
+        authStore.setEmail('');
       }
-      await store.checkUser(emailValue.trim());
+      await authStore.checkUser(emailValue.trim());
 
     } catch (err) {
       console.error('check-user error:', err);
@@ -84,7 +87,7 @@ async function initializeComponent() {
   }
 
   console.log('🔐 SignInCore Authentication Methods:', {
-    passkeysEnabled: $store.passkeysEnabled,
+    passkeysEnabled: $authStore.passkeysEnabled,
     enablePasskeys: authConfig.enablePasskeys,
     enableMagicLinks: authConfig.enableMagicLinks,
     signInMode: authConfig.signInMode,
@@ -92,21 +95,21 @@ async function initializeComponent() {
 
   // If initial email is provided, check for existing pins and trigger conditional auth
   if (initialEmail) {
-    store.setEmail(initialEmail);
+    authStore.setEmail(initialEmail);
 
     // Check for existing valid pins if app code is configured
     try {
-      await store.checkUser(initialEmail);
+      await authStore.checkUser(initialEmail);
 
       // Don't auto-advance to pin input on mount - let user choose their authentication method
       // The pin status message and smart button configuration will show appropriate options
     } catch (error) {
-      store.setLoading(false);
+      authStore.setLoading(false);
       console.warn('Error checking for existing pins on mount:', error);
     }
     
     // Also trigger conditional auth if passkeys are enabled
-    if ($store.passkeysEnabled) {
+    if ($authStore.passkeysEnabled) {
       await startConditionalAuthentication();
     }
   }
@@ -128,22 +131,22 @@ async function handleEmailChange(event: CustomEvent<{value: string}>) {
     emailLength: event.detail.value.length,
     emailTrim: event.detail.value.trim(),
     emailTrimLength: event.detail.value.trim().length,
-    buttonShouldBeEnabled: !$store.loading && !!event.detail.value.trim()
+    buttonShouldBeEnabled: !$authStore.loading && !!event.detail.value.trim()
   });
 }
 
 async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
-  if ($store.conditionalAuthActive || $store.loading) return;
+  if ($authStore.conditionalAuthActive || $authStore.loading) return;
 
   try {
-    store.setConditionalAuthActive(true);
+    authStore.setConditionalAuthActive(true);
     console.log('🔍 Starting conditional authentication for:', event.detail.email);
 
-    const success = await store.startConditionalAuthentication(event.detail.email);
+    const success = await authStore.startConditionalAuthentication(event.detail.email);
     if (success) {
       console.log('✅ Conditional authentication successful');
       dispatch('success', {
-        user: $store.user,
+        user: $authStore.user,
         method: 'passkey',
       });
     }
@@ -151,12 +154,12 @@ async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
     // Conditional auth should fail silently - expected if no passkeys exist
     console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
   } finally {
-    store.setConditionalAuthActive(false);
+    authStore.setConditionalAuthActive(false);
   }
 }
 
 async function startConditionalAuthentication() {
-  if ($store.conditionalAuthActive || !email.trim()) return;
+  if ($authStore.conditionalAuthActive || !email.trim()) return;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) return;
@@ -171,18 +174,18 @@ async function startConditionalAuthentication() {
 async function handleSecondaryAction() {
   if (!email.trim() || !buttonConfig || !buttonConfig.secondary) return;
 
-  store.setLoading(true);
+  authStore.setLoading(true);
 
   try {
     const secondaryMethod = buttonConfig.secondary.method;
 
     if (secondaryMethod === 'email-code') {
       // Check if user has a valid pin first
-      if ($store.hasValidPin) {
+      if ($authStore.hasValidPin) {
         // Skip sending new code, go directly to verification step
         console.log('🔢 Secondary action: Valid pin detected, going to verification step');
-        store.setLoading(false);
-        store.notifyPinSent();
+        authStore.setLoading(false);
+        authStore.notifyPinSent();
       } else {
         // Send new pin
         console.log('📧 Secondary action: Sending new pin');
@@ -193,7 +196,7 @@ async function handleSecondaryAction() {
       await handleMagicLinkAuth();
     }
   } catch (err: any) {
-    store.setLoading(false);
+    authStore.setLoading(false);
     console.error('Secondary authentication error:', err);
     // Error handling is now managed by AuthStore
   }
@@ -203,26 +206,26 @@ async function handleSecondaryAction() {
 async function handleSignIn() {
   if (!email.trim()) return;
 
-  store.setLoading(true);
+  authStore.setLoading(true);
 
   try {
     // Check what auth methods are available for this email (the user check is a bit redundant here)
-    const userCheck = await store.checkUser(email);
+    const userCheck = await authStore.checkUser(email);
 
     // Handle non-existing users based on config
     if (!userCheck.exists) {
       if (authConfig?.signInMode === 'login-only') {
         // Error will be shown via AuthStore apiError
-        store.setLoading(false);
+        authStore.setLoading(false);
         return;
-      } else if ($store.fullName && $store.fullName.trim()) {
+      } else if ($authStore.fullName && $authStore.fullName.trim()) {
         // User has entered Full Name, create account
-        const [firstName, ...rest] = $store.fullName.trim().split(' ');
+        const [firstName, ...rest] = $authStore.fullName.trim().split(' ');
         const lastName = rest.join(' ');
 
         console.log('🔄 Creating account:', { email, firstName, lastName });
         try {
-          await store.createAccount({
+          await authStore.createAccount({
             email: email.trim(),
             firstName,
             lastName,
@@ -231,11 +234,11 @@ async function handleSignIn() {
             invitationToken: authConfig.invitationToken
           });
           await handleEmailCodeAuth();
-          store.setLoading(false);
+          authStore.setLoading(false);
         } catch (registrationError: any) {
           console.error('❌ Account creation failed:', registrationError);
           // Error handling is now managed by AuthStore
-          store.setLoading(false);
+          authStore.setLoading(false);
         }
         return;
       }
@@ -261,11 +264,11 @@ async function handleSignIn() {
       
       case 'email-code':
         // Check if user has a valid pin first
-        if ($store.hasValidPin) {
+        if ($authStore.hasValidPin) {
           // Skip sending new code, go directly to verification step
           console.log('🔢 Valid pin detected, skipping email send and going to verification step');
-          store.setLoading(false);
-          store.notifyPinSent();
+          authStore.setLoading(false);
+          authStore.notifyPinSent();
         } else {
           await handleEmailCodeAuth();
         }
@@ -277,11 +280,11 @@ async function handleSignIn() {
 
       default:
         // Error will be shown via AuthStore apiError
-        store.setLoading(false);
+        authStore.setLoading(false);
     }
 
   } catch (err: any) {
-    store.setLoading(false);
+    authStore.setLoading(false);
     console.error('Authentication error:', err);
     // Error handling is now managed by AuthStore
   }
@@ -292,7 +295,7 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
   const hasPasskeys = userCheck.hasWebAuthn;
 
   // If user has passkeys and we support them
-  if (hasPasskeys && $store.passkeysEnabled) {
+  if (hasPasskeys && $authStore.passkeysEnabled) {
     // Use passkey with fallback to email if other email methods are enabled
     const hasEmailFallback = authConfig.appCode || authConfig.enableMagicLinks;
     return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
@@ -315,9 +318,9 @@ function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fal
 // Handle passkey authentication
 async function handlePasskeyAuth() {
   try {
-    const result = await store.signInWithPasskey(email);
+    const result = await authStore.signInWithPasskey(email);
 
-    store.setLoading(false);
+    authStore.setLoading(false);
     if (result.step === 'success' && result.user) {
       dispatch('success', {
         user: result.user,
@@ -333,9 +336,9 @@ async function handlePasskeyAuth() {
 // Handle magic link authentication
 async function handleMagicLinkAuth() {
   try {
-    const result = await store.signInWithMagicLink(email);
+    const result = await authStore.signInWithMagicLink(email);
 
-      store.setLoading(false);
+      authStore.setLoading(false);
     if (result.step === 'magic-link' || result.magicLinkSent) {
       // setLocalStep('magicLinkSent');
     }
@@ -348,12 +351,12 @@ async function handleMagicLinkAuth() {
 // Handle email code authentication (transparently uses app endpoints if configured)
 async function handleEmailCodeAuth() {
   try {
-    const result = await store.sendEmailCode(email);
+    const result = await authStore.sendEmailCode(email);
 
-    store.setLoading(false);
+    authStore.setLoading(false);
     if (result.success) {
       // Notify auth store that PIN was sent to drive state transition
-      store.notifyPinSent();
+      authStore.notifyPinSent();
     } else {
       throw new Error(result.message || 'Failed to send email code');
     }
@@ -365,7 +368,8 @@ async function handleEmailCodeAuth() {
 
 // Handle email code verification
 async function handleEmailCodeVerification() {
-  if (!emailCode.trim()) {
+  const code = $authStore.emailCode || '';
+  if (!code.trim()) {
     // Input validation - could show via AuthStore if needed
     return;
   }
@@ -373,7 +377,7 @@ async function handleEmailCodeVerification() {
   store?.setLoading(true);
 
   try {
-    const result = await store?.verifyEmailCode(emailCode);
+    const result = await store?.verifyEmailCode(code);
 
     store?.setLoading(false);
     if (result?.step === 'success' && result.user) {
@@ -387,7 +391,10 @@ async function handleEmailCodeVerification() {
   } catch (err: any) {
     // await expect(authStore.verifyEmailCode('wrong')).rejects.toThrow('Invalid code');
     // TODO pass error to the CodeInput
+    // TODO: Ensure loading state is cleared when verification fails
     // Error handling is now managed by AuthStore
+    store?.setLoading(false);
+    console.error('❌ Email code verification failed in component:', err);
     /*
             eventEmitters.signInError({
           error: { code: 'verification_failed', message: (err as Error).message },
@@ -398,13 +405,16 @@ async function handleEmailCodeVerification() {
 }
 
 // Determine authentication method and button configuration (with null guards)
-$: buttonConfig = store && $store ? store.getButtonConfig() : null;
+// CRITICAL: Depend on $authStore to trigger recalculation when ANY store state changes
+// This ensures button config updates reactively when email, fullName, emailCode, loading, userExists, etc. change
+$: buttonConfig = $authStore ? authStore.getButtonConfig() : null;
 
 // State message configuration (centralized in AuthStore)
-$: stateMessage = store && $store ? store.getStateMessageConfig() : null;
+// CRITICAL: Depend on $authStore to trigger recalculation when ANY store state changes
+$: stateMessage = $authStore ? authStore.getStateMessageConfig() : null;
 
 // Explainer configuration (centralized in AuthStore)
-$: explainerConfig = store ? store.getExplainerConfig(explainFeatures) : null;
+$: explainerConfig = store ? authStore.getExplainerConfig(explainFeatures) : null;
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
 $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
@@ -421,33 +431,33 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
         value={email}
         label="email.label"
         placeholder="email.placeholder"
-        disabled={$store.loading}
-        enableWebAuthn={$store.passkeysEnabled}
+        disabled={$authStore.loading}
+        enableWebAuthn={$authStore.passkeysEnabled}
         on:change={handleEmailChange}
         on:conditionalAuth={handleConditionalAuth}
       />
       
-      {#if $store.hasValidPin && $store.pinRemainingMinutes > 0}
+      {#if $authStore.hasValidPin && $authStore.pinRemainingMinutes > 0}
         <AuthStateMessage
           type="info"
           variant="pin-status"
         >
           {m["status.pinValid"]({
-            minutes: $store.pinRemainingMinutes,
-            s: $store.pinRemainingMinutes !== 1 ? 's' : ''
+            minutes: $authStore.pinRemainingMinutes,
+            s: $authStore.pinRemainingMinutes !== 1 ? 's' : ''
           })}
           <button
             type="button"
             class="pin-direct-link"
-            on:click={() => store.notifyPinSent()}
-            disabled={$store.loading}
+            on:click={() => authStore.notifyPinSent()}
+            disabled={$authStore.loading}
           >
             {m["status.pinDirectAction"]()}
           </button>
         </AuthStateMessage>
       {/if}
 
-      {#if currentSignInState === 'userChecked' && $store.userExists === false}
+      {#if currentSignInState === 'userChecked' && $authStore.userExists === false}
         {#if stateMessage}
           <AuthStateMessage
             type={stateMessage.type}
@@ -458,10 +468,10 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
         {#if authConfig?.signInMode !== 'login-only'}
           <!-- Registration form for new users -->
           <AuthNewUserInfo
-            fullName={$store.fullName}
-            disabled={$store.loading}
+            fullName={$authStore.fullName}
+            disabled={$authStore.loading}
             error={null}
-            on:input={(e) => store.setFullName(e.detail.fullName)}
+            on:input={(e) => authStore.setFullName(e.detail.fullName)}
           />
         {/if}
       {/if}
@@ -471,7 +481,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
           <AuthButton
             type="submit"
             buttonConfig={buttonConfig.primary}
-            loading={$store.loading}
+            loading={$authStore.loading}
             on:click={handleSignIn}
           />
 
@@ -480,7 +490,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
               type="button"
               variant="secondary"
               buttonConfig={buttonConfig.secondary}
-              loading={$store.loading}
+              loading={$authStore.loading}
               on:click={handleSecondaryAction}
             />
           {/if}
@@ -488,7 +498,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
       {/if}
 
       <!-- Auth explainer component -->
-      <AuthExplainer config={explainerConfig} apiError={$store.apiError} />
+      <AuthExplainer config={explainerConfig} apiError={$authStore.apiError} />
     </form>
 
   {:else if currentSignInState === 'pinEntry'}
@@ -496,13 +506,15 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     <div class="email-code-input">
       <form on:submit|preventDefault={handleEmailCodeVerification}>
         <CodeInput
-          bind:value={emailCode}
+          value={$authStore.emailCode || ''}
+          on:input={(e) => authStore.setEmailCode(e.detail)}
           label="code.label"
           placeholder="code.placeholder"
-          disabled={$store.loading}
-          maxlength={6}
+          disabled={$authStore.loading}
+          maxlength={authConfig?.emailCodeLength || 6}
         />
-        <!-- TODO error from attempting to transition -->
+        <!-- TODO: Display verification error state below the PIN input where "Valid pin detected" text shows -->
+        <!-- Should show error message from failed verification attempt -->
 
         {#if stateMessage}
           <AuthStateMessage
@@ -517,7 +529,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
             <AuthButton
               type="submit"
               buttonConfig={buttonConfig.primary}
-              loading={$store.loading}
+              loading={$authStore.loading}
               on:click={handleEmailCodeVerification}
             />
 
@@ -526,8 +538,8 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
                 type="button"
                 variant="secondary"
                 buttonConfig={buttonConfig.secondary}
-                loading={$store.loading}
-                on:click={store.reset}
+                loading={$authStore.loading}
+                on:click={authStore.reset}
               />
             {/if}
           </div>
@@ -536,10 +548,10 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     </div>
 
   {:else if currentSignInState === 'signedIn'}
-    {#if $store.user}
+    {#if $authStore.user}
       <UserManagement
-        user={$store.user}
-        onSignOut={() => store.signOut()}
+        user={$authStore.user}
+        onSignOut={() => authStore.signOut()}
         on:navigate
       />
     {/if}

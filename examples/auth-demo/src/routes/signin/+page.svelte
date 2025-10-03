@@ -15,17 +15,14 @@ export let isAuthenticated = false;
 export let user = null;
 
 // Get authStore from context instead of props
-const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-
-// Create reactive reference to the auth store
-$: authStore = $authStoreContext;
+const authStore = getContext(AUTH_CONTEXT_KEY);
 
 // Debug logging
 $: if (authStore && browser) {
   console.log('📦 [SIGNIN] Auth store from context:', {
     authStore: !!authStore,
     debugId: authStore?._debugId,
-    signInState: $authStore?.signInState,
+    signInState: authStore?.signInState,
     isAuthenticated,
     user: !!user
   });
@@ -547,6 +544,7 @@ onMount(async () => {
           <!-- Popup SignInForm - no card wrapper to avoid double borders -->
           {#if browser && SignInFormComponent}
             <svelte:component this={SignInFormComponent}
+              store={authStore}
               initialEmail={emailInput}
               size={formSize}
               variant={formVariant}
@@ -569,6 +567,7 @@ onMount(async () => {
               {#if useSignInForm}
                 {#if browser && SignInFormComponent}
                   <svelte:component this={SignInFormComponent}
+                    store={authStore}
                     initialEmail={emailInput}
                     size={formSize}
                     variant={formVariant}
@@ -599,10 +598,10 @@ onMount(async () => {
               </p>
             </div>
             <div class="card-body">
-                              {#if browser && SignInCoreComponent}
+                              {#if browser && authStore && SignInCoreComponent}
 
                                   <svelte:component this={SignInCoreComponent}
-                      authStore={authStore}
+                      store={authStore}
                       initialEmail={emailInput}
                       className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
                       explainFeatures={true}

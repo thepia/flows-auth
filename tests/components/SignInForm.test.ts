@@ -6,7 +6,8 @@
 // Mock WebAuthn dependencies BEFORE any imports
 vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
-  isWebAuthnSupported: vi.fn(() => true)
+  isWebAuthnSupported: vi.fn(() => true),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 import { fireEvent, screen } from '@testing-library/svelte';
@@ -14,7 +15,7 @@ import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import type { AuthConfig } from '../../src/types';
-import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
 
 const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
@@ -38,9 +39,9 @@ describe('SignInForm Component', () => {
 
   describe('Rendering', () => {
     it('should render with company branding', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       expect(screen.getByText('Sign in')).toBeTruthy();
@@ -55,9 +56,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should show logo when provided', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig, showLogo: true }
+        props: { showLogo: true }
       });
 
       const logo = screen.getByRole('img');
@@ -67,18 +68,18 @@ describe('SignInForm Component', () => {
     });
 
     it('should hide logo when showLogo is false', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig, showLogo: false }
+        props: { showLogo: false }
       });
 
       expect(screen.queryByRole('img')).not.toBeTruthy();
     });
 
     it('should show "Powered by Thepia" when enabled', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       expect(screen.getByText(/Secured by/)).toBeTruthy();
@@ -96,18 +97,18 @@ describe('SignInForm Component', () => {
         }
       };
 
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: configWithoutPoweredBy,
-        props: { config: configWithoutPoweredBy }
+        props: {}
       });
 
       expect(screen.queryByText(/Secured by/)).not.toBeTruthy();
     });
 
     it('should render in compact mode', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig, compact: true }
+        props: { compact: true }
       });
 
       const form = container.querySelector('.auth-form');
@@ -115,9 +116,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should apply custom className', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig, className: 'custom-class' }
+        props: { className: 'custom-class' }
       });
 
       const form = container.querySelector('.auth-form');
@@ -125,9 +126,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should render auth header with title and description', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       // Check if auth-header container exists
@@ -146,10 +147,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should apply correct CSS classes for variants', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
         props: {
-          config: mockConfig,
           size: 'large',
           variant: 'popup',
           compact: true
@@ -166,9 +166,9 @@ describe('SignInForm Component', () => {
 
   describe('Form Interaction', () => {
     it('should update email input', async () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com') as HTMLInputElement;
@@ -179,9 +179,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should set initial email value', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig, initialEmail: 'initial@example.com' }
+        props: { initialEmail: 'initial@example.com' }
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com') as HTMLInputElement;
@@ -189,9 +189,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should disable continue button when email is empty', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const submitButton = screen.getByRole('button');
@@ -199,9 +199,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should enable continue button when email is entered and user check completes', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
@@ -233,9 +233,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should show loading state during submission', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
@@ -264,9 +264,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should show error state', async () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
@@ -283,9 +283,9 @@ describe('SignInForm Component', () => {
     it('should emit success event on successful authentication', async () => {
       const successHandler = vi.fn();
 
-      const { component } = renderWithAuthContext(SignInForm, {
+      const { component } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       component.$on('success', successHandler);
@@ -325,9 +325,9 @@ describe('SignInForm Component', () => {
     it('should not submit with empty email', async () => {
       const successHandler = vi.fn();
 
-      const { component } = renderWithAuthContext(SignInForm, {
+      const { component } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       component.$on('success', successHandler);
@@ -340,9 +340,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should prevent default form submission', async () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const form = document.querySelector('form');
@@ -364,9 +364,9 @@ describe('SignInForm Component', () => {
 
   describe('Accessibility', () => {
     it('should have proper form labels', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByLabelText('Email address');
@@ -377,9 +377,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should have proper ARIA attributes', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
@@ -390,9 +390,9 @@ describe('SignInForm Component', () => {
     });
 
     it('should show loading spinner with proper accessibility', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
@@ -421,9 +421,9 @@ describe('SignInForm Component', () => {
 
   describe('Responsive Design', () => {
     it('should apply mobile styles', () => {
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: mockConfig,
-        props: { config: mockConfig }
+        props: {}
       });
 
       // Check if mobile responsive styles are present

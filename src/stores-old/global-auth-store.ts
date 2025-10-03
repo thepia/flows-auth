@@ -27,7 +27,7 @@ let isInitialized = false;
  * @param config - Auth configuration
  * @throws Error if already initialized with different config
  */
-export function initializeAuth(config: AuthConfig): GlobalAuthStore {
+export function initializeAuth(config: AuthConfig): SvelteAuthStore {
   // Validate config at runtime for better TypeScript safety
   assertAuthConfig(config);
   if (typeof window === 'undefined') {
@@ -61,7 +61,7 @@ export function initializeAuth(config: AuthConfig): GlobalAuthStore {
  *
  * @throws Error if not initialized
  */
-export function getGlobalAuthStore(): GlobalAuthStore {
+export function getGlobalAuthStore(): SvelteAuthStore {
   if (!isInitialized || !globalAuthStore) {
     throw new Error(
       '🚨 Auth store not initialized! Call initializeAuth(config) first, ' +
@@ -117,7 +117,7 @@ export function resetGlobalAuthStore(): void {
  *
  * ⚠️ WARNING: This will reinitialize the auth store, clearing current session
  */
-export function updateGlobalAuthConfig(config: AuthConfig): GlobalAuthStore {
+export function updateGlobalAuthConfig(config: AuthConfig): SvelteAuthStore {
   assertAuthConfig(config);
   console.log('🔄 Updating global auth config');
 
@@ -138,39 +138,10 @@ function areConfigsEqual(config1: AuthConfig, config2: AuthConfig): boolean {
   );
 }
 
-/**
- * Convenience function that safely gets the auth store or initializes it
- *
- * This is useful for components that might be loaded before the auth store is initialized
- *
- * @param fallbackConfig - Config to use if auth store isn't initialized
- */
-export function getOrInitializeAuth(fallbackConfig?: AuthConfig): GlobalAuthStore | null {
-  if (fallbackConfig) {
-    assertAuthConfig(fallbackConfig);
-  }
-  try {
-    return getGlobalAuthStore();
-  } catch (error) {
-    if (fallbackConfig) {
-      console.warn('⚠️ Auth store not initialized, using fallback config');
-      return initializeAuth(fallbackConfig);
-    }
-
-    console.error('❌ Auth store not initialized and no fallback config provided');
-    return null;
-  }
-}
-
 // Type-safe exports with explicit generic constraints
-export type GlobalAuthStore = ReturnType<typeof createAuthStore>;
+export type SvelteAuthStore = ReturnType<typeof createAuthStore>;
 export type AuthStoreInitializer = typeof initializeAuth;
 export type AuthStoreGetter = typeof getGlobalAuthStore;
-
-// Type guard for auth store initialization
-export function isGlobalAuthStore(store: any): store is GlobalAuthStore {
-  return store && typeof store === 'object' && 'subscribe' in store && 'signOut' in store;
-}
 
 // Strict type checking for config validation
 export function assertAuthConfig(config: unknown): asserts config is AuthConfig {

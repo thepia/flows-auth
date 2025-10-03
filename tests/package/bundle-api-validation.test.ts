@@ -47,7 +47,7 @@ describe('Bundle API Validation (Integration)', () => {
 
       const mainExport = packageJson.exports['.'];
       expect(mainExport.types).toBe('./dist/index.d.ts');
-      expect(mainExport.svelte).toBe('./dist/index.js');
+      expect(mainExport.svelte).toBe('./dist/src/index.ts'); // Svelte source import
       expect(mainExport.import).toBe('./dist/index.js');
       expect(mainExport.require).toBe('./dist/index.cjs');
 
@@ -62,7 +62,7 @@ describe('Bundle API Validation (Integration)', () => {
       expect(packageJson.main).toBe('./dist/index.js');
       expect(packageJson.module).toBe('./dist/index.js');
       expect(packageJson.types).toBe('./dist/index.d.ts');
-      expect(packageJson.svelte).toBe('./dist/index.js');
+      expect(packageJson.svelte).toBe('./dist/src/index.ts'); // Svelte source import
 
       // Verify legacy fields point to existing files
       expect(existsSync(join(ROOT_PATH, packageJson.main))).toBe(true);
@@ -110,17 +110,10 @@ describe('Bundle API Validation (Integration)', () => {
     });
 
     it('should export all store functions from ESM bundle', async () => {
-      const { createAuthStore, getGlobalAuthStore, initializeAuth, resetGlobalAuthStore } =
-        await import(DIST_ESM_PATH);
+      const { createAuthStore } = await import(DIST_ESM_PATH);
 
       expect(createAuthStore).toBeDefined();
       expect(typeof createAuthStore).toBe('function');
-      expect(getGlobalAuthStore).toBeDefined();
-      expect(typeof getGlobalAuthStore).toBe('function');
-      expect(initializeAuth).toBeDefined();
-      expect(typeof initializeAuth).toBe('function');
-      expect(resetGlobalAuthStore).toBeDefined();
-      expect(typeof resetGlobalAuthStore).toBe('function');
     });
 
     it('should export all WebAuthn utilities from ESM bundle', async () => {
@@ -388,14 +381,15 @@ describe('Bundle API Validation (Integration)', () => {
 
   describe('Context and Auth Utilities', () => {
     it('should export auth context utilities', async () => {
-      const { getAuthContext, setAuthContext, useAuth } = await import(DIST_ESM_PATH);
+      const { setupAuthContext, getAuthStoreFromContext } = await import(DIST_ESM_PATH);
 
-      expect(getAuthContext).toBeDefined();
-      expect(typeof getAuthContext).toBe('function');
-      expect(setAuthContext).toBeDefined();
-      expect(typeof setAuthContext).toBe('function');
-      expect(useAuth).toBeDefined();
-      expect(typeof useAuth).toBe('function');
+      // Auth context utilities
+      expect(setupAuthContext).toBeDefined();
+      expect(typeof setupAuthContext).toBe('function');
+
+      // Context functions
+      expect(getAuthStoreFromContext).toBeDefined();
+      expect(typeof getAuthStoreFromContext).toBe('function');
     });
 
     it('should export context constants', async () => {

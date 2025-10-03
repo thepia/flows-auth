@@ -128,7 +128,6 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
 
       // Auth store should find session through sessionManager
       const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
-      authStore.initialize();
 
       // Should be authenticated since valid session exists
       const state = authStore.getState();
@@ -142,7 +141,6 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
 
       // Auth store should NOT find legacy localStorage data
       const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
-      authStore.initialize();
 
       // Should be unauthenticated since no valid session exists
       const state = get(authStore);
@@ -350,7 +348,6 @@ describe('R4: Legacy Migration (MUST)', () => {
       // Should not throw when no storage config is provided
       expect(() => {
         const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
-        authStore.initialize();
       }).not.toThrow();
     });
 

@@ -8,13 +8,13 @@
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { TEST_AUTH_CONFIGS, renderWithAuthContext } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Using real auth store - no mocking needed
 describe('SignInCore Configuration Reactivity', () => {
   describe('Configuration Change Detection', () => {
     it('should re-render button text when enablePasskeys changes', async () => {
-      const { component, getByRole } = renderWithAuthContext(SignInCore, {
+      const { component, getByRole } = renderWithStoreProp(SignInCore, {
         authConfig: {
           ...TEST_AUTH_CONFIGS.withAppCode,
           enablePasskeys: true,
@@ -29,7 +29,7 @@ describe('SignInCore Configuration Reactivity', () => {
     });
 
     it('should detect config object mutation vs replacement', async () => {
-      const { component, getByRole } = renderWithAuthContext(SignInCore, {
+      const { component, getByRole } = renderWithStoreProp(SignInCore, {
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode }
       });
 
@@ -41,7 +41,7 @@ describe('SignInCore Configuration Reactivity', () => {
     });
 
     it('should update authentication method UI when config changes', async () => {
-      const { component, container } = renderWithAuthContext(SignInCore, {
+      const { component, container } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'test@example.com' },
         authConfig: {
           ...TEST_AUTH_CONFIGS.withAppCode,
@@ -57,7 +57,7 @@ describe('SignInCore Configuration Reactivity', () => {
     });
 
     it('should handle signInMode configuration changes', async () => {
-      const { component, container } = renderWithAuthContext(SignInCore, {
+      const { component, container } = renderWithStoreProp(SignInCore, {
         authConfig: { ...TEST_AUTH_CONFIGS.loginOnly }
       });
 
@@ -80,7 +80,7 @@ describe('SignInCore Configuration Reactivity', () => {
      * Test the exact pattern used in auth-demo that was causing issues
      */
     it('should handle the auth-demo configuration update pattern', async () => {
-      const { component } = renderWithAuthContext(SignInCore, {
+      const { component } = renderWithStoreProp(SignInCore, {
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode }
       });
 
@@ -110,7 +110,7 @@ describe('SignInCore Configuration Reactivity', () => {
 
   describe('Component Internal State Reactivity', () => {
     it('should update button configuration when config changes', async () => {
-      const { component } = renderWithAuthContext(SignInCore, {
+      const { component } = renderWithStoreProp(SignInCore, {
         props: { initialEmail: 'test@example.com' },
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode }
       });
@@ -120,7 +120,7 @@ describe('SignInCore Configuration Reactivity', () => {
     });
 
     it('should update email input WebAuthn state', async () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode, enablePasskeys: true }
       });
 

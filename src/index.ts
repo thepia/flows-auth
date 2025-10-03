@@ -50,34 +50,12 @@ export { makeSvelteCompatible } from './stores/adapters/svelte';
 // Svelte Store Types
 export type { SvelteAuthStore } from './types/svelte';
 
-// Global Auth Store Singleton (recommended approach)
-export {
-  initializeAuth,
-  getGlobalAuthStore,
-  resetGlobalAuthStore,
-  isGlobalAuthStore,
-  assertAuthConfig,
-  createGlobalAuthStore,
-  isGlobalAuthStoreInitialized,
-  isAuthStoreInitialized,
-  getGlobalAuthConfig,
-  updateGlobalAuthConfig,
-  getOrInitializeAuth,
-  type GlobalAuthStore,
-  type AuthStoreInitializer,
-  type AuthStoreGetter
-} from './stores/global-auth-store';
-
 // Auth Context Utilities (Svelte-specific helpers)
 export {
-  setAuthContext,
-  getAuthContext,
-  tryGetAuthContext,
-  hasAuthContext,
-  useAuth,
-  useAuthSafe,
-  createAuthStateStore,
-  useOptionalAuth
+  setupAuthContext,
+  resetGlobalAuthStore,
+  assertAuthConfig,
+  getAuthStoreFromContext
 } from './utils/auth-context';
 
 // Types
@@ -158,7 +136,7 @@ export {
 } from './utils/webauthn';
 
 // Version
-export const VERSION = '1.0.4';
+export const VERSION = '1.0.5';
 
 // Default Configuration Utilities (NEW - eliminates app-level duplication)
 export {

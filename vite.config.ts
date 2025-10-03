@@ -1,59 +1,60 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import sveltePreprocess from 'svelte-preprocess';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
-// Custom plugin to copy Paraglide files to dist
-function copyParaglideFiles() {
+// Helper function to recursively copy directory
+function copyDirRecursive(src: string, dest: string) {
+  if (!existsSync(src)) return;
+
+  if (!existsSync(dest)) {
+    mkdirSync(dest, { recursive: true });
+  }
+
+  const entries = readdirSync(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+
+    // Skip .gitignore files to prevent pnpm from ignoring package contents
+    if (entry.name === '.gitignore') {
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+// Custom plugin to copy source files to dist/src for source imports
+function copySourceFiles() {
   return {
-    name: 'copy-paraglide-files',
+    name: 'copy-source-files',
     writeBundle() {
-      const srcDir = resolve(__dirname, 'src/paraglide');
-      const distDir = resolve(__dirname, 'dist/paraglide');
+      const srcDir = resolve(__dirname, 'src');
+      const distSrcDir = resolve(__dirname, 'dist/src');
 
-      if (existsSync(srcDir)) {
-        if (!existsSync(distDir)) {
-          mkdirSync(distDir, { recursive: true });
-        }
+      console.log('📦 Copying source files to dist/src for source imports...');
 
-        // Copy runtime.js
-        const runtimeSrc = resolve(srcDir, 'runtime.js');
-        const runtimeDist = resolve(distDir, 'runtime.js');
-        if (existsSync(runtimeSrc)) {
-          copyFileSync(runtimeSrc, runtimeDist);
-          console.log('✅ Copied Paraglide runtime.js to dist');
-        }
+      // Copy entire src directory to dist/src
+      copyDirRecursive(srcDir, distSrcDir);
 
-        // Copy messages.js (main messages file)
-        const messagesSrc = resolve(srcDir, 'messages.js');
-        const messagesDist = resolve(distDir, 'messages.js');
-        if (existsSync(messagesSrc)) {
-          copyFileSync(messagesSrc, messagesDist);
-          console.log('✅ Copied Paraglide messages.js to dist');
-        }
+      console.log('✅ Copied all source files to dist/src');
 
-        // Copy entire messages/ directory recursively
-        const messagesDir = resolve(srcDir, 'messages');
-        const messagesDistDir = resolve(distDir, 'messages');
-        if (existsSync(messagesDir)) {
-          if (!existsSync(messagesDistDir)) {
-            mkdirSync(messagesDistDir, { recursive: true });
-          }
+      // Also copy to dist/paraglide for backward compatibility
+      const paraglideSrc = resolve(__dirname, 'src/paraglide');
+      const paraglideDistRoot = resolve(__dirname, 'dist/paraglide');
 
-          // Copy all files in messages directory
-          const files = readdirSync(messagesDir);
-          for (const file of files) {
-            const srcFile = resolve(messagesDir, file);
-            const distFile = resolve(messagesDistDir, file);
-            if (statSync(srcFile).isFile()) {
-              copyFileSync(srcFile, distFile);
-            }
-          }
-          console.log('✅ Copied Paraglide messages/ directory to dist');
-        }
+      if (existsSync(paraglideSrc)) {
+        copyDirRecursive(paraglideSrc, paraglideDistRoot);
+        console.log('✅ Copied Paraglide files to dist/paraglide');
       }
     }
   };
@@ -77,7 +78,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'tests/**/*']
     }),
-    copyParaglideFiles()
+    copySourceFiles()
   ],
   build: {
     lib: {
@@ -119,6 +120,6 @@ export default defineConfig({
     },
     sourcemap: true,
     target: 'es2020',
-    minify: false
+    minify: 'esbuild'  // Strip comments and minify dist builds
   }
 });

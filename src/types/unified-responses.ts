@@ -1,10 +1,16 @@
 /**
  * Unified Response Types for flows-auth
  *
+ * ⚠️ WARNING: This file appears to be SPECULATIVE/UNUSED code.
+ * It defines types that are NOT imported or used anywhere in the codebase.
+ * The actual codebase uses types from src/types/index.ts instead.
+ *
  * This module provides flows-auth specific types that align with the unified
  * API response structure from thepia.com/src/api/types/unified-responses.ts
  *
  * These types maintain backward compatibility while moving toward the unified structure.
+ *
+ * TODO: Either integrate these types into the codebase or remove this file.
  */
 
 // Re-export unified types from thepia.com API

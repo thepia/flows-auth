@@ -144,6 +144,7 @@ export interface UIState {
   // Input state
   email: string;
   fullName: string;
+  emailCode: string; // PIN/verification code
   loading: boolean;
 
   // Flow state
@@ -168,6 +169,7 @@ export interface UIActions {
   // Input setters
   setEmail: (email: string) => void;
   setFullName: (name: string) => void;
+  setEmailCode: (code: string) => void;
   setLoading: (loading: boolean) => void;
 
   // State setters

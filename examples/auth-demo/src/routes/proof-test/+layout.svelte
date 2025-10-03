@@ -4,7 +4,7 @@
 -->
 <script>
   import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
   // Layout component that will show auth state
   import LayoutAuthStatus from './LayoutAuthStatus.svelte';
@@ -28,10 +28,9 @@
 
   // Create auth store using the proper context pattern
   if (browser) {
-    console.log('🔧 Layout: Creating shared auth store using setAuthContext...');
+    console.log('🔧 Layout: Creating shared auth store using setupAuthContext...');
     try {
-      authStore = setAuthContext(sharedConfig);
-      authStore.initialize();
+      authStore = setupAuthContext(sharedConfig);
       authStoreReady = true;
       console.log('✅ Layout: Shared auth store created and set in context');
     } catch (error) {

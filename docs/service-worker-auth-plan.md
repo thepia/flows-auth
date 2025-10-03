@@ -267,7 +267,7 @@ export function registerAuthServiceWorker(): Promise<ServiceWorkerRegistration>;
 ### Backward Compatibility
 ```typescript
 // Keep existing API, but internally use service worker
-export function initializeAuth(config: AuthConfig): GlobalAuthStore {
+export function initializeAuth(config: AuthConfig): SvelteAuthStore {
   if (isServiceWorkerSupported()) {
     return createServiceWorkerAuthStore(config);
   } else {

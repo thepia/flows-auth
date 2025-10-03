@@ -850,6 +850,20 @@ export class AuthApiClient {
       })
     });
 
+    console.log('📦 Raw verify-email API response:', {
+      email,
+      hasSuccess: 'success' in response,
+      successValue: response.success,
+      hasUser: 'user' in response,
+      hasAccessToken: 'accessToken' in response,
+      hasStep: 'step' in response,
+      stepValue: response.step,
+      hasError: 'error' in response,
+      hasMessage: 'message' in response,
+      messageValue: response.message,
+      fullResponse: response
+    });
+
     // Transform organization API response to match SignInResponse interface
     // The API returns tokens directly in the response, not nested
     if (response.success && response.user && response.accessToken) {

@@ -7,12 +7,13 @@
   import { WarningCircle as AlertTriangle, CheckCircle, User as UserIcon, Key, Lock, Shield, Certificate as BadgeCheck } from 'phosphor-svelte';
 
   import type { User, AuthError, AuthMethod } from '../types';
+  import type { SvelteAuthStore } from '../stores/adapters/svelte';
+  import { getAuthStoreFromContext } from '../utils/auth-context';
   import SignInCore from './core/SignInCore.svelte';
-  import { useAuthSafe } from '../utils/auth-context';
   import { m } from '../utils/i18n';
 
-  // Configuration prop (optional - will use context if not provided)
-  export let config = null;
+  // Auth store prop (preferred)
+  export let store: SvelteAuthStore | null = null;
 
   // Presentational props only
   export let showLogo = true;
@@ -44,10 +45,14 @@
     close: {}; // New event for popup close
   }>();
 
-  // Get auth config from context or prop
-  const authStore = useAuthSafe();
-  $: contextConfig = authStore?.getConfig?.();
-  $: authConfig = config || contextConfig;
+  // Auth store - use prop or fallback to context
+  const authStore = store || getAuthStoreFromContext();
+
+  if (!authStore) {
+    throw new Error('SignInForm requires store prop or auth store in context');
+  }
+
+  $: authConfig = authStore?.getConfig?.();
   $: logoConfig = authConfig?.branding;
 
   // Get custom message bundle from context (if provided by app)
@@ -171,9 +176,10 @@
 
 
   <div class="auth-container">
-    <!-- SignInCore handles all auth logic and context access -->
+    <!-- SignInCore handles all auth logic -->
     <SignInCore
-      {explainFeatures} 
+      store={authStore}
+      {explainFeatures}
       {initialEmail}
       on:success={handleSuccess}
       on:error={handleError}

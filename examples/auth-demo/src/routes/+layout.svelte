@@ -1,12 +1,8 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
-import { writable } from 'svelte/store';
-import { setContext } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, makeSvelteCompatible, setI18nMessages } from '@thepia/flows-auth'; // ✅ Static imports
-// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
-const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
+import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext } from '@thepia/flows-auth'; // ✅ Static imports
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
@@ -18,20 +14,37 @@ export const params = {};
 // Auth state for reactivity
 let isAuthenticated = false;
 let user = null;
-let authStore = null;
 let isAuthLoading = true;
 let initError = null;
-
-// Create context immediately during component initialization
-// Context contains a writable that will hold the SvelteAuthStore
-const authStoreContext = writable(null);
-setContext(AUTH_CONTEXT_KEY, authStoreContext);
 
 // 🌐 Set up Paraglide message context for library components
 // This allows library components to use auth-demo's merged messages
 setI18nMessages(authDemoMessages);
 
-// Create auth store in onMount to prevent reactive loops
+// Create auth store during initialization (not in onMount)
+const authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'demo',
+  domain: 'thepia.net',
+  enablePasskeys: false,
+  enableMagicLinks: true,
+  enableErrorReporting: true,
+  appCode: 'demo',
+  branding: {
+    companyName: 'Auth Demo'
+  }
+};
+
+const authStore = setupAuthContext(authConfig);
+// const zustandStore = createAuthStore(authConfig);
+// const authStore = makeSvelteCompatible(zustandStore);
+// authStore._debugId = 'layout-' + Date.now();
+
+// // Set context during initialization with the raw store
+// setContext(AUTH_CONTEXT_KEY, authStore);
+// console.log('🔄 Auth store context set');
+
+// Initialize in onMount (browser-specific operations)
 onMount(() => {
   if (!browser) {
     console.log('⚠️ Non-browser environment');
@@ -39,37 +52,7 @@ onMount(() => {
   }
 
   try {
-    console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
-
-    // Create config synchronously
-    const authConfig = {
-      apiBaseUrl: 'https://api.thepia.com',
-      clientId: 'demo',
-      domain: 'thepia.net',
-      enablePasskeys: false,
-      enableMagicLinks: true,
-      enableErrorReporting: true,
-      appCode: 'demo',
-      branding: {
-        companyName: 'Auth Demo'
-      }
-    };
-    console.log('⚙️ Auth config created:', authConfig);
-
-    // Create auth store and make it Svelte-compatible
-    const zustandStore = createAuthStore(authConfig);
-    authStore = makeSvelteCompatible(zustandStore);
-    // Add unique identifier for debugging
-    authStore._debugId = 'layout-' + Date.now();
-    console.log('🔧 Auth store created:', authStore._debugId);
-
-    // Update context with the created auth store
-    authStoreContext.set(authStore);
-    console.log('🔄 Auth store context updated');
-
-    // Initialize the auth store (check for existing session)
-    authStore.initialize();
-    console.log('✅ Auth store initialized');
+    console.log('🚀 Initializing auth store in browser...');
 
     // Subscribe to auth state changes for layout reactivity
     const unsubscribe = authStore.subscribe((state) => {

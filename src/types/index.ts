@@ -164,6 +164,7 @@ export interface AuthConfig {
 
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
+  emailCodeLength?: number; // Length of email verification codes (default: 6)
 
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)

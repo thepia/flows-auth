@@ -6,11 +6,11 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "svelte": "./dist/index.js",
+  "svelte": "./dist/src/index.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
+      "svelte": "./dist/src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
@@ -40,6 +40,16 @@
       "import": "./src/stores/adapters/index.ts",
       "default": "./src/stores/adapters/index.ts"
     },
+    "./stores/adapters/svelte": {
+      "types": "./src/stores/adapters/svelte.ts",
+      "import": "./src/stores/adapters/svelte.ts",
+      "default": "./src/stores/adapters/svelte.ts"
+    },
+    "./stores/adapters/astro": {
+      "types": "./src/stores/adapters/astro.ts",
+      "import": "./src/stores/adapters/astro.ts",
+      "default": "./src/stores/adapters/astro.ts"
+    },
     "./src": {
       "types": "./src/index.ts",
       "svelte": "./src/index.ts",
@@ -54,7 +64,12 @@
     "./src/paraglide/messages.js": "./dist/paraglide/messages.js",
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
@@ -97,7 +112,15 @@
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
     "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
-  "keywords": ["svelte", "authentication", "webauthn", "passkeys", "flows", "oauth", "thepia"],
+  "keywords": [
+    "svelte",
+    "authentication",
+    "webauthn",
+    "passkeys",
+    "flows",
+    "oauth",
+    "thepia"
+  ],
   "author": "Thepia <dev@thepia.com>",
   "license": "UNLICENSED",
   "repository": {
@@ -116,7 +139,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@inlang/paraglide-js": "^2.3.2",
-    "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^4.0.0",
     "@types/d3": "^7.4.3",

@@ -326,7 +326,7 @@ describe('Paraglide Build Verification', () => {
 
       // Should have paraglide plugin configured
       expect(viteConfig).toContain('paraglideVitePlugin');
-      expect(viteConfig).toContain('copyParaglideFiles');
+      expect(viteConfig).toContain('copySourceFiles');
 
       // Should have custom plugin to copy files to dist
       expect(viteConfig).toContain('writeBundle()');

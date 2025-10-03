@@ -19,13 +19,14 @@ import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
 import {
   TEST_AUTH_CONFIGS,
   createTestAuthStore,
-  renderWithAuthContext
+  renderWithStoreProp
 } from '../helpers/component-test-setup';
 
 // Mock dependencies
 vi.mock('../../../utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  isWebAuthnSupported: vi.fn(() => false)
+  isWebAuthnSupported: vi.fn(() => false),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('SignInCore - Clean Architecture', () => {
@@ -66,7 +67,7 @@ describe('SignInCore - Clean Architecture', () => {
 
   describe('Context-Only Architecture', () => {
     it('should get auth store from context and config from store', () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'test@example.com',
           className: 'test-class'
@@ -116,9 +117,14 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should never accept config as prop (clean architecture)', () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      // Capture console warnings to verify Svelte rejects these props
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // Suppress warnings during test
+      });
+
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
-          // These props should be ignored by clean architecture
+          // These props should be rejected by Svelte (unknown props)
           config: { differentConfig: true },
           authStore: { fake: 'store' },
           initialEmail: 'test@example.com'
@@ -126,12 +132,22 @@ describe('SignInCore - Clean Architecture', () => {
         authConfig: TEST_AUTH_CONFIGS.withAppCode
       });
 
-      // Should use auth store from context, not props
+      // Verify Svelte warned about unknown props
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("<SignInCore> was created with unknown prop 'config'")
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("<SignInCore> was created with unknown prop 'authStore'")
+      );
+
+      // Should use auth store from context, not the invalid props
       expect(authStore.getConfig().appCode).toBe('test-app');
       expect(authStore.getConfig().domain).toBe('test.auth0.com');
 
       // Should render successfully (config from store is used)
-      expect(screen.queryByText('Loading configuration...')).not.toBeInTheDocument();
+      expect(screen.queryByText('Loading configuration...')).toBeFalsy();
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -160,7 +176,7 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should react to config changes in auth store', async () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
         },
@@ -179,7 +195,7 @@ describe('SignInCore - Clean Architecture', () => {
 
   describe('Auth Logic Integration', () => {
     it('should use store methods for authentication actions', async () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
         },
@@ -195,7 +211,7 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should handle auth state changes from store subscription', () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'test@example.com'
         },
@@ -210,7 +226,7 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should apply className prop correctly', () => {
-      const { container } = renderWithAuthContext(SignInCore, {
+      const { container } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'test@example.com',
           className: 'custom-signin-core'
@@ -223,7 +239,7 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should initialize with provided email', () => {
-      renderWithAuthContext(SignInCore, {
+      renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: 'preset@example.com'
         },
@@ -289,7 +305,7 @@ describe('SignInCore - Clean Architecture', () => {
 
   describe('No Prop Dependencies (Clean Architecture)', () => {
     it('should work without any props except presentational ones', () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
           // Only presentational props
           initialEmail: '',
@@ -303,9 +319,14 @@ describe('SignInCore - Clean Architecture', () => {
     });
 
     it('should ignore any auth-related props passed incorrectly', () => {
-      const { authStore } = renderWithAuthContext(SignInCore, {
+      // Suppress Svelte warnings about unknown props
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // Suppress warnings during test
+      });
+
+      const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
-          // These should be ignored in clean architecture
+          // These should be rejected by Svelte (unknown props)
           config: { fake: 'config' },
           authStore: { fake: 'store' },
           // Only these should be used
@@ -315,8 +336,18 @@ describe('SignInCore - Clean Architecture', () => {
         authConfig: TEST_AUTH_CONFIGS.withAppCode
       });
 
+      // Verify warnings were issued
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("<SignInCore> was created with unknown prop 'config'")
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("<SignInCore> was created with unknown prop 'authStore'")
+      );
+
       // Should still use context store, not props
       expect(authStore.getConfig().appCode).toBe('test-app');
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });

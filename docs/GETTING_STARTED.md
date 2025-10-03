@@ -10,11 +10,14 @@ pnpm add @thepia/flows-auth
 
 ## Quick Start
 
-### 1. Basic Setup
+### 1. Setup Auth Store in Root Layout (Once)
+
+**IMPORTANT**: `setupAuthContext()` must ONLY be called in your root layout (`+layout.svelte` or `App.svelte`), never in components.
 
 ```svelte
+<!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
   // Configure for your domain
   const authConfig = {
@@ -24,8 +27,30 @@ pnpm add @thepia/flows-auth
     domain: 'thepia.net' // or 'thepia.com'
   };
 
-  // Create auth store
-  const authStore = createAuthStore(authConfig);
+  // ✅ Initialize auth store ONCE in root layout
+  // This makes the store available to all child components via context
+  const authStore = setupAuthContext(authConfig);
+</script>
+
+<main>
+  <slot />
+</main>
+```
+
+### 2. Access Auth Store in Components
+
+Components access the auth store using `getAuthStoreFromContext()` - they never call `setupAuthContext()`.
+
+**Pattern 1: Get store from context in component**
+
+```svelte
+<!-- YourComponent.svelte -->
+<script>
+  import { SignInForm } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context (DO NOT call setupAuthContext here)
+  const authStore = getAuthStoreFromContext();
 
   // Handle authentication events
   function handleAuthSuccess(event) {
@@ -54,11 +79,47 @@ pnpm add @thepia/flows-auth
     <h1>Sign In Required</h1>
     <p>Please sign in to access this application.</p>
 
+    <!-- Pass store as prop to be explicit -->
     <SignInForm
-      config={authConfig}
+      store={authStore}
       on:success={handleAuthSuccess}
       on:error={handleAuthError}
     />
+  </div>
+{/if}
+```
+
+**Pattern 2: Let library components auto-detect context**
+
+```svelte
+<!-- YourComponent.svelte -->
+<script>
+  import { SignInForm } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context for local use
+  const authStore = getAuthStoreFromContext();
+
+  // Subscribe to auth state
+  $: currentUser = $authStore.user;
+  $: isAuthenticated = !!currentUser;
+</script>
+
+{#if isAuthenticated}
+  <div class="authenticated-content">
+    <h1>Welcome, {currentUser.name}!</h1>
+    <button on:click={() => authStore.signOut()}>Sign Out</button>
+
+    <!-- Your app content -->
+    <slot />
+  </div>
+{:else}
+  <div class="auth-required">
+    <h1>Sign In Required</h1>
+    <p>Please sign in to access this application.</p>
+
+    <!-- SignInForm will automatically get store from context if no prop provided -->
+    <SignInForm />
   </div>
 {/if}
 ```
@@ -68,37 +129,44 @@ pnpm add @thepia/flows-auth
 The flows-auth library is designed as a **client-only** solution that works in the browser:
 
 ```svelte
-<!-- Your Svelte component -->
+<!-- +layout.svelte - Root layout with auth initialization -->
 <script>
-  import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
-  // ✅ CRITICAL: Use setAuthContext during component initialization, NOT createAuthStore in every component
-  // This creates a singleton auth store that can be accessed anywhere with useAuth()
-  if (browser) {
-    (async () => {
-      const authConfig = {
-        apiBaseUrl: 'https://api.thepia.com',
-        enablePasskeys: true,
-        enableMagicLinks: false,
-        domain: 'thepia.net'
-      };
+  // Initialize auth store in root layout (runs once)
+  const authConfig = {
+    apiBaseUrl: 'https://api.thepia.com',
+    enablePasskeys: true,
+    enableMagicLinks: false,
+    domain: 'thepia.net'
+  };
 
-      const authStore = setAuthContext(authConfig);
-      
-      // Initialize auth state on client
-      authStore.initialize();
-    })();
-  }
-
-  // For components that need auth state, import useAuth instead:
-  // import { useAuth } from '@thepia/flows-auth';
-  // const auth = useAuth();
-  // $: isAuthenticated = !!$auth.user;
+  const authStore = setupAuthContext(authConfig);
 </script>
 
-<!-- This component should be split - initialization goes in layout, UI goes in pages -->
-<!-- See examples/auth-demo for proper implementation pattern -->
+<main>
+  <slot />
+</main>
+```
+
+```svelte
+<!-- YourComponent.svelte - Any child component -->
+<script>
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // Get auth store from context (no creation, no prop drilling)
+  const authStore = getAuthStoreFromContext();
+
+  // Subscribe to auth state
+  $: isAuthenticated = !!$authStore.user;
+</script>
+
+{#if isAuthenticated}
+  <p>Welcome, {$authStore.user.email}!</p>
+  <button on:click={() => authStore.signOut()}>Sign Out</button>
+{:else}
+  <p>Please sign in</p>
+{/if}
 ```
 
 **Important**: This library is client-only and designed for CDN deployment.

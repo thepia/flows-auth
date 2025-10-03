@@ -184,6 +184,7 @@ export function createEmailAuthStore(options: StoreOptions) {
         console.log('🔍 Verifying email code:', { email, hasCode: !!code });
 
         if (!getEffectiveAppCode()) {
+          set({ isVerifyingCode: false });
           throw new Error(
             'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
           );
@@ -215,6 +216,8 @@ export function createEmailAuthStore(options: StoreOptions) {
           return signInData;
         }
 
+        // Ensure loading is cleared before throwing
+        set({ isVerifyingCode: false });
         throw new Error('Invalid response from email code verification');
       } catch (error) {
         const verifyError = error as Error;

@@ -4,7 +4,7 @@
 -->
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { useAuth, useAuthSafe } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext, tryGetAuthStoreContext } from '@thepia/flows-auth/stores/global-auth-store';
 
   export let title;
 
@@ -14,14 +14,14 @@
   let authError = null;
   let unsubscribe = null;
 
-  // Get auth store using the proper context pattern
+  // Get auth store using library's context functions
   try {
-    authStore = useAuth();
-    console.log(`📱 ${title} (${storeId}): Auth store from useAuth():`, !!authStore);
+    authStore = getAuthStoreFromContext();
+    console.log(`📱 ${title} (${storeId}): Auth store from context:`, !!authStore);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`📱 ${title} (${storeId}): useAuth() failed, trying useAuthSafe():`, errorMessage);
-    authStore = useAuthSafe();
+    console.warn(`📱 ${title} (${storeId}): getAuthStoreFromContext() failed, trying safe version:`, errorMessage);
+    authStore = tryGetAuthStoreContext();
     if (!authStore) {
       authError = errorMessage;
       console.error(`📱 ${title} (${storeId}): No auth store available:`, error);

@@ -20,7 +20,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import type { AuthConfig } from '../../src/types';
-import { renderWithAuthContext } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 const defaultConfig: AuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
@@ -43,7 +43,7 @@ describe('Error Handling Regression Tests', () => {
       // Simulate the original bug: API returns technical error
       const technicalError = new Error('Endpoint not found');
 
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: defaultConfig,
         props: { config: defaultConfig }
       });
@@ -90,7 +90,7 @@ describe('Error Handling Regression Tests', () => {
       ];
 
       for (const testCase of testCases) {
-        const { authStore } = renderWithAuthContext(SignInForm, {
+        const { authStore } = renderWithStoreProp(SignInForm, {
           authConfig: defaultConfig,
           props: { config: defaultConfig }
         });
@@ -120,7 +120,7 @@ describe('Error Handling Regression Tests', () => {
   /*
   describe('Bug Fix: Automatic Registration Flow', () => {
     it('should automatically transition to registration for unregistered users', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: defaultConfig,
         props: { config: defaultConfig },
         mockUserCheck: {
@@ -148,7 +148,7 @@ describe('Error Handling Regression Tests', () => {
     });
 
     it('should NOT show unhelpful error messages for missing passkeys', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: { ...defaultConfig, enableMagicLinks: true },
         props: { config: { ...defaultConfig, enableMagicLinks: true } },
         mockUserCheck: {
@@ -181,7 +181,7 @@ describe('Error Handling Regression Tests', () => {
 
   describe('Bug Fix: Correct API Architecture', () => {
     it('should use authStore.checkUser() not direct API calls', async () => {
-      const { authStore } = renderWithAuthContext(SignInForm, {
+      const { authStore } = renderWithStoreProp(SignInForm, {
         authConfig: defaultConfig,
         props: { config: defaultConfig },
         mockUserCheck: {
@@ -205,7 +205,7 @@ describe('Error Handling Regression Tests', () => {
 
     it('should inherit API configuration from auth store', () => {
       // ✅ REGRESSION TEST: Component should not have its own apiBaseUrl
-      const { container } = renderWithAuthContext(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
         authConfig: defaultConfig,
         props: {
           config: {
@@ -225,7 +225,7 @@ describe('Error Handling Regression Tests', () => {
     it('should render without "Cannot read properties of undefined" errors', () => {
       // ✅ REGRESSION TEST: Component should compile and render properly
       expect(() => {
-        renderWithAuthContext(SignInForm, {
+        renderWithStoreProp(SignInForm, {
           authConfig: defaultConfig,
           props: { config: defaultConfig }
         });
@@ -233,7 +233,7 @@ describe('Error Handling Regression Tests', () => {
     });
 
     it('should have all required UI elements', () => {
-      renderWithAuthContext(SignInForm, {
+      renderWithStoreProp(SignInForm, {
         authConfig: defaultConfig,
         props: { config: defaultConfig }
       });

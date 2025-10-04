@@ -2,6 +2,8 @@
 @import "@thepia/branding/tailwind/variables";
 @import "@thepia/branding/css/components";
 
+@source "../../node_modules/@thepia/flows-auth/src/**/*.svelte";
+
 /* Tailwind v4 @theme configuration */
 @theme {
   --color-primary: var(--color-brand-primary);

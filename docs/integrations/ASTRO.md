@@ -528,9 +528,30 @@ export default defineConfig({
 });
 ```
 
+## Styling with Tailwind CSS
+
+This library uses Tailwind CSS for component styling. **Consuming applications must configure Tailwind to scan the library's source files.**
+
+### Quick Tailwind Setup
+
+```css
+/* src/styles/app.css */
+@import "tailwindcss";
+@import "@thepia/branding/tailwind/variables";
+@import "@thepia/branding/css/components";
+
+/* CRITICAL: Tell Tailwind to scan library source files */
+@source "../../node_modules/@thepia/flows-auth/src/**/*.svelte";
+```
+
+**Important**: The `@source` directive is required for Tailwind v4 in Astro. Without it, library components will have no styling.
+
+For complete Tailwind integration details, see [Tailwind Integration Guide](../development/tailwind-integration.md).
+
 ## Next Steps
 
 - See [examples/astro-demo](../../examples/astro-demo) for complete working example
+- Read [Tailwind Integration Guide](../development/tailwind-integration.md) for styling setup
 - Read [WebAuthn Guide](../WEBAUTHN.md) for passkey implementation
 - Check [API Documentation](../API.md) for full store API reference
 
@@ -538,5 +559,6 @@ export default defineConfig({
 
 - [Astro Islands Documentation](https://docs.astro.build/en/concepts/islands/)
 - [Astro Svelte Integration](https://docs.astro.build/en/guides/integrations-guide/svelte/)
+- [Tailwind CSS v4 Documentation](https://tailwindcss.com/docs)
 - [Flows Auth GitHub](https://github.com/thepia/flows-auth)
 

@@ -72,24 +72,24 @@ $: if (type === 'success' && displayMessage) {
     role={type === 'error' ? 'alert' : 'status'}
     aria-live={type === 'error' ? 'assertive' : 'polite'}
   >
-    <div class="message-content">
+    <div class="flex items-start gap-2">
       {#if showIcon}
-        <span class="message-icon" aria-hidden="true">
+        <span class="shrink-0 text-base mt-px" aria-hidden="true">
           {@html icons[type]}
         </span>
       {/if}
 
-      <span class="message-text">
+      <span class="flex-1 break-words text-left">
         {#if hasSlotContent}
           <slot />
         {:else}
           {displayMessage}
         {/if}
       </span>
-      
+
       {#if dismissible}
-        <button 
-          class="dismiss-button"
+        <button
+          class="dismiss-button shrink-0"
           on:click={dismiss}
           aria-label="Dismiss message"
         >
@@ -123,26 +123,7 @@ $: if (type === 'success' && displayMessage) {
     }
   }
 
-  .message-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .message-icon {
-    flex-shrink: 0;
-    font-size: 16px;
-    margin-top: 1px;
-  }
-
-  .message-text {
-    flex: 1;
-    word-wrap: break-word;
-    text-align: left;
-  }
-
   .dismiss-button {
-    flex-shrink: 0;
     background: none;
     border: none;
     font-size: 18px;
@@ -185,19 +166,6 @@ $: if (type === 'success' && displayMessage) {
     font-size: 14px;
     color: #0369a1;
     line-height: 1.4;
-  }
-
-  .variant-pin-status .message-content {
-    gap: 8px;
-  }
-
-  .variant-pin-status .message-icon {
-    font-size: 16px;
-    margin-top: 2px;
-  }
-
-  .variant-pin-status .message-text {
-    flex: 1;
   }
 
   /* Pin direct link styles (for buttons within pin-status variant) */

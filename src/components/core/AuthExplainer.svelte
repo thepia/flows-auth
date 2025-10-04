@@ -21,7 +21,7 @@
   } from 'phosphor-svelte';
   import type { ApiError, ExplainerConfig } from '../../types';
   import { m } from '../../utils/i18n';
-    import Icon from '../icons/Icon.svelte';
+  import Icon from '../icons/Icon.svelte';
 
   // Props
   export let config: ExplainerConfig | null = null;
@@ -56,21 +56,21 @@
 </script>
 
 {#if config}
-  <div class="auth-explainer {config.className || ''}">
+  <div class="auth-explainer mt-4 {config.className || ''}">
     {#if config.type === 'paragraph'}
       <!-- Single paragraph with optional icon -->
       <div class="explainer-paragraph">
         {#if config.iconName}
-          <div class="paragraph-icon">
-            <svelte:component 
-              this={getIconComponent(config.iconName)} 
-              size={16} 
-              weight={getIconWeight(config.iconWeight)} 
-              color="currentColor" 
+          <div class="flex items-center justify-center shrink-0 mt-px">
+            <svelte:component
+              this={getIconComponent(config.iconName)}
+              size={16}
+              weight={getIconWeight(config.iconWeight)}
+              color="currentColor"
             />
           </div>
         {/if}
-        <span class="paragraph-text">
+        <span class="flex-1 text-left">
           {#if config.textKey}
             {#if config.useCompanyName && config.companyName}
               {messages[config.textKey]({ companyName: config.companyName })}
@@ -84,13 +84,13 @@
       <!-- Feature list with icons -->
       <div class="explainer-features">
         {#each config.features as feature}
-          <div class="feature-item">
+          <div class="flex items-center gap-2">
             <div class="feature-icon">
-              <svelte:component 
-                this={getIconComponent(feature.iconName)} 
-                size={20} 
-                weight={getIconWeight(feature.iconWeight)} 
-                color="currentColor" 
+              <svelte:component
+                this={getIconComponent(feature.iconName)}
+                size={20}
+                weight={getIconWeight(feature.iconWeight)}
+                color="currentColor"
               />
             </div>
             <span class="feature-text">
@@ -100,7 +100,7 @@
         {/each}
 
       {#if apiError}
-        <div class="feature-item">
+        <div class="flex items-center gap-2">
           <Icon weight="duotone" size={20} ariaLabel="Error icon" variant="error" color="error" icon={Pulse} />
           <span class="feature-text">
             {m[apiError.code]()}
@@ -119,10 +119,6 @@
 {/if}
 
 <style>
-  .auth-explainer {
-    margin-top: 16px;
-  }
-
   /* Paragraph style with inline icon at text start */
   .explainer-paragraph {
     display: flex;
@@ -136,31 +132,12 @@
     opacity: 0.8;
   }
 
-  .paragraph-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 1px; /* Slight adjustment to align with first line of text */
-  }
-
-  .paragraph-text {
-    flex: 1;
-    text-align: left;
-  }
-
   /* Features list style (matches SignInForm Info Section) */
   .explainer-features {
     padding-top: 16px;
     border-top: 1px solid var(--color-border-light, #e5e7eb);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-  }
-
-  .feature-item {
-    display: flex;
-    align-items: center;
     gap: 8px;
   }
 
@@ -185,7 +162,7 @@
     .explainer-paragraph {
       font-size: 0.7rem;
     }
-    
+
     .feature-text {
       font-size: 0.8rem;
     }

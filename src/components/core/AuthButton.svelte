@@ -168,45 +168,29 @@ function handleClick(event: MouseEvent) {
   dispatch('click', { method: buttonConfig.method });
 }
 
-function getButtonClasses(): string {
-  // Base Tailwind utility classes for layout, custom CSS classes for styling
-  const baseClasses = "flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]";
-  
-  let variantClasses = "";
-  if (variant === 'primary') {
-    variantClasses = "auth-btn-primary";
-  } else if (variant === 'secondary') {
-    variantClasses = "auth-btn-secondary";
-  } else {
-    variantClasses = "auth-btn-ghost";
-  }
-  
-  let sizeClasses = "";
-  if (size === 'sm') {
-    sizeClasses = "px-3 py-1.5 text-sm";
-  } else if (size === 'lg') {
-    sizeClasses = "px-5 py-3 text-lg";
-  } else {
-    sizeClasses = "px-4 py-2 text-base";
-  }
-  
-  const widthClass = fullWidth ? "w-full" : "";
-  const disabledClass = (effectiveDisabled || loading) ? "cursor-not-allowed opacity-50" : "cursor-pointer";
-  
-  return `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${disabledClass}`;
-}
+// Reactive disabled state for template
+$: isDisabled = effectiveDisabled || loading;
 </script>
 
 <button
   {type}
-  class="{getButtonClasses()} {className}"
-  disabled={effectiveDisabled || loading}
+  class="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]
+         {variant === 'primary' ? 'auth-btn-primary' : ''}
+         {variant === 'secondary' ? 'auth-btn-secondary' : ''}
+         {variant === 'ghost' ? 'auth-btn-ghost' : ''}
+         {size === 'sm' ? 'px-3 py-1.5 text-sm' : ''}
+         {size === 'md' ? 'px-4 py-2 text-base' : ''}
+         {size === 'lg' ? 'px-5 py-3 text-lg' : ''}
+         {fullWidth ? 'w-full' : ''}
+         {isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+         {className}"
+  disabled={isDisabled}
   on:click={handleClick}
   aria-label={displayText}
   aria-describedby={loading ? 'button-loading-text' : null}
 >
   {#if loading}
-    <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
+    <div class="animate-spin w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
     <span id="button-loading-text" class="sr-only">Signing in...</span>
   {:else if displayIconComponent}
     {#if displayIconComponent}
@@ -218,16 +202,14 @@ function getButtonClasses(): string {
 </button>
 
 <style>
-  /* Button base styles */
+  /* Button base styles - using CSS variables for theming */
   button {
     position: relative;
     overflow: hidden;
     text-decoration: none;
-    transition: all 0.2s ease;
-    border-radius: 0.5rem; /* rounded-lg equivalent */
   }
 
-  /* Primary button variant */
+  /* Primary button variant - brand colors from CSS variables */
   :global(.auth-btn-primary) {
     background: var(--color-brand-primary, #988ACA);
     color: white;
@@ -284,29 +266,6 @@ function getButtonClasses(): string {
     opacity: 0.5 !important;
     transform: none !important;
     box-shadow: none !important;
-  }
-  
-  /* Screen reader only text */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  /* Loading spinner */
-  .spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 </style>
 

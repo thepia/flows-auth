@@ -355,51 +355,6 @@
   }
 
 
-  .text-sm {
-    font-size: 0.875rem;
-  }
-
-  .text-gray-500 {
-    color: #6b7280;
-  }
-
-  .space-y-2 > * + * {
-    margin-top: 0.5rem;
-  }
-
-  .w-4 {
-    width: 1rem;
-  }
-
-  .h-4 {
-    height: 1rem;
-  }
-
-  .text-green-500 {
-    color: #22c55e;
-  }
-
-  .mr-2 {
-    margin-right: 0.5rem;
-  }
-
-
-  .w-16 {
-    width: 4rem;
-  }
-
-  .h-16 {
-    height: 4rem;
-  }
-
-  .bg-primary\/10 {
-    background-color: rgba(37, 99, 235, 0.1);
-  }
-
-  .text-primary {
-    color: #2563eb;
-  }
-
   /* Auth footer styles (matches AccountCreationForm pattern) */
   .auth-footer {
     text-align: center;

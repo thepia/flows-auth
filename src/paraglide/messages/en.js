@@ -1,4 +1,4 @@
-// eslint-disable
+/* eslint-disable */
 
 
 export const email_label = /** @type {(inputs: {}) => string} */ () => {

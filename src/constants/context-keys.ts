@@ -9,7 +9,7 @@ export const CONTEXT_KEYS = {
   /**
    * Auth store context key used by:
    * - setupAuthContext() in utils/auth-context.ts
-   * - useAuth() in utils/auth-context.ts
+   * - getAuthStoreFromContext() in utils/auth-context.ts
    * - Layout components setting auth store context
    * - Components accessing auth store via getContext()
    */

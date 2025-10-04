@@ -4,7 +4,7 @@
 -->
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getAuthStoreFromContext, tryGetAuthStoreContext } from '@thepia/flows-auth/stores/global-auth-store';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
 
   export let title;
 

@@ -290,10 +290,13 @@ function handleSignInStateClick(clickedState) {
 onMount(async () => {
   if (browser) {
     try {
-      // Single dynamic import for all components
+      // Import main components
       const authModule = await import('@thepia/flows-auth');
+      const { SignInForm, SignInCore } = authModule;
 
-      const { SessionStateMachineFlow, SignInStateMachineFlow, SignInForm, SignInCore } = authModule;
+      // Import dev-only Flow visualization components
+      const devModule = await import('@thepia/flows-auth/dev');
+      const { SessionStateMachineFlow, SignInStateMachineFlow } = devModule;
 
       SessionStateMachineComponent = SessionStateMachineFlow;
       SignInStateMachineComponent = SignInStateMachineFlow;

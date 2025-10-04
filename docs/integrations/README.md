@@ -52,15 +52,15 @@ export const authStore = createAstroAuthStore({
 
 <!-- Any component -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  const auth = useAuth();
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  const store = getAuthStoreFromContext();
 </script>
 ```
 
 **Features**:
 - ✅ Clean context-based architecture
 - ✅ Automatic timing and lifecycle management
-- ✅ `useAuth()` hook for components
+- ✅ `getAuthStoreFromContext()` hook for components
 - ✅ SSR-safe with browser guards
 
 ### SvelteKit

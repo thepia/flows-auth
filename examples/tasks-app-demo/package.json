@@ -41,6 +41,6 @@
   },
   "dependencies": {
     "@thepia/branding": "^1.4.0",
-    "@thepia/flows-auth": "file:../.."
+    "@thepia/flows-auth": "workspace:*"
   }
 }

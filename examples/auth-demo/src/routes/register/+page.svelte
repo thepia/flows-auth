@@ -51,10 +51,10 @@ onMount(async () => {
   console.log('🎯 Registration page initializing...');
   
   try {
-    // Single dynamic import for components
-    const authModule = await import('@thepia/flows-auth');
-    const { SessionStateMachineFlow } = authModule;
-    
+    // Import dev-only Flow visualization components
+    const devModule = await import('@thepia/flows-auth/dev');
+    const { SessionStateMachineFlow } = devModule;
+
     // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     

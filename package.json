@@ -50,6 +50,12 @@
       "import": "./src/stores/adapters/astro.ts",
       "default": "./src/stores/adapters/astro.ts"
     },
+    "./dev": {
+      "types": "./src/dev.ts",
+      "svelte": "./src/dev.ts",
+      "import": "./src/dev.ts",
+      "default": "./src/dev.ts"
+    },
     "./src": {
       "types": "./src/index.ts",
       "svelte": "./src/index.ts",

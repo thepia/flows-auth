@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@astrojs/svelte": "^7.2.0",
-    "@thepia/flows-auth": "file:../..",
+    "@thepia/flows-auth": "workspace:*",
     "astro": "^5.14.1",
     "svelte": "^5.39.7",
     "typescript": "^5.9.3"

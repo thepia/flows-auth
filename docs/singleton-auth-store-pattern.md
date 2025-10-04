@@ -418,8 +418,6 @@ beforeEach(() => {
 test('component with auth', () => {
   // Initialize auth for test
   initializeAuth(mockConfig);
-  
-  // Test component that uses useAuth()
 });
 ```
 

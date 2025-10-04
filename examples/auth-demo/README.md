@@ -155,7 +155,6 @@ pnpm test:ui
 **Important**: Tests must be run manually by the user. They validate:
 
 1. **Page loading** - No critical JavaScript errors
-2. **Function imports** - `useAuth` and `quickAuthSetup` available  
 3. **Component rendering** - Tabs and forms render correctly
 4. **API configuration** - Error reporting properly configured
 

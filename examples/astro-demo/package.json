@@ -16,6 +16,9 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4"
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.1.14",
+    "@thepia/branding": "^1.4.0",
+    "tailwindcss": "^4.1.14"
   }
 }

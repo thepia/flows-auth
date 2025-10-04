@@ -18,7 +18,8 @@
       "WebFetch(domain:docs.github.com)",
       "Bash(gh repo create:*)",
       "Bash(pnpm:*)",
-      "Bash(npm create:*)"
+      "Bash(npm create:*)",
+      "Bash(cat:*)"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -27,14 +27,13 @@ const getApiBaseUrl = (): string => {
 // This is the ONLY instance - all islands will share it
 export const sharedAuthStore = createAuthStore({
   apiBaseUrl: getApiBaseUrl(),
+  clientId: 'astro-demo',
   domain: 'thepia.net', // Use thepia.net for WebAuthn RP ID
   enablePasskeys: true,
   enableMagicLinks: false,
   signInMode: 'login-or-register',
-  devtools: import.meta.env.DEV // Enable devtools in development
+  appCode: true, // Use app-based endpoints for PIN authentication
+  enableDevtools: import.meta.env.DEV // Enable devtools in development
 });
 
-// Initialize the store when it's first imported
-if (typeof window !== 'undefined') {
-  sharedAuthStore.getState().initialize?.();
-}
+// Store is automatically initialized when first accessed

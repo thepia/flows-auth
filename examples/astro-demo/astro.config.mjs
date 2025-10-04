@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 
 import svelte from '@astrojs/svelte';
+import tailwindcss from '@tailwindcss/vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,10 @@ export default defineConfig({
 
   // Vite server config for HTTPS
   vite: {
+    plugins: [tailwindcss()],
+    ssr: {
+      noExternal: ['phosphor-svelte']
+    },
     server: {
       host: true, // Listen on all network interfaces
       https: {

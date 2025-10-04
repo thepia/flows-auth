@@ -20,9 +20,9 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 
 // Development components
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
-export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte'; // AuthState visualization
-export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte'; // SignInState visualization
-export { default as TestFlow } from './components/TestFlow.svelte'; // Simple test component
+// Note: Flow visualization components (SessionStateMachineFlow, SignInStateMachineFlow, TestFlow)
+// are NOT exported from main index to avoid pulling in @xyflow/svelte dependency
+// Import them directly if needed: import { SessionStateMachineFlow } from '@thepia/flows-auth/src/components/...'
 
 // Core granular components
 export {

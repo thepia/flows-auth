@@ -29,7 +29,7 @@ src/
 Creates a **singleton instance** of the Zustand auth store that all islands import.
 
 #### Island Components
-Each Svelte island imports the same store instance and wraps it with `makeSvelteCompatible()` for reactivity.
+Each Svelte island imports the same store instance and wraps it with `makeSvelteCompatible()` for reactivity. The SignInIsland uses the official `SignInForm` component which automatically handles all authentication flows.
 
 ## 🚀 Running the Demo
 
@@ -71,11 +71,12 @@ pnpm dev
 
 ## 🧪 Try It Out
 
-1. **Enter an email** in the Sign-In Island (blue border)
-2. **Click "Check User"** to simulate user discovery
-3. **Watch the User Status Island** (green border) update automatically
-4. **See the Auth Header Island** (orange border) reflect the changes
-5. **Open DevTools** to see Zustand devtools (if enabled in development)
+1. **Enter an email** in the Sign-In Island (blue border) - uses the official `SignInForm` component
+2. **Watch the authentication flow** progress through states (emailEntry → userChecked → pinEntry)
+3. **See the User Status Island** (green border) update automatically as you interact
+4. **Notice the Auth Header Island** (orange border) reflects all state changes
+5. **Test PIN authentication** - enter a valid email to receive a PIN code
+6. **Open DevTools** to see Zustand devtools (if enabled in development)
 
 ## 🔑 Key Concepts
 

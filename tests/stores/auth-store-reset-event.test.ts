@@ -13,7 +13,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock error reporter
-vi.mock('../../src/utils/errorReporter', () => ({
+vi.mock('../../src/utils/telemetry', () => ({
   reportError: vi.fn()
 }));
 
@@ -43,7 +43,6 @@ describe('Auth Store RESET Event Handling', () => {
       domain: 'test.com',
       enablePasskeys: false,
       enableMagicLinks: false,
-      enableErrorReporting: false,
       appCode: 'test',
       signInMode: 'login-only'
     };

@@ -19,7 +19,9 @@
       "Bash(gh repo create:*)",
       "Bash(pnpm:*)",
       "Bash(npm create:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Read(//Volumes/Projects/**)",
+      "Bash(1)"
     ]
   },
   "enableAllProjectMcpServers": false

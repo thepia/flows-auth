@@ -37,13 +37,6 @@ import type {
 } from '../types';
 import type { Readable } from '../types/svelte';
 import {
-  initializeErrorReporter,
-  reportApiError,
-  reportAuthState,
-  reportWebAuthnError,
-  updateErrorReporterConfig
-} from '../utils/errorReporter';
-import {
   type SessionData,
   clearSession,
   configureSessionStorage,
@@ -53,6 +46,7 @@ import {
   isSessionValid,
   saveSession
 } from '../utils/sessionManager';
+import { initializeErrorReporter, reportApiError, reportAuthState } from '../utils/telemetry';
 import {
   authenticateWithPasskey,
   createCredential,

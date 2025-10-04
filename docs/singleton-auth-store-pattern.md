@@ -24,29 +24,6 @@ If you need **any** of these features, **do NOT use `setAuthContext()`**:
 
 **Use `initializeAuth()` and `getGlobalAuthStore()` instead** - they work perfectly with async operations.
 
-**✅ Correct Pattern for Async Operations:**
-```svelte
-<!-- +layout.svelte -->
-<script>
-  import { browser } from '$app/environment';
-  
-  // Use global store for async operations
-  if (browser) {
-    (async () => {
-      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
-      
-      const authConfig = await quickAuthSetup({
-        companyName: 'Your App',
-        clientId: 'your-client-id',
-        enableErrorReporting: true,
-      });
-      
-      // ✅ This works with async operations
-      const authStore = initializeAuth(authConfig);
-    })();
-  }
-</script>
-```
 
 **✅ Correct Pattern for Sync Operations Only:**
 ```svelte
@@ -233,7 +210,7 @@ resetGlobalAuthStore();
     domain: 'thepia.net',
     enablePasskeys: false,
     enableMagicLinks: true,
-    enableErrorReporting: true,
+    errorReporting: { enabled: true },
     appCode: 'demo',
     branding: {
       companyName: 'Proof Test'

@@ -12,6 +12,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import { AuthApiClient } from '../../api/auth-api';
 import type { SignInData, User } from '../../types';
+import { reportWebAuthnError } from '../../utils/telemetry';
 import {
   authenticateWithPasskey,
   isConditionalMediationSupported,
@@ -19,8 +20,8 @@ import {
   isWebAuthnSupported,
   serializeCredential
 } from '../../utils/webauthn';
-import type { StoreOptions } from '../types';
 import { createSessionData } from '../core/session';
+import type { StoreOptions } from '../types';
 
 /**
  * Passkey store state
@@ -175,6 +176,12 @@ export function createPasskeyStore(options: StoreOptions) {
           lastError: authError
         });
 
+        // Report WebAuthn error for debugging/monitoring
+        reportWebAuthnError('authentication', authError, {
+          email,
+          conditional
+        });
+
         console.error('❌ Passkey authentication failed:', authError);
         throw error;
       }
@@ -243,6 +250,7 @@ export function createPasskeyStore(options: StoreOptions) {
         });
 
         console.log('✅ Passkey registration successful');
+
         return true;
       } catch (error) {
         const regError = error as Error;
@@ -250,6 +258,11 @@ export function createPasskeyStore(options: StoreOptions) {
         set({
           isRegistering: false,
           lastError: regError
+        });
+
+        // Report WebAuthn error for debugging/monitoring
+        reportWebAuthnError('registration', regError, {
+          email
         });
 
         console.error('❌ Passkey registration failed:', regError);

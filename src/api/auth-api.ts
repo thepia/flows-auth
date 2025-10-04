@@ -24,7 +24,7 @@ import type {
   WebAuthnVerificationResult
 } from '../types';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter';
-import { reportApiError } from '../utils/errorReporter';
+import { reportApiError } from '../utils/telemetry';
 import { globalUserCache } from '../utils/user-cache';
 
 export class AuthApiClient {

@@ -12,8 +12,8 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import { AuthApiClient } from '../../api/auth-api';
 import type { SignInData, User } from '../../types';
-import type { StoreOptions } from '../types';
 import { createSessionData } from '../core/session';
+import type { StoreOptions } from '../types';
 
 /**
  * Email auth store state

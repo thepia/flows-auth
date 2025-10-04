@@ -58,6 +58,23 @@ export {
   getAuthStoreFromContext
 } from './utils/auth-context';
 
+// Telemetry
+export {
+  initializeTelemetry,
+  reportAuthState,
+  reportWebAuthnError,
+  reportApiError,
+  flushTelemetry,
+  getTelemetryQueueSize
+} from './utils/telemetry';
+
+export type {
+  AuthStateEvent,
+  WebAuthnErrorEvent,
+  ApiErrorEvent,
+  ErrorReportEvent
+} from './utils/telemetry';
+
 // Types
 export type * from './types';
 export type { StorageConfig } from './types';
@@ -77,8 +94,6 @@ export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
 export { createParaglideI18n } from './utils/paraglide-i18n';
 
 export * from './utils/i18n';
-
-export * from './utils/errorReporter';
 
 export type { InvitationProcessingResult } from './utils/invitation-processing';
 // Invitation Processing Utilities

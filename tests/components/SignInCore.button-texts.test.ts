@@ -21,7 +21,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock error reporter
-vi.mock('../../src/utils/errorReporter', () => ({
+vi.mock('../../src/utils/telemetry', () => ({
   initializeErrorReporter: vi.fn(),
   reportAuthState: vi.fn(),
   reportWebAuthnError: vi.fn(),

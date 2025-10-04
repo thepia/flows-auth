@@ -334,14 +334,7 @@ authStore.stateMachine.subscribe(({ state, context }) => {
 // Production error reporting
 import { initializeErrorReporter } from '@thepia/flows-auth';
 
-initializeErrorReporter({
-  enabled: true,
-  endpoint: 'https://api.example.com/error-reports',
-  metadata: {
-    version: '1.0.0',
-    environment: 'production'
-  }
-});
+initializeErrorReporter(store);
 ```
 
 ## 🚀 **Deployment & Production**

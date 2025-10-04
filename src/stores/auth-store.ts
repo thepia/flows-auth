@@ -38,6 +38,9 @@ import { createUIEventHandlers, createUIStore, signInStateTransitions } from './
 // API client
 import { AuthApiClient } from '../api/auth-api';
 
+// Telemetry
+import { initializeTelemetry, reportAuthState } from '../utils/telemetry';
+
 /**
  * Composed auth store interface - provides unified API
  */
@@ -104,6 +107,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
   console.log('✅ All modular stores created');
 
+  // Initialize telemetry
+  initializeTelemetry(api, config);
+
   // Initialize with existing session if available
   const existingAuth = initializeSessionStore(session);
   if (existingAuth) {
@@ -135,6 +141,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     // Listen for sign-out events
     events.getState().on('sign_out', () => {
       console.log('🎯 Sign-out event received');
+
+      // Report sign-out event
+      reportAuthState({
+        event: 'sign-out'
+      });
 
       // Clear all stores
       core.getState().reset(); // Reset core auth state

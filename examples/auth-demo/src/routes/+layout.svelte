@@ -2,7 +2,7 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext } from '@thepia/flows-auth'; // ✅ Static imports
+import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext, ErrorReportingStatus, initializeErrorReporter } from '@thepia/flows-auth'; // ✅ Static imports
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
@@ -28,7 +28,11 @@ const authConfig = {
   domain: 'thepia.net',
   enablePasskeys: false,
   enableMagicLinks: true,
-  enableErrorReporting: true,
+  errorReporting: {
+    enabled: true,
+    // Endpoint will be auto-constructed as: ${apiBaseUrl}/dev/error-reports
+    debug: true
+  },
   appCode: 'demo',
   branding: {
     companyName: 'Auth Demo'
@@ -36,6 +40,7 @@ const authConfig = {
 };
 
 const authStore = setupAuthContext(authConfig);
+initializeErrorReporter(authStore);
 // const zustandStore = createAuthStore(authConfig);
 // const authStore = makeSvelteCompatible(zustandStore);
 // authStore._debugId = 'layout-' + Date.now();
@@ -142,6 +147,11 @@ onMount(() => {
 			{/if}
 		</div>
 	</main>
+
+	<!-- Error Reporting Status (fixed bottom-right) -->
+	{#if browser}
+		<ErrorReportingStatus />
+	{/if}
 </div>
 
 <style>

@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import sveltePreprocess from 'svelte-preprocess';
@@ -108,7 +108,7 @@ export default defineConfig({
           (warning.message.includes('webauthn') ||
             warning.message.includes('sessionManager') ||
             warning.message.includes('invitation-tokens') ||
-            warning.message.includes('errorReporter') ||
+            warning.message.includes('telemetry') ||
             warning.message.includes('api-detection'))
         ) {
           return;
@@ -120,6 +120,6 @@ export default defineConfig({
     },
     sourcemap: true,
     target: 'es2020',
-    minify: 'esbuild'  // Strip comments and minify dist builds
+    minify: 'esbuild' // Strip comments and minify dist builds
   }
 });

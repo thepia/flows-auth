@@ -19,7 +19,10 @@
     domain: 'thepia.net',
     enablePasskeys: false,
     enableMagicLinks: true,
-    enableErrorReporting: true,
+    errorReporting: {
+      enabled: true,
+      debug: true
+    },
     appCode: 'demo',
     branding: {
       companyName: 'Proof Test'

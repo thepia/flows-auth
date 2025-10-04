@@ -1,29 +1,72 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
-	
+	import { getAuthStoreFromContext } from '../utils/auth-context';
+	import type { SvelteAuthStore } from '../types/svelte';
+
 	// Browser detection without SvelteKit dependency
 	const browser = typeof window !== 'undefined';
+
+	// Props
+	export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
+
+	// Auth store - use prop or fallback to context
+	let authStore = null;
+	try {
+		authStore = store || getAuthStoreFromContext();
+	} catch (error) {
+		console.warn('ErrorReportingStatus: No auth store available in context');
+	}
 
 	let queueSize = 0;
 	let config = null;
 	let isReporting = false;
 	let showDetails = false;
 
-	onMount(async () => {
+	onMount(() => {
 		if (!browser) return;
 
 		try {
-			// Get error reporting config
-			const { getErrorReportQueueSize } = await import('../utils/errorReporter');
-			
-			// Set basic config for display
-			config = {
-				enabled: true,
-				serverType: 'Local Development Server',
-				environment: 'development',
-				endpoint: 'https://dev.thepia.com:8443/dev/error-reports',
-				debug: true
-			};
+			// Get config from auth store if available
+			if (authStore) {
+				const authConfig = authStore.getConfig?.();
+				const apiClient = authStore.api;
+
+				// Determine server type from API client
+				let serverType = 'Unknown';
+				let apiUrl = authConfig?.apiBaseUrl || 'Not configured';
+
+				if (apiClient) {
+					// API client exists - it will detect local vs production
+					if (apiUrl.includes('dev.thepia.com') || apiUrl.includes('localhost')) {
+						serverType = 'Local Development Server';
+					} else if (apiUrl.includes('api.thepia.com')) {
+						serverType = 'Production API (auto-detects local)';
+					} else {
+						serverType = 'Custom API Server';
+					}
+				} else {
+					serverType = 'No API Client';
+				}
+
+				config = {
+					enabled: authConfig?.errorReporting?.enabled ?? true,
+					serverType,
+					environment: authConfig?.errorReporting?.debug ? 'development' : 'production',
+					endpoint: authConfig?.errorReporting?.endpoint ||
+					          (authConfig?.apiBaseUrl ? `${authConfig.apiBaseUrl}/dev/error-reports` : null),
+					debug: authConfig?.errorReporting?.debug ?? true,
+					apiBaseUrl: apiUrl
+				};
+			} else {
+				// Fallback config if no auth store
+				config = {
+					enabled: true,
+					serverType: 'Standalone (No Auth Store)',
+					environment: 'development',
+					endpoint: null,
+					debug: true
+				};
+			}
 
 			// Check status periodically
 			updateQueueStatus();
@@ -32,7 +75,7 @@
 			return () => clearInterval(interval);
 		} catch (error) {
 			console.error('Failed to initialize error reporting status:', error);
-			
+
 			// Set fallback config so component shows something
 			config = {
 				enabled: false,
@@ -42,28 +85,29 @@
 			};
 		}
 	});
-	
-	async function updateQueueStatus() {
+
+	function updateQueueStatus() {
 		if (!browser) return;
 
 		try {
-			const { getErrorReportQueueSize } = await import('../utils/errorReporter');
-			queueSize = getErrorReportQueueSize();
+			import('../utils/telemetry').then(({ getTelemetryQueueSize }) => {
+				queueSize = getTelemetryQueueSize();
+			});
 		} catch (error) {
-			// Silently fail - error reporter may not be initialized yet
+			// Silently fail - telemetry may not be initialized yet
 		}
 	}
 	
 	async function flushReports() {
 		if (!browser || isReporting) return;
-		
+
 		isReporting = true;
 		try {
-			const { flushErrorReports } = await import('../utils/errorReporter');
-			await flushErrorReports();
+			const { flushTelemetry } = await import('../utils/telemetry');
+			flushTelemetry();
 			await updateQueueStatus();
 		} catch (error) {
-			console.error('Failed to flush error reports:', error);
+			console.error('Failed to flush telemetry:', error);
 		} finally {
 			isReporting = false;
 		}
@@ -71,8 +115,8 @@
 
 	async function testAuthError() {
 		try {
-			const { reportAuthState } = await import('../utils/errorReporter');
-			await reportAuthState({
+			const { reportAuthState } = await import('../utils/telemetry');
+			reportAuthState({
 				event: 'login-attempt',
 				email: 'demo@test.com',
 				authMethod: 'email',
@@ -86,15 +130,15 @@
 
 	async function testWebAuthnError() {
 		try {
-			const { reportWebAuthnError } = await import('../utils/errorReporter');
+			const { reportWebAuthnError } = await import('../utils/telemetry');
 			const mockError = {
 				name: 'NotAllowedError',
 				message: 'User cancelled the operation',
 				code: 'NotAllowedError'
 			};
-			await reportWebAuthnError('authentication', mockError, { 
-				test: true, 
-				demoMode: true 
+			reportWebAuthnError('authentication', mockError, {
+				test: true,
+				demoMode: true
 			});
 			await updateQueueStatus();
 		} catch (error) {
@@ -104,8 +148,8 @@
 
 	async function testApiError() {
 		try {
-			const { reportApiError } = await import('../utils/errorReporter');
-			await reportApiError(
+			const { reportApiError } = await import('../utils/telemetry');
+			reportApiError(
 				'https://api.thepia.com/auth/test-endpoint',
 				'POST',
 				429,
@@ -152,17 +196,24 @@
 				<span class="detail-label">Server:</span>
 				<span class="detail-value">{config.serverType}</span>
 			</div>
-			
+
+			{#if config.apiBaseUrl}
+				<div class="detail-row">
+					<span class="detail-label">API URL:</span>
+					<span class="detail-value endpoint">{config.apiBaseUrl}</span>
+				</div>
+			{/if}
+
 			<div class="detail-row">
-				<span class="detail-label">Endpoint:</span>
+				<span class="detail-label">Error Endpoint:</span>
 				<span class="detail-value endpoint">{config.endpoint || 'None'}</span>
 			</div>
-			
+
 			<div class="detail-row">
 				<span class="detail-label">Queue size:</span>
 				<span class="detail-value">{queueSize}</span>
 			</div>
-			
+
 			<div class="detail-row">
 				<span class="detail-label">Debug mode:</span>
 				<span class="detail-value">{config.debug ? 'On' : 'Off'}</span>

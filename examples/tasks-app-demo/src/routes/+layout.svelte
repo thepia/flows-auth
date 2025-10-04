@@ -2,51 +2,66 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import '../app.css';
+import { setupAuthContext } from '@thepia/flows-auth';
 import type { User } from '@thepia/flows-auth';
 import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
 
 // Auth state for reactivity
 let isAuthenticated = false;
 let user: User | null = null;
-let authStore: any = null;
-let authConfig: any = null;
+let isAuthLoading = true;
+let initError: string | null = null;
 
-// ✅ PROPER SOLUTION: Use global auth store instead of Svelte context
-// Svelte context requires synchronous initialization, but we need async imports
-// The global singleton pattern works better for this use case
-if (browser) {
-  (async () => {
-    try {
-      console.log('🚀 Initializing tasks app with global singleton pattern...');
-      
-      // Dynamic import to avoid SSR issues
-      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
-      
-      // Create auth config asynchronously
-      authConfig = await quickAuthSetup({
-        companyName: 'Assignment Management System',
-        clientId: 'tasks-app-demo',
-        domain: 'dev.thepia.net',
-        enableErrorReporting: true,
-      });
-      console.log('⚙️ Auth config created with library utilities:', authConfig);
-      
-      // Initialize global auth store (not Svelte context)
-      authStore = initializeAuth(authConfig);
-      console.log('🔐 Global auth store initialized');
-      
-      // Subscribe to auth state changes
-      authStore.subscribe((state) => {
-        isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
-        user = state.user;
-        console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
-      });
-            
-    } catch (error) {
-      console.error('❌ Failed to initialize tasks app:', error);
-    }
-  })();
-}
+// Create auth store during initialization (not in onMount)
+const authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'tasks-app-demo',
+  domain: 'thepia.net',
+  enablePasskeys: true,
+  enableMagicLinks: true,
+  errorReporting: {
+    enabled: true,
+    debug: true
+  },
+  appCode: 'demo',
+  branding: {
+    companyName: 'Assignment Management System'
+  }
+};
+
+const authStore = setupAuthContext(authConfig);
+
+// Initialize in onMount (browser-specific operations)
+onMount(() => {
+  if (!browser) {
+    console.log('⚠️ Non-browser environment');
+    return;
+  }
+
+  try {
+    console.log('🚀 Initializing tasks app auth store...');
+
+    // Subscribe to auth state changes for layout reactivity
+    const unsubscribe = authStore.subscribe((state) => {
+      isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
+      user = state.user;
+      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+    });
+
+    isAuthLoading = false;
+    console.log('✅ Tasks app auth store setup complete');
+
+    // Return cleanup function
+    return () => {
+      unsubscribe();
+    };
+
+  } catch (error) {
+    console.error('❌ Failed to initialize tasks app:', error);
+    initError = error instanceof Error ? error.message : 'Unknown error';
+    isAuthLoading = false;
+  }
+});
 </script>
 
 <div class="app">

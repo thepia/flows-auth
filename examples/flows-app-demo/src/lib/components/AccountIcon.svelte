@@ -3,7 +3,7 @@
   import { browser, dev } from '$app/environment';
   import { createEventDispatcher } from 'svelte';
   import { devScenarioManager } from '$lib/dev/scenarios.js';
-  import type { User } from '@thepia/flows-auth';
+  import { User, createAuthStoreOnce } from '@thepia/flows-auth';
   
   // Import console bridge helpers
   let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
@@ -33,16 +33,15 @@
 
     // Use the global auth store instead of creating a new one
     try {
-      const { getOrInitializeAuth } = await import('@thepia/flows-auth');
       const currentScenario = await devScenarioManager.getCurrentScenario();
       
       // Try to get existing auth store, or initialize if not available
-      authStore = await getOrInitializeAuth({
+      authStore = await createAuthStoreOnce({
         apiBaseUrl: currentScenario.config.apiBaseUrl,
         clientId: currentScenario.config.clientId,
         domain: 'dev.thepia.net',
         enablePasskeys: currentScenario.config.enablePasskeys,
-        enableMagicPins: currentScenario.config.enableMagicPins,
+        enableMagicLinks: currentScenario.config.enableMagicLinks,
         branding: {
           companyName: currentScenario.branding.companyName,
           logoUrl: '/thepia-logo.svg',

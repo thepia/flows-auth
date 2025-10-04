@@ -1,18 +1,19 @@
 /**
  * BDD Tests: flows-auth API Consumption
  *
- * Tests that flows-auth correctly consumes API responses from thepia.com server,
+ * Tests that flows-auth correctly consumes API responses from thepia.com/local API server,
  * ensuring perfect alignment between client expectations and server responses.
  *
  * These tests validate the flows-auth library from a user perspective,
  * using real API calls to ensure actual integration works.
  *
  * Moved from tests/bdd/ to tests/integration/ for proper organization.
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src';
-import type { AuthStore } from '../../src/types';
 
 // Test configuration
 interface TestConfig {
@@ -66,7 +67,7 @@ describe('BDD: flows-auth API Consumption', () => {
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         enablePasskeys: false, // Disabled for WorkOS testing
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       // Then: Auth store should be properly initialized
@@ -215,7 +216,7 @@ describe('BDD: flows-auth API Consumption', () => {
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         enablePasskeys: false, // Explicitly disabled
-        enableMagicPins: true
+        enableMagicLinks: false
       });
 
       // When: Checking what auth methods are available

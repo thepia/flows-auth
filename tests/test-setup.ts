@@ -70,7 +70,7 @@ export const TEST_CONFIG: AuthConfig = {
   clientId: process.env.TEST_CLIENT_ID || process.env.AUTH0_CLIENT_ID || 'test-flows-auth-client',
   domain: process.env.AUTH0_DOMAIN || 'thepia.eu.auth0.com',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   errorReporting: {
     enabled: false, // Disable error reporting in tests to avoid fetch issues
     debug: false,

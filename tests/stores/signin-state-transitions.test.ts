@@ -5,8 +5,8 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInEvent, SignInState } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
+import type { AuthConfig, SignInData, SignInEvent, SignInState } from '../../src/types';
 
 describe('SignIn State Transitions', () => {
   let authStore: ReturnType<typeof createAuthStore>;
@@ -18,10 +18,11 @@ describe('SignIn State Transitions', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: true,
+      enableMagicLinks: false,
       appCode: 'test'
     };
-    authStore = createAuthStore(config);
+    const baseStore = createAuthStore(config);
+    authStore = makeSvelteCompatible(baseStore);
   });
 
   describe('EMAIL_VERIFIED event transitions', () => {
@@ -30,17 +31,23 @@ describe('SignIn State Transitions', () => {
       expect(initialState.signInState).toBe('emailEntry');
 
       // Mock session data for EMAIL_VERIFIED event
-      const sessionData = {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+      const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          emailVerified: true
+          initials: ''
         },
-        expiresAt: Date.now() + 3600000,
-        lastActivity: Date.now()
+        authMethod: 'email-code',
+        lastActivity: Date.now(),
+        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // lastActivity: number;
+
+        tokens: {
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000
+        }
       };
 
       // Simulate EMAIL_VERIFIED event (this should happen in verifyEmailCode)

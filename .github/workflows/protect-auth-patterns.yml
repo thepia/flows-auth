@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'src/stores/auth-store.ts'
+      - 'src/stores/**'
       - 'src/utils/sessionManager.ts'
       - 'src/api/auth-api.ts'
       - 'src/types/index.ts'

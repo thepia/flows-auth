@@ -7,7 +7,7 @@ This document outlines comprehensive test scenarios for the flows-auth library, 
 ## Test Environment Setup
 
 ### API Endpoints
-- **Local Development**: `https://dev.thepia.com:8443` (requires local API server)
+- **Local Development**: `https://dev.thepia.com:8443` (requires local API server. This is swapped in by the API client)
 - **Production Environment**: `https://api.thepia.com`
 - **Test Environment**: Configurable via `TEST_API_URL` environment variable
 

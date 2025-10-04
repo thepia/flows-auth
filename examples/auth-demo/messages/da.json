@@ -1,0 +1,81 @@
+{
+  "overview": {
+    "title": "Thepia Flows Autentificering",
+    "subtitle": "Passwordløs autentificering med WebAuthn passkeys og magiske links",
+    "features": {
+      "passkeys": {
+        "title": "WebAuthn Passkeys",
+        "description": "Sikker, passwordløs autentificering ved hjælp af biometri eller sikkerhedsnøgler"
+      },
+      "magic_links": {
+        "title": "Magiske Links",
+        "description": "Et-klik autentificering via sikre e-mail links"
+      },
+      "state_machine": {
+        "title": "Tilstandsmaskine",
+        "description": "Robust autentificeringsflow med omfattende tilstandsstyring"
+      },
+      "multi_language": {
+        "title": "Flersproget",
+        "description": "Fuld internationaliseringsstøtte med Paraglide JS"
+      }
+    },
+    "try_signin": "Prøv Log Ind",
+    "try_register": "Prøv Registrer"
+  },
+  "flows": {
+    "signIn": {
+      "title": "Medarbejder Adgang til Demo",
+      "subtitle": "Indtast din email for at opleve vores passwordløse autentificeringssystem med {companyName} (Pt. Begrænset)",
+      "subtitleGeneric": "Indtast din email for at opleve vores passwordløse autentificeringssystem (Pt. Begrænset)"
+    }
+  },
+  "signIn": {
+    "title": "Log Ind Demo",
+    "subtitle": "Oplev passwordløs autentificering med {companyName}",
+    "subtitleGeneric": "Oplev passwordløs autentificering",
+    "redirect_notice": "Klik nedenfor for at gå til den interaktive log ind demo side",
+    "go_to_demo": "Gå til Log Ind Demo",
+    "description": "Interaktiv autentificeringskomponent demonstration",
+    "loading_form": "Indlæser SignInForm...",
+    "loading_core": "Indlæser SignInCore...",
+    "state_machine_title": "🔧 Tilstandsmaskine",
+    "state_machine_description": "Interaktiv autentificering flow visualisering:",
+    "loading_state_machines": "Indlæser tilstandsmaskiner..."
+  },
+  "register": {
+    "title": "Registrerings Demo",
+    "subtitle": "Se hvordan nye brugere kan registrere sig med passkeys",
+    "subtitleGeneric": "Se hvordan nye brugere kan registrere sig med passkeys for {companyName}",
+    "redirect_notice": "Klik nedenfor for at gå til den interaktive registrerings demo side",
+    "go_to_demo": "Gå til Registrerings Demo",
+    "page_title": "Registrerings Flow Demo",
+    "description": "Test registrering ved først at tjekke faktisk brugertilstand, derefter følge det passende flow:",
+    "check_user_state": "1. Tjek Brugertilstand",
+    "check_user_description": "Først, tjek om brugeren allerede eksisterer og deres verifikationsstatus:",
+    "flow_documentation": "2. Registrerings Flow Dokumentation",
+    "flow_description": "Registreringssystemet håndterer forskellige brugertilstande automatisk:",
+    "scenario_new_user": "Komplet Registrering",
+    "scenario_new_user_when": "Når: Bruger eksisterer ikke i systemet",
+    "scenario_new_user_flow": "Flow: Email verifikation → Passkey opsætning → Komplet",
+    "scenario_unverified": "Email Verifikation Påkrævet",
+    "scenario_unverified_when": "Når: Bruger eksisterer men email ikke verificeret",
+    "scenario_unverified_flow": "Flow: Gensend verifikations email → Email verifikation → Passkey opsætning → Komplet",
+    "scenario_no_passkey": "Passkey Opsætning Påkrævet",
+    "scenario_no_passkey_when": "Når: Email verificeret men ingen passkey registreret",
+    "scenario_no_passkey_flow": "Flow: Spring email verifikation over → Passkey opsætning → Komplet",
+    "scenario_complete": "Allerede Registreret",
+    "scenario_complete_when": "Når: Email verificeret OG har passkey",
+    "scenario_complete_flow": "Flow: Afvis registrering → Omdiriger til log ind",
+    "invitation_title": "3. Invitations Token Registrering",
+    "invitation_description": "Registrer ved hjælp af et invitations token (springer nogle verifikationstrin over):",
+    "domain_config": "Domæne Konfiguration: {domain}",
+    "domain_description": "Passkeys vil blive registreret for dette domæne. Sørg for at det matcher dit testmiljø."
+  },
+  "tabs_overview_title": "Oversigt",
+  "tabs_overview_description": "Introduktion til Thepia Flows autentificeringssystem",
+  "tabs_signin_title": "Log Ind",
+  "tabs_signin_description": "med SignInCore og SignInForm",
+  "tabs_register_title": "Registrer",
+  "tabs_register_description": "Brugerregistrering og kontooprettelsesflows"
+}

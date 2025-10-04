@@ -1,0 +1,48 @@
+---
+import AuthHeaderIsland from '../components/AuthHeaderIsland.svelte';
+import SignInIsland from '../components/SignInIsland.svelte';
+import UserStatusIsland from '../components/UserStatusIsland.svelte';
+import '/src/styles/app.css';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Flows Auth - Astro Islands Demo</title>
+		<style>
+			* { box-sizing: border-box; margin: 0; padding: 0; }
+			body {
+				font-family: system-ui, sans-serif;
+				background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+				min-height: 100vh;
+			}
+			main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+			.hero { text-align: center; margin-bottom: 3rem; }
+			h1 { font-size: 3rem; font-weight: 700; color: #111827; margin-bottom: 1rem; }
+			.subtitle { font-size: 1.25rem; color: #6b7280; }
+			.demo-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+				gap: 2rem;
+				margin-bottom: 3rem;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<div class="hero">
+				<h1>🏝️ Astro Islands + Zustand Demo</h1>
+				<p class="subtitle">Shared state across multiple Svelte islands</p>
+			</div>
+			<AuthHeaderIsland client:idle />
+			<div class="demo-grid">
+				<SignInIsland client:load />
+				<UserStatusIsland client:visible />
+			</div>
+		</main>
+	</body>
+</html>

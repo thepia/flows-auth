@@ -6,12 +6,24 @@
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import type { User } from '../types';
-import type { getI18n } from '../utils/i18n';
+import {
+  "user.privacy.dataPolicy" as userPrivacyDataPolicy,
+  "user.privacy.description" as userPrivacyDescription,
+  "user.privacy.termsOfService" as userPrivacyTermsOfService,
+  "user.privacy.title" as userPrivacyTitle,
+  "user.profile.description" as userProfileDescription,
+  "user.profile.editProfile" as userProfileEditProfile,
+  "user.profile.title" as userProfileTitle,
+  "user.security.description" as userSecurityDescription,
+  "user.security.managePasskeys" as userSecurityManagePasskeys,
+  "user.security.title" as userSecurityTitle,
+  "user.signOut" as userSignOut,
+  "user.welcomeBack" as userWelcomeBack
+} from '../paraglide/messages';
 
 // Props
 export let user: User;
 export let onSignOut: () => void;
-export let i18n: ReturnType<typeof getI18n>['t'];
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -26,7 +38,7 @@ function handleSignOut() {
 <div class="user-management">
   <div class="user-profile-header">
     <div class="user-info">
-      <h3>{$i18n('user.welcomeBack')}</h3>
+      <h3>{userWelcomeBack()}</h3>
       <p class="user-name">{user.name || user.email}</p>
       <p class="user-email">{user.email}</p>
     </div>
@@ -35,9 +47,9 @@ function handleSignOut() {
       type="button"
       class="sign-out-button"
       on:click={handleSignOut}
-      title={$i18n('user.signOut')}
+      title={userSignOut()}
     >
-      {$i18n('user.signOut')}
+      {userSignOut()}
     </button>
   </div>
 
@@ -45,17 +57,17 @@ function handleSignOut() {
     <!-- Security & Passkeys Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{$i18n('user.security.title')}</h4>
+        <h4>{userSecurityTitle()}</h4>
         <span class="card-icon">🔐</span>
       </div>
-      <p class="card-description">{$i18n('user.security.description')}</p>
+      <p class="card-description">{userSecurityDescription()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button primary"
           on:click={() => dispatch('navigate', { section: 'passkeys' })}
         >
-          {$i18n('user.security.managePasskeys')}
+          {userSecurityManagePasskeys()}
         </button>
       </div>
     </div>
@@ -63,17 +75,17 @@ function handleSignOut() {
     <!-- Profile Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{$i18n('user.profile.title')}</h4>
+        <h4>{userProfileTitle()}</h4>
         <span class="card-icon">👤</span>
       </div>
-      <p class="card-description">{$i18n('user.profile.description')}</p>
+      <p class="card-description">{userProfileDescription()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'profile' })}
         >
-          {$i18n('user.profile.editProfile')}
+          {userProfileEditProfile()}
         </button>
       </div>
     </div>
@@ -81,24 +93,24 @@ function handleSignOut() {
     <!-- Privacy & Data Policy -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{$i18n('user.privacy.title')}</h4>
+        <h4>{userPrivacyTitle()}</h4>
         <span class="card-icon">🛡️</span>
       </div>
-      <p class="card-description">{$i18n('user.privacy.description')}</p>
+      <p class="card-description">{userPrivacyDescription()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'privacy' })}
         >
-          {$i18n('user.privacy.dataPolicy')}
+          {userPrivacyDataPolicy()}
         </button>
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'terms' })}
         >
-          {$i18n('user.privacy.termsOfService')}
+          {userPrivacyTermsOfService()}
         </button>
       </div>
     </div>
@@ -176,11 +188,6 @@ function handleSignOut() {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .management-card.primary {
-    border-color: var(--auth-primary-color, #3b82f6);
-    background: var(--auth-primary-light-bg, #eff6ff);
-  }
-
   .card-header {
     display: flex;
     justify-content: space-between;
@@ -241,11 +248,6 @@ function handleSignOut() {
     border-color: var(--auth-primary-dark, #2563eb);
   }
 
-  .action-button.large {
-    padding: 12px 24px;
-    font-size: 1rem;
-    font-weight: 600;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 640px) {

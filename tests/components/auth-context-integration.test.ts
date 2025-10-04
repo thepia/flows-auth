@@ -12,82 +12,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
-import type { AuthConfig, CompleteAuthStore } from '../../src/types';
+import type { AuthConfig } from '../../src/types';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Mock dependencies
 vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
-  isWebAuthnSupported: vi.fn(() => false)
-}));
-
-const mockI18n = vi.fn((key: string) => key);
-const i18nStore = writable(mockI18n);
-
-vi.mock('../../src/utils/i18n', () => ({
-  getI18n: vi.fn(() => ({
-    t: i18nStore,
-    setLanguage: vi.fn(),
-    setTranslations: vi.fn()
-  }))
+  isWebAuthnSupported: vi.fn(() => false),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('Auth Context Integration', () => {
-  const mockAuthConfig: AuthConfig = {
-    apiBaseUrl: 'https://api.test.com',
-    clientId: 'test-client',
-    domain: 'test.com',
-    enablePasskeys: true,
-    enableMagicLinks: true,
-    appCode: 'test-app',
-    branding: {
-      logoUrl: 'https://example.com/logo.png',
-      companyName: 'Test Company'
-    }
-  };
-
-  let mockAuthStore: Partial<CompleteAuthStore>;
-  let authStoreSubscribers: Array<(state: any) => void> = [];
-
-  function createMockAuthStore(): Partial<CompleteAuthStore> {
-    const storeState = writable({
-      state: 'unauthenticated',
-      signInState: 'emailEntry',
-      user: null,
-      error: null,
-      loading: false
-    });
-
-    return {
-      ...storeState,
-      getConfig: vi.fn(() => mockAuthConfig),
-      subscribe: vi.fn((callback) => {
-        authStoreSubscribers.push(callback);
-        // Call immediately with initial state
-        callback({
-          state: 'unauthenticated',
-          signInState: 'emailEntry',
-          user: null,
-          error: null
-        });
-        return vi.fn(() => {
-          // Unsubscribe
-          const index = authStoreSubscribers.indexOf(callback);
-          if (index > -1) authStoreSubscribers.splice(index, 1);
-        });
-      }),
-      signInWithMagicLink: vi.fn(),
-      signInWithPasskey: vi.fn(),
-      signOut: vi.fn(),
-      sendSignInEvent: vi.fn(),
-      checkUser: vi.fn(),
-      sendEmailCode: vi.fn(),
-      verifyEmailCode: vi.fn()
-    };
-  }
-
   beforeEach(() => {
-    authStoreSubscribers = [];
-    mockAuthStore = createMockAuthStore();
     vi.clearAllMocks();
   });
 
@@ -96,18 +32,17 @@ describe('Auth Context Integration', () => {
       // Test that SignInCore properly gets and uses auth store from context
       // This validates the clean architecture where SignInCore doesn't accept config props
 
-      render(SignInCore, {
+      renderWithStoreProp(SignInCore, {
+        authConfig: {
+          apiBaseUrl: 'https://api.test.com',
+          appCode: 'test-app',
+          enablePasskeys: true,
+          enableMagicLinks: true
+        },
         props: {
           initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+        }
       });
-
-      // SignInCore should get config from context store
-      expect(mockAuthStore.getConfig).toHaveBeenCalled();
-
-      // SignInCore should subscribe to store updates
-      expect(mockAuthStore.subscribe).toHaveBeenCalled();
 
       // Should not show loading state when store and config are available
       expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
@@ -116,14 +51,23 @@ describe('Auth Context Integration', () => {
     it('should demonstrate SignInForm uses context for logo display only', () => {
       // SignInForm should only use context for logo display, not auth logic
 
-      const { container } = render(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
+        authConfig: {
+          apiBaseUrl: 'https://api.test.com',
+          appCode: 'test-app',
+          enablePasskeys: true,
+          enableMagicLinks: true,
+          branding: {
+            logoUrl: 'https://example.com/logo.png',
+            companyName: 'Test Company'
+          }
+        },
         props: {
           showLogo: true,
           variant: 'popup',
           size: 'large',
           initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+        }
       });
 
       // SignInForm should handle presentation concerns
@@ -132,9 +76,6 @@ describe('Auth Context Integration', () => {
 
       // SignInCore should be rendered inside for logic
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-
-      // Auth store should be accessed for logo display
-      expect(mockAuthStore.getConfig).toHaveBeenCalled();
     });
   });
 
@@ -144,101 +85,95 @@ describe('Auth Context Integration', () => {
       expect(AUTH_CONTEXT_KEY).toBe('flows-auth-store');
 
       // Both components should work with the same context key
-      const { unmount: unmount1 } = render(SignInForm, {
-        props: { initialEmail: 'test@example.com' },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+      const { unmount: unmount1 } = renderWithStoreProp(SignInForm, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test@example.com' }
       });
 
-      const { unmount: unmount2 } = render(SignInCore, {
-        props: { initialEmail: 'test@example.com' },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+      const { unmount: unmount2 } = renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test@example.com' }
       });
-
-      expect(mockAuthStore.getConfig).toHaveBeenCalled();
 
       unmount1();
       unmount2();
     });
 
-    it('should fail gracefully when context key mismatch occurs', () => {
-      // Test that SignInCore shows loading state when context is missing
-      render(SignInCore, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
-        // No context provided - simulates context key mismatch
-      });
-
-      // SignInCore should show waiting message when it can't find context
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
+    it('should throw error when context key mismatch occurs', () => {
+      // Test that SignInCore throws error when context is missing (strict requirement)
+      expect(() => {
+        render(SignInCore, {
+          props: {
+            initialEmail: 'test@example.com'
+          }
+          // No context provided - simulates context key mismatch
+        });
+      }).toThrow('Auth store not found in context');
     });
   });
 
   describe('State Synchronization', () => {
     it('should set up subscription when auth store is available', () => {
-      render(SignInCore, {
+      renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: {
           initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+        }
       });
 
-      // Verify subscription is set up
-      expect(mockAuthStore.subscribe).toHaveBeenCalled();
-      expect(authStoreSubscribers).toHaveLength(1);
+      // Component should render without waiting message
+      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });
 
     it('should handle multiple subscribers correctly (future extensibility)', () => {
       // Test that multiple SignInCore instances can subscribe to the same store
 
-      const { unmount: unmount1 } = render(SignInCore, {
-        props: { initialEmail: 'test1@example.com' },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+      const { unmount: unmount1 } = renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test1@example.com' }
       });
 
-      const { unmount: unmount2 } = render(SignInCore, {
-        props: { initialEmail: 'test2@example.com' },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+      const { unmount: unmount2 } = renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test2@example.com' }
       });
 
-      // Should handle multiple subscriptions
-      expect(mockAuthStore.subscribe).toHaveBeenCalledTimes(2);
-      expect(authStoreSubscribers).toHaveLength(2);
+      // Both should render without waiting message
+      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
 
       unmount1();
       unmount2();
     });
   });
 
-  describe('Reactive Context Updates', () => {
-    it('should handle missing auth store gracefully', () => {
-      // Test reactive pattern with null store initially
-      const authStoreContext = writable(null);
-
-      render(SignInCore, {
-        props: {
-          initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
+  describe('Store Prop vs Context', () => {
+    it('should accept store via prop and ignore context', () => {
+      // Test that store prop takes precedence over context
+      const { container } = renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
+        props: { initialEmail: 'test@example.com' }
       });
 
-      // Initially should show loading state
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
-
-      // Store hasn't been accessed yet because it's null
-      expect(mockAuthStore.getConfig).not.toHaveBeenCalled();
+      // Component should render successfully with store prop
+      expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
+      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
     });
   });
 
   describe('Architecture Validation', () => {
     it('should demonstrate proper layered architecture', () => {
-      const { container } = render(SignInForm, {
+      const { container } = renderWithStoreProp(SignInForm, {
+        authConfig: {
+          apiBaseUrl: 'https://api.test.com',
+          appCode: 'test-app',
+          enablePasskeys: true,
+          enableMagicLinks: true
+        },
         props: {
           showLogo: true,
           variant: 'inline',
           initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+        }
       });
 
       // Architecture validation:
@@ -252,24 +187,17 @@ describe('Auth Context Integration', () => {
 
       // SignInCore logic layer
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-
-      // Auth store accessed by both layers
-      expect(mockAuthStore.getConfig).toHaveBeenCalled();
     });
 
     it('should prevent component isolation by using shared context', () => {
       // Test that components use shared context store, not isolated instances
 
-      render(SignInCore, {
+      renderWithStoreProp(SignInCore, {
+        authConfig: { apiBaseUrl: 'https://api.test.com', appCode: 'test-app' },
         props: {
           initialEmail: 'test@example.com'
-        },
-        context: new Map([[AUTH_CONTEXT_KEY, writable(mockAuthStore)]])
+        }
       });
-
-      // Verify that component uses shared context store
-      expect(mockAuthStore.getConfig).toHaveBeenCalled();
-      expect(mockAuthStore.subscribe).toHaveBeenCalled();
 
       // Component successfully renders without creating its own store
       expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();

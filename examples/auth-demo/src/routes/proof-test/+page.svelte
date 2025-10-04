@@ -3,26 +3,22 @@
   Multiple components that should all use the SAME auth store from layout
 -->
 <script>
-  import { useAuth, useAuthSafe } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
 
   // Page components that will show auth state
   import PageAuthComponent from './PageAuthComponent.svelte';
 
-  // Get auth store using the proper context pattern
+  // Get auth store from context using the library's helper
   let authStore = null;
   let authError = null;
 
   try {
-    authStore = useAuth();
-    console.log('📄 Page: Auth store from useAuth():', !!authStore);
+    authStore = getAuthStoreFromContext();
+    console.log('📄 Page: Auth store from context:', !!authStore);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn('📄 Page: useAuth() failed, trying useAuthSafe():', errorMessage);
-    authStore = useAuthSafe();
-    if (!authStore) {
-      authError = errorMessage;
-      console.error('📄 Page: No auth store available:', error);
-    }
+    authError = errorMessage;
+    console.error('📄 Page: No auth store available:', error);
   }
 </script>
 

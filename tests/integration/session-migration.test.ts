@@ -4,7 +4,11 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SessionMigrationResult, StorageConfigurationUpdate } from '../../src/types';
+import type {
+  SessionMigrationResult,
+  SignInData,
+  StorageConfigurationUpdate
+} from '../../src/types';
 import { ConfigurableStorageManager } from '../../src/utils/storageManager';
 
 // Mock browser storage APIs
@@ -80,7 +84,7 @@ describe('Session Migration Integration Tests', () => {
     });
 
     it('should preserve all session data during migration', async () => {
-      const sessionData = {
+      const sessionData: SignInData = {
         auth_access_token: 'access-token-123',
         auth_refresh_token: 'refresh-token-456',
         auth_user: JSON.stringify({

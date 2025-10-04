@@ -1,3 +1,9 @@
+/**
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
+
+ */
+
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AuthConfig, User } from '../../src/types';
 
@@ -38,7 +44,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Import after mocks are set up
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 
 /**
  * CRITICAL INTEGRATION TEST: API Response Format Compatibility
@@ -82,7 +88,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       clientId: 'test-client',
       domain: 'test.example.com',
       enablePasskeys: true,
-      enableMagicPins: false
+      enableMagicLinks: false
     };
 
     authStore = createAuthStore(config);

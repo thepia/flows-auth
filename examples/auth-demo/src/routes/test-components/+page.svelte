@@ -27,16 +27,22 @@
       
       const authModule = await import('@thepia/flows-auth');
       addResult('Auth Module', true, 'Successfully imported @thepia/flows-auth');
-      
-      const { SessionStateMachineFlow, SignInCore } = authModule;
-      
+
+      const { SignInCore } = authModule;
+
+      // Import dev-only Flow visualization components
+      const devModule = await import('@thepia/flows-auth/dev');
+      addResult('Dev Module', true, 'Successfully imported @thepia/flows-auth/dev');
+
+      const { SessionStateMachineFlow } = devModule;
+
       if (SessionStateMachineFlow) {
         SessionStateMachineComponent = SessionStateMachineFlow;
-        addResult('SessionStateMachineFlow', true, 'Component imported successfully');
+        addResult('SessionStateMachineFlow', true, 'Component imported successfully from /dev');
       } else {
-        addResult('SessionStateMachineFlow', false, 'Component not found in module');
+        addResult('SessionStateMachineFlow', false, 'Component not found in /dev module');
       }
-      
+
       if (SignInCore) {
         SignInCoreComponent = SignInCore;
         addResult('SignInCore', true, 'Component imported successfully');

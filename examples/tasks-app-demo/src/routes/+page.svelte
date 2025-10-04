@@ -44,7 +44,7 @@ async function initializeAuth() {
     console.log('📦 Getting global auth store...');
     
     // Use the global auth store pattern (not context-based)
-    const { getGlobalAuthStore, getGlobalAuthConfig } = await import('@thepia/flows-auth');
+    const { getGlobalAuthStore } = await import('@thepia/flows-auth');
     
     // Wait for layout to initialize the global auth store
     let attempts = 0;
@@ -65,10 +65,6 @@ async function initializeAuth() {
     
     console.log('🔐 Auth store retrieved using proper pattern');
     
-    // Get config from global singleton
-    authConfig = getGlobalAuthConfig();
-    console.log('⚙️ Auth config retrieved from singleton');
-
     console.log('📡 Setting up auth store subscription...');
     // Subscribe to auth state changes
     authStore.subscribe((state) => {

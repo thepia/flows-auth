@@ -18,7 +18,6 @@ test.describe('Import Validation', () => {
 
         // Check for key exports that were previously failing
         const requiredExports = [
-          'useAuth',
           'quickAuthSetup',
           'createDefaultAuthConfig',
           'detectDefaultApiServer',
@@ -61,7 +60,6 @@ test.describe('Import Validation', () => {
     expect(result.success).toBe(true);
 
     // Should have found the critical exports
-    expect(result.successes).toContain('useAuth');
     expect(result.successes).toContain('quickAuthSetup');
     expect(result.successes).toContain('createAuthStore');
 

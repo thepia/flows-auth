@@ -10,17 +10,42 @@ export default defineConfig({
       hot: !process.env.VITEST
     })
   ],
+  optimizeDeps: {
+    include: ['phosphor-svelte']
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    server: {
+      deps: {
+        external: ['phosphor-svelte']
+      }
+    },
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/examples/**/tests/**',
-      '**/examples/**/*.test.js'
+      '**/examples/**',
+      '**/coverage/**',
+      '**/build/**',
+      '**/tests/disabled/**',
+      '**/*.timestamp-*.mjs'
     ],
-    testTimeout: 10000
+    testTimeout: 10000,
+    // Simplified for VS Code compatibility
+    reporters: ['verbose'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'coverage/**',
+        'dist/**',
+        'examples/**',
+        '**/*.d.ts',
+        '**/*.test.{js,ts}',
+        '**/*.spec.{js,ts}'
+      ]
+    }
   },
   resolve: {
     alias: {

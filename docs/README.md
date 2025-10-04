@@ -18,8 +18,11 @@ Both scenarios use:
 ### Essential Documentation
 
 - **[Authentication System](./auth/README.md)** - START HERE - Complete system specification and scenarios
+- **[Framework Integration](./integrations/README.md)** - **ESSENTIAL** - Svelte, SvelteKit, Astro integration patterns
+- **[ADR 0004: Svelte Store Architecture](./adr/0004-global-svelte-store-architecture.md)** - **AUTHORITY** - Context vs props patterns
 - **[Authentication State Machine](./auth/authentication-state-machine.md)** - State flow for both scenarios
 - **[Getting Started](./GETTING_STARTED.md)** - Installation and basic setup
+- **[Internationalization (i18n)](./i18n/README.md)** - **NEW** - Translation system and multi-platform support
 - **[API Integration Status](./auth/api-integration-status.md)** - Current implementation status
 
 ### Core Documentation
@@ -37,6 +40,9 @@ Both scenarios use:
 #### Configuration
 - **[Storage Configuration](./STORAGE_CONFIGURATION.md)** - Session and token storage
 - **[Session Management](./SESSION_MANAGEMENT_REQUIREMENTS.md)** - Session handling requirements
+
+#### Internationalization
+- **[i18n Guide](./i18n/README.md)** - **NEW** - Translation system using Paraglide JS with dot notation
 
 #### Testing
 - **[Testing Strategy](./testing/README.md)** - Overall testing approach
@@ -127,7 +133,7 @@ pnpm add @thepia/flows-auth
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     domain: 'app.thepia.net' // or 'flows.thepia.net'
   });
 

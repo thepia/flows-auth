@@ -3,10 +3,10 @@
  * Tests the getButtonConfig logic that determines button text and behavior
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('SignInCore Button Configuration Logic', () => {
-  // Mock the $i18n function
+  // Mock the $i18n function for current implementation
   const mockI18n = (key: string, params: Record<string, any> = {}) => {
     const translations: Record<string, string> = {
       'auth.signIn': 'Sign In',

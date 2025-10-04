@@ -12,6 +12,7 @@ This directory contains technical documentation for developers working on or int
 | **[State Machine](./state-machine.md)** | XState-inspired authentication state management | Frontend developers |
 | **[Conditional Authentication](./conditional-authentication.md)** | Non-intrusive passkey discovery implementation | Frontend developers |
 | **[Error Reporting Principles](./error-reporting-principles.md)** | Structured error handling and reporting | All developers |
+| **[Tailwind Integration](./tailwind-integration.md)** | Complete guide for Tailwind CSS in library and consuming apps | Frontend developers, Library maintainers |
 
 ### 🔧 **Technical Specifications**
 
@@ -63,7 +64,7 @@ const authStore = createAuthStore({
   apiBaseUrl: 'https://api.example.com',
   domain: 'example.com',
   enablePasskeys: true,
-  enableMagicPins: true
+  enableMagicLinks: false
 });
 ```
 
@@ -333,14 +334,7 @@ authStore.stateMachine.subscribe(({ state, context }) => {
 // Production error reporting
 import { initializeErrorReporter } from '@thepia/flows-auth';
 
-initializeErrorReporter({
-  enabled: true,
-  endpoint: 'https://api.example.com/error-reports',
-  metadata: {
-    version: '1.0.0',
-    environment: 'production'
-  }
-});
+initializeErrorReporter(store);
 ```
 
 ## 🚀 **Deployment & Production**

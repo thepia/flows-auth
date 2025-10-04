@@ -20,9 +20,9 @@ export { default as SignInForm } from './components/SignInForm.svelte';
 
 // Development components
 export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
-export { default as SessionStateMachineFlow } from './components/SessionStateMachineFlow.svelte'; // AuthState visualization
-export { default as SignInStateMachineFlow } from './components/SignInStateMachineFlow.svelte'; // SignInState visualization
-export { default as TestFlow } from './components/TestFlow.svelte'; // Simple test component
+// Note: Flow visualization components (SessionStateMachineFlow, SignInStateMachineFlow, TestFlow)
+// are NOT exported from main index to avoid pulling in @xyflow/svelte dependency
+// Import them directly if needed: import { SessionStateMachineFlow } from '@thepia/flows-auth/src/components/...'
 
 // Core granular components
 export {
@@ -32,41 +32,48 @@ export {
   SignInCore
 } from './components/core';
 
+// Icon system
+export { default as Icon } from './components/icons/Icon.svelte';
+export type { IconProps, IconVariant, IconSize, IconWeight } from './components/icons/types';
+
 // State Machine
 
-// Stores
+// New Modular Stores (Zustand-based)
 export {
-  createAuthDerivedStores,
-  createAuthStore
+  createAuthStore,
+  type ComposedAuthStore
 } from './stores/auth-store';
 
-// Global Auth Store Singleton (recommended approach)
-export {
-  initializeAuth,
-  getGlobalAuthStore,
-  isAuthStoreInitialized,
-  getGlobalAuthConfig,
-  resetGlobalAuthStore,
-  updateGlobalAuthConfig,
-  getOrInitializeAuth,
-  isGlobalAuthStore,
-  assertAuthConfig,
-  type GlobalAuthStore,
-  type AuthStoreInitializer,
-  type AuthStoreGetter
-} from './stores/global-auth-store';
+// Svelte Adapter
+export { makeSvelteCompatible } from './stores/adapters/svelte';
+
+// Svelte Store Types
+export type { SvelteAuthStore } from './types/svelte';
 
 // Auth Context Utilities (Svelte-specific helpers)
 export {
-  setAuthContext,
-  getAuthContext,
-  tryGetAuthContext,
-  hasAuthContext,
-  useAuth,
-  useAuthSafe,
-  createAuthStateStore,
-  useOptionalAuth
+  setupAuthContext,
+  resetGlobalAuthStore,
+  assertAuthConfig,
+  getAuthStoreFromContext
 } from './utils/auth-context';
+
+// Telemetry
+export {
+  initializeTelemetry,
+  reportAuthState,
+  reportWebAuthnError,
+  reportApiError,
+  flushTelemetry,
+  getTelemetryQueueSize
+} from './utils/telemetry';
+
+export type {
+  AuthStateEvent,
+  WebAuthnErrorEvent,
+  ApiErrorEvent,
+  ErrorReportEvent
+} from './utils/telemetry';
 
 // Types
 export type * from './types';
@@ -83,24 +90,10 @@ export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection';
 // API Detection
 export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection';
 
-// Internationalization
-export {
-  createI18n,
-  detectUserLanguage,
-  getSupportedLanguages,
-  isLanguageSupported,
-  defaultTranslations,
-  setI18nContext,
-  getI18n
-} from './utils/i18n';
+// Paraglide JS Internationalization
+export { createParaglideI18n } from './utils/paraglide-i18n';
 
-export type {
-  SupportedLanguage,
-  TranslationKey,
-  CustomTranslations
-} from './utils/i18n';
-
-export * from './utils/errorReporter';
+export * from './utils/i18n';
 
 export type { InvitationProcessingResult } from './utils/invitation-processing';
 // Invitation Processing Utilities
@@ -131,7 +124,7 @@ export {
   shouldMigrateSession
 } from './utils/session-migrator';
 
-export type { FlowsSessionData } from './utils/sessionManager';
+export type { SignInData } from './types';
 export {
   clearSession,
   configureSessionStorage,
@@ -158,7 +151,7 @@ export {
 } from './utils/webauthn';
 
 // Version
-export const VERSION = '1.0.4';
+export const VERSION = '1.0.5';
 
 // Default Configuration Utilities (NEW - eliminates app-level duplication)
 export {

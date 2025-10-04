@@ -55,7 +55,7 @@ const mockAuthStore = {
 };
 
 // Mock the createAuthStore function
-vi.mock('../../src/stores/auth-store', () => ({
+vi.mock('../../src/stores', () => ({
   createAuthStore: vi.fn(() => mockAuthStore)
 }));
 
@@ -74,7 +74,7 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: false,
+      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company'
       }

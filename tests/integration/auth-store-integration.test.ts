@@ -1,12 +1,15 @@
 /**
  * Auth Store Integration Tests
  * Comprehensive test coverage for auth store with state machine against real API scenarios
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthDerivedStores, createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, AuthMachineState } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
+import type { AuthConfig } from '../../src/types';
 
 // Import shared test configuration
 import { TEST_CONFIG } from '../test-setup';
@@ -17,7 +20,7 @@ const LOCAL_TEST_CONFIG = {
   clientId: 'test-flows-auth-client',
   domain: 'dev.thepia.net',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   errorReporting: {
     enabled: true,
     debug: true
@@ -95,8 +98,6 @@ const mockWebAuthnTimeout = () => {
 
 describe('Auth Store Integration Tests', () => {
   let authStore: ReturnType<typeof createAuthStore>;
-  let derivedStores: ReturnType<typeof createAuthDerivedStores>;
-  let apiAvailable = false;
   let actualApiUrl = LOCAL_TEST_CONFIG.apiBaseUrl;
 
   beforeAll(async () => {
@@ -199,8 +200,7 @@ describe('Auth Store Integration Tests', () => {
     localStorage.clear();
     vi.clearAllMocks();
 
-    authStore = createAuthStore(LOCAL_TEST_CONFIG);
-    derivedStores = createAuthDerivedStores(authStore);
+    authStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
   });
 
   afterEach(() => {
@@ -208,70 +208,6 @@ describe('Auth Store Integration Tests', () => {
       authStore.destroy();
     }
     vi.restoreAllMocks();
-  });
-
-  describe('State Machine Integration', () => {
-    it('should initialize in checkingSession state and transition to sessionInvalid', async () => {
-      expect(authStore.stateMachine.currentState()).toBe('checkingSession');
-
-      // Wait for state machine to complete initialization
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const finalState = authStore.stateMachine.currentState();
-      expect(['sessionInvalid', 'sessionValid']).toContain(finalState);
-    });
-
-    it('should transition through combined auth flow', async () => {
-      const stateTransitions: AuthMachineState[] = [];
-
-      authStore.stateMachine.subscribe(({ state }) => {
-        stateTransitions.push(state);
-      });
-
-      // Start from unauthenticated state
-      authStore.clickNext();
-      expect(authStore.stateMachine.matches('combinedAuth')).toBe(true);
-
-      // Type email to trigger conditional mediation
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
-      expect(authStore.stateMachine.matches('conditionalMediation')).toBe(true);
-
-      // Verify state transition sequence
-      expect(stateTransitions).toContain('combinedAuth');
-      expect(stateTransitions).toContain('conditionalMediation');
-    });
-
-    it('should handle explicit authentication flow', async () => {
-      authStore.clickNext(); // Go to combinedAuth
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
-      authStore.clickContinue(); // Trigger explicit auth
-
-      expect(authStore.stateMachine.matches('explicitAuth')).toBe(true);
-    });
-
-    it('should handle error states with proper classification', async () => {
-      const stateTransitions: AuthMachineState[] = [];
-
-      authStore.stateMachine.subscribe(({ state }) => {
-        stateTransitions.push(state);
-      });
-
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
-
-      // Mock user cancellation (timing < 30s)
-      mockWebAuthnUserCancellation();
-
-      try {
-        await authStore.signInWithPasskey(TEST_ACCOUNTS.existingWithPasskey.email);
-      } catch (error) {
-        // Expected to fail
-      }
-
-      // Should transition to error handling and user cancellation
-      expect(stateTransitions).toContain('errorHandling');
-      expect(stateTransitions).toContain('userCancellation');
-    });
   });
 
   describe('API Integration - Email Check', () => {
@@ -510,7 +446,7 @@ describe('Auth Store Integration Tests', () => {
       localStorage.setItem('thepia_auth_user', JSON.stringify(mockUser));
 
       // Create new store instance
-      const newStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const newStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for initialization
 
@@ -531,7 +467,7 @@ describe('Auth Store Integration Tests', () => {
       localStorage.setItem('auth_access_token', 'expired-token');
       localStorage.setItem('auth_expires_at', (Date.now() - 1000).toString()); // Expired
 
-      const newStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const newStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -686,7 +622,7 @@ describe('Auth Store Integration Tests', () => {
     it('should not leak memory with multiple store creations', () => {
       const stores = Array(10)
         .fill(0)
-        .map(() => createAuthStore(LOCAL_TEST_CONFIG));
+        .map(() => makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG)));
 
       stores.forEach((store) => {
         if (store.destroy) {
@@ -720,7 +656,7 @@ describe('Auth Store E2E Scenarios', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    authStore = createAuthStore(LOCAL_TEST_CONFIG);
+    authStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
   });
 
   afterEach(() => {
@@ -868,7 +804,7 @@ describe('Auth Store E2E Scenarios', () => {
       authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
 
       // Create new store (simulating page refresh)
-      const refreshedStore = createAuthStore(LOCAL_TEST_CONFIG);
+      const refreshedStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       // Should start from initial state and quickly transition to sessionInvalid when no valid session exists
       // Since we cleared localStorage in beforeEach, there's no valid session to restore

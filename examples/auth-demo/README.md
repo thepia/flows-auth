@@ -53,17 +53,30 @@ open https://dev.thepia.net:5177
 ## Key Architecture Features
 
 ### Single Source of Truth
+
+**Root Layout Pattern**:
 ```javascript
-// Central auth configuration
-const authConfig = await getCachedAuthConfig();
-const authStore = createAuthStore(authConfig);
+// +layout.svelte - Initialize ONCE in root layout
+import { setupAuthContext } from '@thepia/flows-auth';
+
+const authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',
+  domain: 'thepia.net',
+  enablePasskeys: true,
+  // ... other config
+};
+
+const authStore = setupAuthContext(authConfig);
 ```
 
-### Proper Context Sharing
+### Component Access Pattern
+
 ```javascript
-// Layout provides both stores via context
-setContext('authStore', authStoreContainer);
-setContext('authConfig', authConfigContainer);
+// Any component - Get store from context
+import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+const authStore = getAuthStoreFromContext();
+// Now use authStore in component
 ```
 
 ### Branded Components
@@ -142,7 +155,6 @@ pnpm test:ui
 **Important**: Tests must be run manually by the user. They validate:
 
 1. **Page loading** - No critical JavaScript errors
-2. **Function imports** - `useAuth` and `quickAuthSetup` available  
 3. **Component rendering** - Tabs and forms render correctly
 4. **API configuration** - Error reporting properly configured
 

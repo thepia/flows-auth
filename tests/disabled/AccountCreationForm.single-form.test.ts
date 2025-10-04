@@ -31,7 +31,7 @@ const mockAuthStore = {
 };
 
 // Mock the createAuthStore function
-vi.mock('../../src/stores/auth-store', () => ({
+vi.mock('../../src/stores', () => ({
   createAuthStore: vi.fn(() => {
     console.log('🔧 createAuthStore mock called');
     return mockAuthStore;
@@ -54,7 +54,7 @@ describe('AccountCreationForm - Single Form Design', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: false,
+      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg'

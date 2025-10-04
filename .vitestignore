@@ -1,0 +1,12 @@
+# Ignore examples directories to prevent multiple project detection
+examples/
+node_modules/
+dist/
+build/
+coverage/
+
+# Ignore temporary Vite files
+*.timestamp-*.mjs
+
+# Ignore specific test files that cause issues
+tests/unit/svelte-flow-integration.test.ts

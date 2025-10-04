@@ -1,29 +1,55 @@
 <script>
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
-import { writable } from 'svelte/store';
-import { setContext } from 'svelte';
-import { createAuthStore } from '@thepia/flows-auth'; // ✅ Static imports
-// TODO: Import AUTH_CONTEXT_KEY from '@thepia/flows-auth' once demo uses published package
-const AUTH_CONTEXT_KEY = 'flows-auth-store'; // Must match AUTH_CONTEXT_KEY in flows-auth
+import * as authDemoMessages from '../paraglide/messages/_index.js';
+import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext, ErrorReportingStatus, initializeErrorReporter } from '@thepia/flows-auth'; // ✅ Static imports
+import TabNavigation from '$lib/components/TabNavigation.svelte';
+import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
-import '@thepia/flows-auth/dist/style.css';
+import '@thepia/flows-auth/style.css';
 
 // Optional SvelteKit props
-export let params = {};
+export const params = {};
 
 // Auth state for reactivity
 let isAuthenticated = false;
 let user = null;
-let authStore = null;
-let isLoading = true;
+let isAuthLoading = true;
 let initError = null;
 
-// Create context immediately during component initialization
-const authStoreContext = writable(null);
-setContext(AUTH_CONTEXT_KEY, authStoreContext);
+// 🌐 Set up Paraglide message context for library components
+// This allows library components to use auth-demo's merged messages
+setI18nMessages(authDemoMessages);
 
-// Create auth store in onMount to prevent reactive loops
+// Create auth store during initialization (not in onMount)
+const authConfig = {
+  apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'demo',
+  domain: 'thepia.net',
+  enablePasskeys: false,
+  enableMagicLinks: true,
+  errorReporting: {
+    enabled: true,
+    // Endpoint will be auto-constructed as: ${apiBaseUrl}/dev/error-reports
+    debug: true
+  },
+  appCode: 'demo',
+  branding: {
+    companyName: 'Auth Demo'
+  }
+};
+
+const authStore = setupAuthContext(authConfig);
+initializeErrorReporter(authStore);
+// const zustandStore = createAuthStore(authConfig);
+// const authStore = makeSvelteCompatible(zustandStore);
+// authStore._debugId = 'layout-' + Date.now();
+
+// // Set context during initialization with the raw store
+// setContext(AUTH_CONTEXT_KEY, authStore);
+// console.log('🔄 Auth store context set');
+
+// Initialize in onMount (browser-specific operations)
 onMount(() => {
   if (!browser) {
     console.log('⚠️ Non-browser environment');
@@ -31,43 +57,20 @@ onMount(() => {
   }
 
   try {
-    console.log('🚀 Initializing auth demo with explicit prop passing pattern...');
-
-    // Create config synchronously
-    const authConfig = {
-      apiBaseUrl: 'https://api.thepia.com',
-      clientId: 'demo',
-      domain: 'thepia.net',
-      enablePasskeys: false,
-      enableMagicLinks: true,
-      enableErrorReporting: true,
-      appCode: 'demo',
-      branding: {
-        companyName: 'Auth Demo'
-      }
-    };
-    console.log('⚙️ Auth config created:', authConfig);
-
-    // Create auth store and update context
-    authStore = createAuthStore(authConfig);
-    console.log('🔧 Auth store created');
-    
-    // Update context with the created auth store
-    authStoreContext.set(authStore);
-    console.log('🔄 Auth store context updated');
-
-    // Initialize the auth store (check for existing session)
-    authStore.initialize();
-    console.log('✅ Auth store initialized');
+    console.log('🚀 Initializing auth store in browser...');
 
     // Subscribe to auth state changes for layout reactivity
     const unsubscribe = authStore.subscribe((state) => {
       isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
       user = state.user;
-      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
+      console.log('🔄 [LAYOUT] Auth state changed:', {
+        state: state.state,
+        signInState: state.signInState,
+        user: !!state.user
+      });
     });
 
-    isLoading = false;
+    isAuthLoading = false;
     console.log('✅ Auth store setup complete');
 
     // Return cleanup function
@@ -78,7 +81,7 @@ onMount(() => {
   } catch (error) {
     console.error('❌ Failed to create/initialize auth store:', error);
     initError = error instanceof Error ? error.message : 'Unknown error';
-    isLoading = false;
+    isAuthLoading = false;
   }
 });
 </script>
@@ -91,23 +94,26 @@ onMount(() => {
 					<span class="brand-icon">🔐</span>
 					Auth Demo
 				</h1>
-				<div class="auth-status">
-					{#if isAuthenticated && user}
-						<div class="user-info">
-							<span class="welcome">Welcome, {user.email}!</span>
-							<button 
-								class="btn btn-outline" 
-								on:click={() => authStore?.signOut()}
-							>
-								Sign Out
-							</button>
-						</div>
-					{:else}
-						<div class="status-indicator">
-							<span class="status-dot"></span>
-							Not authenticated
-						</div>
-					{/if}
+				<div class="header-controls">
+					<LanguageSelector />
+					<div class="auth-status">
+						{#if isAuthenticated && user}
+							<div class="user-info">
+								<span class="welcome">Welcome, {user.email}!</span>
+								<button
+									class="btn btn-outline"
+									on:click={() => authStore?.signOut()}
+								>
+									Sign Out
+								</button>
+							</div>
+						{:else}
+							<div class="status-indicator">
+								<span class="status-dot"></span>
+								Not authenticated
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -115,7 +121,7 @@ onMount(() => {
 	
 	<main class="main">
 		<div class="container">
-			{#if isLoading}
+			{#if isAuthLoading}
 				<div class="loading-state">
 					<div class="loading-spinner"></div>
 					<p>Initializing auth demo...</p>
@@ -129,15 +135,23 @@ onMount(() => {
 					</button>
 				</div>
 			{:else}
+				<!-- Tab Navigation -->
+				<TabNavigation />
+
 				<!-- ✅ Pass authStore to all pages via slot props -->
 				{console.log('🎯 Layout rendering slot (context-based):', { authStore: !!authStore, isAuthenticated, user: !!user })}
-				<slot 
-					isAuthenticated={isAuthenticated} 
-					user={user} 
+				<slot
+					isAuthenticated={isAuthenticated}
+					user={user}
 				/>
 			{/if}
 		</div>
 	</main>
+
+	<!-- Error Reporting Status (fixed bottom-right) -->
+	{#if browser}
+		<ErrorReportingStatus />
+	{/if}
 </div>
 
 <style>
@@ -195,7 +209,15 @@ onMount(() => {
 	.brand-icon {
 		font-size: 2rem;
 	}
-	
+
+	.header-controls {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		position: relative;
+		z-index: 100;
+	}
+
 	.auth-status {
 		display: flex;
 		align-items: center;

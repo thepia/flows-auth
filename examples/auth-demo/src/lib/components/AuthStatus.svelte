@@ -1,12 +1,12 @@
-<!-- 
-  Example component showing how to use the global auth store singleton
-  This component doesn't create its own auth store - it uses the global one
+<!--
+  Example component showing how to use auth store from context
+  This component doesn't create its own auth store - it gets it from context
 -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  
-  // Get the global auth store - no need to create or pass it around!
-  const auth = useAuth();
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // Get the auth store from context using the library's helper
+  const auth = getAuthStoreFromContext();
   
   // Subscribe to auth state
   $: authState = $auth;
@@ -37,7 +37,7 @@
   
   <div class="pattern-info">
     <p class="pattern-note">
-      ✅ This component uses <code>useAuth()</code> to access the global auth store.
+      ✅ This component uses <code>getAuthStoreFromContext()</code> to access the global auth store.
       No auth store creation, no prop drilling, no state duplication!
     </p>
   </div>

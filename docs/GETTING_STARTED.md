@@ -10,22 +10,47 @@ pnpm add @thepia/flows-auth
 
 ## Quick Start
 
-### 1. Basic Setup
+### 1. Setup Auth Store in Root Layout (Once)
+
+**IMPORTANT**: `setupAuthContext()` must ONLY be called in your root layout (`+layout.svelte` or `App.svelte`), never in components.
 
 ```svelte
+<!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
   // Configure for your domain
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     domain: 'thepia.net' // or 'thepia.com'
   };
 
-  // Create auth store
-  const authStore = createAuthStore(authConfig);
+  // ✅ Initialize auth store ONCE in root layout
+  // This makes the store available to all child components via context
+  const authStore = setupAuthContext(authConfig);
+</script>
+
+<main>
+  <slot />
+</main>
+```
+
+### 2. Access Auth Store in Components
+
+Components access the auth store using `getAuthStoreFromContext()` - they never call `setupAuthContext()`.
+
+**Pattern 1: Get store from context in component**
+
+```svelte
+<!-- YourComponent.svelte -->
+<script>
+  import { SignInForm } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context (DO NOT call setupAuthContext here)
+  const authStore = getAuthStoreFromContext();
 
   // Handle authentication events
   function handleAuthSuccess(event) {
@@ -54,11 +79,47 @@ pnpm add @thepia/flows-auth
     <h1>Sign In Required</h1>
     <p>Please sign in to access this application.</p>
 
+    <!-- Pass store as prop to be explicit -->
     <SignInForm
-      config={authConfig}
+      store={authStore}
       on:success={handleAuthSuccess}
       on:error={handleAuthError}
     />
+  </div>
+{/if}
+```
+
+**Pattern 2: Let library components auto-detect context**
+
+```svelte
+<!-- YourComponent.svelte -->
+<script>
+  import { SignInForm } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context for local use
+  const authStore = getAuthStoreFromContext();
+
+  // Subscribe to auth state
+  $: currentUser = $authStore.user;
+  $: isAuthenticated = !!currentUser;
+</script>
+
+{#if isAuthenticated}
+  <div class="authenticated-content">
+    <h1>Welcome, {currentUser.name}!</h1>
+    <button on:click={() => authStore.signOut()}>Sign Out</button>
+
+    <!-- Your app content -->
+    <slot />
+  </div>
+{:else}
+  <div class="auth-required">
+    <h1>Sign In Required</h1>
+    <p>Please sign in to access this application.</p>
+
+    <!-- SignInForm will automatically get store from context if no prop provided -->
+    <SignInForm />
   </div>
 {/if}
 ```
@@ -68,37 +129,44 @@ pnpm add @thepia/flows-auth
 The flows-auth library is designed as a **client-only** solution that works in the browser:
 
 ```svelte
-<!-- Your Svelte component -->
+<!-- +layout.svelte - Root layout with auth initialization -->
 <script>
-  import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
-  // ✅ CRITICAL: Use setAuthContext during component initialization, NOT createAuthStore in every component
-  // This creates a singleton auth store that can be accessed anywhere with useAuth()
-  if (browser) {
-    (async () => {
-      const authConfig = {
-        apiBaseUrl: 'https://api.thepia.com',
-        enablePasskeys: true,
-        enableMagicPins: true,
-        domain: 'thepia.net'
-      };
+  // Initialize auth store in root layout (runs once)
+  const authConfig = {
+    apiBaseUrl: 'https://api.thepia.com',
+    enablePasskeys: true,
+    enableMagicLinks: false,
+    domain: 'thepia.net'
+  };
 
-      const authStore = setAuthContext(authConfig);
-      
-      // Initialize auth state on client
-      authStore.initialize();
-    })();
-  }
-
-  // For components that need auth state, import useAuth instead:
-  // import { useAuth } from '@thepia/flows-auth';
-  // const auth = useAuth();
-  // $: isAuthenticated = !!$auth.user;
+  const authStore = setupAuthContext(authConfig);
 </script>
 
-<!-- This component should be split - initialization goes in layout, UI goes in pages -->
-<!-- See examples/auth-demo for proper implementation pattern -->
+<main>
+  <slot />
+</main>
+```
+
+```svelte
+<!-- YourComponent.svelte - Any child component -->
+<script>
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // Get auth store from context (no creation, no prop drilling)
+  const authStore = getAuthStoreFromContext();
+
+  // Subscribe to auth state
+  $: isAuthenticated = !!$authStore.user;
+</script>
+
+{#if isAuthenticated}
+  <p>Welcome, {$authStore.user.email}!</p>
+  <button on:click={() => authStore.signOut()}>Sign Out</button>
+{:else}
+  <p>Please sign in</p>
+{/if}
 ```
 
 **Important**: This library is client-only and designed for CDN deployment.
@@ -136,7 +204,7 @@ The flows-auth library connects to the Thepia authentication API server. **Impor
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',  // Production API server
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -148,7 +216,7 @@ const authConfig = {
 const authConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443',  // Local development API
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -159,7 +227,7 @@ const authConfig = {
 interface AuthConfig {
   apiBaseUrl: string;           // API server URL
   enablePasskeys?: boolean;     // Enable WebAuthn passkeys (default: true)
-  enableMagicPins?: boolean;   // Enable magic link fallback (default: true)
+  enableMagicLinks?: boolean;   // Enable magic link fallback (default: true)
   domain?: string;              // Domain for storage scope (thepia.com or thepia.net)
 }
 ```
@@ -178,7 +246,7 @@ The library supports **passwordless-only** authentication:
 ```typescript
 {
   enablePasskeys: true,        // WebAuthn/passkey authentication (recommended)
-  enableMagicPins: true,      // Email-based fallback for unsupported devices
+  enableMagicLinks: false,      // Email-based fallback for unsupported devices
 
   // Enterprise options (when required by customers)
   enterprise: {
@@ -228,7 +296,19 @@ interface AuthStore {
   accessToken: string | null;
   refreshToken: string | null;
   expiresAt: number | null;
-  error: string | null;
+  apiError: ApiError | null;
+}
+
+interface ApiError {
+  code: AuthErrorCode; // Translation key for the error message
+  message: string; // Technical error message for debugging
+  retryable: boolean; // Whether the error can be retried
+  timestamp: number; // When the error occurred
+  context?: {
+    method?: string; // Which API method failed
+    email?: string; // Email context if relevant
+    attempt?: number; // Retry attempt number
+  };
 }
 ```
 
@@ -237,6 +317,7 @@ interface AuthStore {
 ```svelte
 <script>
   import { createAuthStore } from '@thepia/flows-auth';
+  import { m } from '../paraglide/messages.js';
 
   const authStore = createAuthStore(config);
 
@@ -244,13 +325,18 @@ interface AuthStore {
   $: user = $authStore.user;
   $: isAuthenticated = $authStore.state === 'authenticated';
   $: isLoading = $authStore.state === 'authenticating';
-  $: error = $authStore.error;
+  $: apiError = $authStore.apiError;
 </script>
 
 {#if isLoading}
   <div class="loading">Signing in...</div>
-{:else if error}
-  <div class="error">Error: {error}</div>
+{:else if apiError}
+  <div class="error" role="alert">
+    {m[apiError.code]()}
+    {#if apiError.retryable}
+      <button on:click={() => authStore.retryLastFailedRequest()}>Try Again</button>
+    {/if}
+  </div>
 {:else if isAuthenticated}
   <div class="authenticated">Welcome, {user.name}!</div>
 {:else}
@@ -288,82 +374,108 @@ const token = authStore.getAccessToken();
 
 ## Error Handling
 
+The library uses a centralized **ApiError architecture** with translation-based error messages for internationalization support.
+
+### Centralized Error Management
+
 ```svelte
 <script>
-  import { createAuthStore, SignInForm } from '@thepia/flows-auth';
-  
+  import { createAuthStore, SignInCore } from '@thepia/flows-auth';
+  import { m } from '../paraglide/messages.js';
+
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     domain: 'thepia.net'
   });
 
-  // React to auth store errors
-  $: authError = $authStore.error;
-  $: if (authError) {
-    handleAuthStoreError(authError);
+  // React to centralized API errors
+  $: apiError = $authStore.apiError;
+  $: if (apiError) {
+    handleApiError(apiError);
   }
 
-  function handleAuthStoreError(error) {
+  function handleApiError(error) {
+    console.error('API Error:', {
+      code: error.code,
+      message: error.message,
+      retryable: error.retryable,
+      timestamp: new Date(error.timestamp)
+    });
+
+    // Optionally handle specific error types
     switch (error.code) {
-      case 'passkey_failed':
-        console.error('Passkey authentication failed:', error.message);
-        // Could automatically fallback to magic link
+      case 'error_usernotfound2':
+        // User doesn't exist - could trigger registration flow
         break;
-      case 'invalid_credentials':
-        console.error('Invalid credentials:', error.message);
+      case 'error_networkerror1':
+        // Network issue - could show offline indicator
         break;
-      case 'network_error':
-        console.error('Network error:', error.message);
+      case 'error_authenticationfailed1':
+        // Auth failed - could suggest alternative methods
         break;
-      default:
-        console.error('Authentication error:', error.message);
     }
   }
 
-  function handleComponentError(event) {
-    const { error } = event.detail;
-    console.error('Component error:', error);
-    
-    // Handle specific component-level errors
-    if (error.code === 'passkey_not_supported') {
-      // Show message about passkey support
-      alert('Passkeys are not supported on this device. Please use email authentication.');
-    }
+  // Clear errors when user takes action
+  function clearError() {
+    authStore.clearApiError();
   }
 
-  // Example of calling auth methods with proper error handling
-  async function tryPasskeyAuth() {
-    try {
-      await authStore.signInWithPasskey('user@example.com');
-      console.log('Passkey authentication successful');
-    } catch (error) {
-      console.error('Passkey auth failed:', error);
-      // Fallback to magic link
-      try {
-        await authStore.signInWithMagicLink('user@example.com');
-        console.log('Magic link sent as fallback');
-      } catch (fallbackError) {
-        console.error('Both auth methods failed:', fallbackError);
-      }
+  // Retry failed operations
+  async function retryLastOperation() {
+    const success = await authStore.retryLastFailedRequest();
+    if (!success) {
+      console.log('Retry failed or no operation to retry');
     }
   }
 </script>
 
-<!-- Display auth errors in UI -->
-{#if authError}
-  <div class="error-banner">
-    <p>Authentication Error: {authError.message}</p>
-    <button on:click={() => authStore.reset()}>Try Again</button>
+<!-- Display persistent API errors with translations -->
+{#if apiError}
+  <div class="error-banner" role="alert">
+    <p>{m[apiError.code]()}</p>
+    <div class="error-actions">
+      {#if apiError.retryable}
+        <button on:click={retryLastOperation}>Try Again</button>
+      {/if}
+      <button on:click={clearError}>Dismiss</button>
+    </div>
   </div>
 {/if}
 
-<SignInForm 
-  {authStore}
-  on:error={handleComponentError}
-/>
+<!-- SignInCore automatically displays apiError with translations -->
+<SignInCore {config} {authStore} />
+```
+
+### Error Types and Translation Keys
+
+The library uses these error codes as translation keys:
+
+- `error_usernotfound2` - No account found for email
+- `error_serviceunavailable1` - Service temporarily unavailable
+- `error_authenticationcancelled1` - User cancelled authentication
+- `error_authenticationfailed1` - Authentication failed
+- `error_networkerror1` - Network connection failed
+- `error_ratelimited1` - Too many attempts
+- `error_invalidinput1` - Invalid input provided
+- `error_unknownerror1` - Unexpected error occurred
+
+### Simplified Component Integration
+
+Components no longer need error handling - errors are managed centrally:
+
+```svelte
+<script>
+  // No try/catch needed - errors handled by AuthStore
+  async function handleSignIn() {
+    // This will set apiError on failure, no exception thrown
+    await authStore.checkUser(email);
+    await authStore.signInWithPasskey(email);
+  }
+</script>
 ```
 
 ## Styling and Theming

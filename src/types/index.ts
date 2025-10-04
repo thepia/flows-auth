@@ -55,16 +55,50 @@ export type RegistrationStep =
   | 'email-verification-required'
   | 'email-verification-complete'
   | 'error';
+/**
+ * Sign-in authentication data
+ *
+ * Unified type used throughout the authentication flow:
+ * - API response from server after successful authentication
+ * - Session data stored in client storage
+ * - State machine event payload (PIN_VERIFIED, PASSKEY_AUTHENTICATED, etc.)
+ * - Current auth state in the client store
+ *
+ * Design principles:
+ * - Matches server API response structure (nested tokens)
+ * - Contains all data needed for client-side session management
+ * - No unnecessary transformations between API and storage
+ * - Uses numeric timestamps for expiration (timezone-independent)
+ * - Uses ISO string dates for user-facing fields (timezone-aware)
+ */
+export interface SignInData {
+  /** User information - combines server data with client-side fields */
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    emailVerified?: boolean;      // From server (optional for legacy data)
+    isNewUser?: boolean;          // From server
+    metadata?: Record<string, any>; // From server
+    // Client-side fields
+    initials: string;             // Generated from name
+    avatar?: string;              // From user profile or generated
+    preferences?: Record<string, any>; // Client-side preferences
+  };
 
-// New dual state machine types
-// Removed: session-state-machine types - SessionStateMachine removed
-// Note: signin-state-machine types exported at top of file
+  /** Authentication tokens (nested structure matching server API) */
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn?: number;    // Server provides duration in seconds
+    expiresAt: number;     // Absolute timestamp in milliseconds
+  };
 
-export interface SessionData {
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  user: User;
+  /** Authentication method used */
+  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+
+  /** Client-side session management */
+  lastActivity: number;     // Timestamp of last activity (milliseconds)
 }
 
 // Storage configuration
@@ -130,11 +164,14 @@ export interface AuthConfig {
 
   // Authentication flow configuration
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
+  emailCodeLength?: number; // Length of email verification codes (default: 6)
 
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
-  translations?: import('../utils/i18n').CustomTranslations; // Custom translation overrides
   fallbackLanguage?: string; // Fallback language (defaults to 'en')
+
+  // Development configuration
+  enableDevtools?: boolean; // Enable Zustand devtools integration
 }
 
 // Auth0 configuration
@@ -349,18 +386,60 @@ export interface AuthError {
   timestamp?: string;
 }
 
+// New ApiError interface for centralized error management
+export interface ApiError {
+  code: AuthErrorCode; // Translation key for the error message
+  message: string; // Technical error message for debugging
+  retryable: boolean; // Whether the error can be retried
+  timestamp: number; // When the error occurred
+  context?: {
+    method?: string; // Which API method failed
+    email?: string; // Email context if relevant
+    attempt?: number; // Retry attempt number
+  };
+}
+
 export type AuthErrorCode =
-  | 'user_not_found'
-  | 'email_not_verified'
-  | 'passkey_not_supported'
-  | 'passkey_failed'
-  | 'passkey_cancelled'
-  | 'passkey_timeout'
-  | 'magic_link_expired'
-  | 'magic_link_failed'
-  | 'rate_limited'
-  | 'network_error'
-  | 'unknown_error';
+  | 'error.userNotFound'
+  | 'error.serviceUnavailable'
+  | 'error.authCancelled'
+  | 'error.authFailed'
+  | 'error.network'
+  | 'error.rateLimited'
+  | 'error.invalidInput'
+  | 'error.unknown';
+
+/**
+ * User check data structure - aligned with actual API server implementation
+ * Based on checkUser function in thepia.com/src/api/workos.ts:234-265
+ */
+export interface UserCheckData {
+  // Core response (always present)
+  exists: boolean;
+  hasWebAuthn: boolean; // Note: API uses hasWebAuthn, not hasPasskey
+
+  // Optional fields (only present if user exists)
+  userId?: string; // WorkOS user ID
+  emailVerified?: boolean; // From WorkOS user profile
+
+  // Pin validation fields (from user metadata)
+  lastPinExpiry?: string; // ISO string from user.metadata.lastPinExpiry
+  lastPinSentAt?: string; // ISO string from user.metadata.lastPinSentAt
+
+  // Invitation system
+  invitationTokenHash?: string; // For invitation token validation
+
+  // Organization context (added by check-user.ts:60-67)
+  organization?: {
+    code: string; // App code (e.g., "demo")
+    name: string; // Organization name
+    provider: string; // "workos"
+    features?: {
+      webauthn?: boolean;
+      sso?: boolean;
+    };
+  };
+}
 
 // Events
 export interface AuthEventData {
@@ -373,6 +452,11 @@ export interface AuthEventData {
   success?: boolean;
   timestamp?: number;
   requiresVerification?: boolean;
+  tokens?: {
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt?: number;
+  };
 }
 
 export type AuthEventType =
@@ -381,6 +465,7 @@ export type AuthEventType =
   | 'sign_in_error'
   | 'sign_out'
   | 'token_refreshed'
+  | 'session_expired'
   | 'passkey_created'
   | 'passkey_used'
   | 'registration_started'
@@ -397,6 +482,129 @@ export type AuthEventType =
   | 'app_email_verify_started'
   | 'app_email_verify_success'
   | 'app_email_verify_error';
+
+/**
+ * Typed event data for each auth event type
+ * This provides type-safe event emission and handling
+ */
+export interface AuthEvents {
+  sign_in_started: {
+    method: 'passkey' | 'magic-link' | 'email-code';
+    email?: string;
+  };
+
+  sign_in_success: {
+    user: User;
+    method: 'passkey' | 'magic-link' | 'email-code';
+    duration?: number;
+  };
+
+  sign_in_error: {
+    error?: {
+      code: string;
+      message: string;
+    };
+    method: 'passkey' | 'magic-link' | 'email-code';
+  };
+
+  sign_out: {
+    reason?: 'user_action' | 'session_expired' | 'token_refresh_failed';
+  };
+
+  token_refreshed: {
+    expiresAt: number;
+  };
+
+  session_expired: {
+    lastActivity: number;
+  };
+
+  passkey_used: {
+    user: User;
+    conditional?: boolean;
+  };
+
+  passkey_created: {
+    user: User;
+    credentialId?: string;
+  };
+
+  registration_started: {
+    email: string;
+    method?: 'passkey' | 'email-code';
+  };
+
+  registration_success: {
+    user: User;
+    requiresVerification?: boolean;
+  };
+
+  registration_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+  };
+
+  email_verification_sent: {
+    email: string;
+  };
+
+  email_verification_success: {
+    user: User;
+  };
+
+  email_verification_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+  };
+
+  terms_accepted: {
+    user: User;
+  };
+
+  welcome_email_sent: {
+    email: string;
+  };
+
+  app_email_started: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_sent: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+    appCode: string;
+  };
+
+  app_email_verify_started: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_verify_success: {
+    email: string;
+    appCode: string;
+  };
+
+  app_email_verify_error: {
+    error: {
+      code: string;
+      message: string;
+    };
+    appCode: string;
+  };
+}
 
 // Component props
 export interface SignInFormProps {
@@ -473,34 +681,50 @@ export interface AuthStore {
   accessToken: string | null;
   refreshToken: string | null;
   expiresAt: number | null;
-  error: AuthError | null;
+  apiError: ApiError | null; // Centralized API error management
+  passkeysEnabled: boolean; // Added: Centralized passkey availability determination
+
+  // UI State (moved from SignInCore)
+  email: string; // Current email input value
+  loading: boolean; // Component loading state
+  emailCodeSent: boolean; // Whether email code was sent
+  fullName: string; // Registration full name input
+
+  // User Discovery State (moved from SignInCore)
+  userExists: boolean | null; // Whether user exists (null = not checked)
+  hasPasskeys: boolean; // Whether user has passkeys
+  hasValidPin: boolean; // Whether user has valid pin
+  pinRemainingMinutes: number; // Minutes remaining for valid pin
+
+  // WebAuthn State (moved from SignInCore)
+  conditionalAuthActive: boolean; // Whether conditional auth is active
+  platformAuthenticatorAvailable: boolean; // Whether platform authenticator is available
 }
 
-// Svelte store types
-export type Unsubscriber = () => void;
-export type Subscriber<T> = (value: T) => void;
-export type Readable<T> = {
-  subscribe: (run: Subscriber<T>) => Unsubscriber;
-};
-
-// Complete auth store type with all methods
-export interface CompleteAuthStore extends Readable<AuthStore> {
-  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInResponse>;
-  signInWithMagicLink: (email: string) => Promise<SignInResponse>;
+export interface AuthStoreFunctions {
+  // Core authentication
+  signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInData>;
+  signInWithMagicLink: (email: string) => Promise<SignInData | null>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
-  isAuthenticated: () => boolean;
-  getAccessToken: () => string | null;
-  reset: () => void;
-  initialize: () => void;
   startConditionalAuthentication: (email: string) => Promise<boolean>;
+
+  // Email authentication
+  sendEmailCode: (email: string) => Promise<{
+    success: boolean;
+    message: string;
+    timestamp: number;
+  }>;
+  verifyEmailCode: (code: string) => Promise<SignInData>;
+
+  // User management
   checkUser: (email: string) => Promise<{
     exists: boolean;
     hasWebAuthn: boolean;
     userId?: string;
     emailVerified?: boolean;
     invitationTokenHash?: string;
-    lastPinExpiry?: number;
+    lastPinExpiry?: string; // ISO date string from API
   }>;
   registerUser: (userData: {
     email: string;
@@ -530,6 +754,7 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     verificationRequired: boolean;
     message: string;
   }>;
+
   checkUserWithInvitation: (
     email: string,
     invitationOptions?: {
@@ -539,37 +764,95 @@ export interface CompleteAuthStore extends Readable<AuthStore> {
     }
   ) => Promise<EnhancedUserCheck>;
   determineAuthFlow: (email: string, invitationToken?: string) => Promise<AuthFlowResult>;
-  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
-  api: AuthApiClient;
+
+  // State management
+  initialize: () => void;
+  reset: () => void;
+  isAuthenticated: () => boolean;
+  getAccessToken: () => string | null;
+  getState: () => AuthStore;
+
+  // UI state setters
+  setEmail: (email: string) => void;
+  setFullName: (name: string) => void;
+  setLoading: (loading: boolean) => void;
+  setConditionalAuthActive: (active: boolean) => void;
+  setEmailCodeSent: (sent: boolean) => void;
+
+  // Error management
+  setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
+  clearApiError: () => void;
+  retryLastFailedRequest: () => Promise<boolean>;
 
   // SignIn flow control methods
   notifyPinSent: () => void;
-  notifyPinVerified: (sessionData: any) => void;
+  notifyPinVerified: (signInData: SignInData) => void;
   sendSignInEvent: (event: SignInEvent) => SignInState;
-
-  // Email-based authentication methods
-  sendEmailCode: (email: string) => Promise<{
-    success: boolean;
-    message: string;
-    timestamp: number;
-  }>;
-  verifyEmailCode: (email: string, code: string) => Promise<SignInResponse>;
-
-  // Dynamic role configuration methods
-  getApplicationContext: () => ApplicationContext | null;
-  updateStorageConfiguration: (update: StorageConfigurationUpdate) => Promise<void>;
-  migrateSession: (fromType: StorageType, toType: StorageType) => Promise<SessionMigrationResult>;
 
   // Configuration access
   getConfig: () => AuthConfig;
+  updateConfig: (updates: Partial<AuthConfig>) => void;
 
-  // Cleanup
-  destroy: () => void;
+  // UI Configuration
+  getButtonConfig: () => ButtonConfig;
+  getStateMessageConfig: () => StateMessageConfig | null;
+  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
+
+  // Events
+  on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
 }
 
-// Re-export i18n types for convenience
-export type {
-  CustomTranslations,
-  TranslationKey,
-  SupportedLanguage
-} from '../utils/i18n';
+// Button configuration types
+export type AuthButtonMethod =
+  | 'passkey'
+  | 'email'
+  | 'email-code'
+  | 'magic-link'
+  | 'generic'
+  | 'continue-touchid'
+  | 'continue-faceid'
+  | 'continue-biometric';
+
+export interface SingleButtonConfig {
+  method: AuthButtonMethod;
+  textKey: string;
+  loadingTextKey: string;
+  supportsWebAuthn: boolean;
+  disabled: boolean;
+}
+
+export interface ButtonConfig {
+  primary: SingleButtonConfig;
+  secondary?: SingleButtonConfig | null;
+}
+
+// State message configuration types
+export interface StateMessageConfig {
+  type: 'info' | 'success' | 'warning' | 'error';
+  textKey: string;
+  showIcon?: boolean;
+  className?: string;
+}
+
+// Explainer configuration types
+export interface ExplainerFeature {
+  iconName: string; // Phosphor icon name (e.g., 'Lock', 'Shield', 'BadgeCheck')
+  textKey: string; // Translation key for the feature text
+  iconWeight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'; // Phosphor icon weight
+}
+
+export interface ExplainerConfig {
+  type: 'paragraph' | 'features';
+  // For paragraph type
+  textKey?: string; // Translation key for paragraph text
+  iconName?: string; // Optional icon for paragraph
+  iconWeight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+  useCompanyName?: boolean; // Whether to pass companyName parameter for translation interpolation
+  companyName?: string; // Company name to pass to translation function
+  // For features type
+  features?: ExplainerFeature[];
+  className?: string;
+}
+
+// Re-export i18n utilities for convenience
+export { m, setI18nMessages } from '../utils/i18n';

@@ -4,13 +4,13 @@
 -->
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import { createAuthStore } from '../stores/auth-store';
-  import { useAuth } from '../utils/auth-context';
+  import { getAuthStoreFromContext } from '../utils/auth-context';
+  import type { SvelteAuthStore } from '../types/svelte';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
-  import type { 
-    AuthConfig, 
-    User, 
-    AuthError, 
+  import type {
+    AuthConfig,
+    User,
+    AuthError,
     RegistrationRequest,
     AuthEventData,
     InvitationTokenData,
@@ -18,7 +18,7 @@
   } from '../types';
 
   // Props
-  export let config: AuthConfig;
+  export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
   export let showLogo = true;
   export let compact = false;
   export let className = '';
@@ -37,18 +37,16 @@ const dispatch = createEventDispatcher<{
   switchToSignIn: Record<string, never>;
 }>();
 
-  // Auth store - Use context store or create from config (backward compatibility)
-  const authStore = (() => {
-    // First try to use context store (preferred pattern per ADR 0004)
-    try {
-      return useAuth();
-    } catch {
-      // Fallback to creating from config (backward compatibility)
-      console.warn('⚠️ AccountCreationForm: Using fallback auth store. Consider using setAuthContext() in layout.');
-      return createAuthStore(config);
-    }
-  })();
-  
+  // Auth store - use prop or fallback to context
+  const authStore = store || getAuthStoreFromContext();
+
+  if (!authStore) {
+    throw new Error('AccountCreationForm requires store prop or auth store in context');
+  }
+
+  // Get config from store
+  $: config = authStore.getConfig();
+
   // Track registration completion for auth store subscription
   let registrationCompleted = false;
   let registrationResult: { user: User; emailVerifiedViaInvitation?: boolean } | null = null;
@@ -942,10 +940,6 @@ const dispatch = createEventDispatcher<{
 
   .business-fields {
     margin-top: 16px;
-  }
-
-  .business-fields .input-group {
-    margin-bottom: 16px;
   }
 
   .warning-banner {

@@ -64,12 +64,6 @@ describe('Library Exports', () => {
   });
 
   describe('Store Functions', () => {
-    it('should export createAuthDerivedStores', async () => {
-      const { createAuthDerivedStores } = await import('../../src/index');
-      expect(createAuthDerivedStores).toBeDefined();
-      expect(typeof createAuthDerivedStores).toBe('function');
-    });
-
     it('should export createAuthStore', async () => {
       const { createAuthStore } = await import('../../src/index');
       expect(createAuthStore).toBeDefined();

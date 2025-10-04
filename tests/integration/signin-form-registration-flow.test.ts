@@ -10,7 +10,7 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;
@@ -22,7 +22,7 @@ describe('SignInForm Registration Flow Regression', () => {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
     enablePasskeys: true,
-    enableMagicPins: true
+    enableMagicLinks: false
   };
 
   beforeAll(async () => {
@@ -40,7 +40,7 @@ describe('SignInForm Registration Flow Regression', () => {
 
     if (apiServerRunning) {
       // Initialize auth store and API client
-      authStore = createAuthStore(TEST_CONFIG);
+      authStore = makeSvelteCompatible(createAuthStore(TEST_CONFIG));
       apiClient = new AuthApiClient(TEST_CONFIG);
     }
   });
@@ -232,7 +232,7 @@ describe('SignInForm Registration Flow Regression', () => {
         if (hasPasskeys) {
           expectedStep = 'passkey-auth';
           console.log('🔐 Expected flow: Passkey authentication');
-        } else if (userExists && TEST_CONFIG.enableMagicPins) {
+        } else if (userExists && TEST_CONFIG.enableMagicLinks) {
           expectedStep = 'magic-link';
           console.log('📧 Expected flow: Magic link authentication');
         } else if (!userExists) {

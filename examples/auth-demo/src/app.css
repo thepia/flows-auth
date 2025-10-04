@@ -2,6 +2,21 @@
 @import "@thepia/branding/tailwind/variables";
 @import "@thepia/branding/css/components";
 
+/* Force include flows-auth component classes that Tailwind v4 auto-scanning misses */
+@layer utilities {
+  .min-h-\[2\.75rem\] {
+    min-height: 2.75rem;
+  }
+  .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
 /* Global styles for the auth demo */
 
 /* Tailwind v4 @theme configuration using @thepia/branding tokens */
@@ -467,6 +482,13 @@ select {
 /* Note: @thepia/flows-auth component styles are imported from the library's dist/style.css */
 /* Component classes (.btn-brand, .input-brand, etc.) are now imported from @thepia/branding/css/components */
 /* AuthButton component now has complete self-contained styling and doesn't need external CSS */
+
+/* Ensure input-brand matches actual AuthButton height in browser */
+:global(.input-brand) {
+  height: 29px; /* Matches actual rendered AuthButton height */
+  padding: 0.25rem 1rem; /* Adjust padding to maintain 29px total height */
+  box-sizing: border-box;
+}
 
 /* Responsive */
 @media (max-width: 768px) {

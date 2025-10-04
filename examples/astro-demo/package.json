@@ -1,0 +1,24 @@
+{
+  "name": "astro-demo",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^7.2.0",
+    "@thepia/flows-auth": "workspace:*",
+    "astro": "^5.14.1",
+    "svelte": "^5.39.7",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.1.14",
+    "@thepia/branding": "^1.4.0",
+    "tailwindcss": "^4.1.14"
+  }
+}

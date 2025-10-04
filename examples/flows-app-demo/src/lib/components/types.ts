@@ -14,7 +14,7 @@ export interface RealAuthConfig {
   domain: string;
   clientId: string;
   enablePasskeys: boolean;
-  enableMagicPins?: boolean;
+  enableMagicLinks?: boolean;
   branding?: {
     companyName: string;
     logoUrl?: string;
@@ -38,7 +38,7 @@ export interface MockAuthConfig {
     secondaryColor?: string;
   };
   enablePasskeys?: boolean;
-  enableMagicPins?: boolean;
+  enableMagicLinks?: boolean;
 }
 
 /**
@@ -103,7 +103,7 @@ export function createMockAuthConfig(branding?: MockAuthConfig['branding']): Moc
     __MOCK_AUTH_WARNING__: 'THIS_IS_FAKE_AUTHENTICATION_DO_NOT_USE_IN_PRODUCTION',
     branding,
     enablePasskeys: true,
-    enableMagicPins: true
+    enableMagicLinks: false
   };
 }
 

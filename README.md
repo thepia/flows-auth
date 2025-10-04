@@ -13,6 +13,14 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 - 🎯 **TypeScript** - Full type safety
 - 🌍 **SSR Compatible** - Works with SvelteKit
 
+## Architecture
+
+Modular Zustand-based state management:
+- `src/stores/core/` - Auth state, session, errors, events
+- `src/stores/auth-methods/` - Passkey and email authentication
+- `src/stores/ui/` - UI state and business logic
+- `src/stores/adapters/` - Svelte adapter for reactivity
+
 ## Quick Start
 
 ### Installation
@@ -68,7 +76,7 @@ yarn add @thepia/flows-auth
     clientId: 'your-client-id',
     domain: 'yourapp.com',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     branding: {
       companyName: 'Your Company',
       logoUrl: '/logo.svg',
@@ -210,7 +218,7 @@ interface AuthConfig {
   
   // Feature flags
   enablePasskeys: boolean;
-  enableMagicPins: boolean;
+  enableMagicLinks: boolean;
   
   // Optional
   redirectUri?: string;
@@ -393,7 +401,7 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
     clientId: 'demo-client',
     domain: 'example.com',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     branding: {
       companyName: 'Demo Company'
     }

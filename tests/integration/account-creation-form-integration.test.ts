@@ -11,7 +11,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, InvitationTokenData } from '../../src/types';
 
 // Mock WebAuthn API
@@ -50,7 +50,7 @@ describe('AccountCreationForm Integration Tests', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicPins: false,
+      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company'
       }
@@ -134,7 +134,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('success', successHandler);
 
       // Step 1: Email entry
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -198,7 +198,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('appAccess', appAccessHandler);
 
       // Complete email and terms steps
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -254,7 +254,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('appAccess', appAccessHandler);
 
       // Email should be prefilled and readonly
-      const emailInput = screen.getByLabelText('Email address') as HTMLInputElement;
+      const emailInput = screen.getByLabelText('Email Address *') as HTMLInputElement;
       expect(emailInput.value).toBe('test@example.com');
       expect(emailInput.readOnly).toBe(true);
 
@@ -310,7 +310,7 @@ describe('AccountCreationForm Integration Tests', () => {
       };
 
       // Complete registration flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -368,7 +368,7 @@ describe('AccountCreationForm Integration Tests', () => {
       });
 
       // Complete registration
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -412,7 +412,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('error', errorHandler);
 
       // Complete flow until registration
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -468,7 +468,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('error', errorHandler);
 
       // Complete flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -504,7 +504,7 @@ describe('AccountCreationForm Integration Tests', () => {
       component.$on('error', errorHandler);
 
       // Try to proceed with email check
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -527,7 +527,7 @@ describe('AccountCreationForm Integration Tests', () => {
       });
 
       // Complete flow
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 
@@ -554,7 +554,7 @@ describe('AccountCreationForm Integration Tests', () => {
         props: { config: authConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
 
       const continueButton = screen.getByText('Continue');
@@ -598,7 +598,7 @@ describe('AccountCreationForm Integration Tests', () => {
         props: { config: authConfig }
       });
 
-      const emailInput = screen.getByLabelText('Email address');
+      const emailInput = screen.getByLabelText('Email Address *');
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await fireEvent.click(screen.getByText('Continue'));
 

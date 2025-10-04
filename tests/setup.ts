@@ -4,9 +4,11 @@ import { cleanup } from '@testing-library/svelte';
  */
 import { afterEach, beforeAll, vi } from 'vitest';
 import '@testing-library/jest-dom';
+// Import vitest setup for automatic cleanup
+import '@testing-library/svelte/vitest';
 
 // Mock the error reporter module before it's imported anywhere else
-vi.mock('../src/utils/errorReporter', () => ({
+vi.mock('../src/utils/telemetry', () => ({
   initializeErrorReporter: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
@@ -15,6 +17,55 @@ vi.mock('../src/utils/errorReporter', () => ({
   flushErrorReports: vi.fn(),
   getErrorReportQueueSize: vi.fn(() => 0)
 }));
+
+// Mock phosphor-svelte icons to prevent ES module import issues
+vi.mock('phosphor-svelte', () => {
+  // Create a proper mock Svelte component
+  const MockIcon = class {
+    constructor() {
+      this.$$ = {
+        fragment: null,
+        ctx: [],
+        callbacks: {},
+        dirty: () => {},
+        bound: {},
+        update: () => {},
+        before_update: [],
+        after_update: [],
+        context: new Map(),
+        on_mount: [],
+        on_destroy: [],
+        skip_bound: false
+      };
+    }
+
+    $destroy() {}
+    $on() {
+      return () => {};
+    }
+    $set() {}
+  };
+
+  return {
+    Lock: MockIcon,
+    Shield: MockIcon,
+    Certificate: MockIcon,
+    Key: MockIcon,
+    UserCheck: MockIcon,
+    ShieldCheck: MockIcon,
+    Fingerprint: MockIcon,
+    DeviceMobile: MockIcon,
+    Globe: MockIcon,
+    CheckCircle: MockIcon,
+    WarningCircle: MockIcon,
+    User: MockIcon,
+    Envelope: MockIcon,
+    SmileyWink: MockIcon,
+    Heart: MockIcon,
+    Star: MockIcon,
+    Settings: MockIcon
+  };
+});
 
 // Mock browser APIs for testing
 const localStorageMock = {
@@ -79,6 +130,80 @@ Object.defineProperty(navigator, 'userAgent', {
   writable: true
 });
 
+// Mock ResizeObserver for SvelteFlow components
+class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: ResizeObserverCallback) {
+    // Store callback for potential future use
+    this.callback = callback;
+  }
+
+  private callback: ResizeObserverCallback;
+}
+
+global.ResizeObserver = MockResizeObserver as any;
+
+// Mock IntersectionObserver for components that need it
+class MockIntersectionObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+
+  private callback: IntersectionObserverCallback;
+}
+
+global.IntersectionObserver = MockIntersectionObserver as any;
+
+// Mock MutationObserver for components that need it
+class MockMutationObserver {
+  observe = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: MutationCallback) {
+    this.callback = callback;
+  }
+
+  private callback: MutationCallback;
+}
+
+global.MutationObserver = MockMutationObserver as any;
+
+// Mock requestAnimationFrame and cancelAnimationFrame
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
+global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+
+// Mock getComputedStyle for layout calculations
+global.getComputedStyle = vi.fn(() => ({
+  getPropertyValue: vi.fn(() => ''),
+  width: '0px',
+  height: '0px'
+}));
+
+// Mock getBoundingClientRect for layout calculations
+Element.prototype.getBoundingClientRect = vi.fn(() => ({
+  width: 400,
+  height: 300,
+  top: 0,
+  left: 0,
+  bottom: 300,
+  right: 400,
+  x: 0,
+  y: 0,
+  toJSON: vi.fn()
+}));
+
+// Mock HTMLElement methods that SvelteFlow might use
+HTMLElement.prototype.scrollIntoView = vi.fn();
+HTMLElement.prototype.focus = vi.fn();
+HTMLElement.prototype.blur = vi.fn();
+
 // Ensure window has dispatchEvent function
 if (!window.dispatchEvent || typeof window.dispatchEvent !== 'function') {
   const eventListeners = new Map<string, Set<EventListener>>();
@@ -110,7 +235,7 @@ if (!window.dispatchEvent || typeof window.dispatchEvent !== 'function') {
 }
 
 // Setup before all tests
-beforeAll(() => {
+beforeAll(async () => {
   /**
    * ⚠️ CRITICAL: NO MOCKING POLICY FOR INTEGRATION TESTS
    * ====================================================

@@ -4,7 +4,7 @@
 -->
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { useAuth, useAuthSafe } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
 
   let authState = null;
   let storeId = Math.random().toString(36).substring(2, 11);
@@ -12,18 +12,14 @@
   let authError = null;
   let unsubscribe = null;
 
-  // Get auth store using the proper context pattern
+  // Get auth store from context using the library's helper
   try {
-    authStore = useAuth();
-    console.log(`📡 Layout component (${storeId}): Auth store from useAuth():`, !!authStore);
+    authStore = getAuthStoreFromContext();
+    console.log(`📡 Layout component (${storeId}): Auth store from context:`, !!authStore);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(`📡 Layout component (${storeId}): useAuth() failed, trying useAuthSafe():`, errorMessage);
-    authStore = useAuthSafe();
-    if (!authStore) {
-      authError = errorMessage;
-      console.error(`📡 Layout component (${storeId}): No auth store available:`, error);
-    }
+    authError = errorMessage;
+    console.error(`📡 Layout component (${storeId}): No auth store available:`, error);
   }
 
   // Subscribe to auth state changes with proper lifecycle management

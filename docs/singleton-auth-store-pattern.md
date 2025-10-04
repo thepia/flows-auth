@@ -1,5 +1,7 @@
 # Global Auth Store Singleton Pattern
 
+> **📋 AUTHORITY**: This document implements the patterns defined in [ADR 0004: Global Svelte Store Architecture](./adr/0004-global-svelte-store-architecture.md). For complete architectural context and framework-specific prescriptions, see the ADR.
+
 ## 🚨 Critical Svelte Context Limitations
 
 **IMPORTANT**: `setAuthContext()` uses Svelte's `setContext()` internally, which has **severe limitations**:
@@ -9,6 +11,8 @@
 - ❌ **CANNOT be called in lifecycle hooks** - Context must be set before component mounts
 - ❌ **CANNOT be called asynchronously** - Even `.then()` callbacks are too late
 - ❌ **CANNOT be used with async imports** - `await import()` moves execution outside initialization
+
+**📖 See [ADR 0004](./adr/0004-global-svelte-store-architecture.md) for complete technical analysis and proven implementation patterns.**
 
 ### ⚠️ When Svelte Context Won't Work
 
@@ -20,29 +24,6 @@ If you need **any** of these features, **do NOT use `setAuthContext()`**:
 
 **Use `initializeAuth()` and `getGlobalAuthStore()` instead** - they work perfectly with async operations.
 
-**✅ Correct Pattern for Async Operations:**
-```svelte
-<!-- +layout.svelte -->
-<script>
-  import { browser } from '$app/environment';
-  
-  // Use global store for async operations
-  if (browser) {
-    (async () => {
-      const { initializeAuth, quickAuthSetup } = await import('@thepia/flows-auth');
-      
-      const authConfig = await quickAuthSetup({
-        companyName: 'Your App',
-        clientId: 'your-client-id',
-        enableErrorReporting: true,
-      });
-      
-      // ✅ This works with async operations
-      const authStore = initializeAuth(authConfig);
-    })();
-  }
-</script>
-```
 
 **✅ Correct Pattern for Sync Operations Only:**
 ```svelte
@@ -93,29 +74,25 @@ The flows-auth library provides a **singleton auth store pattern** that ensures 
 
 ### 1. Initialize Once in Root Layout
 
+**IMPORTANT**: `setupAuthContext()` must ONLY be called in your root layout (`+layout.svelte` or `App.svelte`), never in components.
+
 ```svelte
-<!-- +layout.svelte -->
+<!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
-  
-  // ✅ CRITICAL: setAuthContext must be called during component initialization, NOT in onMount
-  // setContext() only works during component initialization in Svelte
-  if (browser) {
-    (async () => {
-      const authConfig = {
-        apiBaseUrl: 'https://api.yourapp.com',
-        clientId: 'your-client-id',
-        domain: 'yourapp.com',
-        enablePasskeys: true,
-        enableMagicPins: true
-      };
-      
-      // Initialize the global singleton auth store
-      const authStore = setAuthContext(authConfig);
-      console.log('🔐 Global auth store initialized');
-    })();
-  }
+  import { setupAuthContext } from '@thepia/flows-auth';
+
+  const authConfig = {
+    apiBaseUrl: 'https://api.yourapp.com',
+    clientId: 'your-client-id',
+    domain: 'yourapp.com',
+    enablePasskeys: true,
+    enableMagicLinks: false
+  };
+
+  // ✅ Initialize the auth store ONCE in root layout
+  // This makes it available to all child components via context
+  const authStore = setupAuthContext(authConfig);
+  console.log('🔐 Auth store initialized in context');
 </script>
 
 <main>
@@ -123,27 +100,26 @@ The flows-auth library provides a **singleton auth store pattern** that ensures 
 </main>
 ```
 
-### 2. Use Anywhere with `useAuth()`
+### 2. Access in Components with `getAuthStoreFromContext()`
 
 ```svelte
 <!-- Any component in your app -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  
-  // Get the global auth store - no creation, no prop drilling!
-  const auth = useAuth();
-  
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get the auth store from context (DO NOT call setupAuthContext here)
+  const authStore = getAuthStoreFromContext();
+
   // Subscribe to auth state
-  $: authState = $auth;
-  $: isAuthenticated = authState.state === 'authenticated';
-  $: user = authState.user;
+  $: isAuthenticated = $authStore.state === 'authenticated';
+  $: user = $authStore.user;
 </script>
 
 {#if isAuthenticated}
   <p>Welcome, {user.email}!</p>
-  <button on:click={() => auth.signOut()}>Sign Out</button>
+  <button on:click={() => authStore.signOut()}>Sign Out</button>
 {:else}
-  <button on:click={() => auth.signInWithMagicLink('user@example.com')}>
+  <button on:click={() => authStore.signInWithMagicLink('user@example.com')}>
     Sign In
   </button>
 {/if}
@@ -165,7 +141,7 @@ const authStore = initializeAuth({
   clientId: 'your-client-id',
   domain: 'yourapp.com',
   enablePasskeys: true,
-  enableMagicPins: true
+  enableMagicLinks: false
 });
 ```
 
@@ -193,31 +169,6 @@ import { setAuthContext } from '@thepia/flows-auth';
 const authStore = setAuthContext(config);
 ```
 
-#### `useAuth()`
-
-Hook-like function to get auth store from context or global state.
-
-```typescript
-import { useAuth } from '@thepia/flows-auth';
-
-const auth = useAuth();
-```
-
-**Throws:** Error if auth store not available
-
-#### `useAuthSafe()`
-
-Safe version that returns `null` instead of throwing.
-
-```typescript
-import { useAuthSafe } from '@thepia/flows-auth';
-
-const auth = useAuthSafe(); // auth could be null
-if (auth) {
-  // Use auth store
-}
-```
-
 ### Utility Functions
 
 #### `isAuthStoreInitialized()`
@@ -230,17 +181,6 @@ import { isAuthStoreInitialized } from '@thepia/flows-auth';
 if (isAuthStoreInitialized()) {
   const auth = getGlobalAuthStore();
 }
-```
-
-#### `getGlobalAuthConfig()`
-
-Get the current auth configuration.
-
-```typescript
-import { getGlobalAuthConfig } from '@thepia/flows-auth';
-
-const config = getGlobalAuthConfig();
-console.log('API Base URL:', config.apiBaseUrl);
 ```
 
 #### `resetGlobalAuthStore()`
@@ -259,31 +199,48 @@ resetGlobalAuthStore();
 ### Pattern 1: Standard Web App
 
 ```svelte
-<!-- +layout.svelte -->
+<!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { setAuthContext } from '@thepia/flows-auth';
-  
-  onMount(async () => {
-    const authStore = setAuthContext(authConfig);
-  });
+  import { setupAuthContext } from '@thepia/flows-auth';
+
+  // SINGLE config object that will be shared by ALL components
+  const sharedConfig = {
+    apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'proof-test',
+    domain: 'thepia.net',
+    enablePasskeys: false,
+    enableMagicLinks: true,
+    errorReporting: { enabled: true },
+    appCode: 'demo',
+    branding: {
+      companyName: 'Proof Test'
+    }
+  };
+
+  // ✅ Initialize auth store ONCE in root layout
+  const authStore = setupAuthContext(sharedConfig);
 </script>
 
-<!-- Header.svelte -->
+<slot />
+
+<!-- Header.svelte - Component -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  
-  const auth = useAuth();
-  $: user = $auth.user;
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context in component
+  const authStore = getAuthStoreFromContext();
+  $: user = $authStore.user;
 </script>
 
-<!-- Dashboard.svelte -->
+<!-- Dashboard.svelte - Component -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  
-  const auth = useAuth();
-  
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+  // ✅ Get auth store from context in component
+  const authStore = getAuthStoreFromContext();
+
   async function fetchUserData() {
-    const token = auth.getAccessToken();
+    const token = authStore.getAccessToken();
     // Make authenticated API calls
   }
 </script>
@@ -294,46 +251,27 @@ resetGlobalAuthStore();
 If you're building a component library that uses flows-auth:
 
 ```svelte
-<!-- AuthButton.svelte -->
+<!-- AuthButton.svelte - Component -->
 <script>
-  import { useAuthSafe } from '@thepia/flows-auth';
-  
-  const auth = useAuthSafe();
-  
+  import { tryGetAuthContext } from '@thepia/flows-auth';
+
+  // ✅ Try to get auth store from context (safe - returns null if not available)
+  const authStore = tryGetAuthContext();
+
   // Component works with or without auth
-  $: canAuthenticate = auth !== null;
-  $: isAuthenticated = auth ? $auth.state === 'authenticated' : false;
+  $: canAuthenticate = authStore !== null;
+  $: isAuthenticated = authStore ? $authStore.state === 'authenticated' : false;
 </script>
 
 {#if canAuthenticate}
   {#if isAuthenticated}
-    <button on:click={() => auth.signOut()}>Sign Out</button>
+    <button on:click={() => authStore.signOut()}>Sign Out</button>
   {:else}
-    <button on:click={() => auth.signInWithPasskey()}>Sign In</button>
+    <button on:click={() => authStore.signInWithPasskey()}>Sign In</button>
   {/if}
 {:else}
   <p>Authentication not available</p>
 {/if}
-```
-
-### Pattern 3: Conditional Initialization
-
-For components that might load before auth is initialized:
-
-```svelte
-<script>
-  import { getOrInitializeAuth } from '@thepia/flows-auth';
-  
-  const fallbackConfig = {
-    apiBaseUrl: 'https://api.yourapp.com',
-    clientId: 'your-client-id',
-    domain: 'yourapp.com',
-    enablePasskeys: true,
-    enableMagicPins: true
-  };
-  
-  const auth = getOrInitializeAuth(fallbackConfig);
-</script>
 ```
 
 ## Migration Guide
@@ -348,7 +286,7 @@ For components that might load before auth is initialized:
   const auth = createAuthStore(config); // Creates instance #1
 </script>
 
-<!-- Component B -->  
+<!-- Component B -->
 <script>
   import { createAuthStore } from '@thepia/flows-auth';
   const auth = createAuthStore(config); // Creates instance #2 😞
@@ -357,29 +295,26 @@ For components that might load before auth is initialized:
 
 **✅ New Pattern (Singleton):**
 ```svelte
-<!-- +layout.svelte -->
+<!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
-  
-  // ✅ Initialize during component initialization with browser guard
-  if (browser) {
-    (async () => {
-      setAuthContext(config); // Initialize once
-    })();
-  }
+  import { setupAuthContext } from '@thepia/flows-auth';
+
+  // ✅ Initialize ONCE in root layout
+  const authStore = setupAuthContext(config);
 </script>
+
+<slot />
 
 <!-- Component A -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  const auth = useAuth(); // Gets singleton instance
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  const authStore = getAuthStoreFromContext(); // Gets singleton instance
 </script>
 
 <!-- Component B -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  const auth = useAuth(); // Gets same singleton instance ✅
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  const authStore = getAuthStoreFromContext(); // Gets same singleton instance ✅
 </script>
 ```
 
@@ -408,25 +343,21 @@ For components that might load before auth is initialized:
 
 **✅ New Pattern (Context):**
 ```svelte
-<!-- App.svelte -->
+<!-- App.svelte - Root layout ONLY -->
 <script>
-  import { browser } from '$app/environment';
-  import { setAuthContext } from '@thepia/flows-auth';
-  
-  // ✅ Set during component initialization with browser guard
-  if (browser) {
-    (async () => {
-      setAuthContext(config); // Set once
-    })();
-  }
+  import { setupAuthContext } from '@thepia/flows-auth';
+
+  // ✅ Initialize ONCE in root layout
+  const authStore = setupAuthContext(config);
 </script>
+
 <Header />
 <Dashboard />
 
 <!-- UserProfile.svelte (deep in component tree) -->
 <script>
-  import { useAuth } from '@thepia/flows-auth';
-  const auth = useAuth(); // Direct access ✅
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  const authStore = getAuthStoreFromContext(); // Direct access ✅
 </script>
 ```
 
@@ -434,36 +365,22 @@ For components that might load before auth is initialized:
 
 ### ✅ Do's
 
-1. **Initialize once** in your root layout component
-2. **Use `useAuth()`** in components that need auth
-3. **Use `useAuthSafe()`** in optional auth components
-4. **Call `setAuthContext()`** in SvelteKit layouts for proper context
-5. **Use TypeScript** for better error catching
+1. **Initialize once** in your root layout (`+layout.svelte` or `App.svelte`) using `setupAuthContext()`
+2. **Access in components** using `getAuthStoreFromContext()` or `tryGetAuthContext()`
+3. **Pass store as prop** to library components when explicit control is needed
+4. **Use TypeScript** for better error catching
 
 ### ❌ Don'ts
 
-1. **Don't call `createAuthStore()`** in multiple components
-2. **Don't pass auth store through props** (use context instead)
-3. **Don't initialize auth in multiple places**
-4. **Don't forget to handle auth not being initialized**
-5. **Don't call `resetGlobalAuthStore()`** in production
-6. **🚨 NEVER call `setAuthContext()` inside `onMount()`** - This violates Svelte context rules
+1. **🚨 NEVER call `setupAuthContext()` in components** - Only in root layout
+2. **Don't call `createAuthStore()`** directly in components - use context
+3. **Don't pass auth store through props** unless explicitly needed (library components handle context)
+4. **Don't initialize auth in multiple places** - only once in root layout
+5. **Don't call `resetGlobalAuthStore()`** in production code
 
 ### Error Handling
 
-```svelte
-<script>
-  import { useAuthSafe } from '@thepia/flows-auth';
-  
-  const auth = useAuthSafe();
-  
-  // Handle auth not being available
-  if (!auth) {
-    console.warn('Auth store not initialized');
-    // Show fallback UI or redirect to setup
-  }
-</script>
-```
+
 
 ### Testing
 
@@ -478,8 +395,6 @@ beforeEach(() => {
 test('component with auth', () => {
   // Initialize auth for test
   initializeAuth(mockConfig);
-  
-  // Test component that uses useAuth()
 });
 ```
 
@@ -488,9 +403,9 @@ test('component with auth', () => {
 The singleton pattern includes full TypeScript support:
 
 ```typescript
-import type { GlobalAuthStore, AuthConfig } from '@thepia/flows-auth';
+import type { SvelteAuthStore, AuthConfig } from '@thepia/flows-auth';
 
-function setupAuth(config: AuthConfig): GlobalAuthStore {
+function setupAuth(config: AuthConfig): SvelteAuthStore {
   return initializeAuth(config);
 }
 ```

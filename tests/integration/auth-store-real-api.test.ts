@@ -4,11 +4,14 @@
  * Purpose: Test auth-store with real API calls, NO MOCKING
  * Context: Integration tests using real API server and test accounts
  * Safe to remove: No - critical for preventing authentication regressions
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 // Following thepia.com pattern - real API server detection
@@ -22,7 +25,7 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
-    enableMagicPins: true,
+    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true

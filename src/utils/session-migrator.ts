@@ -3,9 +3,13 @@
  * Provides secure migration of session data between storage types
  */
 
-import type { SessionMigrationResult, StorageConfigurationUpdate, StorageType } from '../types';
+import type {
+  SessionMigrationResult,
+  SignInData,
+  StorageConfigurationUpdate,
+  StorageType
+} from '../types';
 import {
-  type FlowsSessionData,
   clearSession,
   getSession,
   isSessionValid,
@@ -144,7 +148,7 @@ export class SessionMigrator {
    * Perform security checks before migration
    */
   private performSecurityChecks(
-    session: FlowsSessionData,
+    session: SignInData,
     fromType: StorageType,
     toType: StorageType
   ): {
@@ -177,13 +181,13 @@ export class SessionMigrator {
    * Perform the actual migration
    */
   private async performMigration(
-    session: FlowsSessionData,
+    session: SignInData,
     fromType: StorageType,
     toType: StorageType,
     preserveTokens: boolean
   ): Promise<void> {
     // Create migrated session data
-    const migratedSession: FlowsSessionData = {
+    const migratedSession: SignInData = {
       ...session,
       lastActivity: Date.now()
     };

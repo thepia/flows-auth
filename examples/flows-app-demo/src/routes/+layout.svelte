@@ -2,40 +2,40 @@
   import './app.css';
   import '../branding/design-tokens.css';
   import { browser, dev } from '$app/environment';
-  import { onMount } from 'svelte';
-  import { initializeAuth } from '@thepia/flows-auth/global-auth-store';
+  import { setupAuthContext } from '@thepia/flows-auth';
 
   // Initialize console bridge and error reporting in development
   if (browser && dev) {
     import('$lib/dev/console-bridge');
   }
 
-  onMount(async () => {
-    if (browser) {
-      try {
-        // Initialize global auth store first
-        initializeAuth({
-          apiBaseUrl: 'https://dev.thepia.com:8443',
-          clientId: 'demo',
-          domain: 'dev.thepia.net',
-          enablePasskeys: true,
-          enableMagicPins: true,
-          appCode: 'demo'
-        });
-        console.log('🔐 Global auth store initialized in layout');
+  // Create auth store during initialization
+  const authConfig = {
+    apiBaseUrl: 'https://dev.thepia.com:8443',
+    clientId: 'demo',
+    domain: 'dev.thepia.net',
+    enablePasskeys: true,
+    enableMagicLinks: false,
+    errorReporting: {
+      enabled: dev, // Only enable in development
+      debug: dev
+    },
+    appCode: 'demo'
+  };
 
-        if (dev) {
-          // Initialize error reporting
-          const { initializeFlowsErrorReporting, enableGlobalErrorReporting } = await import('../lib/config/errorReporting.js');
-          await initializeFlowsErrorReporting();
-          enableGlobalErrorReporting();
-          console.log('🔧 Flows App Demo initialized with error reporting');
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize flows app demo:', error);
-      }
-    }
-  });
+  const authStore = setupAuthContext(authConfig);
+  console.log('🔐 Auth store initialized in layout');
+
+  // Initialize error reporting if in dev mode
+  if (browser && dev) {
+    import('../lib/config/errorReporting.js').then(({ initializeFlowsErrorReporting, enableGlobalErrorReporting }) => {
+      initializeFlowsErrorReporting();
+      enableGlobalErrorReporting();
+      console.log('🔧 Flows App Demo initialized with error reporting');
+    }).catch(error => {
+      console.error('❌ Failed to initialize error reporting:', error);
+    });
+  }
 </script>
 
 <main>

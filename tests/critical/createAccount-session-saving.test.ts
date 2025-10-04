@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, RegistrationRequest } from '../../src/types';
 import {
   getAccessToken,
@@ -45,7 +45,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true)
 }));
 
-vi.mock('../../src/utils/errorReporter', () => ({
+vi.mock('../../src/utils/telemetry', () => ({
   initializeErrorReporter: vi.fn(),
   reportAuthState: vi.fn(),
   reportWebAuthnError: vi.fn(),
@@ -72,10 +72,10 @@ describe('createAccount API Contract', () => {
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
       enablePasskeys: true,
-      enableMagicPins: false
+      enableMagicLinks: false
     };
 
-    authStore = createAuthStore(mockConfig);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
     // Mock the createAccount method to return successful contract response
     vi.spyOn(authStore, 'createAccount').mockResolvedValue({

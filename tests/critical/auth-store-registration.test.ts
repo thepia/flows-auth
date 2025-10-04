@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 /**
@@ -25,7 +25,7 @@ describe('CRITICAL: Auth Store Registration Methods', () => {
       requireEmailVerification: true
     };
 
-    authStore = createAuthStore(authConfig);
+    authStore = makeSvelteCompatible(createAuthStore(authConfig));
   });
 
   describe('createAccount Method', () => {

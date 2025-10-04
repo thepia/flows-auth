@@ -3,30 +3,42 @@
   Shows Full Name input and terms notice
 -->
 <script lang="ts">
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
+import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
+import {
+  "auth.fullName" as authFullName,
+  "auth.fullNamePlaceholder" as authFullNamePlaceholder
+} from '../../paraglide/messages';
 
 // Props
 export let fullName = '';
 export let disabled = false;
 export let error: string | null = null;
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
 
-// Subscribe to i18n store
-$: t = $i18n;
+// Event dispatcher
+const dispatch = createEventDispatcher<{
+  input: { fullName: string };
+}>();
+
+// Handle input changes and emit events
+function handleInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  fullName = target.value;
+  dispatch('input', { fullName });
+}
 </script>
 
 <div class="auth-new-user-info">
   <div class="input-group">
     <label for="fullName" class="input-label">
-      {t('auth.fullName')}
+      {authFullName()}
     </label>
     <input
       id="fullName"
       type="text"
       bind:value={fullName}
-      placeholder={t('auth.fullNamePlaceholder')}
+      on:input={handleInput}
+      placeholder={authFullNamePlaceholder()}
       class="auth-input"
       class:error
       autocomplete="name"
@@ -42,7 +54,7 @@ $: t = $i18n;
   
   <AuthStateMessage
     type="info"
-    message={t('auth.newUserTermsNotice')}
+    tKey="auth.newUserTermsNotice"
     showIcon={true}
     className="terms-notice"
   />

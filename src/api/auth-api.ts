@@ -16,6 +16,7 @@ import type {
   SignInRequest,
   SignInResponse,
   User,
+  UserCheckData,
   UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
@@ -23,7 +24,7 @@ import type {
   WebAuthnVerificationResult
 } from '../types';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter';
-import { reportApiError } from '../utils/errorReporter';
+import { reportApiError } from '../utils/telemetry';
 import { globalUserCache } from '../utils/user-cache';
 
 export class AuthApiClient {
@@ -393,14 +394,7 @@ export class AuthApiClient {
   /**
    * Check if email exists with rate limiting and caching
    */
-  async checkEmail(email: string): Promise<{
-    exists: boolean;
-    hasPasskey: boolean;
-    userId?: string;
-    emailVerified?: boolean;
-    invitationTokenHash?: string;
-    lastPinExpiry?: string;
-  }> {
+  async checkEmail(email: string): Promise<UserCheckData> {
     // Check cache first
     const cachedResult = globalUserCache.get(email);
     if (cachedResult) {
@@ -427,21 +421,16 @@ export class AuthApiClient {
     });
 
     // Use rate-limited request with Origin header for RPID determination
-    // TODO: Change to GET method once API server supports it
-    const response = await this.rateLimitedRequest<{
-      exists: boolean;
-      hasWebAuthn: boolean;
-      userId?: string;
-      emailVerified?: boolean;
-      invitationTokenHash?: string;
-      lastPinExpiry?: string;
-    }>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-      headers: {
-        Origin: origin
+    // Using GET method with email as query parameter (API server supports this)
+    const response = await this.rateLimitedRequest<UserCheckData>(
+      `${endpoint}?email=${encodeURIComponent(email)}`,
+      {
+        method: 'GET',
+        headers: {
+          Origin: origin
+        }
       }
-    });
+    );
 
     console.log(`[AuthApiClient] Raw API response:`, {
       email,
@@ -450,15 +439,8 @@ export class AuthApiClient {
       timestamp: new Date().toISOString()
     });
 
-    // Map API response to expected format
-    const result = {
-      exists: response.exists,
-      hasPasskey: response.hasWebAuthn || false,
-      userId: response.userId,
-      emailVerified: response.emailVerified || false,
-      invitationTokenHash: response.invitationTokenHash,
-      lastPinExpiry: response.lastPinExpiry
-    };
+    // Return the response directly since it's already in UserCheckData format
+    const result: UserCheckData = response;
 
     // Cache the result
     globalUserCache.set(email, result);
@@ -868,9 +850,29 @@ export class AuthApiClient {
       })
     });
 
+    console.log('📦 Raw verify-email API response:', {
+      email,
+      hasSuccess: 'success' in response,
+      successValue: response.success,
+      hasUser: 'user' in response,
+      hasAccessToken: 'accessToken' in response,
+      hasStep: 'step' in response,
+      stepValue: response.step,
+      hasError: 'error' in response,
+      hasMessage: 'message' in response,
+      messageValue: response.message,
+      fullResponse: response
+    });
+
     // Transform organization API response to match SignInResponse interface
     // The API returns tokens directly in the response, not nested
     if (response.success && response.user && response.accessToken) {
+      // Clear user cache entry since verification succeeded
+      // This handles cases where user was previously cached as "doesn't exist"
+      // but verification created the user account
+      globalUserCache.clear(email);
+      console.log(`🧹 Cleared user cache for ${email} after successful pin verification`);
+
       return {
         step: 'success',
         user: response.user,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore } from '../../src/stores';
 import type { AuthConfig } from '../../src/types';
 
 /**
@@ -54,7 +54,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
     };
 
     // Create real auth store instance
-    authStore = createAuthStore(authConfig);
+    authStore = makeSvelteCompatible(createAuthStore(authConfig));
   });
 
   test('CRITICAL: createAccountBroken should complete full WebAuthn registration flow', async () => {

@@ -5,9 +5,10 @@
  * Each test maps to specific requirements (R1, R2, etc.)
  */
 
+import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, FlowsSessionData } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
+import type { AuthConfig, SignInData } from '../../src/types';
 import {
   clearSession,
   configureSessionStorage,
@@ -38,10 +39,10 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true
+  enableMagicLinks: false
 };
 
-const createTestSession = (): FlowsSessionData => ({
+const createTestSession = (): SignInData => ({
   user: {
     id: 'test-user-id',
     email: 'test@example.com',
@@ -126,8 +127,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       saveSession(session);
 
       // Auth store should find session through sessionManager
-      const authStore = createAuthStore(mockConfig);
-      authStore.initialize();
+      const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
       // Should be authenticated since valid session exists
       const state = authStore.getState();
@@ -140,11 +140,10 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       mockLocalStorage.data.set('auth_user', JSON.stringify({ id: 'legacy' }));
 
       // Auth store should NOT find legacy localStorage data
-      const authStore = createAuthStore(mockConfig);
-      authStore.initialize();
+      const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
 
       // Should be unauthenticated since no valid session exists
-      const state = authStore.getState();
+      const state = get(authStore);
       expect(state.state).toBe('unauthenticated');
     });
   });
@@ -235,7 +234,7 @@ describe('R3: Session Validation (MUST)', () => {
 
   describe('R3.1: Token Expiration', () => {
     it('MUST check tokens.expiresAt against current time', () => {
-      const expiredSession: FlowsSessionData = {
+      const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
           accessToken: 'expired-token',
@@ -248,7 +247,7 @@ describe('R3: Session Validation (MUST)', () => {
     });
 
     it('MUST clear expired sessions automatically', () => {
-      const expiredSession: FlowsSessionData = {
+      const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
           accessToken: 'expired-token',
@@ -273,7 +272,7 @@ describe('R3: Session Validation (MUST)', () => {
         userRole: 'guest'
       });
 
-      const inactiveSession: FlowsSessionData = {
+      const inactiveSession: SignInData = {
         ...createTestSession(),
         lastActivity: Date.now() - 2000 // 2 seconds ago
       };
@@ -288,7 +287,7 @@ describe('R3: Session Validation (MUST)', () => {
         userRole: 'guest'
       });
 
-      const inactiveSession: FlowsSessionData = {
+      const inactiveSession: SignInData = {
         ...createTestSession(),
         lastActivity: Date.now() - 2000
       };
@@ -334,50 +333,6 @@ describe('R4: Legacy Migration (MUST)', () => {
     configureSessionStorage({ type: 'sessionStorage', userRole: 'guest' });
   });
 
-  describe('R4.1: Legacy Data Cleanup', () => {
-    it('MUST remove legacy localStorage keys on startup', () => {
-      // Simulate legacy localStorage data
-      mockLocalStorage.data.set('auth_access_token', 'legacy-token');
-      mockLocalStorage.data.set('auth_user', JSON.stringify({ id: 'legacy' }));
-      mockLocalStorage.data.set('auth_refresh_token', 'legacy-refresh');
-      mockLocalStorage.data.set('auth_expires_at', String(Date.now()));
-
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-
-      // Starting state machine should trigger cleanup
-      stateMachine.start();
-
-      // Verify legacy keys are removed
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_access_token');
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_user');
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_refresh_token');
-    });
-
-    it('MUST clean up specific legacy keys', () => {
-      const legacyKeys = [
-        'auth_access_token',
-        'auth_user',
-        'auth_refresh_token',
-        'auth_expires_at'
-      ];
-
-      // Set up legacy data
-      legacyKeys.forEach((key) => {
-        mockLocalStorage.data.set(key, 'legacy-value');
-      });
-
-      const mockApiClient = { signInWithPasskey: vi.fn() };
-      const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-      stateMachine.start();
-
-      // Verify all legacy keys are cleaned up
-      legacyKeys.forEach((key) => {
-        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(key);
-      });
-    });
-  });
-
   describe('R4.2: Backward Compatibility', () => {
     it.skip('MUST work without configuration changes', () => {
       // Test that existing applications work without any config changes
@@ -392,9 +347,7 @@ describe('R4: Legacy Migration (MUST)', () => {
     it('MUST gracefully handle missing configuration', () => {
       // Should not throw when no storage config is provided
       expect(() => {
-        const mockApiClient = { signInWithPasskey: vi.fn() };
-        const stateMachine = new AuthStateMachine(mockApiClient as any, mockConfig);
-        stateMachine.start();
+        const authStore = makeSvelteCompatible(createAuthStore(mockConfig));
       }).not.toThrow();
     });
 

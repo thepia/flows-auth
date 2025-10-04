@@ -185,7 +185,7 @@ stateDiagram-v2
 ### Session Storage
 - Creates/updates session in configured storage
 - Key: `'thepia_auth_session'`
-- Format: `FlowsSessionData`
+- Format: `SignInData`
 
 ### Auth Store State
 - Updates `state` to `'authenticated'`

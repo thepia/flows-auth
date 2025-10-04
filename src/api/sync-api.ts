@@ -6,7 +6,7 @@
  */
 
 import type { AuthConfig } from '../types';
-import { reportApiError } from '../utils/errorReporter';
+import { reportApiError } from '../utils/telemetry';
 
 export interface WorkflowMetadata {
   uid: string;

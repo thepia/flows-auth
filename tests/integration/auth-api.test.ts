@@ -1,5 +1,8 @@
 /**
  * Auth API Client Tests
+ *
+ * Do NOT introduce mocking of the API client
+ * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
@@ -13,7 +16,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company'
   }

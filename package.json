@@ -1,54 +1,97 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "svelte": "./dist/index.js",
+  "svelte": "./dist/src/index.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
+      "svelte": "./dist/src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
+    "./stores": {
+      "types": "./src/stores/index.ts",
+      "import": "./src/stores/index.ts",
+      "default": "./src/stores/index.ts"
+    },
+    "./stores/core": {
+      "types": "./src/stores/core/index.ts",
+      "import": "./src/stores/core/index.ts",
+      "default": "./src/stores/core/index.ts"
+    },
+    "./stores/auth-methods": {
+      "types": "./src/stores/auth-methods/index.ts",
+      "import": "./src/stores/auth-methods/index.ts",
+      "default": "./src/stores/auth-methods/index.ts"
+    },
+    "./stores/ui": {
+      "types": "./src/stores/ui/index.ts",
+      "import": "./src/stores/ui/index.ts",
+      "default": "./src/stores/ui/index.ts"
+    },
+    "./stores/adapters": {
+      "types": "./src/stores/adapters/index.ts",
+      "import": "./src/stores/adapters/index.ts",
+      "default": "./src/stores/adapters/index.ts"
+    },
+    "./stores/adapters/svelte": {
+      "types": "./src/stores/adapters/svelte.ts",
+      "import": "./src/stores/adapters/svelte.ts",
+      "default": "./src/stores/adapters/svelte.ts"
+    },
+    "./stores/adapters/astro": {
+      "types": "./src/stores/adapters/astro.ts",
+      "import": "./src/stores/adapters/astro.ts",
+      "default": "./src/stores/adapters/astro.ts"
+    },
+    "./dev": {
+      "types": "./dist/dev.d.ts",
+      "svelte": "./dist/src/dev.ts",
+      "import": "./dist/src/dev.ts",
+      "default": "./dist/src/dev.ts"
+    },
+    "./src": {
+      "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
     "./style.css": "./dist/style.css",
     "./dist/style.css": "./dist/style.css",
+    "./paraglide/runtime.js": "./dist/paraglide/runtime.js",
+    "./paraglide/messages.js": "./dist/paraglide/messages.js",
+    "./src/paraglide/runtime.js": "./dist/paraglide/runtime.js",
+    "./src/paraglide/messages.js": "./dist/paraglide/messages.js",
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "test": "vitest run --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:watch": "vitest --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:ui": "vitest --ui --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:coverage": "vitest run --coverage --exclude \"tests/{integration,critical,disabled}/**\"",
-    "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ --exclude tests/integration/ tests/critical/",
-    "test:e2e": "vitest run tests/integration/ tests/critical/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ tests/components/",
     "test:integration": "vitest run tests/integration/",
-    "test:integration:env": "vitest run tests/integration/api-environment.test.ts",
-    "test:integration:auth": "vitest run tests/integration/auth-store-integration.test.ts",
-    "test:critical": "vitest run tests/critical/ tests/contracts/ tests/unit/response-processing.test.ts tests/unit/ui-ux-integration.test.ts",
-    "test:critical-only": "vitest run tests/critical/",
-    "test:critical-stubs": "vitest run tests/critical/ --reporter=verbose --bail=false",
-    "test:contracts": "vitest run tests/contracts/api-response-contracts.test.ts",
-    "test:auth-patterns": "vitest run tests/unit/response-processing.test.ts",
-    "test:ui-ux": "vitest run tests/unit/ui-ux-integration.test.ts",
-    "test:real-flow": "vitest run tests/critical/createAccount-real-flow.test.ts",
-    "test:auth-store-critical": "vitest run tests/critical/auth-store-registration.test.ts",
-    "test:webauthn": "vitest run tests/critical/webauthn-flow-validation.test.ts",
-    "test:registration-form": "vitest run tests/critical/registration-form-real-integration.test.ts",
-    "test:email-verification": "vitest run tests/critical/email-verification-flow.test.ts",
-    "test:events": "vitest run tests/critical/event-emission-validation.test.ts",
-    "test:errors": "vitest run tests/critical/error-handling-scenarios.test.ts",
-    "test:state-machine": "vitest run tests/stores/auth-state-machine.test.ts",
-    "test:auth-store": "vitest run tests/stores/auth-store.test.ts",
+    "test:critical": "vitest run tests/critical/ tests/contracts/",
     "test:smoke": "vitest run tests/stores/auth-state-machine.test.ts tests/integration/api-environment.test.ts",
-    "test:regression": "vitest run tests/regression/",
+    "test:package": "vitest run tests/package",
+    "test:paraglide-merge": "vitest run tests/integration/paraglide-multi-directory-merge.test.ts",
+    "test:demos": "pnpm test:demos:auth && pnpm test:demos:flows-app",
+    "test:demos:auth": "cd examples/auth-demo && pnpm build",
+    "test:demos:flows-app": "cd examples/flows-app-demo && pnpm build",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
@@ -65,8 +108,9 @@
     "pre-push": "./scripts/pre-push-sanity-check.sh",
     "pre-push:quick": "./scripts/pre-push-sanity-check.sh --skip-build",
     "pre-push:fast": "./scripts/pre-push-sanity-check.sh --skip-tests --skip-build",
-    "validate": "pnpm typecheck && pnpm lint && pnpm test",
+    "validate": "pnpm typecheck && pnpm check && pnpm test",
     "validate:quick": "pnpm typecheck && pnpm test:smoke",
+    "validate:publish": "pnpm build && pnpm test:package",
     "verify-auth-patterns": "pnpm test:critical && echo '✅ Authentication patterns verified'",
     "protect-auth": "pnpm test:contracts && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
     "example:tasks-app-demo": "cd examples/tasks-app-demo && pnpm dev",
@@ -74,7 +118,15 @@
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
     "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
-  "keywords": ["svelte", "authentication", "webauthn", "passkeys", "flows", "oauth", "thepia"],
+  "keywords": [
+    "svelte",
+    "authentication",
+    "webauthn",
+    "passkeys",
+    "flows",
+    "oauth",
+    "thepia"
+  ],
   "author": "Thepia <dev@thepia.com>",
   "license": "UNLICENSED",
   "repository": {
@@ -88,11 +140,12 @@
   "peerDependencies": {
     "@xyflow/svelte": "0.1.30",
     "d3": "^7.0.0",
-    "svelte": "^4.0.0"
+    "phosphor-svelte": "^2.0.0 || ^3.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "@inlang/paraglide-js": "^2.3.2",
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "^4.0.0",
     "@types/d3": "^7.4.3",
@@ -115,7 +168,8 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
     "@simplewebauthn/browser": "^13.1.2",
-    "base64url": "^3.0.1"
+    "base64url": "^3.0.1",
+    "zustand": "^5.0.8"
   },
   "publishConfig": {
     "access": "public",

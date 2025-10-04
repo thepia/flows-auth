@@ -72,15 +72,11 @@ pnpm lint          # Biome linting (must pass)
 - **SignInCore and SignInForm MUST accept authStore prop and use provided store**
 - **Root Cause**: Multiple store instances break reactivity between components and sidebars
 - **Example**: SignInCore creating its own store while sidebar uses global store = sidebar never updates
+- ***onMount***: Create the store in +layout.svelte (not in onMount) and pass it to SignInCore via context
 
 **Correct Pattern**:
 ```svelte
-<!-- SignInCore.svelte -->
-export let authStore: ReturnType<typeof createAuthStore> | undefined = undefined;
-const store = authStore || createAuthStore(config);
-
-<!-- Usage -->
-<SignInCore {config} {authStore} />
+<SignInCore />
 ```
 
 **Wrong Pattern**:
@@ -211,7 +207,7 @@ cd examples/tasks-app-demo && pnpm dev             # Task management demo
         apiBaseUrl: 'https://api.thepia.com',
         domain: 'thepia.net',
         enablePasskeys: true,
-        enableMagicPins: true
+        enableMagicLinks: false
       });
     } catch (error) {
       console.error('Failed to load auth:', error);

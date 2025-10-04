@@ -5,20 +5,19 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, SignInResponse } from '../../src/types';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
 vi.mock('../../src/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(() => ({
-    checkEmail: vi.fn(),
-    getPasskeyChallenge: vi.fn(),
-    signInWithPasskey: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    refreshToken: vi.fn(),
-    signOut: vi.fn()
+    checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
+    getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
+    signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+    signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+    refreshToken: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+    signOut: vi.fn().mockResolvedValue({ success: true })
   }))
 }));
 
@@ -27,6 +26,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true),
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
   isConditionalMediationSupported: vi.fn(() => true)
 }));
 
@@ -41,7 +41,7 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -58,14 +58,27 @@ describe('signInWithPasskey', () => {
     localStorage.clear();
     sessionStorage.clear();
 
-    authStore = createAuthStore(mockConfig);
-
-    // Get the mocked dependencies
+    // Get the mocked dependencies first
     const { AuthApiClient } = await import('../../src/api/auth-api');
-    mockApiClient = (AuthApiClient as any).mock.results[0].value;
-
     const webAuthnModule = await import('../../src/utils/webauthn');
+
+    // Create a shared mock instance that all new AuthApiClient() calls will return
+    mockApiClient = {
+      checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
+      getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
+      signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      refreshToken: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      signOut: vi.fn().mockResolvedValue({ success: true })
+    };
+
+    // Make AuthApiClient constructor return our mock instance
+    (AuthApiClient as any).mockImplementation(() => mockApiClient);
+
     mockWebAuthn = webAuthnModule;
+
+    // Now create the auth store after mocks are set up
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
   });
 
   describe('Input Validation', () => {

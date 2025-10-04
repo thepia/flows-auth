@@ -4,24 +4,38 @@
 -->
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy, getContext } from 'svelte';
-  import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
+  import { WarningCircle as AlertTriangle, CheckCircle, User as UserIcon, Key, Lock, Shield, Certificate as BadgeCheck } from 'phosphor-svelte';
+
   import type { User, AuthError, AuthMethod } from '../types';
+  import type { SvelteAuthStore } from '../stores/adapters/svelte';
+  import { getAuthStoreFromContext } from '../utils/auth-context';
   import SignInCore from './core/SignInCore.svelte';
+  import { m } from '../utils/i18n';
+
+  // Auth store prop (preferred)
+  export let store: SvelteAuthStore | null = null;
 
   // Presentational props only
   export let showLogo = true;
   export let compact = false;
   export let className = '';
   export let initialEmail = '';
-  
+
   // Size and display variants
   export let size: 'small' | 'medium' | 'large' | 'full' = 'medium';
   export let variant: 'inline' | 'popup' = 'inline';
   export let popupPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right';
-  
+
   // Popup modal controls
   export let showCloseButton = true;
   export let closeOnEscape = true;
+
+  // Text keys
+  export let titleKey = 'signIn.title';
+  export let subtitleBrandedKey = 'signIn.subtitle';
+  export let subtitleKey = 'signIn.subtitleGeneric';
+  export let explainFeatures = false; // Whether to show features list in explainer
+
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -30,6 +44,48 @@
     stepChange: { step: string };
     close: {}; // New event for popup close
   }>();
+
+  // Auth store - use prop or fallback to context
+  const authStore = store || getAuthStoreFromContext();
+
+  if (!authStore) {
+    throw new Error('SignInForm requires store prop or auth store in context');
+  }
+
+  $: authConfig = authStore?.getConfig?.();
+  $: logoConfig = authConfig?.branding;
+
+  // Get custom message bundle from context (if provided by app)
+  const customMessages = getContext('paraglide-messages');
+
+  // Helper function to get display text from Paraglide
+  function getDisplayText(key: string, variables?: Record<string, any>): string {
+    // Try custom messages from context first (app-specific merged messages)
+    if (customMessages) {
+      try {
+        const messageFunction = customMessages[key];
+        if (typeof messageFunction === 'function') {
+          return messageFunction(variables);
+        }
+      } catch (error) {
+        console.warn(`Custom message context failed for key "${key}":`, error);
+        // Fall through to default behavior
+      }
+    }
+
+    // Default behavior: use library's Paraglide messages
+    try {
+      const messageFunction = (m as unknown as {[key: string]: (params?: any) => string})[key];
+      if (typeof messageFunction === 'function') {
+        return messageFunction(variables);
+      }
+      // Fallback to key if function doesn't exist
+      return key;
+    } catch (error) {
+      console.warn(`Translation key "${key}" not found in Paraglide messages`);
+      return key;
+    }
+  }
 
   // Popup close functionality
   function handleClose() {
@@ -65,11 +121,6 @@
     }
   });
 
-  // Get auth config from context for logo display only
-  const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-  $: authStore = $authStoreContext;
-  $: logoConfig = authStore?.getConfig?.()?.branding;
-
   // Dynamic class names based on props
   $: authFormClasses = [
     'auth-form',
@@ -100,16 +151,51 @@
     </div>
   {/if}
 
+          <!-- Header Icon (added to SignInForm via custom styling) -->
+           <!--
+        <div class="auth-header-icon">
+          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+-->
+
+    <!-- Title and Description Section -->
+    <div class="auth-header">
+      <h2 class="auth-title font-brand-lead">{getDisplayText(titleKey)}</h2>
+      <p class="auth-description">
+        {#if authConfig?.branding?.companyName}
+          {getDisplayText(subtitleBrandedKey, { companyName: authConfig.branding.companyName })}
+        {:else}
+          {getDisplayText(subtitleKey)}
+        {/if}
+      </p>
+    </div>
+
+
   <div class="auth-container">
-    <!-- SignInCore handles all auth logic and context access -->
-    <SignInCore 
+    <!-- SignInCore handles all auth logic -->
+    <SignInCore
+      store={authStore}
+      {explainFeatures}
       {initialEmail}
       on:success={handleSuccess}
       on:error={handleError}
     />
   </div>
-  
+
 </div>
+
+<!-- Powered by footer (matches AccountCreationForm pattern) -->
+{#if authConfig?.branding?.showPoweredBy !== false}
+  <div class="auth-footer">
+    <p class="powered-by">
+      {getDisplayText('branding.securedBy')} <strong>{getDisplayText('branding.poweredBy')}</strong>
+    </p>
+  </div>
+{/if}
 
 <style>
   /* Container and layout styles */
@@ -211,6 +297,28 @@
     object-fit: contain;
   }
 
+  /* Auth header styles */
+  .auth-header {
+    /* font-family: var(--font-fontFamily-brand-lead); */
+    padding: 24px 24px 0;
+    text-align: center;
+  }
+
+  .auth-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text-primary, #111827);
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+  }
+
+  .auth-description {
+    font-size: 16px;
+    color: var(--color-text-secondary, #6b7280);
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
+
   /* Container for SignInCore */
   .auth-container {
     padding: 24px;
@@ -220,12 +328,49 @@
     padding: 16px;
   }
 
+  .auth-form--compact .auth-header {
+    padding: 16px 16px 0;
+  }
+
+  .auth-form--compact .auth-title {
+    font-size: 20px;
+  }
+
+  .auth-form--compact .auth-description {
+    font-size: 14px;
+  }
+
   /* Error state */
   .config-error {
     text-align: center;
     color: var(--color-error, #dc2626);
     padding: 20px;
     font-size: 14px;
+  }
+
+    .auth-policy-footer {
+    padding: 1.5rem 2rem 2rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 1.5rem;
+  }
+
+
+  /* Auth footer styles (matches AccountCreationForm pattern) */
+  .auth-footer {
+    text-align: center;
+    margin-top: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border-light, #e5e7eb);
+  }
+
+  .powered-by {
+    font-size: 12px;
+    color: var(--auth-text-secondary, #6b7280);
+    margin: 0;
+  }
+
+  .powered-by strong {
+    color: var(--auth-text-primary, #111827);
   }
 
   /* Responsive adjustments */

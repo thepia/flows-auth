@@ -4,34 +4,26 @@
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
-import type { Readable } from 'svelte/store';
-import type { TranslationKey } from '../../utils/i18n';
+import type { SingleButtonConfig } from '../../types';
+import { m } from '../../utils/i18n';
+import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
 // Props
 export let type: 'submit' | 'button' = 'submit';
-export let disabled = false;
 export let loading = false;
 export let variant: 'primary' | 'secondary' | 'ghost' = 'primary';
 export let size: 'sm' | 'md' | 'lg' = 'md';
 export let fullWidth = true;
 export let className = '';
 
-// Content props
-export let text = '';
-export let loadingText = '';
-export let icon = '';
-export let showIcon = true;
-
-// Method-specific text and icons
-export let method: 'passkey' | 'email' | 'email-code' | 'magic-link' | 'generic' | 
-                   'continue-touchid' | 'continue-faceid' | 'continue-biometric' = 'generic';
+// Method-specific text and icons (legacy - use buttonConfig instead)
 export let supportsWebAuthn = false;
 
-// AppCode awareness for pin vs magic link
+// AppCode awareness for pin vs magic link (legacy)
 export let isAppCodeBased = false;
 
-// i18n support (required - parent component must provide this)
-export let i18n: Readable<(key: TranslationKey, variables?: Record<string, any>) => string>;
+// NEW: Button configuration object (preferred approach)
+export let buttonConfig: SingleButtonConfig;
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -40,70 +32,98 @@ const dispatch = createEventDispatcher<{
 
 // Apple device detection for biometric text
 $: isAppleDevice = detectAppleDevice();
-$: hasTouchId = detectTouchId();
-$: hasFaceId = detectFaceId();
 
-// Dynamic content based on method and state
-$: displayText = getDisplayText();
-$: displayIcon = getDisplayIcon();
+// Declare reactive variables with default values
+let effectiveSupportsWebAuthn: boolean = false;
+let effectiveDisabled: boolean = false;
+let displayText: string = '';
+
+// Resolve effective values from buttonConfig or legacy props
+$: {
+  effectiveSupportsWebAuthn = buttonConfig ? buttonConfig.supportsWebAuthn : supportsWebAuthn;
+  console.log('Reactive effectiveSupportsWebAuthn:', { buttonConfig: !!buttonConfig, buttonConfigSupportsWebAuthn: buttonConfig?.supportsWebAuthn, supportsWebAuthn, effectiveSupportsWebAuthn });
+}
+$: {
+  effectiveDisabled = buttonConfig?.disabled || false;
+  console.log('🔘 AuthButton disabled state:', {
+    hasButtonConfig: !!buttonConfig,
+    buttonConfigDisabled: buttonConfig?.disabled,
+    loading,
+    effectiveDisabled,
+    finalDisabled: effectiveDisabled || loading
+  });
+}
+
+// Dynamic content based on method and state - explicitly depend on effective values
+$: {
+  // Reference all dependencies to make this reactive
+  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased;
+  displayText = getDisplayText();
+}
+$: displayIconComponent = getDisplayIconComponent();
 
 function getDisplayText(): string {
-  if (loading && loadingText) return loadingText;
-  if (text) return text;
-  
-  // Method-specific text using i18n
+  console.log('AuthButton getDisplayText debug:', {
+    buttonConfig,
+    effectiveSupportsWebAuthn,
+    isAppleDevice
+  });
+
+  // Use Paraglide message functions directly - no legacy i18n
+  if (loading && buttonConfig.loadingTextKey && buttonConfig.loadingTextKey in m) {
+    return (m as unknown as {[key: string]: () => string})[buttonConfig.loadingTextKey]();
+    // // Map common loading text keys to Paraglide functions
+    // switch (buttonConfig.loadingTextKey) {
+    //   case 'auth.signingIn': return m.auth_signingIn();
+    //   case 'auth.sendingPin': return m.auth_sendingPin();
+    //   case 'auth.sendingMagicLink': return m.auth_sendingMagicLink();
+    //   case 'code.verifying': return m.code_verifying();
+    //   default: return m.auth_loading();
+    // }
+  }
+  if (buttonConfig.textKey && buttonConfig.textKey in m) {
+    return (m as unknown as {[key: string]: () => string})[buttonConfig.textKey]();
+  }
+
+  // Use Paraglide message functions directly
   if (loading) {
-    switch (method) {
-      case 'passkey': return $i18n('auth.signingIn');
-      case 'email': 
-      case 'email-code': return $i18n('auth.sendingPin');
-      case 'magic-link': return $i18n('auth.sendingMagicLink');
+    switch (buttonConfig.method) {
+      case 'passkey': return m["auth.signingIn"]();
+      case 'email':
+      case 'email-code': return m["auth.sendingPin"]();
+      case 'magic-link': return m["auth.sendingMagicLink"]();
       case 'continue-touchid':
       case 'continue-faceid':
-      case 'continue-biometric': return $i18n('auth.signingIn');
-      default: return $i18n('auth.loading');
+      case 'continue-biometric': return m["auth.signingIn"]();
+      default: return m["auth.loading"]();
     }
   }
-  
-  switch (method) {
-    case 'passkey': 
-      if (supportsWebAuthn && isAppleDevice) {
-        // Apple-specific passkey text
-        if (hasFaceId && hasTouchId) {
-          return $i18n('auth.continueWithTouchIdFaceId'); // "Continue with Touch ID/Face ID"
-        } else if (hasFaceId) {
-          return $i18n('auth.continueWithFaceId');
-        } else if (hasTouchId) {
-          return $i18n('auth.continueWithTouchId');
-        }
-        return $i18n('auth.continueWithBiometric');
+
+  switch (buttonConfig.method) {
+    case 'passkey':
+      if (effectiveSupportsWebAuthn && isAppleDevice) {
+        // Use generic "Touch ID/Face ID" text for better reliability and UX
+        // Specific detection is unreliable and WebAuthn intentionally obscures biometric details
+        return m["auth.continueWithBiometric"](); // "Continue with Touch ID/Face ID"
       }
-      return supportsWebAuthn ? $i18n('auth.signInWithPasskey') : $i18n('auth.signIn');
+      return effectiveSupportsWebAuthn ? m["auth.signInWithPasskey"]() : m["auth.signIn"]();
     case 'email':
       // AppCode-aware: use pin or magic link text
-      return isAppCodeBased ? $i18n('auth.sendPinToEmail') : $i18n('auth.sendMagicLink');
+      return isAppCodeBased ? m["auth.sendPinByEmail"]() : m["auth.sendMagicLink"]();
     case 'email-code':
-      return $i18n('auth.sendPinToEmail');
+      return m["auth.sendPinByEmail"]();
     case 'magic-link':
-      return $i18n('auth.sendMagicLink');
+      return m["auth.sendMagicLink"]();
     case 'continue-touchid':
-      return $i18n('auth.continueWithTouchId');
+      return m["auth.continueWithTouchId"]();
     case 'continue-faceid':
-      return $i18n('auth.continueWithFaceId');
+      return m["auth.continueWithFaceId"]();
     case 'continue-biometric':
-      // Smart biometric text based on device
-      if (isAppleDevice) {
-        if (hasFaceId && hasTouchId) {
-          return $i18n('auth.continueWithTouchIdFaceId');
-        } else if (hasFaceId) {
-          return $i18n('auth.continueWithFaceId');
-        } else if (hasTouchId) {
-          return $i18n('auth.continueWithTouchId');
-        }
-      }
-      return $i18n('auth.continueWithBiometric');
-    default: 
-      return $i18n('action.continue');
+      // Use generic biometric text for better reliability
+      // Specific biometric detection is unreliable and not recommended
+      return m["auth.continueWithBiometric"](); // "Continue with Touch ID/Face ID"
+    default:
+      return m["action.continue"]();
   }
 }
 
@@ -113,109 +133,83 @@ function detectAppleDevice(): boolean {
   return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
 }
 
-function detectTouchId(): boolean {
-  if (!isAppleDevice) return false;
-  // iPhone/iPad with Touch ID, or Mac with Touch Bar
-  return /iPhone|iPad|iPod/.test(navigator.userAgent) || 
-         (/Macintosh/.test(navigator.userAgent) && 'ontouchstart' in window);
-}
+// Note: Specific Touch ID/Face ID detection removed in favor of generic biometric text
+// This provides better reliability and follows WebAuthn privacy principles
 
-function detectFaceId(): boolean {
-  if (!isAppleDevice) return false;
-  // Modern iPhones with Face ID (iPhone X and later)
-  return /iPhone/.test(navigator.userAgent) && 
-         screen.height >= 812; // Rough detection for Face ID devices
-}
+function getDisplayIconComponent() {
+  if (loading) return null;
+  if (!buttonConfig?.method) return null; // Safety check
 
-function getDisplayIcon(): string {
-  if (loading) return '';
-  if (icon) return icon;
-  
-  switch (method) {
-    case 'passkey': 
-      // Use Apple-specific icons on Apple devices
-      if (isAppleDevice) {
-        if (hasFaceId) return '😊'; // Face ID
-        if (hasTouchId) return '👆'; // Touch ID
-      }
-      return '🔑';
-    case 'email': 
+  switch (buttonConfig.method) {
+    case 'passkey':
+      // Use fingerprint icon for Apple devices, key icon for others
+      return isAppleDevice ? Fingerprint : Key;
+    case 'email':
     case 'email-code':
-    case 'magic-link': return '✉️';
-    case 'continue-touchid': return '👆';
-    case 'continue-faceid': return '😊';
-    case 'continue-biometric': return isAppleDevice ? (hasFaceId ? '😊' : '👆') : '🔐';
-    default: return '';
+    case 'magic-link':
+      return Envelope;
+    case 'continue-touchid':
+      return Fingerprint;
+    case 'continue-faceid':
+      return SmileyWink;
+    case 'continue-biometric':
+      return Fingerprint; // Generic fingerprint icon for biometric
+    default:
+      return null;
   }
 }
 
 function handleClick(event: MouseEvent) {
-  if (disabled || loading) {
+  if (effectiveDisabled || loading) {
     event.preventDefault();
     return;
   }
-  
-  dispatch('click', { method });
+
+  dispatch('click', { method: buttonConfig.method });
 }
 
-function getButtonClasses(): string {
-  // Base Tailwind utility classes for layout, custom CSS classes for styling
-  const baseClasses = "flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]";
-  
-  let variantClasses = "";
-  if (variant === 'primary') {
-    variantClasses = "auth-btn-primary";
-  } else if (variant === 'secondary') {
-    variantClasses = "auth-btn-secondary";
-  } else {
-    variantClasses = "auth-btn-ghost";
-  }
-  
-  let sizeClasses = "";
-  if (size === 'sm') {
-    sizeClasses = "px-3 py-1.5 text-sm";
-  } else if (size === 'lg') {
-    sizeClasses = "px-5 py-3 text-lg";
-  } else {
-    sizeClasses = "px-4 py-2 text-base";
-  }
-  
-  const widthClass = fullWidth ? "w-full" : "";
-  const disabledClass = (disabled || loading) ? "cursor-not-allowed opacity-50" : "cursor-pointer";
-  
-  return `${baseClasses} ${variantClasses} ${sizeClasses} ${widthClass} ${disabledClass}`;
-}
+// Reactive disabled state for template
+$: isDisabled = effectiveDisabled || loading;
 </script>
 
 <button
   {type}
-  class="{getButtonClasses()} {className}"
-  {disabled}
+  class="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]
+         {variant === 'primary' ? 'auth-btn-primary' : ''}
+         {variant === 'secondary' ? 'auth-btn-secondary' : ''}
+         {variant === 'ghost' ? 'auth-btn-ghost' : ''}
+         {size === 'sm' ? 'px-3 py-1.5 text-sm' : ''}
+         {size === 'md' ? 'px-4 py-2 text-base' : ''}
+         {size === 'lg' ? 'px-5 py-3 text-lg' : ''}
+         {fullWidth ? 'w-full' : ''}
+         {isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+         {className}"
+  disabled={isDisabled}
   on:click={handleClick}
-  aria-label={text || displayText}
+  aria-label={displayText}
   aria-describedby={loading ? 'button-loading-text' : null}
 >
   {#if loading}
-    <div class="spinner w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
-    <span id="button-loading-text" class="sr-only">Loading, please wait</span>
-  {:else if showIcon && displayIcon}
-    <span aria-hidden="true">{displayIcon}</span>
+    <div class="animate-spin w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
+    <span id="button-loading-text" class="sr-only">Signing in...</span>
+  {:else if displayIconComponent}
+    {#if displayIconComponent}
+      <svelte:component this={displayIconComponent} size={16} weight="bold" aria-hidden="true" />
+    {/if}
   {/if}
   
   <span>{displayText}</span>
 </button>
 
 <style>
-  /* Button base styles */
+  /* Button base styles - using CSS variables for theming */
   button {
     position: relative;
     overflow: hidden;
     text-decoration: none;
-    transition: all 0.2s ease;
-    border-radius: 0.5rem; /* rounded-lg equivalent */
   }
 
-  /* Primary button variant */
+  /* Primary button variant - brand colors from CSS variables */
   :global(.auth-btn-primary) {
     background: var(--color-brand-primary, #988ACA);
     color: white;
@@ -272,29 +266,6 @@ function getButtonClasses(): string {
     opacity: 0.5 !important;
     transform: none !important;
     box-shadow: none !important;
-  }
-  
-  /* Screen reader only text */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  /* Loading spinner */
-  .spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 </style>
 

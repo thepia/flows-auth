@@ -34,7 +34,7 @@ const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicPins: true,
+  enableMagicLinks: false,
   clientId: 'your-flows-app-id'
 };
 ```

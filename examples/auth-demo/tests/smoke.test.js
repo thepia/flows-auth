@@ -36,7 +36,7 @@ test.describe('Auth Demo Smoke Tests', () => {
     // Check for critical JavaScript errors
     const criticalErrors = consoleErrors.filter(
       (error) =>
-        error.includes('useAuth is not a function') ||
+        error.includes('getAuthStoreFromContext is not a function') ||
         error.includes('quickAuthSetup is not a function') ||
         error.includes('Cannot read properties of undefined') ||
         error.includes('TypeError') ||

@@ -334,14 +334,55 @@ describe('Bundle API Validation (Integration)', () => {
   });
 
   describe('Development Components Validation', () => {
-    it('should export development and testing components', async () => {
-      const { ErrorReportingStatus, TestFlow, SessionStateMachineFlow, SignInStateMachineFlow } =
-        await import(DIST_ESM_PATH);
-
+    it('should export ErrorReportingStatus from main bundle', async () => {
+      const { ErrorReportingStatus } = await import(DIST_ESM_PATH);
       expect(ErrorReportingStatus).toBeDefined();
-      expect(TestFlow).toBeDefined();
-      expect(SessionStateMachineFlow).toBeDefined();
-      expect(SignInStateMachineFlow).toBeDefined();
+    });
+
+    it('should NOT export Flow components from main bundle (avoid @xyflow/svelte dependency)', async () => {
+      const bundle = await import(DIST_ESM_PATH);
+
+      // Flow components should NOT be in main bundle
+      expect(bundle.TestFlow).toBeUndefined();
+      expect(bundle.SessionStateMachineFlow).toBeUndefined();
+      expect(bundle.SignInStateMachineFlow).toBeUndefined();
+    });
+  });
+
+  describe('/dev Export Validation', () => {
+    const DEV_EXPORT_PATH = join(ROOT_PATH, 'dist/src/dev.ts');
+    const DEV_TYPES_PATH = join(ROOT_PATH, 'dist/dev.d.ts');
+
+    it('should have /dev export configured in package.json', () => {
+      expect(packageJson.exports['./dev']).toBeDefined();
+
+      const devExport = packageJson.exports['./dev'];
+      expect(devExport.types).toBe('./dist/dev.d.ts');
+      expect(devExport.svelte).toBe('./dist/src/dev.ts');
+      expect(devExport.import).toBe('./dist/src/dev.ts');
+      expect(devExport.default).toBe('./dist/src/dev.ts');
+    });
+
+    it('should have /dev export files on filesystem', () => {
+      expect(existsSync(DEV_EXPORT_PATH)).toBe(true);
+      expect(existsSync(DEV_TYPES_PATH)).toBe(true);
+    });
+
+    it('should export Flow components from /dev (source import)', async () => {
+      // Import from source since /dev points to dist/src/dev.ts
+      const devExports = await import('../../src/dev.ts');
+
+      expect(devExports.SessionStateMachineFlow).toBeDefined();
+      expect(devExports.SignInStateMachineFlow).toBeDefined();
+      expect(devExports.TestFlow).toBeDefined();
+    });
+
+    it('should have correct TypeScript definitions for /dev export', () => {
+      const devDts = readFileSync(DEV_TYPES_PATH, 'utf-8');
+
+      expect(devDts).toContain('SessionStateMachineFlow');
+      expect(devDts).toContain('SignInStateMachineFlow');
+      expect(devDts).toContain('TestFlow');
     });
   });
 

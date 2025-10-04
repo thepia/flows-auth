@@ -12,22 +12,8 @@ import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 export let isAuthenticated = false;
 export let user = null;
 
-// Get authStore from context instead of props
-const authStoreContext = getContext(AUTH_CONTEXT_KEY);
-
-// Create reactive reference to the auth store
-$: authStore = $authStoreContext;
-
-// Debug logging
-$: if (authStore && browser) {
-  console.log('📦 [OVERVIEW] Auth store from context:', {
-    authStore: !!authStore,
-    debugId: authStore?._debugId,
-    signInState: $authStore?.signInState,
-    isAuthenticated,
-    user: !!user
-  });
-}
+// Get authStore from context (setupAuthContext in layout sets the actual store)
+const authStore = getContext(AUTH_CONTEXT_KEY);
 
 // Optional SvelteKit props
 export let params = {};
@@ -209,21 +195,20 @@ onMount(async () => {
   console.log('🎯 Demo page initializing...');
   
   try {
-    // Single dynamic import for all components
+    // Import main components from main package
     const authModule = await import('@thepia/flows-auth');
-    const {
-      SessionStateMachineFlow,
-      SignInStateMachineFlow,
-      SignInForm,
-      SignInCore
-    } = authModule;
-    
+    const { SignInForm, SignInCore } = authModule;
+
+    // Import Flow components from dev export (avoids @xyflow/svelte in main bundle)
+    const devModule = await import('@thepia/flows-auth/dev');
+    const { SessionStateMachineFlow, SignInStateMachineFlow } = devModule;
+
     // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
     SignInFormComponent = SignInForm;
     SignInCoreComponent = SignInCore;
-    
+
     console.log('✅ Auth components loaded dynamically');
     
     // Use auth store passed from layout (explicit prop passing pattern per ADR 0004)

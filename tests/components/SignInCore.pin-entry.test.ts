@@ -33,8 +33,9 @@ describe('SignInCore PIN Entry', () => {
       }
     });
 
-    // Component should render without waiting message
-    expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+    // Component should render with email input
+    expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   it('should send SENT_PIN_EMAIL event when "Enter pin here" button is clicked', async () => {
@@ -50,8 +51,9 @@ describe('SignInCore PIN Entry', () => {
       }
     });
 
-    // Component should render without waiting message
-    expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+    // Component should render with email input
+    expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   it('should not send event if hasValidPin is false', async () => {
@@ -67,8 +69,9 @@ describe('SignInCore PIN Entry', () => {
       }
     });
 
-    // Component should render without waiting message
-    expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+    // Component should render with email input
+    expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   it('should transition to pinEntry state when SENT_PIN_EMAIL event is processed', async () => {
@@ -84,7 +87,8 @@ describe('SignInCore PIN Entry', () => {
       }
     });
 
-    // Component should render without waiting message
-    expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+    // Component should render with email input
+    expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 });

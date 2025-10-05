@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores';
+import { makeSvelteCompatible } from '../../src/stores/adapters/svelte';
 import type { AuthConfig } from '../../src/types';
 
 /**

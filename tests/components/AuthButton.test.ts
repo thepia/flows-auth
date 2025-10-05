@@ -299,8 +299,8 @@ describe('AuthButton Component', () => {
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
 
-      // Check for spinner
-      const spinner = container.querySelector('.spinner');
+      // Check for spinner (uses animate-spin Tailwind class)
+      const spinner = container.querySelector('.animate-spin');
       expect(spinner).toBeTruthy();
     });
 

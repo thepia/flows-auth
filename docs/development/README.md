@@ -329,14 +329,6 @@ authStore.stateMachine.subscribe(({ state, context }) => {
 | **API calls failing** | CORS or authentication | Verify API server configuration |
 | **Tests failing** | Mock configuration | Check test setup in `beforeEach()` |
 
-### **Error Reporting Integration**
-```typescript
-// Production error reporting
-import { initializeErrorReporter } from '@thepia/flows-auth';
-
-initializeErrorReporter(store);
-```
-
 ## 🚀 **Deployment & Production**
 
 ### **Production Checklist**

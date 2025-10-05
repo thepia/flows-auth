@@ -9,7 +9,7 @@ import '@testing-library/svelte/vitest';
 
 // Mock the error reporter module before it's imported anywhere else
 vi.mock('../src/utils/telemetry', () => ({
-  initializeErrorReporter: vi.fn(),
+  initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
   reportWebAuthnError: vi.fn(),

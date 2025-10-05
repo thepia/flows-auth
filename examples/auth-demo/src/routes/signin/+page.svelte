@@ -394,11 +394,19 @@ onMount(async () => {
                   {$authStore.hasValidPin ? '🔢' : '❌'} valid-pin
                 </span>
                 <span class="pill">
-                  email: {$authStore.email}
+                  email: {$authStore.email || '(empty)'}
+                </span>
+                <span class="pill {$authStore.emailCode?.length === 6 ? 'active' : 'inactive'}">
+                  {$authStore.emailCode?.length === 6 ? '✅' : '⏳'} code: {$authStore.emailCode || '(empty)'} ({$authStore.emailCode?.length || 0}/6)
                 </span>
                 <span class="pill">
-                  code: {$authStore.emailCode}
+                  fullName: {$authStore.fullName || '(empty)'}
                 </span>
+                {#if authStore.getButtonConfig()}
+                  <span class="pill {authStore.getButtonConfig().primary.disabled ? 'inactive' : 'active'}">
+                    {authStore.getButtonConfig().primary.disabled ? '🔒' : '🔓'} button
+                  </span>
+                {/if}
               </div>
             </div>
           {/if}
@@ -601,23 +609,23 @@ onMount(async () => {
               </p>
             </div>
             <div class="card-body">
-                              {#if browser && authStore && SignInCoreComponent}
+              {#if browser && authStore && SignInCoreComponent}
 
-                                  <svelte:component this={SignInCoreComponent}
-                      store={authStore}
-                      initialEmail={emailInput}
-                      className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
-                      explainFeatures={true}
+                  <svelte:component this={SignInCoreComponent}
+                    store={authStore}
+                    initialEmail={emailInput}
+                    className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
+                    explainFeatures={true}
 
-                      on:success={(e) => handleSignInSuccess(e.detail)}
-                      on:error={(e) => handleSignInError(e.detail)}
-                      on:stepChange={(e) => handleStepChange(e.detail)}
-                    />
-                {:else}
-                  <div class="signin-loading">
-                    <p>{m["signIn.loading_core"]()}</p>
-                  </div>
-                {/if}
+                    on:success={(e) => handleSignInSuccess(e.detail)}
+                    on:error={(e) => handleSignInError(e.detail)}
+                    on:stepChange={(e) => handleStepChange(e.detail)}
+                  />
+              {:else}
+                <div class="signin-loading">
+                  <p>{m["signIn.loading_core"]()}</p>
+                </div>
+              {/if}
             </div>
           </div>
               {/if}

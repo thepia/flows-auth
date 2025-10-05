@@ -42,11 +42,16 @@ vi.mock('../../src/utils/sessionManager', () => ({
 
 vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn().mockReturnValue(true),
-  isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true)
+  isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
+  isConditionalMediationSupported: vi.fn().mockResolvedValue(true),
+  createPasskey: vi.fn(),
+  createCredential: vi.fn(),
+  authenticateWithPasskey: vi.fn(),
+  serializeCredential: vi.fn(),
+  generatePasskeyName: vi.fn().mockReturnValue('Test Device')
 }));
 
 vi.mock('../../src/utils/telemetry', () => ({
-  initializeErrorReporter: vi.fn(),
   reportAuthState: vi.fn(),
   reportWebAuthnError: vi.fn(),
   reportApiError: vi.fn(),

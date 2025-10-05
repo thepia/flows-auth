@@ -175,3 +175,15 @@ export const TEST_AUTH_CONFIGS = {
     enableMagicLinks: false
   }
 } as const;
+
+/**
+ * Helper to set up auth store in pinEntry state
+ * This properly triggers the emailCodeSent transition
+ * NOTE: email should already be set before calling this to avoid checkUser side effects
+ */
+export function setupPinEntryState(authStore: SvelteAuthStore) {
+  // Set emailCodeSent flag FIRST
+  authStore.ui.getState().setEmailCodeSent(true);
+  // Then set signInState
+  authStore.ui.getState().setSignInState('pinEntry');
+}

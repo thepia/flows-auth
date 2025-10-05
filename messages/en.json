@@ -33,6 +33,8 @@
   "code.verify": "Verify Code",
   "code.verifying": "Verifying...",
 
+  "error.invalidCode": "Invalid or expired code. Perhaps you have a newer code.",
+
   "status.emailSent": "We sent a verification code by email",
   "status.checkEmail": "Check your email",
   "status.pinValid": "A valid pin was already sent to you, good for {minutes} minute{s}.",

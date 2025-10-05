@@ -117,6 +117,10 @@ export const code_verifying = /** @type {(inputs: {}) => string} */ () => {
 	return `Bekræfter...`
 };
 
+export const error_invalidcode1 = /** @type {(inputs: {}) => string} */ () => {
+	return `Ugyldig eller udløbet kode. Måske har du en nyere kode.`
+};
+
 export const status_emailsent1 = /** @type {(inputs: {}) => string} */ () => {
 	return `Vi sendte en bekræftelseskode via email`
 };

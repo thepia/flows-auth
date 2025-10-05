@@ -41,17 +41,9 @@ let displayText: string = '';
 // Resolve effective values from buttonConfig or legacy props
 $: {
   effectiveSupportsWebAuthn = buttonConfig ? buttonConfig.supportsWebAuthn : supportsWebAuthn;
-  console.log('Reactive effectiveSupportsWebAuthn:', { buttonConfig: !!buttonConfig, buttonConfigSupportsWebAuthn: buttonConfig?.supportsWebAuthn, supportsWebAuthn, effectiveSupportsWebAuthn });
 }
 $: {
   effectiveDisabled = buttonConfig?.disabled || false;
-  console.log('🔘 AuthButton disabled state:', {
-    hasButtonConfig: !!buttonConfig,
-    buttonConfigDisabled: buttonConfig?.disabled,
-    loading,
-    effectiveDisabled,
-    finalDisabled: effectiveDisabled || loading
-  });
 }
 
 // Dynamic content based on method and state - explicitly depend on effective values
@@ -63,12 +55,6 @@ $: {
 $: displayIconComponent = getDisplayIconComponent();
 
 function getDisplayText(): string {
-  console.log('AuthButton getDisplayText debug:', {
-    buttonConfig,
-    effectiveSupportsWebAuthn,
-    isAppleDevice
-  });
-
   // Use Paraglide message functions directly - no legacy i18n
   if (loading && buttonConfig.loadingTextKey && buttonConfig.loadingTextKey in m) {
     return (m as unknown as {[key: string]: () => string})[buttonConfig.loadingTextKey]();
@@ -165,7 +151,11 @@ function handleClick(event: MouseEvent) {
     return;
   }
 
+  // Dispatch custom click event for components that need it
   dispatch('click', { method: buttonConfig.method });
+
+  // For type="submit" buttons, let the native form submission happen
+  // Don't preventDefault - the form's on:submit handler will catch it
 }
 
 // Reactive disabled state for template

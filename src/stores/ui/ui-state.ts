@@ -93,10 +93,6 @@ export function createUIStore(options: StoreOptions) {
 
     // Master flow state management - SINGLE SOURCE OF TRUTH
     setSignInState: (signInState: SignInState) => {
-      console.log('🔄 SignIn state transition:', {
-        from: get().signInState,
-        to: signInState
-      });
       set({ signInState });
     },
 
@@ -237,7 +233,8 @@ export function createUIStore(options: StoreOptions) {
 
     getButtonConfig: (): ButtonConfig => {
       const currentState = get();
-      const { loading, userExists, hasPasskeys, signInState, email, fullName, emailCode } = currentState;
+      const { loading, userExists, hasPasskeys, signInState, email, fullName, emailCode } =
+        currentState;
       const passkeysEnabled = config.enablePasskeys && hasPasskeys;
 
       // Handle pinEntry state with specific button configs
@@ -271,11 +268,6 @@ export function createUIStore(options: StoreOptions) {
             supportsWebAuthn: false
           }
         };
-        console.log('🔘 Button config - pinEntry state:', {
-          loading,
-          primaryDisabled: pinEntryConfig.primary.disabled,
-          secondaryDisabled: pinEntryConfig.secondary?.disabled
-        });
         return pinEntryConfig;
       }
 
@@ -285,11 +277,6 @@ export function createUIStore(options: StoreOptions) {
       ): ButtonConfig {
         // Button disabled state logic
         let isDisabled = !email || !email?.trim();
-        console.log('🔘 Button disabled - initial check:', {
-          loading,
-          signInState,
-          initialDisabled: isDisabled
-        });
 
         switch (signInState) {
           case 'emailEntry':

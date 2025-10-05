@@ -22,11 +22,13 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 // Mock error reporter
 vi.mock('../../src/utils/telemetry', () => ({
-  initializeErrorReporter: vi.fn(),
+  initializeTelemetry: vi.fn(),
   reportAuthState: vi.fn(),
   reportWebAuthnError: vi.fn(),
   reportApiError: vi.fn(),
-  updateErrorReporterConfig: vi.fn()
+  updateErrorReporterConfig: vi.fn(),
+  flushErrorReports: vi.fn(),
+  getErrorReportQueueSize: vi.fn(() => 0)
 }));
 
 describe('SignInCore Button Texts(no passkeys)', () => {

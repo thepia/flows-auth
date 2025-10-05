@@ -833,7 +833,6 @@ export class AuthApiClient {
     });
 
     const response = await this.request<{
-      success?: boolean;
       user?: User;
       accessToken?: string;
       refreshToken?: string;
@@ -852,8 +851,6 @@ export class AuthApiClient {
 
     console.log('📦 Raw verify-email API response:', {
       email,
-      hasSuccess: 'success' in response,
-      successValue: response.success,
       hasUser: 'user' in response,
       hasAccessToken: 'accessToken' in response,
       hasStep: 'step' in response,
@@ -864,9 +861,19 @@ export class AuthApiClient {
       fullResponse: response
     });
 
+    console.log('🔍 Success condition check:', {
+      hasUser: !!response.user,
+      userValue: response.user,
+      hasAccessToken: !!response.accessToken,
+      accessTokenValue: response.accessToken,
+      bothTruthy: !!(response.user && response.accessToken)
+    });
+
     // Transform organization API response to match SignInResponse interface
     // The API returns tokens directly in the response, not nested
-    if (response.success && response.user && response.accessToken) {
+    // Successful authentication is indicated by presence of user and accessToken
+    // OR step === 'authenticated' (server may return this for successful auth)
+    if (response.user && response.accessToken) {
       // Clear user cache entry since verification succeeded
       // This handles cases where user was previously cached as "doesn't exist"
       // but verification created the user account
@@ -882,8 +889,13 @@ export class AuthApiClient {
       };
     }
 
-    // Handle error response
-    throw new Error(response.error || response.message || 'Email code verification failed');
+    // If step is 'authenticated' but missing user/accessToken, that's still an error
+    // Handle error response - but don't use response.message if it looks like a success message
+    const errorMessage = response.error ||
+      (response.message && !response.message.toLowerCase().includes('welcome') && !response.message.toLowerCase().includes('signed in')
+        ? response.message
+        : 'Email code verification failed');
+    throw new Error(errorMessage);
   }
 
   /**

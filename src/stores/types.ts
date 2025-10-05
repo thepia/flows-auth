@@ -91,7 +91,8 @@ export interface SessionStore extends SessionState, SessionActions {}
  * Error store state
  */
 export interface ErrorState {
-  apiError: ApiError | null;
+  apiError: ApiError | null; // Raw API error for debugging/logging
+  uiError: ApiError | null; // Error to display in UI (can be cleared independently)
   lastFailedRequest: { method: string; args: unknown[] } | null;
 }
 
@@ -101,6 +102,7 @@ export interface ErrorState {
 export interface ErrorActions {
   setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
   clearApiError: () => void;
+  clearUiError: () => void; // Clear only UI error, keep apiError for debugging
   retryLastRequest: () => Promise<boolean>;
 }
 

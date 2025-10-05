@@ -1,14 +1,18 @@
 <!--
   CodeInput - Dedicated input component for verification codes
   Features: numeric input optimization, proper formatting, validation
+
+  Non-Controlled approach where the value remains internal.
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import { m } from '../../utils/i18n';
 import { "code.label" as codeLabel } from '../../paraglide/messages';
 
+// Non-prop
+let value = '';
+
 // Props
-export let value = '';
 export let placeholder = '';
 export let disabled = false;
 export let required = true;
@@ -50,20 +54,36 @@ $: {
   }
 }
 
+// Internal state for tracking current input length
+let currentLength = 0;
+let internalValue = '';
+
+// Sync internal value with value prop for controlled mode
+$: if (value !== internalValue && value !== undefined) {
+  internalValue = value;
+  currentLength = value.length;
+}
+
 // Handle input changes for single input mode
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
   // Only allow numeric input
   const numericValue = target.value.replace(/[^0-9]/g, '');
-  value = numericValue;
+
+  // Update the target to show filtered value
   target.value = numericValue;
 
-  // Dispatch immediate change
-  dispatch('change', { value });
+  // Update internal value and length tracker
+  internalValue = numericValue;
+  currentLength = numericValue.length;
 
-  // Auto-advance when code is complete
-  if (autoAdvance && numericValue.length === maxlength) {
-    dispatch('complete', { value: numericValue });
+  // Only dispatch change when code is valid (exact length)
+  if (numericValue.length === maxlength) {
+    dispatch('change', { value: numericValue });
+
+    if (autoAdvance) {
+      dispatch('complete', { value: numericValue });
+    }
   }
 }
 
@@ -194,7 +214,7 @@ $: helpText = `Enter ${maxlength}-digit verification code`;
 <div class="space-y-2 {className}">
   {#if showLabel}
   <label for={showDigits ? "digit-0" : "code-input"} class="block text-sm text-left font-medium text-gray-700 dark:text-gray-300">
-      {displayLabel}
+      {displayLabel} ({currentLength}/{maxlength})
     </label>
   {/if}
 
@@ -234,7 +254,7 @@ $: helpText = `Enter ${maxlength}-digit verification code`;
       id="code-input"
       type="text"
       class="w-full {getInputClasses()}"
-      bind:value
+      value={value}
       on:input={handleInput}
       on:focus={handleFocus}
       on:blur={handleBlur}

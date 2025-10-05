@@ -44,8 +44,9 @@ describe('Auth Context Integration', () => {
         }
       });
 
-      // Should not show loading state when store and config are available
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      // Should render component with email input when store and config are available
+      expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('should demonstrate SignInForm uses context for logo display only', () => {
@@ -121,8 +122,9 @@ describe('Auth Context Integration', () => {
         }
       });
 
-      // Component should render without waiting message
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      // Component should render with email input
+      expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('should handle multiple subscribers correctly (future extensibility)', () => {
@@ -138,8 +140,9 @@ describe('Auth Context Integration', () => {
         props: { initialEmail: 'test2@example.com' }
       });
 
-      // Both should render without waiting message
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      // Both should render with email inputs
+      const coreComponents = document.querySelectorAll('.sign-in-core');
+      expect(coreComponents.length).toBeGreaterThan(0);
 
       unmount1();
       unmount2();
@@ -156,7 +159,7 @@ describe('Auth Context Integration', () => {
 
       // Component should render successfully with store prop
       expect(container.querySelector('.sign-in-core')).toBeInTheDocument();
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
   });
 
@@ -200,7 +203,8 @@ describe('Auth Context Integration', () => {
       });
 
       // Component successfully renders without creating its own store
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
   });
 });

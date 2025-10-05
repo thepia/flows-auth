@@ -18,6 +18,7 @@ import type { ErrorActions, ErrorState, ErrorStore, StoreOptions } from '../type
  */
 const initialState: ErrorState = {
   apiError: null,
+  uiError: null,
   lastFailedRequest: null
 };
 
@@ -38,6 +39,7 @@ export function createErrorStore(options: StoreOptions) {
 
       set({
         apiError,
+        uiError: apiError, // Also set as UI error by default
         lastFailedRequest: context?.method
           ? { method: context.method, args: [] }
           : get().lastFailedRequest
@@ -50,7 +52,15 @@ export function createErrorStore(options: StoreOptions) {
     clearApiError: () => {
       set({
         apiError: null,
+        uiError: null,
         lastFailedRequest: null
+      });
+    },
+
+    clearUiError: () => {
+      // Clear only UI error, keep apiError for debugging/logging
+      set({
+        uiError: null
       });
     },
 
@@ -89,14 +99,74 @@ export function createErrorStore(options: StoreOptions) {
  * Extracted from the original auth-store.ts implementation
  */
 function classifyError(error: unknown, context?: { method?: string; email?: string }): ApiError {
-  const message = error instanceof Error ? error.message : String(error);
   const timestamp = Date.now();
+
+  // If error is already an AuthError object from the API, use its code directly
+  if (error && typeof error === 'object') {
+    const errObj = error as any;
+
+    // Server already sent us a structured error code - map it to our error codes
+    if (errObj.code && errObj.code !== 'unknown_error') {
+      const serverCode = errObj.code;
+      const message = errObj.message || errObj.error || String(error);
+
+      // Special case: server sends 'network_error' for HTTP 500/502/503 which is actually service unavailable
+      if (serverCode === 'network_error' && (message.includes('500') || message.includes('502') || message.includes('503'))) {
+        return {
+          code: 'error.serviceUnavailable',
+          message,
+          retryable: true,
+          timestamp,
+          context
+        };
+      }
+
+      // Map server error codes to client error codes (skip unknown_error - it needs message analysis)
+      const codeMapping: Record<string, string> = {
+        'invalid_one_time_code': 'error.invalidCode',
+        'invalid_verification_code': 'error.invalidCode',
+        'expired_code': 'error.invalidCode',
+        'verification_failed': 'error.invalidCode',  // Added: from auth-store error wrapping
+        'rate_limit_exceeded': 'error.rateLimited',
+        'too_many_requests': 'error.rateLimited',
+        'network_error': 'error.network',
+        'user_not_found': 'error.userNotFound'
+      };
+
+      const mappedCode = codeMapping[serverCode];
+      if (mappedCode) {
+        return {
+          code: mappedCode as any,
+          message,
+          retryable: mappedCode !== 'error.invalidCode' && mappedCode !== 'error.userNotFound',
+          timestamp,
+          context
+        };
+      }
+    }
+  }
+
+  // Extract error message from various error types (fallback for non-structured errors)
+  let message: string;
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === 'string') {
+    message = error;
+  } else if (error && typeof error === 'object') {
+    const errObj = error as any;
+    message = errObj.message || errObj.error || JSON.stringify(error);
+  } else {
+    message = String(error);
+  }
+
+  // Use lowercase for case-insensitive matching (fallback for legacy errors)
+  const lowerMessage = message.toLowerCase();
 
   // Network and service availability errors
   if (
-    message.includes('fetch') ||
-    message.includes('network') ||
-    message.includes('Failed to fetch')
+    lowerMessage.includes('fetch') ||
+    lowerMessage.includes('network') ||
+    lowerMessage.includes('failed to fetch')
   ) {
     return {
       code: 'error.network',
@@ -109,12 +179,12 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
   // Service unavailable (API endpoints not found, server errors)
   if (
-    message.includes('404') ||
-    message.includes('endpoint') ||
-    message.includes('not found') ||
-    message.includes('500') ||
-    message.includes('502') ||
-    message.includes('503')
+    lowerMessage.includes('404') ||
+    lowerMessage.includes('endpoint') ||
+    lowerMessage.includes('not found') ||
+    lowerMessage.includes('500') ||
+    lowerMessage.includes('502') ||
+    lowerMessage.includes('503')
   ) {
     return {
       code: 'error.serviceUnavailable',
@@ -127,9 +197,8 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
   // User not found errors
   if (
-    message.includes('user not found') ||
-    message.includes('User not found') ||
-    (message.includes('404') && context?.method === 'checkUser')
+    lowerMessage.includes('user not found') ||
+    (lowerMessage.includes('404') && context?.method === 'checkUser')
   ) {
     return {
       code: 'error.userNotFound',
@@ -142,9 +211,9 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
   // WebAuthn cancellation
   if (
-    message.includes('NotAllowedError') ||
-    message.includes('cancelled') ||
-    message.includes('aborted')
+    lowerMessage.includes('notallowederr') ||
+    lowerMessage.includes('cancelled') ||
+    lowerMessage.includes('aborted')
   ) {
     return {
       code: 'error.authCancelled',
@@ -157,9 +226,9 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
   // WebAuthn and passkey failures
   if (
-    message.includes('webauthn') ||
-    message.includes('passkey') ||
-    message.includes('credential')
+    lowerMessage.includes('webauthn') ||
+    lowerMessage.includes('passkey') ||
+    lowerMessage.includes('credential')
   ) {
     return {
       code: 'error.authFailed',
@@ -172,9 +241,9 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
   // Rate limiting
   if (
-    message.includes('rate limit') ||
-    message.includes('too many requests') ||
-    message.includes('429')
+    lowerMessage.includes('rate limit') ||
+    lowerMessage.includes('too many requests') ||
+    lowerMessage.includes('429')
   ) {
     return {
       code: 'error.rateLimited',
@@ -185,8 +254,24 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
     };
   }
 
-  // Invalid input
-  if (message.includes('invalid') || message.includes('validation') || message.includes('400')) {
+  // Invalid or expired verification code (specific check before general invalid input)
+  if (
+    (lowerMessage.includes('invalid') && lowerMessage.includes('code')) ||
+    (lowerMessage.includes('expired') && lowerMessage.includes('code')) ||
+    lowerMessage.includes('invalid_one_time_code') ||
+    (context?.method === 'verifyEmailCode' && lowerMessage.includes('invalid'))
+  ) {
+    return {
+      code: 'error.invalidCode',
+      message,
+      retryable: false,
+      timestamp,
+      context
+    };
+  }
+
+  // Invalid input (general)
+  if (lowerMessage.includes('invalid') || lowerMessage.includes('validation') || lowerMessage.includes('400')) {
     return {
       code: 'error.invalidInput',
       message,

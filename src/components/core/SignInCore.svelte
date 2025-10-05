@@ -17,6 +17,7 @@ import EmailInput from './EmailInput.svelte';
 import CodeInput from './CodeInput.svelte';
 import AuthNewUserInfo from './AuthNewUserInfo.svelte';
 import UserManagement from '../UserManagement.svelte';
+import PinEntryStep from './PinEntryStep.svelte';
 
 // Props
 export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
@@ -27,11 +28,8 @@ export let explainFeatures = false; // Whether to show features list in explaine
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
 // Auth store - use prop or fallback to context
+// If store prop is provided, use it. Otherwise get from context (throws if missing).
 const authStore = store || getAuthStoreFromContext();
-
-if (!authStore) {
-  throw new Error('SignInCore requires store prop or auth store in context');
-}
 
 $: authConfig = authStore?.getConfig?.();
 
@@ -366,63 +364,38 @@ async function handleEmailCodeAuth() {
   }
 }
 
-// Handle email code verification
-async function handleEmailCodeVerification() {
-  const code = $authStore.emailCode || '';
-  if (!code.trim()) {
-    // Input validation - could show via AuthStore if needed
-    return;
-  }
-
-  store?.setLoading(true);
-
-  try {
-    const result = await store?.verifyEmailCode(code);
-
-    store?.setLoading(false);
-    if (result?.step === 'success' && result.user) {
-      dispatch('success', {
-        user: result.user,
-        method: 'email-code' as AuthMethod
-      });
-    } else {
-      throw new Error('Email code verification failed');
-    }
-  } catch (err: any) {
-    // await expect(authStore.verifyEmailCode('wrong')).rejects.toThrow('Invalid code');
-    // TODO pass error to the CodeInput
-    // TODO: Ensure loading state is cleared when verification fails
-    // Error handling is now managed by AuthStore
-    store?.setLoading(false);
-    console.error('❌ Email code verification failed in component:', err);
-    /*
-            eventEmitters.signInError({
-          error: { code: 'verification_failed', message: (err as Error).message },
-          method: 'email-code'
-        });
-    */
-  }
-}
+// Email code verification now handled in PinEntryStep component
 
 // Determine authentication method and button configuration (with null guards)
-// CRITICAL: Depend on $authStore to trigger recalculation when ANY store state changes
-// This ensures button config updates reactively when email, fullName, emailCode, loading, userExists, etc. change
-$: buttonConfig = $authStore ? authStore.getButtonConfig() : null;
+// Only depend on specific fields that affect button config, not the entire store
+$: buttonConfig = (() => {
+  // List dependencies explicitly to avoid reading the entire store
+  const deps = [
+    $authStore?.signInState,
+    $authStore?.loading,
+    $authStore?.email,
+    $authStore?.emailCode,
+    $authStore?.fullName,
+    $authStore?.userExists,
+    $authStore?.hasPasskeys
+  ];
+  return authStore?.getButtonConfig?.() ?? null;
+})();
 
 // State message configuration (centralized in AuthStore)
 // CRITICAL: Depend on $authStore to trigger recalculation when ANY store state changes
-$: stateMessage = $authStore ? authStore.getStateMessageConfig() : null;
+$: stateMessage = $authStore ? authStore.getStateMessageConfig?.() ?? null : null;
 
 // Explainer configuration (centralized in AuthStore)
-$: explainerConfig = store ? authStore.getExplainerConfig(explainFeatures) : null;
+$: explainerConfig = authStore?.getExplainerConfig?.(explainFeatures) ?? null;
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (store && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
+$: if (authStore && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
   checkUserForEmail(email);
 }
 </script>
 
-{#if store && authConfig}
+{#if authStore}
 <div class="sign-in-core {className}">
   {#if currentSignInState === 'emailEntry' || currentSignInState === 'userChecked'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
@@ -502,50 +475,7 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     </form>
 
   {:else if currentSignInState === 'pinEntry'}
-    <!-- Email Code Input Step -->
-    <div class="email-code-input">
-      <form on:submit|preventDefault={handleEmailCodeVerification}>
-        <CodeInput
-          value={$authStore.emailCode || ''}
-          on:input={(e) => authStore.setEmailCode(e.detail)}
-          label="code.label"
-          placeholder="code.placeholder"
-          disabled={$authStore.loading}
-          maxlength={authConfig?.emailCodeLength || 6}
-        />
-        <!-- TODO: Display verification error state below the PIN input where "Valid pin detected" text shows -->
-        <!-- Should show error message from failed verification attempt -->
-
-        {#if stateMessage}
-          <AuthStateMessage
-            type={stateMessage.type}
-            tKey={stateMessage.textKey}
-            showIcon={stateMessage.showIcon}
-          />
-        {/if}
-
-        {#if buttonConfig}
-          <div class="button-section">
-            <AuthButton
-              type="submit"
-              buttonConfig={buttonConfig.primary}
-              loading={$authStore.loading}
-              on:click={handleEmailCodeVerification}
-            />
-
-            {#if buttonConfig.secondary}
-              <AuthButton
-                type="button"
-                variant="secondary"
-                buttonConfig={buttonConfig.secondary}
-                loading={$authStore.loading}
-                on:click={authStore.reset}
-              />
-            {/if}
-          </div>
-        {/if}
-      </form>
-    </div>
+    <PinEntryStep {authStore} on:success />
 
   {:else if currentSignInState === 'signedIn'}
     {#if $authStore.user}
@@ -574,18 +504,6 @@ $: if (store && email && (currentSignInState === 'emailEntry' || currentSignInSt
     {/if}
   {/if}
 </div>
-{:else}
-  <div class="loading-state">
-    <p>
-      {#if !store}
-        Waiting for authentication context...
-      {:else if !authConfig}
-        Loading configuration...
-      {:else}
-        Initializing authentication...
-      {/if}
-    </p>
-  </div>
 {/if}
 
 <style>

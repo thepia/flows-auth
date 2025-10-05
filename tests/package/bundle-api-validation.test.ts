@@ -19,7 +19,7 @@
  */
 
 import { existsSync, readFileSync, statSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 // Test setup - NO mocking for integration tests
@@ -233,7 +233,14 @@ describe('Bundle API Validation (Integration)', () => {
       // Check for key type exports
       expect(dtsContent).toMatch(/export.*AuthConfig/);
       expect(dtsContent).toMatch(/export.*AuthState/);
-      expect(dtsContent).toMatch(/export.*SignInState/);
+
+      // SignInState is exported via wildcard: export type * from './types'
+      // Check it exists in the types file
+      expect(dtsContent).toMatch(/export type \* from '\.\/types'/);
+      const typesPath = join(dirname(DIST_TYPES_PATH), 'types', 'index.d.ts');
+      const typesContent = readFileSync(typesPath, 'utf-8');
+      expect(typesContent).toMatch(/export type.*SignInState/);
+
       expect(dtsContent).toMatch(/export.*AuthApiClient/);
     });
   });

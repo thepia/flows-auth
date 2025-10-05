@@ -2,7 +2,7 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext, ErrorReportingStatus, initializeErrorReporter } from '@thepia/flows-auth'; // ✅ Static imports
+import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext, ErrorReportingStatus } from '@thepia/flows-auth'; // ✅ Static imports
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
@@ -40,7 +40,7 @@ const authConfig = {
 };
 
 const authStore = setupAuthContext(authConfig);
-initializeErrorReporter(authStore);
+// Error reporting is now initialized automatically in createAuthStore
 // const zustandStore = createAuthStore(authConfig);
 // const authStore = makeSvelteCompatible(zustandStore);
 // authStore._debugId = 'layout-' + Date.now();
@@ -63,11 +63,6 @@ onMount(() => {
     const unsubscribe = authStore.subscribe((state) => {
       isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
       user = state.user;
-      console.log('🔄 [LAYOUT] Auth state changed:', {
-        state: state.state,
-        signInState: state.signInState,
-        user: !!state.user
-      });
     });
 
     isAuthLoading = false;

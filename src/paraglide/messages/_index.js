@@ -682,6 +682,29 @@ export { code_verifying as "code.verifying" }
 * @returns {string}
 */
 /* @__NO_SIDE_EFFECTS__ */
+const error_invalidcode1 = (inputs = {}, options = {}) => {
+	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
+		return /** @type {any} */ (globalThis).__paraglide_ssr.error_invalidcode1(inputs) 
+	}
+	const locale = options.locale ?? getLocale()
+	trackMessageCall("error_invalidcode1", locale)
+	if (locale === "en") return en.error_invalidcode1(inputs)
+	return da.error_invalidcode1(inputs)
+};
+export { error_invalidcode1 as "error.invalidCode" }
+/**
+* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
+*
+* - Changing this function will be over-written by the next build.
+*
+* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
+* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
+* 
+* @param {{}} inputs
+* @param {{ locale?: "en" | "da" }} options
+* @returns {string}
+*/
+/* @__NO_SIDE_EFFECTS__ */
 const status_emailsent1 = (inputs = {}, options = {}) => {
 	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
 		return /** @type {any} */ (globalThis).__paraglide_ssr.status_emailsent1(inputs) 

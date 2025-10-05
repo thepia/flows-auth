@@ -69,19 +69,6 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should fail gracefully when store is missing', async () => {
-    // This tests what happens when SignInCore is used without store
-    const { container } = render(SignInCore, {
-      props: {
-        store: null,
-        explainFeatures: false,
-      }
-    });
-
-    // Should still render without crashing
-    expect(container).toBeTruthy();
-  });
-
   it('should handle store updates reactively', async () => {
     const { component, rerender } = render(SignInCore, {
       props: {

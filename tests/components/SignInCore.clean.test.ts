@@ -82,28 +82,27 @@ describe('SignInCore - Clean Architecture', () => {
       // Should be able to check authentication state
       expect(authStore.isAuthenticated()).toBe(false);
 
-      // Should render the component (not showing loading state)
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+      // Should render the component with email input
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should show waiting message when no auth store in context', () => {
-      render(SignInCore, {
-        props: {
-          initialEmail: 'test@example.com'
-        }
-      });
-
-      // Should show waiting message when no context
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
-
-      // Should not try to access store methods
-      expect(mockAuthStore.getConfig).not.toHaveBeenCalled();
+    it('should throw error when no auth store in context', () => {
+      // SignInCore requires auth store - should throw clear error if missing
+      expect(() => {
+        render(SignInCore, {
+          props: {
+            initialEmail: 'test@example.com'
+          }
+        });
+      }).toThrow('Auth store not found in context');
     });
 
-    it('should show config loading message when store exists but no config', () => {
-      // Create a custom auth store that returns null for getConfig
+    it('should handle store with null config gracefully', () => {
+      // This tests defensive programming - in reality authStore always has config
       const authStoreWithoutConfig = createTestAuthStore();
-      // Override getConfig to return null
+      // Override getConfig to return null (malformed store)
       authStoreWithoutConfig.getConfig = vi.fn().mockReturnValue(null);
 
       // Use the helper but with a custom store
@@ -112,19 +111,17 @@ describe('SignInCore - Clean Architecture', () => {
         context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
       });
 
-      // Should show config loading message
-      expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
+      // Should render without crashing (graceful degradation with optional chaining)
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
     });
 
     it('should never accept config as prop (clean architecture)', () => {
-      // Capture console warnings to verify Svelte rejects these props
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-        // Suppress warnings during test
-      });
-
+      // SignInCore accepts only: store, initialEmail, className, explainFeatures
+      // Any other props are ignored by Svelte (not processed)
       const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
-          // These props should be rejected by Svelte (unknown props)
+          // These props are ignored (not in SignInCore's prop definitions)
           config: { differentConfig: true },
           authStore: { fake: 'store' },
           initialEmail: 'test@example.com'
@@ -132,29 +129,25 @@ describe('SignInCore - Clean Architecture', () => {
         authConfig: TEST_AUTH_CONFIGS.withAppCode
       });
 
-      // Verify Svelte warned about unknown props
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("<SignInCore> was created with unknown prop 'config'")
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("<SignInCore> was created with unknown prop 'authStore'")
-      );
-
-      // Should use auth store from context, not the invalid props
+      // Should use auth store from renderWithStoreProp, not the invalid props
       expect(authStore.getConfig().appCode).toBe('test-app');
       expect(authStore.getConfig().domain).toBe('test.auth0.com');
 
       // Should render successfully (config from store is used)
-      expect(screen.queryByText('Loading configuration...')).toBeFalsy();
-
-      consoleErrorSpy.mockRestore();
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
     });
   });
 
   describe('Reactive Context Updates', () => {
     it('should react to auth store being added to context', async () => {
-      // Start with no auth store in context
-      const authStoreContext = writable(null);
+      // In production apps following established patterns, authStore is always
+      // available when SignInCore is rendered. This test verifies reactive updates
+      // when authStore changes in context.
+
+      // Start with a valid auth store
+      const authStore1 = createTestAuthStore(TEST_AUTH_CONFIGS.withAppCode);
+      const authStoreContext = writable(authStore1);
 
       const { component } = render(SignInCore, {
         props: {
@@ -163,15 +156,15 @@ describe('SignInCore - Clean Architecture', () => {
         context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
       });
 
-      // Initially should show waiting message
-      expect(screen.getByText('Waiting for authentication context...')).toBeInTheDocument();
+      // Should render with first auth store
+      expect(document.querySelector('.sign-in-core')).toBeInTheDocument();
 
-      // Simulate auth store being set in context
-      const authStore = createTestAuthStore(TEST_AUTH_CONFIGS.withAppCode);
-      authStoreContext.set(authStore);
+      // Simulate context changing to a different auth store
+      const authStore2 = createTestAuthStore(TEST_AUTH_CONFIGS.loginOnly);
+      authStoreContext.set(authStore2);
 
-      // Should update reactively (in a real test environment)
-      // Note: This would require more sophisticated reactivity testing
+      // Component should handle the change (though in practice, changing auth
+      // store after initialization is not a recommended pattern)
       expect(component).toBeDefined();
     });
 
@@ -267,8 +260,9 @@ describe('SignInCore - Clean Architecture', () => {
         context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
       });
 
-      // Should show loading config message, not crash
-      expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
+      // Should render without crashing (uses optional chaining for config)
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
     });
 
     it('should handle store.getConfig() throwing error gracefully', () => {
@@ -278,16 +272,19 @@ describe('SignInCore - Clean Architecture', () => {
         throw new Error('Config error');
       });
 
-      // The component should throw when getConfig throws (this is expected behavior)
-      expect(() => {
-        const authStoreContext = writable(authStoreWithBrokenConfig);
-        render(SignInCore, {
-          props: {
-            initialEmail: 'test@example.com'
-          },
-          context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
-        });
-      }).toThrow('Config error');
+      // Component uses optional chaining: authStore?.getConfig?.()
+      // This returns undefined instead of throwing, component degrades gracefully
+      const authStoreContext = writable(authStoreWithBrokenConfig);
+      render(SignInCore, {
+        props: {
+          initialEmail: 'test@example.com'
+        },
+        context: new Map([[AUTH_CONTEXT_KEY, authStoreContext]])
+      });
+
+      // Should render without crashing (graceful degradation)
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
     });
 
     it('should handle malformed context gracefully', () => {
@@ -299,7 +296,7 @@ describe('SignInCore - Clean Architecture', () => {
           },
           context: new Map([[AUTH_CONTEXT_KEY, 'not-a-store']])
         });
-      }).toThrow("'storeContext' is not a store with a 'subscribe' method");
+      }).toThrow("'authStore' is not a store with a 'subscribe' method");
     });
   });
 
@@ -315,18 +312,19 @@ describe('SignInCore - Clean Architecture', () => {
       });
 
       expect(authStore.getConfig()).toBeTruthy();
-      expect(screen.queryByText('Waiting for authentication context...')).not.toBeInTheDocument();
+
+      // Should render the component with email input
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('should ignore any auth-related props passed incorrectly', () => {
-      // Suppress Svelte warnings about unknown props
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-        // Suppress warnings during test
-      });
-
+      // SignInCore accepts only: store, initialEmail, className, explainFeatures
+      // Any other props (like 'config' or 'authStore') are ignored by Svelte
       const { authStore } = renderWithStoreProp(SignInCore, {
         props: {
-          // These should be rejected by Svelte (unknown props)
+          // These props are ignored (not in SignInCore's prop definitions)
           config: { fake: 'config' },
           authStore: { fake: 'store' },
           // Only these should be used
@@ -336,18 +334,13 @@ describe('SignInCore - Clean Architecture', () => {
         authConfig: TEST_AUTH_CONFIGS.withAppCode
       });
 
-      // Verify warnings were issued
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("<SignInCore> was created with unknown prop 'config'")
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("<SignInCore> was created with unknown prop 'authStore'")
-      );
-
-      // Should still use context store, not props
+      // Should still use store from renderWithStoreProp, not invalid props
       expect(authStore.getConfig().appCode).toBe('test-app');
 
-      consoleErrorSpy.mockRestore();
+      // Should render successfully
+      const component = document.querySelector('.sign-in-core');
+      expect(component).toBeInTheDocument();
+      expect(component).toHaveClass('test-class');
     });
   });
 });

@@ -117,6 +117,10 @@ export const code_verifying = /** @type {(inputs: {}) => string} */ () => {
 	return `Verifying...`
 };
 
+export const error_invalidcode1 = /** @type {(inputs: {}) => string} */ () => {
+	return `Invalid or expired code. Perhaps you have a newer code.`
+};
+
 export const status_emailsent1 = /** @type {(inputs: {}) => string} */ () => {
 	return `We sent a verification code by email`
 };

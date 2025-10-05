@@ -407,6 +407,7 @@ export type AuthErrorCode =
   | 'error.network'
   | 'error.rateLimited'
   | 'error.invalidInput'
+  | 'error.invalidCode'
   | 'error.unknown';
 
 /**
@@ -775,6 +776,7 @@ export interface AuthStoreFunctions {
   // UI state setters
   setEmail: (email: string) => void;
   setFullName: (name: string) => void;
+  setEmailCode: (code: string) => void;
   setLoading: (loading: boolean) => void;
   setConditionalAuthActive: (active: boolean) => void;
   setEmailCodeSent: (sent: boolean) => void;
@@ -782,6 +784,7 @@ export interface AuthStoreFunctions {
   // Error management
   setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
   clearApiError: () => void;
+  clearUiError: () => void; // Clear only UI error, keep apiError for debugging
   retryLastFailedRequest: () => Promise<boolean>;
 
   // SignIn flow control methods

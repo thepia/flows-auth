@@ -187,6 +187,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       try {
         eventEmitters.signInStarted({ method: 'passkey', email: emailAddress });
 
+        // TODO set loading, and clear it upon completion
         const signInData = await passkey.getState().signIn(emailAddress, conditional);
 
         // Save session directly - already in SignInData format
@@ -219,6 +220,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       try {
         eventEmitters.signInStarted({ method: 'magic-link', email: emailAddress });
 
+        // TODO set loading, and clear it upon completion
         // Send magic link (returns null - user needs to click link)
         await email.getState().sendMagicLink(emailAddress);
 
@@ -240,6 +242,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       try {
         eventEmitters.signInStarted({ method: 'email-code', email: emailAddress });
 
+        // TODO set loading, and clear it upon completion
         const response = await email.getState().sendCode(emailAddress);
 
         if (response.success) {
@@ -261,6 +264,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     },
 
     verifyEmailCode: async (code: string) => {
+      // Clear UI error before attempting verification (keeps apiError for debugging)
+      error.getState().clearUiError();
+      ui.getState().setLoading(true);
       try {
         const emailAddress = ui.getState().email;
         const signInData = await email.getState().verifyCode(emailAddress, code);
@@ -280,10 +286,26 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           method: 'email-code'
         });
 
+        ui.getState().setLoading(false);
         return signInData;
       } catch (err) {
+        ui.getState().setLoading(false);
+
+        // Set API error for display in UI
+        error.getState().setApiError(err, {
+          method: 'verifyEmailCode',
+          email: ui.getState().email
+        });
+
+        // Extract message from error (handle both Error instances and plain objects)
+        const errorMessage = err instanceof Error
+          ? err.message
+          : (err && typeof err === 'object' && 'message' in err)
+            ? String((err as any).message)
+            : String(err);
+
         eventEmitters.signInError({
-          error: { code: 'verification_failed', message: (err as Error).message },
+          error: { code: 'verification_failed', message: errorMessage },
           method: 'email-code'
         });
         throw err;
@@ -475,6 +497,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         apiError: errorState.apiError,
         passkeysEnabled: coreState.passkeysEnabled,
         email: uiState.email,
+        emailCode: uiState.emailCode,
         loading: uiState.loading,
         emailCodeSent: uiState.emailCodeSent,
         fullName: uiState.fullName,
@@ -490,6 +513,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     // UI state setters
     setEmail: (email: string) => uiHandlers.handleEmailChange(email),
     setFullName: (name: string) => ui.getState().setFullName(name),
+    setEmailCode: (code: string) => {
+      // Clear UI error when user starts typing again (keeps apiError for debugging)
+      if (error.getState().uiError) {
+        error.getState().clearUiError();
+      }
+      ui.getState().setEmailCode(code);
+    },
     setLoading: (loading: boolean) => ui.getState().setLoading(loading),
     setConditionalAuthActive: (active: boolean) => ui.getState().setConditionalAuthActive(active),
     setEmailCodeSent: (sent: boolean) => ui.getState().setEmailCodeSent(sent),
@@ -498,6 +528,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     setApiError: (err: unknown, context?: { method?: string; email?: string }) =>
       error.getState().setApiError(err, context),
     clearApiError: () => error.getState().clearApiError(),
+    clearUiError: () => error.getState().clearUiError(),
     retryLastFailedRequest: () => error.getState().retryLastRequest(),
 
     // Events
@@ -656,7 +687,28 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     // UI Configuration methods
     getButtonConfig: () => ui.getState().getButtonConfig(),
-    getStateMessageConfig: () => ui.getState().getStateMessageConfig(),
+    getStateMessageConfig: () => {
+      // Message priority logic:
+      // 1. UI errors take highest priority (shown immediately, can be dismissed)
+      // 2. State-based messages (success, info, warnings)
+      // Note: apiError is kept for debugging but not shown in UI
+
+      const uiError = error.getState().uiError;
+      const uiState = ui.getState();
+      const stateMessage = uiState.getStateMessageConfig();
+
+      // If there's a UI error, override any state message with error
+      if (uiError) {
+        return {
+          type: 'error' as const,
+          textKey: uiError.code, // e.g., 'error.invalidCode', 'error.network'
+          showIcon: true
+        };
+      }
+
+      // Otherwise, return state-based message (success, info, warning)
+      return stateMessage;
+    },
     getExplainerConfig: (explainFeatures = true) =>
       ui.getState().getExplainerConfig(explainFeatures),
 

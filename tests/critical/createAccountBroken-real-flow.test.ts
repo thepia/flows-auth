@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores';
+import { makeSvelteCompatible } from '../../src/stores/adapters/svelte';
 import type { AuthConfig } from '../../src/types';
 
 /**
@@ -29,9 +30,15 @@ Object.defineProperty(navigator, 'credentials', {
 });
 
 // Mock WebAuthn support detection
-vi.mock('../../src/utils/webauthn-utils', () => ({
+vi.mock('../../src/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
-  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
+  isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
+  isConditionalMediationSupported: vi.fn(() => Promise.resolve(true)),
+  createPasskey: vi.fn(),
+  createCredential: vi.fn(),
+  authenticateWithPasskey: vi.fn(),
+  serializeCredential: vi.fn(),
+  generatePasskeyName: vi.fn(() => 'Test Device')
 }));
 
 describe('CRITICAL: createAccountBroken Real Flow Tests', () => {

@@ -263,13 +263,6 @@ This indicates:
 
 Use `flushErrorReports()` to manually retry sending queued reports.
 
-### No API Client Error
-
-If you see "No API client available":
-- Error reporter hasn't been initialized with `initializeErrorReporter(api, config)`
-- This should happen automatically in `createAuthStore()`
-- Check that you're using `setupAuthContext()` or `createAuthStore()` correctly
-
 ## Migration from Old System
 
 If you have code using the old system:

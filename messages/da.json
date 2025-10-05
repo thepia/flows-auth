@@ -46,6 +46,7 @@
   "error.invalidCredentials": "Ugyldig e-mail eller godkendelse mislykkedes",
   "error.serviceUnavailable": "Tjenesten er midlertidigt utilgængelig",
   "error.unknown": "Der opstod en uventet fejl",
+  "error.invalidCode": "Ugyldig eller udløbet kode. Måske har du en nyere kode.",
 
   "error.authCancelled": "Godkendelse annulleret.",
   "error.authFailed": "Godkendelse mislykkedes.",

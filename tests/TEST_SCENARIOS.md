@@ -243,9 +243,9 @@ const TEST_ACCOUNTS = {
   {
     "step": "success",
     "user": { ... },
-    "accessToken": "jwt-access-token",
-    "refreshToken": "jwt-refresh-token", 
-    "expiresIn": 3600
+    "access_token": "jwt-access-token",
+    "refresh_token": "jwt-refresh-token", 
+    "expires_in": 3600
   }
   ```
 

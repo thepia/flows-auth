@@ -80,9 +80,9 @@ export interface RegistrationRequest {
 ```typescript
 export interface RegistrationResponse {
   user?: User;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
   step: RegistrationStep;
   emailVerificationRequired?: boolean;
   welcomeEmailSent?: boolean;

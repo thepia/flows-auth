@@ -16,7 +16,7 @@ vi.mock('../../src/api/auth-api', () => ({
     signInWithPasskey: vi.fn(),
     sendAppEmailCode: vi.fn(),
     verifyAppEmailCode: vi.fn(),
-    refreshToken: vi.fn(),
+    refresh_token: vi.fn(),
     signOut: vi.fn()
   }))
 }));
@@ -57,7 +57,7 @@ describe('Auth Store Pin Validation', () => {
       signInWithPasskey: vi.fn(),
       sendAppEmailCode: vi.fn(),
       verifyAppEmailCode: vi.fn(),
-      refreshToken: vi.fn(),
+      refresh_token: vi.fn(),
       signOut: vi.fn()
     };
 

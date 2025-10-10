@@ -77,28 +77,28 @@ export interface SignInData {
     id: string;
     email: string;
     name: string;
-    emailVerified?: boolean;      // From server (optional for legacy data)
-    isNewUser?: boolean;          // From server
+    emailVerified?: boolean; // From server (optional for legacy data)
+    isNewUser?: boolean; // From server
     metadata?: Record<string, any>; // From server
     // Client-side fields
-    initials: string;             // Generated from name
-    avatar?: string;              // From user profile or generated
+    initials: string; // Generated from name
+    avatar?: string; // From user profile or generated
     preferences?: Record<string, any>; // Client-side preferences
   };
 
   /** Authentication tokens (nested structure matching server API) */
   tokens: {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn?: number;    // Server provides duration in seconds
-    expiresAt: number;     // Absolute timestamp in milliseconds
+    access_token: string;
+    refresh_token: string;
+    expires_in?: number; // Server provides duration in seconds
+    expiresAt: number; // Absolute timestamp in milliseconds
   };
 
   /** Authentication method used */
   authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
 
   /** Client-side session management */
-  lastActivity: number;     // Timestamp of last activity (milliseconds)
+  lastActivity: number; // Timestamp of last activity (milliseconds)
 }
 
 // Storage configuration
@@ -166,6 +166,9 @@ export interface AuthConfig {
   signInMode?: 'login-only' | 'login-or-register'; // How to handle new users
   emailCodeLength?: number; // Length of email verification codes (default: 6)
 
+  // Token refresh configuration
+  refreshBefore?: number; // Seconds before token expiry to trigger auto-refresh (default: 300 = 5 minutes, minimum: 60 = 1 minute)
+
   // Internationalization configuration
   language?: string; // ISO 639-1 language code (en, es, fr, etc.) or locale (en-US, es-ES)
   fallbackLanguage?: string; // Fallback language (defaults to 'en')
@@ -211,9 +214,9 @@ export interface SignInRequest {
 
 export interface SignInResponse {
   user?: User;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
   requiresPasskey?: boolean;
   magicLinkSent?: boolean;
   challengeId?: string;
@@ -233,12 +236,12 @@ export interface MagicLinkRequest {
 }
 
 export interface RefreshTokenRequest {
-  refreshToken: string;
+  refresh_token: string;
 }
 
 export interface LogoutRequest {
-  accessToken: string;
-  refreshToken?: string;
+  access_token: string;
+  refresh_token?: string;
 }
 
 // Registration types
@@ -257,9 +260,9 @@ export interface RegistrationRequest {
 
 export interface RegistrationResponse {
   user?: User;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
   step: RegistrationStep;
   emailVerificationRequired?: boolean;
   welcomeEmailSent?: boolean;
@@ -372,8 +375,8 @@ export interface WebAuthnVerificationResult {
   success: boolean;
   error?: string;
   tokens?: {
-    accessToken: string;
-    refreshToken?: string;
+    access_token: string;
+    refresh_token?: string;
     expiresAt: number;
   };
 }
@@ -454,8 +457,8 @@ export interface AuthEventData {
   timestamp?: number;
   requiresVerification?: boolean;
   tokens?: {
-    accessToken: string;
-    refreshToken?: string;
+    access_token: string;
+    refresh_token?: string;
     expiresAt?: number;
   };
 }
@@ -679,8 +682,8 @@ export interface AuthStore {
   state: AuthState;
   signInState: SignInState; // Added: UI flow state for sign-in process
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
   expiresAt: number | null;
   apiError: ApiError | null; // Centralized API error management
   passkeysEnabled: boolean; // Added: Centralized passkey availability determination

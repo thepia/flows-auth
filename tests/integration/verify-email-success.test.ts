@@ -12,8 +12,8 @@ import { AuthApiClient } from '../../src/api/auth-api';
  * {
  *   "user": { "id": "workos|user_01K4DDYMKSK82XKFYAKBG54AH9", "email": "henrik@thepia.com", "name": "henrik", "emailVerified": true },
  *   "step": "authenticated",
- *   "accessToken": "eyJ...",
- *   "refreshToken": "KQoT4VRzciiN1AI96tHBv1PEp",
+ *   "access_token": "eyJ...",
+ *   "refresh_token": "KQoT4VRzciiN1AI96tHBv1PEp",
  *   "message": "Welcome back! You're now signed in."
  * }
  */
@@ -38,9 +38,10 @@ describe('Verify Email Success - Real Server Response', () => {
         emailVerified: true
       },
       step: 'authenticated',
-      accessToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSzRBQlNDRUFBQVhYODZRN0I3OE43MDQ1In0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tL3VzZXJfbWFuYWdlbWVudC9jbGllbnRfMDFLNEFCU0NQS0VZM0ZRS0NFUUQ0VjdKU00iLCJzdWIiOiJ1c2VyXzAxSzRERFlNS1NLODJYS0ZZQUtCRzU0QUg5Iiwic2lkIjoic2Vzc2lvbl8wMUs2V0NBTURLMUpHSlFXNDI3UDc4NjBNOSIsImp0aSI6IjAxSzZXQ0FNRlY2Q0FTNzdaNEtYS0hRV1lBIiwiZXhwIjoxNzU5NzQxODYzLCJpYXQiOjE3NTk3NDE1NjN9.0-9xQnVAoFE07fVtUWC322o0qJfKUXAsQ7URMoNdoqzwu5ESbWBO1N-Vlp8DyPP3j1hlx7_J07Bmhg27Zk2QEX0xHlJUse3wPiJ7D7-ECgYiQ_ZAs_sAONTanhTYrr-Ww8zpWqbVxF3P6UFhPv7DEIbB4r1oPLtui1JfuLXWlCmrwqjcBPwItN1vpuKdXHDGjhThbdssLJy4yDUq6Zfvyqmkw1zMVpwAuWU51kzbMRnZb2vhLaxw3vyVzgWyqOF0XrHH0xdFsfCecoCvvdJsboRk6EVvVR__mLWnLmv7givWMVIMtp2ZblBZZSn_GWQhozNvIsgtko4B5BQlD-zz4A',
-      refreshToken: 'KQoT4VRzciiN1AI96tHBv1PEp',
-      message: 'Welcome back! You\'re now signed in.'
+      access_token:
+        'eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxSzRBQlNDRUFBQVhYODZRN0I3OE43MDQ1In0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tL3VzZXJfbWFuYWdlbWVudC9jbGllbnRfMDFLNEFCU0NQS0VZM0ZRS0NFUUQ0VjdKU00iLCJzdWIiOiJ1c2VyXzAxSzRERFlNS1NLODJYS0ZZQUtCRzU0QUg5Iiwic2lkIjoic2Vzc2lvbl8wMUs2V0NBTURLMUpHSlFXNDI3UDc4NjBNOSIsImp0aSI6IjAxSzZXQ0FNRlY2Q0FTNzdaNEtYS0hRV1lBIiwiZXhwIjoxNzU5NzQxODYzLCJpYXQiOjE3NTk3NDE1NjN9.0-9xQnVAoFE07fVtUWC322o0qJfKUXAsQ7URMoNdoqzwu5ESbWBO1N-Vlp8DyPP3j1hlx7_J07Bmhg27Zk2QEX0xHlJUse3wPiJ7D7-ECgYiQ_ZAs_sAONTanhTYrr-Ww8zpWqbVxF3P6UFhPv7DEIbB4r1oPLtui1JfuLXWlCmrwqjcBPwItN1vpuKdXHDGjhThbdssLJy4yDUq6Zfvyqmkw1zMVpwAuWU51kzbMRnZb2vhLaxw3vyVzgWyqOF0XrHH0xdFsfCecoCvvdJsboRk6EVvVR__mLWnLmv7givWMVIMtp2ZblBZZSn_GWQhozNvIsgtko4B5BQlD-zz4A',
+      refresh_token: 'KQoT4VRzciiN1AI96tHBv1PEp',
+      message: "Welcome back! You're now signed in."
     };
 
     // Mock fetch to return exact server response
@@ -58,8 +59,8 @@ describe('Verify Email Success - Real Server Response', () => {
     expect(result.step).toBe('success'); // Should transform 'authenticated' to 'success'
     expect(result.user).toBeDefined();
     expect(result.user?.email).toBe('henrik@thepia.com');
-    expect(result.accessToken).toBe(mockResponse.accessToken);
-    expect(result.refreshToken).toBe(mockResponse.refreshToken);
+    expect(result.access_token).toBe(mockResponse.access_token);
+    expect(result.refresh_token).toBe(mockResponse.refresh_token);
   });
 
   test('should NOT throw error when server returns success with message field', async () => {
@@ -71,9 +72,9 @@ describe('Verify Email Success - Real Server Response', () => {
         emailVerified: true
       },
       step: 'authenticated',
-      accessToken: 'test-token',
-      refreshToken: 'test-refresh-token',
-      message: 'Welcome back! You\'re now signed in.'
+      access_token: 'test-token',
+      refresh_token: 'test-refresh-token',
+      message: "Welcome back! You're now signed in."
     };
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -97,9 +98,9 @@ describe('Verify Email Success - Real Server Response', () => {
         emailVerified: true
       },
       step: 'authenticated',
-      accessToken: 'access-token-here',
-      refreshToken: 'refresh-token-here',
-      message: 'Welcome back! You\'re now signed in.'
+      access_token: 'access-token-here',
+      refresh_token: 'refresh-token-here',
+      message: "Welcome back! You're now signed in."
     };
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -110,14 +111,14 @@ describe('Verify Email Success - Real Server Response', () => {
 
     const result = await apiClient.verifyAppEmailCode('test@example.com', '123456');
 
-    // The condition should be: response.user && response.accessToken
+    // The condition should be: response.user && response.access_token
     // Both exist, so this should be detected as success
     expect(result.step).toBe('success');
     expect(result.user).toEqual(mockResponse.user);
-    expect(result.accessToken).toBe(mockResponse.accessToken);
+    expect(result.access_token).toBe(mockResponse.access_token);
   });
 
-  test('should throw error only when user or accessToken is missing', async () => {
+  test('should throw error only when user or access_token is missing', async () => {
     const mockErrorResponse = {
       step: 'error',
       error: 'invalid_code',
@@ -130,8 +131,6 @@ describe('Verify Email Success - Real Server Response', () => {
       json: async () => mockErrorResponse
     } as Response);
 
-    await expect(
-      apiClient.verifyAppEmailCode('test@example.com', 'wrong-code')
-    ).rejects.toThrow();
+    await expect(apiClient.verifyAppEmailCode('test@example.com', 'wrong-code')).rejects.toThrow();
   });
 });

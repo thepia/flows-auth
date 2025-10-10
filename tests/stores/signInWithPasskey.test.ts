@@ -16,7 +16,7 @@ vi.mock('../../src/api/auth-api', () => ({
     getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
     signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
     signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-    refreshToken: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+    refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
     signOut: vi.fn().mockResolvedValue({ success: true })
   }))
 }));
@@ -68,7 +68,7 @@ describe('signInWithPasskey', () => {
       getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
       signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-      refreshToken: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       signOut: vi.fn().mockResolvedValue({ success: true })
     };
 
@@ -136,9 +136,9 @@ describe('signInWithPasskey', () => {
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z'
         },
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresIn: 3600
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600
       };
 
       mockApiClient.signInWithPasskey.mockResolvedValue(mockResponse);
@@ -148,7 +148,7 @@ describe('signInWithPasskey', () => {
       const state = get(authStore);
       expect(state.state).toBe('authenticated');
       expect(state.user?.email).toBe('test@example.com');
-      expect(state.accessToken).toBe('access-token');
+      expect(state.access_token).toBe('access-token');
     });
 
     it('should handle user not found', async () => {
@@ -199,9 +199,9 @@ describe('signInWithPasskey', () => {
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z'
         },
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresIn: 3600
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600
       });
 
       // Should succeed (passkey creation flow)
@@ -299,9 +299,9 @@ describe('signInWithPasskey', () => {
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z'
         },
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresIn: 3600
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600
       };
 
       mockApiClient.signInWithPasskey.mockResolvedValue(mockResponse);
@@ -314,7 +314,7 @@ describe('signInWithPasskey', () => {
 
       expect(savedSession).toBeTruthy();
       expect(savedSession?.user.email).toBe('test@example.com');
-      expect(savedSession?.tokens.accessToken).toBe('access-token');
+      expect(savedSession?.tokens.access_token).toBe('access-token');
     });
   });
 });

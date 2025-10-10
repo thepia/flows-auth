@@ -60,9 +60,9 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
           emailVerified: true,
           createdAt: '2023-01-01T00:00:00Z'
         },
-        accessToken: 'access-token-123',
-        refreshToken: 'refresh-token-123',
-        expiresIn: 3600
+        access_token: 'access-token-123',
+        refresh_token: 'refresh-token-123',
+        expires_in: 3600
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -76,7 +76,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
       // Verify the response is correct
       expect(result.step).toBe('success');
       expect(result.user?.id).toBe('new-user-123');
-      expect(result.accessToken).toBe('access-token-123');
+      expect(result.access_token).toBe('access-token-123');
 
       // CRITICAL ASSERTION: Cache should be cleared after successful verification
       const cachedResultAfterVerification = globalUserCache.get(email);
@@ -105,9 +105,9 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
           name: 'Existing User',
           emailVerified: true
         },
-        accessToken: 'access-token-456',
-        refreshToken: 'refresh-token-456',
-        expiresIn: 3600
+        access_token: 'access-token-456',
+        refresh_token: 'refresh-token-456',
+        expires_in: 3600
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -186,8 +186,8 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
           name: 'Uncached User',
           emailVerified: true
         },
-        accessToken: 'access-token-789',
-        expiresIn: 3600
+        access_token: 'access-token-789',
+        expires_in: 3600
       };
 
       (global.fetch as any).mockResolvedValueOnce({

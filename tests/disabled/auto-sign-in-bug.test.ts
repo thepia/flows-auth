@@ -117,8 +117,8 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
             Promise.resolve({
               success: true,
               tokens: {
-                accessToken: 'mock-access-token',
-                refreshToken: 'mock-refresh-token',
+                access_token: 'mock-access-token',
+                refresh_token: 'mock-refresh-token',
                 expiresAt: Date.now() + 3600000
               },
               user: {
@@ -415,8 +415,8 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
               Promise.resolve({
                 success: true,
                 tokens: {
-                  accessToken: 'mock-access-token',
-                  refreshToken: 'mock-refresh-token',
+                  access_token: 'mock-access-token',
+                  refresh_token: 'mock-refresh-token',
                   expiresAt: Date.now() + 3600000
                 },
                 user: {

@@ -51,7 +51,7 @@ import { createAuthStore } from '../../src/stores';
  *
  * This test ensures that the auth store correctly handles both:
  * 1. New API format: {success: true, tokens: {...}, user: {...}}
- * 2. Legacy API format: {step: 'success', accessToken: '...', user: {...}}
+ * 2. Legacy API format: {step: 'success', access_token: '...', user: {...}}
  *
  * This test MUST PASS to prevent the sessionManager consistency bug from recurring.
  */
@@ -108,8 +108,8 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const newFormatResponse = {
       success: true,
       tokens: {
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
         expiresAt: Date.now() + 3600000 // 1 hour from now
       },
       user: mockUser
@@ -155,9 +155,9 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       expect.objectContaining({
         step: 'success',
         user: mockUser,
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-        expiresIn: expect.any(Number)
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: expect.any(Number)
       })
     );
 
@@ -165,11 +165,11 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const storeState = authStore.getState();
     expect(storeState.state).toBe('authenticated');
     expect(storeState.user).toEqual(mockUser);
-    expect(storeState.accessToken).toBe('new-access-token');
-    expect(storeState.refreshToken).toBe('new-refresh-token');
+    expect(storeState.access_token).toBe('new-access-token');
+    expect(storeState.refresh_token).toBe('new-refresh-token');
   });
 
-  test('CRITICAL: Must handle legacy API response format {step: "success", accessToken: "..."}', async () => {
+  test('CRITICAL: Must handle legacy API response format {step: "success", access_token: "..."}', async () => {
     const mockUser: User = {
       id: 'user-123',
       email: 'test@example.com',
@@ -178,9 +178,9 @@ describe('API Response Format Compatibility - CRITICAL', () => {
 
     const legacyFormatResponse = {
       step: 'success' as const,
-      accessToken: 'legacy-access-token',
-      refreshToken: 'legacy-refresh-token',
-      expiresIn: 3600, // 1 hour in seconds
+      access_token: 'legacy-access-token',
+      refresh_token: 'legacy-refresh-token',
+      expires_in: 3600, // 1 hour in seconds
       user: mockUser
     };
 
@@ -226,13 +226,13 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const storeState = authStore.getState();
     expect(storeState.state).toBe('authenticated');
     expect(storeState.user).toEqual(mockUser);
-    expect(storeState.accessToken).toBe('legacy-access-token');
-    expect(storeState.refreshToken).toBe('legacy-refresh-token');
+    expect(storeState.access_token).toBe('legacy-access-token');
+    expect(storeState.refresh_token).toBe('legacy-refresh-token');
   });
 
   test('CRITICAL: Must NOT save session when response is missing required fields', async () => {
     const invalidResponses = [
-      { success: true, tokens: { accessToken: 'token' } }, // Missing user
+      { success: true, tokens: { access_token: 'token' } }, // Missing user
       { success: true, user: { id: '1', email: 'test@example.com' } }, // Missing tokens
       { success: false, error: 'Authentication failed' }, // Explicit failure
       { step: 'failed', error: 'Authentication failed' } // Legacy failure

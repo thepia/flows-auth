@@ -225,8 +225,8 @@ interface AuthStore {
   // Current state
   state: 'unauthenticated' | 'loading' | 'authenticated' | 'error';
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
   expiresAt: number | null;
   error: AuthError | null;
   
@@ -295,9 +295,9 @@ interface APIResponse<T> {
 interface AuthResponse {
   step: 'success' | 'verification_required';
   user: User;
-  accessToken: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
 }
 ```
 

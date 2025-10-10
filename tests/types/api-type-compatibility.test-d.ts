@@ -17,16 +17,16 @@ import type { SignInData, SignInResponse, User } from '../../src/types';
 
 describe('Type Compatibility Tests', () => {
   test('SignInResponse should have flat token structure', () => {
-    expectTypeOf<SignInResponse>().toHaveProperty('accessToken');
-    expectTypeOf<SignInResponse>().toHaveProperty('refreshToken');
-    expectTypeOf<SignInResponse>().toHaveProperty('expiresIn');
+    expectTypeOf<SignInResponse>().toHaveProperty('access_token');
+    expectTypeOf<SignInResponse>().toHaveProperty('refresh_token');
+    expectTypeOf<SignInResponse>().toHaveProperty('expires_in');
     expectTypeOf<SignInResponse>().not.toHaveProperty('tokens');
   });
 
   test('SignInData should have nested tokens structure', () => {
     expectTypeOf<SignInData>().toHaveProperty('tokens');
-    expectTypeOf<SignInData['tokens']>().toHaveProperty('accessToken');
-    expectTypeOf<SignInData['tokens']>().toHaveProperty('refreshToken');
+    expectTypeOf<SignInData['tokens']>().toHaveProperty('access_token');
+    expectTypeOf<SignInData['tokens']>().toHaveProperty('refresh_token');
     expectTypeOf<SignInData['tokens']>().toHaveProperty('expiresAt');
   });
 
@@ -34,8 +34,8 @@ describe('Type Compatibility Tests', () => {
     expectTypeOf<SignInData['tokens']['expiresAt']>().toEqualTypeOf<number>();
   });
 
-  test('SignInResponse should use expiresIn (seconds)', () => {
-    expectTypeOf<SignInResponse['expiresIn']>().toEqualTypeOf<number | undefined>();
+  test('SignInResponse should use expires_in (seconds)', () => {
+    expectTypeOf<SignInResponse['expires_in']>().toEqualTypeOf<number | undefined>();
   });
 
   test('SignInData user should have initials field', () => {
@@ -88,34 +88,34 @@ describe('Type Compatibility Tests', () => {
     expectTypeOf<SignInResponse['step']>().not.toEqualTypeOf<string>();
   });
 
-  test('Conversion: SignInResponse.expiresIn maps to SignInData.tokens.expiresAt', () => {
+  test('Conversion: SignInResponse.expires_in maps to SignInData.tokens.expiresAt', () => {
     // This documents the transformation pattern
-    type ResponseExpiry = SignInResponse['expiresIn']; // number | undefined (seconds)
+    type ResponseExpiry = SignInResponse['expires_in']; // number | undefined (seconds)
     type DataExpiry = SignInData['tokens']['expiresAt']; // number (milliseconds timestamp)
 
     expectTypeOf<ResponseExpiry>().toEqualTypeOf<number | undefined>();
     expectTypeOf<DataExpiry>().toEqualTypeOf<number>();
 
-    // Conversion: expiresIn (seconds) → expiresAt (milliseconds timestamp)
-    // expiresAt = Date.now() + (expiresIn * 1000)
+    // Conversion: expires_in (seconds) → expiresAt (milliseconds timestamp)
+    // expiresAt = Date.now() + (expires_in * 1000)
   });
 
   test('Conversion: SignInResponse flat tokens map to SignInData nested tokens', () => {
     // Document the structural difference
-    type ResponseTokens = Pick<SignInResponse, 'accessToken' | 'refreshToken' | 'expiresIn'>;
+    type ResponseTokens = Pick<SignInResponse, 'access_token' | 'refresh_token' | 'expires_in'>;
     type DataTokens = SignInData['tokens'];
 
     // Response uses flat structure
     expectTypeOf<ResponseTokens>().toMatchTypeOf<{
-      accessToken?: string;
-      refreshToken?: string;
-      expiresIn?: number;
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
     }>();
 
     // Data uses nested structure
     expectTypeOf<DataTokens>().toMatchTypeOf<{
-      accessToken: string;
-      refreshToken: string;
+      access_token: string;
+      refresh_token: string;
       expiresAt: number;
     }>();
   });

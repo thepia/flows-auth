@@ -116,17 +116,17 @@ onMount(async () => {
     console.log('✅ Magic link verification result:', verificationResult);
     
     // Check if verification was successful
-    if (verificationResult.step !== 'success' || !verificationResult.user || !verificationResult.accessToken) {
+    if (verificationResult.step !== 'success' || !verificationResult.user || !verificationResult.access_token) {
       const errorMsg = verificationResult.error || 'Invalid response';
       throw new Error('Magic link verification failed: ' + errorMsg);
     }
     
     // Update tokenData with actual user information from verification
     tokenData = {
-      token: verificationResult.accessToken.substring(0, 20) + '...' + verificationResult.accessToken.substring(verificationResult.accessToken.length - 10),
+      token: verificationResult.access_token.substring(0, 20) + '...' + verificationResult.access_token.substring(verificationResult.access_token.length - 10),
       email: verificationResult.user.email,
       userId: verificationResult.user.id,
-      fullToken: verificationResult.accessToken
+      fullToken: verificationResult.access_token
     };
     
     console.log('💾 Saving verified authentication session...');

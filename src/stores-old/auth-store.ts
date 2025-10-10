@@ -287,8 +287,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     state: isValidSession ? 'authenticated' : 'unauthenticated',
     signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
     user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
-    accessToken: isValidSession ? existingSession.tokens.accessToken : null,
-    refreshToken: isValidSession ? existingSession.tokens.refreshToken : null,
+    access_token: isValidSession ? existingSession.tokens.access_token : null,
+    refresh_token: isValidSession ? existingSession.tokens.refresh_token : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
     passkeysEnabled: determinePasskeysEnabled(),
 
@@ -491,8 +491,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
             ...updatedStore,
             state: 'unauthenticated',
             ...resetSignInState,
-            accessToken: null,
-            refreshToken: null,
+            access_token: null,
+            refresh_token: null,
             expiresAt: null
           };
           break;
@@ -517,7 +517,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     response: SignInResponse,
     authMethod: 'passkey' | 'password' | 'email-code' = 'passkey'
   ) {
-    if (!browser || !response.user || !response.accessToken) return;
+    if (!browser || !response.user || !response.access_token) return;
 
     const sessionData: SessionData = {
       user: {
@@ -537,10 +537,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           undefined
       },
       tokens: {
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken || '',
-        expiresAt: response.expiresIn
-          ? Date.now() + response.expiresIn * 1000
+        access_token: response.access_token,
+        refresh_token: response.refresh_token || '',
+        expiresAt: response.expires_in
+          ? Date.now() + response.expires_in * 1000
           : Date.now() + 24 * 60 * 60 * 1000
       },
       authMethod,
@@ -571,7 +571,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
    */
   function scheduleTokenRefresh() {
     const currentState = get(store);
-    if (!currentState.expiresAt || !currentState.refreshToken) return;
+    if (!currentState.expiresAt || !currentState.refresh_token) return;
 
     const timeUntilExpiry = currentState.expiresAt - Date.now();
     const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 1000); // 5 minutes before expiry
@@ -648,15 +648,15 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         // Handle both old format (step: 'success') and new format (success: true)
         const responseWithTokens = response as Record<string, unknown> & {
           step?: string;
-          accessToken?: string;
-          refreshToken?: string;
+          access_token?: string;
+          refresh_token?: string;
           tokens?: Record<string, unknown>;
         };
         const isSuccess = response.step === 'success' || responseWithTokens.success;
-        const accessToken =
-          response.accessToken || (responseWithTokens.tokens?.accessToken as string);
-        const refreshToken =
-          response.refreshToken || (responseWithTokens.tokens?.refreshToken as string);
+        const access_token =
+          response.access_token || (responseWithTokens.tokens?.access_token as string);
+        const refresh_token =
+          response.refresh_token || (responseWithTokens.tokens?.refresh_token as string);
         const expiresAt = responseWithTokens.tokens?.expiresAt;
 
         console.log('🔍 DEBUG: Processing signInWithPasskey response:', {
@@ -667,22 +667,22 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           successValue: responseWithTokens.success,
           isSuccess,
           hasUser: !!response.user,
-          hasAccessToken: !!accessToken,
+          hasAccessToken: !!access_token,
           hasTokensObject: !!responseWithTokens.tokens,
           tokensKeys: responseWithTokens.tokens ? Object.keys(responseWithTokens.tokens) : null,
           fullResponse: response
         });
 
-        if (isSuccess && response.user && accessToken) {
+        if (isSuccess && response.user && access_token) {
           console.log('💾 Processing successful passkey authentication');
 
           // Create normalized response in SignInResponse format
           const normalizedResponse: SignInResponse = {
             step: 'success',
             user: response.user,
-            accessToken,
-            refreshToken,
-            expiresIn: expiresAt
+            access_token,
+            refresh_token,
+            expires_in: expiresAt
               ? Math.floor(((expiresAt as number) - Date.now()) / 1000)
               : undefined
           };
@@ -691,12 +691,12 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           updateState({
             state: 'authenticated',
             user: response.user,
-            accessToken,
-            refreshToken,
+            access_token,
+            refresh_token,
             expiresAt:
               (expiresAt as number) ||
-              (normalizedResponse.expiresIn
-                ? Date.now() + normalizedResponse.expiresIn * 1000
+              (normalizedResponse.expires_in
+                ? Date.now() + normalizedResponse.expires_in * 1000
                 : Date.now() + 24 * 60 * 60 * 1000),
             apiError: null
           });
@@ -719,7 +719,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           console.error('❌ Passkey authentication failed - missing required fields:', {
             isSuccess,
             hasUser: !!response.user,
-            hasAccessToken: !!accessToken,
+            hasAccessToken: !!access_token,
             response
           });
         }
@@ -833,10 +833,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     const currentState = get(store);
 
     try {
-      if (currentState.accessToken) {
+      if (currentState.access_token) {
         await api.signOut({
-          accessToken: currentState.accessToken,
-          refreshToken: currentState.refreshToken || undefined
+          access_token: currentState.access_token,
+          refresh_token: currentState.refresh_token || undefined
         });
       }
     } catch (error: unknown) {
@@ -847,8 +847,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         state: 'unauthenticated',
         signInState: 'emailEntry', // Reset signInState when signing out
         user: null,
-        accessToken: null,
-        refreshToken: null,
+        access_token: null,
+        refresh_token: null,
         expiresAt: null,
         apiError: null
       });
@@ -861,30 +861,30 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
    */
   async function refreshTokens(): Promise<void> {
     const currentState = get(store);
-    if (!currentState.refreshToken) {
+    if (!currentState.refresh_token) {
       throw new Error('No refresh token available');
     }
 
     try {
-      const response = await api.refreshToken({ refreshToken: currentState.refreshToken });
+      const response = await api.refreshToken({ refresh_token: currentState.refresh_token });
 
-      if (response.accessToken) {
+      if (response.access_token) {
         // Update session with new tokens
         const session = getSession();
         if (session) {
-          session.tokens.accessToken = response.accessToken;
-          session.tokens.refreshToken = response.refreshToken || session.tokens.refreshToken;
-          session.tokens.expiresAt = response.expiresIn
-            ? Date.now() + response.expiresIn * 1000
+          session.tokens.access_token = response.access_token;
+          session.tokens.refresh_token = response.refresh_token || session.tokens.refresh_token;
+          session.tokens.expiresAt = response.expires_in
+            ? Date.now() + response.expires_in * 1000
             : session.tokens.expiresAt;
           session.lastActivity = Date.now();
           saveSession(session);
         }
 
         updateState({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken || currentState.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          access_token: response.access_token,
+          refresh_token: response.refresh_token || currentState.refresh_token,
+          expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
           apiError: null
         });
         scheduleTokenRefresh();
@@ -910,7 +910,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
    */
   function getAccessToken(): string | null {
     const session = getSession();
-    return isSessionValid(session) ? session?.tokens.accessToken || null : null;
+    return isSessionValid(session) ? session?.tokens.access_token || null : null;
   }
 
   /**
@@ -921,8 +921,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     updateState({
       state: 'unauthenticated',
       ...resetSignInState,
-      accessToken: null,
-      refreshToken: null,
+      access_token: null,
+      refresh_token: null,
       expiresAt: null
     });
   }
@@ -1082,14 +1082,14 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       const response = await api.registerUser(userData);
 
-      if (response.step === 'success' && response.user && response.accessToken) {
+      if (response.step === 'success' && response.user && response.access_token) {
         saveAuthSession(response, 'passkey');
         updateState({
           state: 'authenticated',
           user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          access_token: response.access_token,
+          refresh_token: response.refresh_token,
+          expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
           apiError: null
         });
         scheduleTokenRefresh();
@@ -1350,21 +1350,21 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       const completeAuthResponse = {
         step: 'success' as const,
         user: user,
-        accessToken: verificationResult.tokens?.accessToken,
-        refreshToken: verificationResult.tokens?.refreshToken,
+        access_token: verificationResult.tokens?.access_token,
+        refresh_token: verificationResult.tokens?.refresh_token,
         expiresAt: verificationResult.tokens?.expiresAt,
         emailVerifiedViaInvitation: registrationResponse.emailVerifiedViaInvitation
       };
 
       // Save session only if we have authentication tokens from WebAuthn verification
-      if (verificationResult.tokens?.accessToken) {
+      if (verificationResult.tokens?.access_token) {
         console.log('💾 Saving authentication session after complete WebAuthn flow');
         saveAuthSession(completeAuthResponse, 'passkey');
         updateState({
           state: 'authenticated',
           user: user,
-          accessToken: verificationResult.tokens.accessToken,
-          refreshToken: verificationResult.tokens.refreshToken,
+          access_token: verificationResult.tokens.access_token,
+          refresh_token: verificationResult.tokens.refresh_token,
           expiresAt: verificationResult.tokens.expiresAt,
           apiError: null
         });
@@ -1389,14 +1389,14 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         );
       } else {
         console.warn(
-          '⚠️ Account creation completed but no accessToken from WebAuthn verification - session not saved'
+          '⚠️ Account creation completed but no access_token from WebAuthn verification - session not saved'
         );
         // Still update state but without authentication
         updateState({
           state: 'unauthenticated',
           user: null,
-          accessToken: null,
-          refreshToken: null,
+          access_token: null,
+          refresh_token: null,
           expiresAt: null,
           apiError: null
         });
@@ -1412,7 +1412,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
             passkeyCreated: true,
             deviceLinked: true,
             sessionSaved: false,
-            reason: 'No accessToken in WebAuthn verification response'
+            reason: 'No access_token in WebAuthn verification response'
           }
         });
       }
@@ -1674,7 +1674,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         challengeId: challenge.challenge
       });
 
-      if (response.step === 'success' && response.user && response.accessToken) {
+      if (response.step === 'success' && response.user && response.access_token) {
         console.log('✅ Conditional WebAuthn authentication successful');
 
         // Update auth state
@@ -1682,9 +1682,9 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         updateState({
           state: 'authenticated',
           user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          access_token: response.access_token,
+          refresh_token: response.refresh_token,
+          expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
           apiError: null
         });
         scheduleTokenRefresh();
@@ -2009,14 +2009,14 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
       const response = await api.verifyAppEmailCode(currentState.email, code);
 
-      if (response.step === 'success' && response.user && response.accessToken) {
+      if (response.step === 'success' && response.user && response.access_token) {
         saveAuthSession(response, 'email-code');
         updateState({
           state: 'authenticated',
           user: response.user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : null,
+          access_token: response.access_token,
+          refresh_token: response.refresh_token,
+          expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
           apiError: null
         });
         scheduleTokenRefresh();
@@ -2028,16 +2028,16 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
         // Convert SignInResponse to SessionData format for EMAIL_VERIFIED event
         const sessionData = {
-          accessToken: response.accessToken || '',
-          refreshToken: response.refreshToken || '',
+          access_token: response.access_token || '',
+          refresh_token: response.refresh_token || '',
           user: {
             id: response.user.id,
             email: response.user.email,
             name: response.user.name || '',
             emailVerified: response.user.emailVerified || false
           },
-          expiresAt: response.expiresIn
-            ? Date.now() + response.expiresIn * 1000
+          expiresAt: response.expires_in
+            ? Date.now() + response.expires_in * 1000
             : Date.now() + 24 * 60 * 60 * 1000, // Default 24h
           lastActivity: Date.now()
         };

@@ -20,7 +20,7 @@ vi.mock('../../src/api/auth-api', () => ({
     signIn: vi.fn(),
     signInWithMagicLink: vi.fn(),
     signInWithPasskey: vi.fn(),
-    refreshToken: vi.fn(),
+    refresh_token: vi.fn(),
     signOut: vi.fn(),
     checkEmail: vi.fn(),
     sendAppEmailCode: vi.fn(),
@@ -88,8 +88,8 @@ describe('New Modular Auth Store Architecture', () => {
 
         expect(state.state).toBe('unauthenticated');
         expect(state.user).toBeNull();
-        expect(state.accessToken).toBeNull();
-        expect(state.refreshToken).toBeNull();
+        expect(state.access_token).toBeNull();
+        expect(state.refresh_token).toBeNull();
       });
 
       it('should update authentication state', () => {
@@ -103,15 +103,15 @@ describe('New Modular Auth Store Architecture', () => {
 
         authCore.getState().updateUser(mockUser);
         authCore.getState().updateTokens({
-          accessToken: 'token123',
-          refreshToken: 'refresh123',
+          access_token: 'token123',
+          refresh_token: 'refresh123',
           expiresAt: Date.now() + 3600000
         });
 
         const state = authCore.getState();
         expect(state.state).toBe('authenticated');
         expect(state.user).toEqual(mockUser);
-        expect(state.accessToken).toBe('token123');
+        expect(state.access_token).toBe('token123');
         expect(state.isAuthenticated()).toBe(true);
       });
     });
@@ -319,7 +319,12 @@ describe('New Modular Auth Store Architecture', () => {
       // Emit sign-in success event (through events store)
       composedStore.events.getState().emit('sign_in_success', {
         method: 'passkey',
-        user: { id: '123', email: 'test@example.com', emailVerified: true, createdAt: new Date().toISOString() }
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: new Date().toISOString()
+        }
       });
     });
 
@@ -333,7 +338,7 @@ describe('New Modular Auth Store Architecture', () => {
       // Verify state structure
       expect(coreState).toHaveProperty('state');
       expect(coreState).toHaveProperty('user');
-      expect(coreState).toHaveProperty('accessToken');
+      expect(coreState).toHaveProperty('access_token');
 
       expect(uiState).toHaveProperty('signInState'); // Single source of truth
       expect(uiState).toHaveProperty('email');
@@ -347,7 +352,7 @@ describe('New Modular Auth Store Architecture', () => {
 
       // States are independent but coordinated
       expect(coreState).not.toHaveProperty('signInState');
-      expect(uiState).not.toHaveProperty('accessToken');
+      expect(uiState).not.toHaveProperty('access_token');
       expect(passkeyState).not.toHaveProperty('signInState');
       expect(emailState).not.toHaveProperty('signInState');
     });

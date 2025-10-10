@@ -15,8 +15,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
       const newFormatResponse = {
         success: true,
         tokens: {
-          accessToken: 'webauthn-verified',
-          refreshToken: 'webauthn-verified',
+          access_token: 'webauthn-verified',
+          refresh_token: 'webauthn-verified',
           expiresAt: 1752790702497 // Unix timestamp
         },
         user: {
@@ -29,8 +29,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
       // Contract validation
       expect(newFormatResponse).toHaveProperty('success', true);
       expect(newFormatResponse).toHaveProperty('tokens');
-      expect(newFormatResponse.tokens).toHaveProperty('accessToken');
-      expect(newFormatResponse.tokens).toHaveProperty('refreshToken');
+      expect(newFormatResponse.tokens).toHaveProperty('access_token');
+      expect(newFormatResponse.tokens).toHaveProperty('refresh_token');
       expect(newFormatResponse.tokens).toHaveProperty('expiresAt');
       expect(newFormatResponse).toHaveProperty('user');
       expect(newFormatResponse.user).toHaveProperty('id');
@@ -38,20 +38,20 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Type validation
       expect(typeof newFormatResponse.success).toBe('boolean');
-      expect(typeof newFormatResponse.tokens.accessToken).toBe('string');
-      expect(typeof newFormatResponse.tokens.refreshToken).toBe('string');
+      expect(typeof newFormatResponse.tokens.access_token).toBe('string');
+      expect(typeof newFormatResponse.tokens.refresh_token).toBe('string');
       expect(typeof newFormatResponse.tokens.expiresAt).toBe('number');
       expect(typeof newFormatResponse.user.id).toBe('string');
       expect(typeof newFormatResponse.user.email).toBe('string');
     });
 
-    test('MUST support legacy response format: {step: "success", accessToken: "...", user: {...}}', () => {
+    test('MUST support legacy response format: {step: "success", access_token: "...", user: {...}}', () => {
       // This is the legacy format that must remain supported for backward compatibility
       const legacyFormatResponse = {
         step: 'success',
-        accessToken: 'legacy-access-token',
-        refreshToken: 'legacy-refresh-token',
-        expiresIn: 3600, // Seconds from now
+        access_token: 'legacy-access-token',
+        refresh_token: 'legacy-refresh-token',
+        expires_in: 3600, // Seconds from now
         user: {
           id: 'user-123',
           email: 'test@example.com',
@@ -61,18 +61,18 @@ describe('API Response Contracts - IMMUTABLE', () => {
 
       // Contract validation
       expect(legacyFormatResponse).toHaveProperty('step', 'success');
-      expect(legacyFormatResponse).toHaveProperty('accessToken');
-      expect(legacyFormatResponse).toHaveProperty('refreshToken');
-      expect(legacyFormatResponse).toHaveProperty('expiresIn');
+      expect(legacyFormatResponse).toHaveProperty('access_token');
+      expect(legacyFormatResponse).toHaveProperty('refresh_token');
+      expect(legacyFormatResponse).toHaveProperty('expires_in');
       expect(legacyFormatResponse).toHaveProperty('user');
       expect(legacyFormatResponse.user).toHaveProperty('id');
       expect(legacyFormatResponse.user).toHaveProperty('email');
 
       // Type validation
       expect(typeof legacyFormatResponse.step).toBe('string');
-      expect(typeof legacyFormatResponse.accessToken).toBe('string');
-      expect(typeof legacyFormatResponse.refreshToken).toBe('string');
-      expect(typeof legacyFormatResponse.expiresIn).toBe('number');
+      expect(typeof legacyFormatResponse.access_token).toBe('string');
+      expect(typeof legacyFormatResponse.refresh_token).toBe('string');
+      expect(typeof legacyFormatResponse.expires_in).toBe('number');
       expect(typeof legacyFormatResponse.user.id).toBe('string');
       expect(typeof legacyFormatResponse.user.email).toBe('string');
     });
@@ -116,30 +116,30 @@ describe('API Response Contracts - IMMUTABLE', () => {
           email: 'test@example.com',
           name: 'Test User'
         },
-        accessToken: 'normalized-access-token',
-        refreshToken: 'normalized-refresh-token',
-        expiresIn: 3600 // Always in seconds
+        access_token: 'normalized-access-token',
+        refresh_token: 'normalized-refresh-token',
+        expires_in: 3600 // Always in seconds
       };
 
       // Contract validation
       expect(normalizedSessionFormat).toHaveProperty('step', 'success');
       expect(normalizedSessionFormat).toHaveProperty('user');
-      expect(normalizedSessionFormat).toHaveProperty('accessToken');
-      expect(normalizedSessionFormat).toHaveProperty('refreshToken');
+      expect(normalizedSessionFormat).toHaveProperty('access_token');
+      expect(normalizedSessionFormat).toHaveProperty('refresh_token');
       expect(normalizedSessionFormat.user).toHaveProperty('id');
       expect(normalizedSessionFormat.user).toHaveProperty('email');
 
       // Type validation
       expect(typeof normalizedSessionFormat.step).toBe('string');
-      expect(typeof normalizedSessionFormat.accessToken).toBe('string');
-      expect(typeof normalizedSessionFormat.refreshToken).toBe('string');
+      expect(typeof normalizedSessionFormat.access_token).toBe('string');
+      expect(typeof normalizedSessionFormat.refresh_token).toBe('string');
       expect(typeof normalizedSessionFormat.user.id).toBe('string');
       expect(typeof normalizedSessionFormat.user.email).toBe('string');
 
       // ExpiresIn must be a number (seconds) when present
-      if (normalizedSessionFormat.expiresIn !== undefined) {
-        expect(typeof normalizedSessionFormat.expiresIn).toBe('number');
-        expect(normalizedSessionFormat.expiresIn).toBeGreaterThan(0);
+      if (normalizedSessionFormat.expires_in !== undefined) {
+        expect(typeof normalizedSessionFormat.expires_in).toBe('number');
+        expect(normalizedSessionFormat.expires_in).toBeGreaterThan(0);
       }
     });
   });
@@ -433,8 +433,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z'
         },
-        accessToken: 'invitation-access-token',
-        refreshToken: 'invitation-refresh-token',
+        access_token: 'invitation-access-token',
+        refresh_token: 'invitation-refresh-token',
         emailVerifiedViaInvitation: true, // CRITICAL: Must be present for invitation flows
         welcomeEmailSent: false, // No welcome email for invitation users
         emailVerificationRequired: false
@@ -449,8 +449,8 @@ describe('API Response Contracts - IMMUTABLE', () => {
           emailVerified: false,
           createdAt: '2024-01-01T00:00:00Z'
         },
-        accessToken: 'standard-access-token',
-        refreshToken: 'standard-refresh-token',
+        access_token: 'standard-access-token',
+        refresh_token: 'standard-refresh-token',
         emailVerifiedViaInvitation: false, // CRITICAL: Must be present for all registrations
         welcomeEmailSent: true, // Welcome email sent for standard registration
         emailVerificationRequired: true

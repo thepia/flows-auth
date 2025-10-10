@@ -97,8 +97,8 @@ describe('AccountCreationForm Integration Tests', () => {
             Promise.resolve({
               success: true,
               tokens: {
-                accessToken: 'mock-access-token',
-                refreshToken: 'mock-refresh-token',
+                access_token: 'mock-access-token',
+                refresh_token: 'mock-refresh-token',
                 expiresAt: Date.now() + 3600000
               },
               user: {
@@ -306,7 +306,7 @@ describe('AccountCreationForm Integration Tests', () => {
         subscribe: vi.fn(),
         state: 'unauthenticated',
         user: null,
-        accessToken: null
+        access_token: null
       };
 
       // Complete registration flow

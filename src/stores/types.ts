@@ -29,8 +29,8 @@ export interface AuthCoreState {
   // Authentication state
   state: 'authenticated' | 'unauthenticated';
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
   expiresAt: number | null;
 
   // Capabilities
@@ -46,8 +46,8 @@ export interface AuthCoreActions {
   refreshTokens: () => Promise<void>;
   updateUser: (user: User) => void;
   updateTokens: (tokens: {
-    accessToken: string;
-    refreshToken?: string;
+    access_token: string;
+    refresh_token?: string;
     expiresAt?: number;
   }) => void;
 

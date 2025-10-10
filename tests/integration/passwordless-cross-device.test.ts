@@ -192,8 +192,8 @@ describe('Complete Flow Simulation', () => {
           })
         ),
         tokens: {
-          accessToken: 'at-789',
-          refreshToken: 'rt-101112',
+          access_token: 'at-789',
+          refresh_token: 'rt-101112',
           expiresAt: Date.now() + 3600000
         }
       },
@@ -202,8 +202,8 @@ describe('Complete Flow Simulation', () => {
       deviceA_result: {
         status: 'verified',
         tokens: {
-          accessToken: 'at-789',
-          refreshToken: 'rt-101112',
+          access_token: 'at-789',
+          refresh_token: 'rt-101112',
           expiresAt: Date.now() + 3600000
         },
         user: {
@@ -216,7 +216,7 @@ describe('Complete Flow Simulation', () => {
     // Verify the flow structure is correct
     expect(mockFlow.deviceA_start.timestamp).toBe(1638360000000);
     expect(JSON.parse(atob(mockFlow.deviceB_callback.state)).timestamp).toBe(1638360000000);
-    expect(mockFlow.deviceA_result.tokens.accessToken).toBe('at-789');
+    expect(mockFlow.deviceA_result.tokens.access_token).toBe('at-789');
 
     console.log('✅ Complete flow simulation structure verified');
     console.log('📋 Flow steps:', {

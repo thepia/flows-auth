@@ -21,7 +21,7 @@ describe('Auth Store State Centralization', () => {
       signIn: vi.fn(),
       signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
-      refreshToken: vi.fn(),
+      refresh_token: vi.fn(),
       signOut: vi.fn(),
       checkEmail: vi.fn(),
       sendAppEmailCode: vi.fn(),

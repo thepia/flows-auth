@@ -35,9 +35,9 @@ vi.mock('../../src/api/auth-api', () => ({
         emailVerified: true,
         createdAt: '2023-01-01'
       },
-      accessToken: 'access-token',
-      refreshToken: 'refresh-token',
-      expiresIn: 3600
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_in: 3600
     })
   }))
 }));
@@ -395,7 +395,7 @@ describe('Svelte Store Adapter', () => {
       // Should have core state
       expect(state.state).toBeDefined();
       expect(state.user).toBeDefined();
-      expect(state.accessToken).toBeDefined();
+      expect(state.access_tokenn).toBeDefined();
 
       // Should have UI state
       expect(state.signInState).toBeDefined();

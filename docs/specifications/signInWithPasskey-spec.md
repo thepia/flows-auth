@@ -19,9 +19,9 @@
 
 ### FR3: Response Processing
 - **FR3.1**: MUST handle response format: `{success: true, tokens: {...}, user: {...}}`
-- **FR3.2**: MUST handle legacy format: `{step: 'success', accessToken: '...', user: {...}}`
-- **FR3.3**: MUST extract `accessToken` from `response.accessToken` OR `response.tokens.accessToken`
-- **FR3.4**: MUST extract `refreshToken` from `response.refreshToken` OR `response.tokens.refreshToken`
+- **FR3.2**: MUST handle legacy format: `{step: 'success', access_token: '...', user: {...}}`
+- **FR3.3**: MUST extract `access_token` from `response.access_token` OR `response.tokens.access_token`
+- **FR3.4**: MUST extract `refresh_token` from `response.refresh_token` OR `response.tokens.refresh_token`
 - **FR3.5**: MUST extract `expiresAt` from `response.tokens.expiresAt` when present
 - **FR3.6**: MUST determine success from `response.step === 'success'` OR `response.success === true`
 
@@ -34,8 +34,8 @@
 ### FR5: State Management
 - **FR5.1**: MUST update store state to `'authenticated'` on success
 - **FR5.2**: MUST set `user` field in store on success
-- **FR5.3**: MUST set `accessToken` field in store on success
-- **FR5.4**: MUST set `refreshToken` field in store on success
+- **FR5.3**: MUST set `access_token` field in store on success
+- **FR5.4**: MUST set `refresh_token` field in store on success
 - **FR5.5**: MUST set `expiresAt` field in store on success
 - **FR5.6**: MUST clear `error` field in store on success
 - **FR5.7**: MUST NOT update store state on failure

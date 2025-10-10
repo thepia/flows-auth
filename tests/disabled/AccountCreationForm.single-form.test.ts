@@ -70,7 +70,7 @@ describe('AccountCreationForm - Single Form Design', () => {
         email: 'test@example.com',
         name: 'Test User'
       },
-      accessToken: 'test-token'
+      access_token: 'test-token'
     });
   });
 
@@ -329,7 +329,7 @@ describe('AccountCreationForm - Single Form Design', () => {
       mockAuthStore._triggerStateChange({
         state: 'authenticated',
         user: mockUser,
-        accessToken: 'test-token'
+        access_tokenn: 'test-token'
       });
 
       // Now appAccess should be emitted

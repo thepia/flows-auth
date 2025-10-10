@@ -16,7 +16,7 @@ vi.mock('../../src/api/auth-api', () => ({
     signIn: vi.fn(),
     signInWithMagicLink: vi.fn(),
     signInWithPasskey: vi.fn(),
-    refreshToken: vi.fn(),
+    refresh_token: vi.fn(),
     signOut: vi.fn(),
     checkEmail: vi.fn(),
     sendAppEmailCode: vi.fn(),
@@ -99,8 +99,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const coreState = composedStore.core.getState();
       expect(coreState.state).toBe('unauthenticated');
       expect(coreState.user).toBeNull();
-      expect(coreState.accessToken).toBeNull();
-      expect(coreState.refreshToken).toBeNull();
+      expect(coreState.access_token).toBeNull();
+      expect(coreState.refresh_token).toBeNull();
       expect(coreState.isAuthenticated()).toBe(false);
 
       // Test UI state
@@ -128,8 +128,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
           preferences: {}
         },
         tokens: {
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
           expiresAt: Date.now() + 3600000
         },
         lastActivity: Date.now(),
@@ -149,8 +149,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const coreState = restoredStore.core.getState();
       expect(coreState.state).toBe('authenticated');
       expect(coreState.user?.email).toBe('test@example.com');
-      expect(coreState.accessToken).toBe('access-token');
-      expect(coreState.refreshToken).toBe('refresh-token');
+      expect(coreState.access_token).toBe('access-token');
+      expect(coreState.refresh_token).toBe('refresh-token');
       expect(coreState.isAuthenticated()).toBe(true);
 
       // Test UI state after restoration
@@ -178,7 +178,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const coreState = composedStore.core.getState();
       expect(coreState.state).toBe('unauthenticated');
       expect(coreState.user).toBeNull();
-      expect(coreState.accessToken).toBeNull();
+      expect(coreState.access_token).toBeNull();
     });
 
     it('should handle authentication errors via event system', async () => {
@@ -246,8 +246,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       };
 
       const mockTokens = {
-        accessToken: 'token',
-        refreshToken: 'refresh-token',
+        access_token: 'token',
+        refresh_token: 'refresh-token',
         expiresAt: Date.now() + 3600000
       };
 
@@ -267,8 +267,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // Simulate authentication by setting tokens
       const mockTokens = {
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
+        access_token: 'test-access-token',
+        refresh_token: 'test-refresh-token',
         expiresAt: Date.now() + 3600000
       };
 
@@ -290,8 +290,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       };
 
       const mockTokens = {
-        accessToken: 'token',
-        refreshToken: 'refresh-token',
+        access_token: 'token',
+        refresh_token: 'refresh-token',
         expiresAt: Date.now() + 3600000
       };
 
@@ -311,7 +311,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const coreState = composedStore.core.getState();
       expect(coreState.state).toBe('unauthenticated');
       expect(coreState.user).toBeNull();
-      expect(coreState.accessToken).toBeNull();
+      expect(coreState.access_token).toBeNull();
 
       const uiState = composedStore.ui.getState();
       expect(uiState.signInState).toBe('emailEntry');
@@ -408,7 +408,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Verify state structure - each store has its own responsibilities
       expect(coreState).toHaveProperty('state');
       expect(coreState).toHaveProperty('user');
-      expect(coreState).toHaveProperty('accessToken');
+      expect(coreState).toHaveProperty('access_token');
 
       expect(uiState).toHaveProperty('signInState'); // Single source of truth
       expect(uiState).toHaveProperty('email');
@@ -422,7 +422,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // States are independent but coordinated - no duplication
       expect(coreState).not.toHaveProperty('signInState');
-      expect(uiState).not.toHaveProperty('accessToken');
+      expect(uiState).not.toHaveProperty('access_token');
       expect(passkeyState).not.toHaveProperty('signInState');
       expect(emailState).not.toHaveProperty('signInState');
     });

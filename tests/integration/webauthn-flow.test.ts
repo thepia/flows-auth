@@ -73,7 +73,7 @@ describe('WebAuthn Integration Flow', () => {
           Promise.resolve({
             step: 'success',
             user: { id: '1', email: 'test@example.com', name: 'Test User' },
-            accessToken: 'test-token'
+            access_token: 'test-token'
           })
       });
 

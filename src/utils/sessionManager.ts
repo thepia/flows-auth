@@ -37,15 +37,18 @@ export function getSession(): SignInData | null {
 
     const session = JSON.parse(sessionData) as SignInData;
 
-    // Check if session is expired
-    if (session.tokens.expiresAt < Date.now()) {
+    // Check session timeout based on storage configuration (primary validity check)
+    const sessionTimeout = storage.getSessionTimeout();
+    if (Date.now() - session.lastActivity > sessionTimeout) {
+      console.log('🕐 Session expired due to inactivity');
       clearSession();
       return null;
     }
 
-    // Check session timeout based on storage configuration
-    const sessionTimeout = storage.getSessionTimeout();
-    if (Date.now() - session.lastActivity > sessionTimeout) {
+    // Check token expiration only if there's no refresh token
+    // If we have a refresh token, the session remains valid even if access token expired
+    if (session.tokens.expiresAt < Date.now() && !session.tokens.refresh_token) {
+      console.log('🕐 Session expired: no refresh token and access token expired');
       clearSession();
       return null;
     }
@@ -107,7 +110,7 @@ export function clearSession(): void {
 }
 
 export function generateInitials(name: string): string {
-  const words = name.split(' ').filter(word => word.length > 0);
+  const words = name.split(' ').filter((word) => word.length > 0);
 
   if (words.length === 0) return '';
   if (words.length === 1) return words[0].charAt(0).toUpperCase();
@@ -122,15 +125,16 @@ export function generateInitials(name: string): string {
 export function isSessionValid(session: SignInData | null): boolean {
   if (!session) return false;
 
-  // Check token expiration
-  if (session.tokens.expiresAt < Date.now()) {
-    return false;
-  }
-
-  // Check last activity using configurable timeout
+  // Check last activity using configurable timeout (primary session validity check)
   const storage = getStorageManager();
   const sessionTimeout = storage.getSessionTimeout();
   if (Date.now() - session.lastActivity > sessionTimeout) {
+    return false;
+  }
+
+  // Check token expiration only if there's no refresh token
+  // If we have a refresh token, the session can be refreshed even if access token expired
+  if (session.tokens.expiresAt < Date.now() && !session.tokens.refresh_token) {
     return false;
   }
 
@@ -239,7 +243,7 @@ export function getCurrentUser(): SignInData['user'] | null {
  */
 export function getAccessToken(): string | null {
   const session = getSession();
-  return isSessionValid(session) ? session?.tokens.accessToken || null : null;
+  return isSessionValid(session) ? session?.tokens.access_token || null : null;
 }
 
 /**

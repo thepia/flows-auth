@@ -76,8 +76,8 @@ class AuthServiceWorker {
 interface AuthDatabase {
   sessions: {
     id: 'current';
-    accessToken: string;
-    refreshToken: string;
+    access_token: string;
+    refresh_token: string;
     expiresAt: number;
     user: User;
     lastRefresh: number;

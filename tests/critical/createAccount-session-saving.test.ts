@@ -92,9 +92,9 @@ describe('createAccount API Contract', () => {
         emailVerified: false,
         createdAt: new Date().toISOString()
       },
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-      expiresIn: 3600
+      access_token: 'mock-access-token',
+      refresh_token: 'mock-refresh-token',
+      expires_in: 3600
     });
 
     // Mock authentication state methods
@@ -119,8 +119,8 @@ describe('createAccount API Contract', () => {
           email: 'test@example.com',
           name: expect.any(String)
         }),
-        accessToken: expect.any(String),
-        refreshToken: expect.any(String)
+        access_token: expect.any(String),
+        refresh_token: expect.any(String)
       });
     });
 
@@ -152,8 +152,8 @@ describe('createAccount API Contract', () => {
           preferences: undefined
         },
         tokens: {
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
           expiresAt: Date.now() + 3600000
         },
         authMethod: 'passkey',
@@ -231,9 +231,9 @@ describe('createAccount API Contract', () => {
           emailVerified: true,
           createdAt: new Date().toISOString()
         },
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresIn: 3600,
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        expires_in: 3600,
         emailVerifiedViaInvitation: true
       });
 
@@ -246,7 +246,7 @@ describe('createAccount API Contract', () => {
           email: 'test@example.com'
         }),
         emailVerifiedViaInvitation: true,
-        accessToken: expect.any(String)
+        access_token: expect.any(String)
       });
 
       // User should be immediately authenticated with verified email
@@ -265,7 +265,7 @@ describe('createAccount API Contract', () => {
         user: expect.objectContaining({
           email: 'test@example.com'
         }),
-        accessToken: expect.any(String)
+        access_token: expect.any(String)
       });
 
       // emailVerifiedViaInvitation should be false or undefined for standard registration

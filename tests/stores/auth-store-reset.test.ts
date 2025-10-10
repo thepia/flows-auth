@@ -7,11 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInData } from '../../src/types';
-import {
-  clearSession,
-  getSession,
-  saveSession
-} from '../../src/utils/sessionManager';
+import { clearSession, getSession, saveSession } from '../../src/utils/sessionManager';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');
@@ -127,8 +123,8 @@ describe('Auth Store reset() Method', () => {
         // lastActivity: number;
 
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         }
       };
@@ -146,8 +142,8 @@ describe('Auth Store reset() Method', () => {
       const afterReset = authStore.getState();
       expect(afterReset.state).toBe('unauthenticated');
       expect(afterReset.user).toBeNull();
-      expect(afterReset.accessToken).toBeNull();
-      expect(afterReset.refreshToken).toBeNull();
+      expect(afterReset.access_token).toBeNull();
+      expect(afterReset.refresh_token).toBeNull();
       expect(afterReset.expiresAt).toBeNull();
     });
 
@@ -166,8 +162,8 @@ describe('Auth Store reset() Method', () => {
         // lastActivity: number;
 
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         }
       };
@@ -312,8 +308,8 @@ describe('Auth Store reset() Method', () => {
       authStore.sendSignInEvent({
         type: 'PIN_VERIFIED',
         session: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           user: {
             id: 'user-123',
             email: 'test@example.com',

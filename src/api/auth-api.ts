@@ -156,6 +156,25 @@ export class AuthApiClient {
 
   /**
    * Handle error responses
+   *
+   * HTTP Status Code Semantics:
+   * - 400 (Bad Request): Client error - fix request and retry (e.g., invalid_email, missing_email)
+   * - 401 (Unauthorized): Authentication required or token invalid/expired - user must sign in again
+   * - 403 (Forbidden): Token revoked or insufficient permissions - user must sign in again
+   * - 404 (Not Found): Resource doesn't exist (e.g., user_not_found, endpoint_not_found)
+   * - 429 (Rate Limited): Too many requests - retry after delay (check Retry-After header or details.retryAfter)
+   * - 500 (Internal Server Error): Temporary server error - safe to retry with exponential backoff
+   * - 502 (Bad Gateway): Upstream service error (e.g., Auth0/WorkOS down) - retry after delay
+   * - 503 (Service Unavailable): Temporary service unavailable - retry after delay (check Retry-After header)
+   *
+   * Error Code Patterns:
+   * - 401/403 errors = Requires re-authentication (session is dead)
+   * - 500/502/503 errors = Temporary failure (retry with current session)
+   * - Token refresh errors use HTTP status to indicate permanent vs temporary failure:
+   *   - 401 invalid_token = Refresh token expired/invalid → sign in again
+   *   - 500 token_refresh_failed = Service temporarily down → retry later
+   *
+   * @see https://github.com/thepia/thepia.com/blob/main/docs/auth/api-contracts/error-codes-catalog.md
    */
   private async handleErrorResponse(response: Response): Promise<AuthError> {
     try {
@@ -268,21 +287,6 @@ export class AuthApiClient {
   }
 
   /**
-   * Initiate sign-in flow
-   * Note: This endpoint doesn't exist on the server - use startPasswordlessAuthentication instead
-   * @deprecated Use startPasswordlessAuthentication for magic links
-   */
-  async signIn(request: SignInRequest): Promise<SignInResponse> {
-    // The /auth/signin endpoint doesn't exist - redirect to passwordless
-    console.warn(
-      '⚠️ signIn() method called but /auth/signin endpoint does not exist. Use startPasswordlessAuthentication() instead.'
-    );
-    throw new Error(
-      'The /auth/signin endpoint is not available. Please use passwordless authentication methods.'
-    );
-  }
-
-  /**
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
@@ -339,9 +343,13 @@ export class AuthApiClient {
 
   /**
    * Refresh access token
+   * Uses app-specific endpoint if appCode is configured
    */
   async refreshToken(request: RefreshTokenRequest): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/refresh', {
+    const appCode = this.getEffectiveAppCode();
+    const endpoint = appCode ? `/${appCode}/refresh` : '/auth/refresh';
+
+    return this.request<SignInResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify(request)
     });
@@ -351,8 +359,11 @@ export class AuthApiClient {
    * Sign out
    */
   async signOut(request: LogoutRequest): Promise<void> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/signout` : '/auth/signout';
+
     await this.request<void>(
-      '/auth/signout',
+      endpoint,
       {
         method: 'POST',
         body: JSON.stringify(request)
@@ -365,8 +376,11 @@ export class AuthApiClient {
    * Get user profile
    */
   async getProfile(): Promise<UserProfile> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/profile` : '/auth/profile';
+
     return this.request<UserProfile>(
-      '/auth/profile',
+      endpoint,
       {
         method: 'GET'
       },
@@ -527,9 +541,9 @@ export class AuthApiClient {
       user?: any;
       message?: string;
       step?: string;
-      accessToken?: string;
-      refreshToken?: string;
-      expiresIn?: number;
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
     }>(endpoint, {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -544,9 +558,9 @@ export class AuthApiClient {
       return {
         step: 'success',
         user: response.user,
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        expires_in: response.expires_in
       };
     } else if (response.step) {
       // API returned legacy SignInResponse format
@@ -685,8 +699,8 @@ export class AuthApiClient {
     }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
-        email: email,
-        clientId: this.config.clientId
+        email: email
+        // clientId: this.config.clientId
         // Server should determine redirectUri based on clientId and origin
       })
     });
@@ -782,6 +796,8 @@ export class AuthApiClient {
   /**
    * Send email authentication code using app-based endpoints
    * Uses /{appCode}/send-email endpoint for unified registration/login
+   *
+   * Actually used by the store
    */
   async sendAppEmailCode(email: string): Promise<{
     success: boolean;
@@ -834,10 +850,10 @@ export class AuthApiClient {
 
     const response = await this.request<{
       user?: User;
-      accessToken?: string;
-      refreshToken?: string;
-      idToken?: string;
-      expiresIn?: number;
+      access_token?: string;
+      refresh_token?: string;
+      id_token?: string;
+      expires_in?: number;
       step?: string;
       error?: string;
       message?: string;
@@ -852,7 +868,7 @@ export class AuthApiClient {
     console.log('📦 Raw verify-email API response:', {
       email,
       hasUser: 'user' in response,
-      hasAccessToken: 'accessToken' in response,
+      hasAccessToken: 'access_token' in response,
       hasStep: 'step' in response,
       stepValue: response.step,
       hasError: 'error' in response,
@@ -864,16 +880,16 @@ export class AuthApiClient {
     console.log('🔍 Success condition check:', {
       hasUser: !!response.user,
       userValue: response.user,
-      hasAccessToken: !!response.accessToken,
-      accessTokenValue: response.accessToken,
-      bothTruthy: !!(response.user && response.accessToken)
+      hasAccessToken: !!response.access_token,
+      accessTokenValue: response.access_token,
+      bothTruthy: !!(response.user && response.access_token)
     });
 
     // Transform organization API response to match SignInResponse interface
     // The API returns tokens directly in the response, not nested
-    // Successful authentication is indicated by presence of user and accessToken
+    // Successful authentication is indicated by presence of user and access_token
     // OR step === 'authenticated' (server may return this for successful auth)
-    if (response.user && response.accessToken) {
+    if (response.user && response.access_token) {
       // Clear user cache entry since verification succeeded
       // This handles cases where user was previously cached as "doesn't exist"
       // but verification created the user account
@@ -883,16 +899,19 @@ export class AuthApiClient {
       return {
         step: 'success',
         user: response.user,
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        expiresIn: response.expiresIn || 3600
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        expires_in: response.expires_in || 3600
       };
     }
 
-    // If step is 'authenticated' but missing user/accessToken, that's still an error
+    // If step is 'authenticated' but missing user/access_token, that's still an error
     // Handle error response - but don't use response.message if it looks like a success message
-    const errorMessage = response.error ||
-      (response.message && !response.message.toLowerCase().includes('welcome') && !response.message.toLowerCase().includes('signed in')
+    const errorMessage =
+      response.error ||
+      (response.message &&
+      !response.message.toLowerCase().includes('welcome') &&
+      !response.message.toLowerCase().includes('signed in')
         ? response.message
         : 'Email code verification failed');
     throw new Error(errorMessage);

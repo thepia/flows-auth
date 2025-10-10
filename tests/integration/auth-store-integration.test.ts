@@ -287,7 +287,7 @@ describe('Auth Store Integration Tests', () => {
 
         if (result.step === 'success') {
           expect(result.user).toBeDefined();
-          expect(result.accessToken).toBeDefined();
+          expect(result.access_token).toBeDefined();
 
           const state = get(authStore);
           expect(state.state).toBe('authenticated');
@@ -459,7 +459,7 @@ describe('Auth Store Integration Tests', () => {
         name: mockUser.name,
         emailVerified: mockUser.emailVerified
       });
-      expect(state.accessToken).toBe('test-token');
+      expect(state.access_tokenn).toBe('test-token');
     });
 
     it('should handle expired tokens properly', async () => {

@@ -424,7 +424,7 @@ function handleSignInStateClick(clickedState) {
           event = { 
             type: 'PIN_VERIFIED', 
             session: {
-              accessToken: 'demo_token_' + Date.now(),
+              access_token: 'demo_token_' + Date.now(),
               user: { 
                 id: 'demo_user',
                 email: testEmail || emailInput || 'demo@example.com',
@@ -436,7 +436,7 @@ function handleSignInStateClick(clickedState) {
           event = { 
             type: 'PASSKEY_SUCCESS', 
             credential: {
-              accessToken: 'demo_token_' + Date.now(),
+              access_token: 'demo_token_' + Date.now(),
               user: { 
                 id: 'demo_user',
                 email: testEmail || emailInput || 'demo@example.com',

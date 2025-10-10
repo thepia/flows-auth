@@ -358,8 +358,8 @@ describe('Auth Store Integration Tests', () => {
       const mockSession = TestUtils.createMockSession(mockUser);
 
       // Manually set localStorage to simulate previous session
-      localStorage.setItem('auth_access_token', mockSession.accessToken);
-      localStorage.setItem('auth_refresh_token', mockSession.refreshToken);
+      localStorage.setItem('auth_access_token', mockSession.access_token);
+      localStorage.setItem('auth_refresh_token', mockSession.refresh_token);
       localStorage.setItem('auth_expires_at', (Date.now() + 3600000).toString());
       localStorage.setItem('auth_user', JSON.stringify(mockUser));
 
@@ -367,15 +367,12 @@ describe('Auth Store Integration Tests', () => {
       const restoredStore = createAuthStore(testConfig);
 
       // Wait for initial state setup (UI store should be ready)
-      await TestUtils.waitFor(
-        () => restoredStore.ui.getState().signInState !== undefined,
-        3000
-      );
+      await TestUtils.waitFor(() => restoredStore.ui.getState().signInState !== undefined, 3000);
 
       const state = get(restoredStore);
       expect(state.state).toBe('authenticated');
       expect(state.user?.email).toBe(mockUser.email);
-      expect(state.accessToken).toBe(mockSession.accessToken);
+      expect(state.access_token).toBe(mockSession.access_token);
 
       if (restoredStore?.destroy) {
         restoredStore.destroy();
@@ -391,15 +388,12 @@ describe('Auth Store Integration Tests', () => {
       const corruptedStore = createAuthStore(testConfig);
 
       // Wait for initial state setup (UI store should be ready)
-      await TestUtils.waitFor(
-        () => corruptedStore.ui.getState().signInState !== undefined,
-        3000
-      );
+      await TestUtils.waitFor(() => corruptedStore.ui.getState().signInState !== undefined, 3000);
 
       const state = get(corruptedStore);
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
-      expect(state.accessToken).toBeNull();
+      expect(state.access_token).toBeNull();
 
       if (corruptedStore?.destroy) {
         corruptedStore.destroy();
@@ -420,8 +414,8 @@ describe('Auth Store Integration Tests', () => {
             Promise.resolve({
               step: 'success',
               user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
-              accessToken: 'access-token',
-              refreshToken: 'refresh-token'
+              access_token: 'access-token',
+              refresh_token: 'refresh-token'
             })
         })
         // Step 2: Get WebAuthn registration options
@@ -492,7 +486,7 @@ describe('Auth Store Integration Tests', () => {
       // Verify successful result
       expect(result.step).toBe('success');
       expect(result.user).toBeDefined();
-      expect(result.accessToken).toBeDefined();
+      expect(result.access_token).toBeDefined();
     });
 
     it('should handle WebAuthn not supported error', async () => {

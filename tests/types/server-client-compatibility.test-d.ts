@@ -14,8 +14,8 @@ import { describe, expectTypeOf, test } from 'vitest';
 
 // Server types (source of truth)
 import type {
-  SignInResponse as ServerSignInResponse,
   CheckUserResponse as ServerCheckUserResponse,
+  SignInResponse as ServerSignInResponse
 } from '../../../../../thepia.com/src/api/types/responses.ts';
 
 // Client types (must match server)
@@ -30,15 +30,15 @@ describe('Server-Client Type Compatibility', () => {
 
     test('Both should have same token structure (flat, not nested)', () => {
       // Server tokens are flat
-      expectTypeOf<ServerSignInResponse>().toHaveProperty('accessToken');
-      expectTypeOf<ServerSignInResponse>().toHaveProperty('refreshToken');
-      expectTypeOf<ServerSignInResponse>().toHaveProperty('expiresIn');
+      expectTypeOf<ServerSignInResponse>().toHaveProperty('access_token');
+      expectTypeOf<ServerSignInResponse>().toHaveProperty('refresh_token');
+      expectTypeOf<ServerSignInResponse>().toHaveProperty('expires_in');
       expectTypeOf<ServerSignInResponse>().not.toHaveProperty('tokens');
 
       // Client tokens should also be flat (matches server)
-      expectTypeOf<ClientSignInResponse>().toHaveProperty('accessToken');
-      expectTypeOf<ClientSignInResponse>().toHaveProperty('refreshToken');
-      expectTypeOf<ClientSignInResponse>().toHaveProperty('expiresIn');
+      expectTypeOf<ClientSignInResponse>().toHaveProperty('access_token');
+      expectTypeOf<ClientSignInResponse>().toHaveProperty('refresh_token');
+      expectTypeOf<ClientSignInResponse>().toHaveProperty('expires_in');
       expectTypeOf<ClientSignInResponse>().not.toHaveProperty('tokens');
     });
 
@@ -51,9 +51,15 @@ describe('Server-Client Type Compatibility', () => {
     });
 
     test('Token fields should have same types', () => {
-      expectTypeOf<ServerSignInResponse['accessToken']>().toEqualTypeOf<ClientSignInResponse['accessToken']>();
-      expectTypeOf<ServerSignInResponse['refreshToken']>().toEqualTypeOf<ClientSignInResponse['refreshToken']>();
-      expectTypeOf<ServerSignInResponse['expiresIn']>().toEqualTypeOf<ClientSignInResponse['expiresIn']>();
+      expectTypeOf<ServerSignInResponse['access_token']>().toEqualTypeOf<
+        ClientSignInResponse['access_token']
+      >();
+      expectTypeOf<ServerSignInResponse['refresh_token']>().toEqualTypeOf<
+        ClientSignInResponse['refresh_token']
+      >();
+      expectTypeOf<ServerSignInResponse['expires_in']>().toEqualTypeOf<
+        ClientSignInResponse['expires_in']
+      >();
     });
   });
 
@@ -82,34 +88,41 @@ describe('Server-Client Type Compatibility', () => {
     });
 
     test('PIN expiry fields are correctly typed', () => {
-      expectTypeOf<ServerCheckUserResponse['lastPinExpiry']>().toEqualTypeOf<string | null | undefined>();
-      expectTypeOf<ServerCheckUserResponse['lastPinSentAt']>().toEqualTypeOf<string | null | undefined>();
+      expectTypeOf<ServerCheckUserResponse['lastPinExpiry']>().toEqualTypeOf<
+        string | null | undefined
+      >();
+      expectTypeOf<ServerCheckUserResponse['lastPinSentAt']>().toEqualTypeOf<
+        string | null | undefined
+      >();
     });
   });
 
   describe('Type conversion documentation', () => {
     test('Server returns flat SignInResponse, client converts to nested SignInData', () => {
       // Server structure (flat)
-      type ServerStructure = Pick<ServerSignInResponse, 'accessToken' | 'refreshToken' | 'expiresIn'>;
+      type ServerStructure = Pick<
+        ServerSignInResponse,
+        'access_token' | 'refresh_token' | 'expires_in'
+      >;
 
       expectTypeOf<ServerStructure>().toMatchTypeOf<{
-        accessToken?: string;
-        refreshToken?: string;
-        expiresIn?: number;  // seconds from server
+        access_token?: string;
+        refresh_token?: string;
+        expires_in?: number; // seconds from server
       }>();
 
       // Client converts this to SignInData with nested tokens
       // This conversion happens in createSessionData() utility
-      // expiresIn (seconds) → tokens.expiresAt (milliseconds timestamp)
+      // expires_in (seconds) → tokens.expiresAt (milliseconds timestamp)
       // flat structure → nested structure
     });
 
-    test('expiresIn conversion: server seconds → client milliseconds timestamp', () => {
+    test('expires_in conversion: server seconds → client milliseconds timestamp', () => {
       // Server provides duration in seconds
-      expectTypeOf<ServerSignInResponse['expiresIn']>().toEqualTypeOf<number | undefined>();
+      expectTypeOf<ServerSignInResponse['expires_in']>().toEqualTypeOf<number | undefined>();
 
       // Client needs absolute timestamp in milliseconds
-      // Conversion: expiresAt = Date.now() + (expiresIn * 1000)
+      // Conversion: expiresAt = Date.now() + (expires_in * 1000)
       type ClientExpiresAt = number; // Always defined in SignInData.tokens.expiresAt
 
       expectTypeOf<ClientExpiresAt>().toEqualTypeOf<number>();

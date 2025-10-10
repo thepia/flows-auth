@@ -293,8 +293,8 @@ The auth store provides reactive authentication state for client-side applicatio
 interface AuthStore {
   state: 'authenticated' | 'unauthenticated' | 'authenticating' | 'error';
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
   expiresAt: number | null;
   apiError: ApiError | null;
 }

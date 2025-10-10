@@ -277,9 +277,9 @@ describe('Session Migration Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee' }
         },
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-        expiresIn: 3600
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600
       };
 
       // Mock storage configuration update

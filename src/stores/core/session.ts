@@ -63,8 +63,8 @@ export function createSessionStore(options: StoreOptions) {
                     preferences: data.user.preferences
                   },
                   tokens: {
-                    accessToken: data.tokens.accessToken,
-                    refreshToken: data.tokens.refreshToken,
+                    access_token: data.tokens.access_token,
+                    refresh_token: data.tokens.refresh_token,
                     expiresAt: data.tokens.expiresAt
                   },
                   authMethod: data.authMethod,
@@ -148,8 +148,8 @@ export function createSessionStore(options: StoreOptions) {
                   preferences: data.user.preferences
                 },
                 tokens: {
-                  accessToken: data.tokens.accessToken,
-                  refreshToken: data.tokens.refreshToken,
+                  access_token: data.tokens.access_token,
+                  refresh_token: data.tokens.refresh_token,
                   expiresAt: data.tokens.expiresAt
                 },
                 authMethod: data.authMethod,
@@ -268,26 +268,31 @@ export function convertSessionUserToUser(sessionUser: SignInData['user']): User 
   };
 }
 
+const DEFAULT_EXPIRES_IN = 24 * 60 * 60;
+
 /**
  * Helper to create session data from auth response
  */
 export function createSessionData(
   user: User,
   tokens: {
-    accessToken: string;
-    refreshToken?: string;
-    expiresIn?: number;
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
   },
   authMethod: SignInData['authMethod'] = 'passkey'
 ): SignInData {
   return {
     user: convertUserToSessionUser(user),
     tokens: {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken || '',
-      expiresAt: tokens.expiresIn
-        ? Date.now() + tokens.expiresIn * 1000
-        : Date.now() + 24 * 60 * 60 * 1000 // Default 24h
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token || '',
+      // HACK: Force 6-minute expiry for testing (auto-refresh happens at 1 minute mark)
+      // expiresAt: tokens.expires_in ? Date.now() + 6 * 60 * 1000 : Date.now() + 6 * 60 * 1000
+      // Production:
+      expiresAt: tokens.expires_in
+        ? Date.now() + tokens.expires_in * 1000
+        : Date.now() + DEFAULT_EXPIRES_IN * 1000
     },
     authMethod,
     lastActivity: Date.now()

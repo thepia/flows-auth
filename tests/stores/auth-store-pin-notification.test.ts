@@ -40,9 +40,9 @@ describe('Auth Store PIN Notification', () => {
           name: 'Test User',
           emailVerified: true
         },
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
-        expiresIn: 3600
+        access_token: 'test-token',
+        refresh_token: 'test-refresh',
+        expires_in: 3600
       } as SignInResponse)
     };
 
@@ -142,8 +142,8 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         },
         authMethod: 'email-code',
@@ -171,8 +171,8 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         },
         authMethod: 'email-code',
@@ -209,8 +209,8 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         },
         authMethod: 'email-code',
@@ -245,8 +245,8 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          accessToken: 'test-token',
-          refreshToken: 'test-refresh',
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expiresAt: Date.now() + 3600000
         },
         authMethod: 'email-code',
@@ -280,7 +280,7 @@ describe('Auth Store PIN Notification', () => {
       expect(afterState.signInState).toBe('signedIn');
       expect(afterState.state).toBe('authenticated');
       expect(afterState.user).toBeDefined();
-      expect(afterState.accessToken).toBe('test-token');
+      expect(afterState.access_token).toBe('test-token');
     });
 
     it('should handle verification failure', async () => {

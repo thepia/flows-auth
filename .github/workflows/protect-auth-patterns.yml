@@ -219,7 +219,7 @@ jobs:
         fi
         
         # Check that tokens are not logged in full
-        if grep -r "console.log.*accessToken.*:" src/ --exclude-dir=tests; then
+        if grep -r "console.log.*access_token.*:" src/ --exclude-dir=tests; then
           echo "❌ SECURITY: Access tokens may be logged!"
           exit 1
         fi

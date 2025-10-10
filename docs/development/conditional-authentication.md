@@ -156,13 +156,13 @@ async function startConditionalAuthentication(email: string): Promise<boolean> {
       credential: serializedCredential
     });
 
-    if (response.step === 'success' && response.user && response.accessToken) {
+    if (response.step === 'success' && response.user && response.access_token) {
       // Update auth state and notify components
       saveTokens(response);
       updateState({
         state: 'authenticated',
         user: response.user,
-        accessToken: response.accessToken,
+        access_token: response.access_token,
         // ... rest of state
       });
       

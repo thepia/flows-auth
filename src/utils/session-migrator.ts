@@ -9,12 +9,7 @@ import type {
   StorageConfigurationUpdate,
   StorageType
 } from '../types';
-import {
-  clearSession,
-  getSession,
-  isSessionValid,
-  saveSession
-} from './sessionManager';
+import { clearSession, getSession, isSessionValid, saveSession } from './sessionManager';
 
 /**
  * Session migration class for handling secure data transfers between storage types
@@ -195,8 +190,8 @@ export class SessionMigrator {
     // Clear tokens if not preserving them
     if (!preserveTokens) {
       migratedSession.tokens = {
-        accessToken: '',
-        refreshToken: '',
+        access_token: '',
+        refresh_token: '',
         expiresAt: 0
       };
     }

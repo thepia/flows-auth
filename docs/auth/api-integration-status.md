@@ -40,8 +40,8 @@ sequenceDiagram
 {
   "success": true,
   "tokens": {
-    "accessToken": "dev-token-userid-timestamp",  // ❌ Placeholder token (fallback)
-    "refreshToken": "dev-refresh-userid-timestamp", // ❌ Placeholder token
+    "access_token": "dev-token-userid-timestamp",  // ❌ Placeholder token (fallback)
+    "refresh_token": "dev-refresh-userid-timestamp", // ❌ Placeholder token
     "expiresAt": 1640995200000                    // ✅ Proper expiration timestamp
   },
   "user": {
@@ -129,7 +129,7 @@ export const CLIENT_CONFIGS = {
 
 flows-auth will **automatically work** with proper user tokens because:
 
-1. **Token Storage**: Already stores `accessToken` and `refreshToken` fields
+1. **Token Storage**: Already stores `access_token` and `refresh_token` fields
 2. **Token Format**: Handles any string token format
 3. **Token Refresh**: Has refresh logic ready to use
 4. **Authorization Headers**: Already sends `Bearer ${token}` format
@@ -141,8 +141,8 @@ flows-auth will **automatically work** with proper user tokens because:
 {
   "success": true,
   "tokens": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIs...",    // ← Real JWT
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4=", // ← Real refresh token
+    "access_token": "eyJhbGciOiJSUzI1NiIs...",    // ← Real JWT
+    "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4=", // ← Real refresh token
     "expiresAt": 1640995200000
   },
   "user": {
@@ -180,8 +180,8 @@ flows-auth will **automatically work** with proper user tokens because:
     "initials": "TU"
   },
   "tokens": {
-    "accessToken": "webauthn-verified",
-    "refreshToken": "webauthn-verified",
+    "access_token": "webauthn-verified",
+    "refresh_token": "webauthn-verified",
     "expiresAt": 1640995200000
   },
   "authMethod": "passkey",

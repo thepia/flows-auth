@@ -51,10 +51,10 @@ export interface AuthUser {
 }
 
 export interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-  idToken?: string;
-  expiresIn?: number;
+  access_token: string;
+  refresh_token?: string;
+  id_token?: string;
+  expires_in?: number;
   expiresAt?: number;
 }
 
@@ -112,10 +112,10 @@ export interface SignInResponseV2
  */
 export interface SignInResponse {
   user?: AuthUser;
-  accessToken?: string;
-  refreshToken?: string;
-  idToken?: string;
-  expiresIn?: number;
+  access_token?: string;
+  refresh_token?: string;
+  id_token?: string;
+  expires_in?: number;
   requiresPasskey?: boolean;
   magicLinkSent?: boolean;
   challengeId?: string;
@@ -171,12 +171,12 @@ export function migrateToUnifiedSignInResponse(legacy: SignInResponse): SignInRe
   };
 
   // Add tokens if present
-  const tokens: AuthTokens | undefined = legacy.accessToken
+  const tokens: AuthTokens | undefined = legacy.access_token
     ? {
-        accessToken: legacy.accessToken,
-        refreshToken: legacy.refreshToken,
-        idToken: legacy.idToken,
-        expiresIn: legacy.expiresIn
+        access_token: legacy.access_token,
+        refresh_token: legacy.refresh_token,
+        id_token: legacy.id_token,
+        expires_in: legacy.expires_in
       }
     : undefined;
 
@@ -204,10 +204,10 @@ export function migratFromUnifiedSignInResponse(unified: SignInResponseV2): Sign
 
   return {
     user,
-    accessToken: tokens?.accessToken,
-    refreshToken: tokens?.refreshToken,
-    idToken: tokens?.idToken,
-    expiresIn: tokens?.expiresIn,
+    access_token: tokens?.access_token,
+    refresh_token: tokens?.refresh_token,
+    id_token: tokens?.id_token,
+    expires_in: tokens?.expires_in,
     step: state.step,
     requiresPasskey: state.method === 'passkey',
     magicLinkSent: state.method === 'magic-link',

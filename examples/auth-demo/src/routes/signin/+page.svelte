@@ -251,8 +251,8 @@ function handleSignInStateClick(clickedState) {
         event = {
           type: 'EMAIL_VERIFIED',
           session: {
-            accessToken: 'demo-token',
-            refreshToken: 'demo-refresh',
+            access_token: 'demo-token',
+            refresh_token: 'demo-refresh',
             user: { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' },
             expiresAt: Date.now() + 24 * 60 * 60 * 1000,
             lastActivity: Date.now()
@@ -783,7 +783,7 @@ onMount(async () => {
                 </div>
                 {#if stateMachineContext.sessionData}
                   <div class="context-item-compact">
-                    <strong>Session:</strong> {stateMachineContext.sessionData.accessToken ? 'Present' : 'None'}
+                    <strong>Session:</strong> {stateMachineContext.sessionData.access_token ? 'Present' : 'None'}
                   </div>
                 {/if}
               {:else}

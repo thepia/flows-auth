@@ -13,7 +13,7 @@ vi.mock('../../src/api/auth-api', () => ({
     signIn: vi.fn(),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
-    refreshToken: vi.fn(),
+    refresh_token: vi.fn(),
     signOut: vi.fn()
   }))
 }));
@@ -136,9 +136,9 @@ describe('Dynamic Role Security Tests', () => {
             issuedAt: Date.now()
           }
         },
-        accessToken: 'verified-access-token',
-        refreshToken: 'verified-refresh-token',
-        expiresIn: 3600
+        access_token: 'verified-access-token',
+        refresh_token: 'verified-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -177,9 +177,9 @@ describe('Dynamic Role Security Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'guest' }
         },
-        accessToken: 'guest-access-token',
-        refreshToken: 'guest-refresh-token',
-        expiresIn: 3600
+        access_token: 'guest-access-token',
+        refresh_token: 'guest-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -231,12 +231,12 @@ describe('Dynamic Role Security Tests', () => {
       // Mock migration with token validation
       const mockMigrateSession = vi.fn().mockImplementation(async (fromType, toType) => {
         // Simulate token validation
-        const accessToken =
+        const access_token =
           localStorage.getItem('auth_access_token') || sessionStorage.getItem('auth_access_token');
         const expiresAt =
           localStorage.getItem('auth_expires_at') || sessionStorage.getItem('auth_expires_at');
 
-        if (!accessToken || !expiresAt) {
+        if (!access_token || !expiresAt) {
           return {
             success: false,
             fromStorage: fromType,

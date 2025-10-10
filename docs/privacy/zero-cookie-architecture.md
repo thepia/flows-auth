@@ -110,7 +110,7 @@ const credential = await navigator.credentials.get({
 
 // 2. Session Storage (Tab-scoped, automatic cleanup)
 sessionStorage.setItem('thepia_auth_session', JSON.stringify({
-  accessToken: token,
+  access_token: token,
   expiresAt: Date.now() + 3600000,
   user: userData
 }));
@@ -185,11 +185,11 @@ class MagicLinkAuth {
       body: JSON.stringify({ token })
     });
     
-    const { user, accessToken, refreshToken } = await response.json();
+    const { user, access_token, refresh_token } = await response.json();
     
     // Store in browser only
     sessionStorage.setItem('thepia_auth_session', JSON.stringify({
-      user, accessToken, refreshToken
+      user, access_token, refresh_token
     }));
   }
 }

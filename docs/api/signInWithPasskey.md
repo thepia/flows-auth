@@ -32,9 +32,9 @@ async function signInWithPasskey(email: string, conditional?: boolean): Promise<
 interface SignInResponse {
   step: SignInStep;
   user?: User;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
   requiresPasskey?: boolean;
   requiresPassword?: boolean;
   magicLinkSent?: boolean;
@@ -51,8 +51,8 @@ The method handles two response formats from the backend:
 {
   success: true,
   tokens: {
-    accessToken: "webauthn-verified",  // Currently placeholder token
-    refreshToken: "webauthn-verified", // Currently placeholder token
+    access_token: "webauthn-verified",  // Currently placeholder token
+    refresh_token: "webauthn-verified", // Currently placeholder token
     expiresAt: number  // Unix timestamp
   },
   user: {
@@ -68,9 +68,9 @@ The method handles two response formats from the backend:
 ```typescript
 {
   step: 'success',
-  accessToken: string,
-  refreshToken: string,
-  expiresIn: number,  // Seconds from now
+  access_token: string,
+  refresh_token: string,
+  expires_in: number,  // Seconds from now
   user: {
     id: string,
     email: string,
@@ -189,7 +189,7 @@ stateDiagram-v2
 
 ### Auth Store State
 - Updates `state` to `'authenticated'`
-- Sets `user`, `accessToken`, `refreshToken`, `expiresAt`
+- Sets `user`, `access_token`, `refresh_token`, `expiresAt`
 - Clears any previous errors
 
 ### Events Emitted

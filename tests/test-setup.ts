@@ -257,9 +257,9 @@ export class APIMocker {
                   emailVerified: true,
                   createdAt: new Date().toISOString()
                 },
-                accessToken: 'test-access-token',
-                refreshToken: 'test-refresh-token',
-                expiresIn: 3600
+                access_token: 'test-access-token',
+                refresh_token: 'test-refresh-token',
+                expires_in: 3600
               })
           } as any);
         }
@@ -379,9 +379,9 @@ export class TestUtils {
    */
   static createMockSession(user = TestUtils.createMockUser()) {
     return {
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
-      expiresIn: 3600,
+      access_token: 'test-access-token',
+      refresh_token: 'test-refresh-token',
+      expires_in: 3600,
       user
     };
   }

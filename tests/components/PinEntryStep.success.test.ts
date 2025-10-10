@@ -6,8 +6,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PinEntryStep from '../../src/components/core/PinEntryStep.svelte';
-import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup';
 import type { SignInData } from '../../src/types';
+import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup';
 
 // Mock WebAuthn utils
 vi.mock('../../src/utils/webauthn', () => ({
@@ -44,8 +44,8 @@ describe('PinEntryStep Success Flow', () => {
         emailVerified: true
       },
       tokens: {
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
+        access_token: 'test-access-token',
+        refresh_token: 'test-refresh-token',
         expiresAt: Date.now() + 3600000
       },
       authMethod: 'email-code'
@@ -107,8 +107,8 @@ describe('PinEntryStep Success Flow', () => {
         emailVerified: true
       },
       tokens: {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+        access_token: 'test-token',
+        refresh_token: 'test-refresh',
         expiresAt: Date.now() + 3600000
       },
       authMethod: 'email-code'
@@ -151,8 +151,8 @@ describe('PinEntryStep Success Flow', () => {
     // Mock returns incomplete data
     const mockVerify = vi.fn().mockResolvedValue({
       tokens: {
-        accessToken: 'test-token',
-        refreshToken: 'test-refresh',
+        access_token: 'test-token',
+        refresh_token: 'test-refresh',
         expiresAt: Date.now() + 3600000
       }
       // Missing user!
@@ -205,8 +205,8 @@ describe('PinEntryStep Success Flow', () => {
         emailVerified: true
       },
       tokens: {
-        accessToken: 'eyJhbGci...',
-        refreshToken: 'refresh123',
+        access_token: 'eyJhbGci...',
+        refresh_token: 'refresh123',
         expiresAt: Date.now() + 3600000
       },
       authMethod: 'email-code'

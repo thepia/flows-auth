@@ -26,6 +26,7 @@ import {
   convertSessionUserToUser,
   createSessionData,
   createSessionStore,
+  getCurrentSession,
   initializeSessionStore
 } from './core/session';
 
@@ -195,8 +196,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         // Update core auth state from session data
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
-          accessToken: signInData.tokens.accessToken,
-          refreshToken: signInData.tokens.refreshToken,
+          access_token: signInData.tokens.access_token,
+          refresh_token: signInData.tokens.refresh_token,
           expiresAt: signInData.tokens.expiresAt
         });
 
@@ -276,8 +277,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         // Update core auth state from session data
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
-          accessToken: signInData.tokens.accessToken,
-          refreshToken: signInData.tokens.refreshToken,
+          access_token: signInData.tokens.access_token,
+          refresh_token: signInData.tokens.refresh_token,
           expiresAt: signInData.tokens.expiresAt
         });
 
@@ -298,11 +299,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         });
 
         // Extract message from error (handle both Error instances and plain objects)
-        const errorMessage = err instanceof Error
-          ? err.message
-          : (err && typeof err === 'object' && 'message' in err)
-            ? String((err as any).message)
-            : String(err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : err && typeof err === 'object' && 'message' in err
+              ? String((err as any).message)
+              : String(err);
 
         eventEmitters.signInError({
           error: { code: 'verification_failed', message: errorMessage },
@@ -319,6 +321,36 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     refreshTokens: async () => {
       await core.getState().refreshTokens();
+
+      // CRITICAL: Save new refresh token to localStorage to prevent "already exchanged" errors
+      // After token refresh, we must persist the new tokens to avoid reusing old refresh token
+      const coreState = core.getState();
+      if (coreState.user && coreState.access_token) {
+        // Get existing session to preserve authMethod
+        const existingSessionData = typeof window !== 'undefined' ? getCurrentSession() : null;
+
+        const sessionData = {
+          user: {
+            id: coreState.user.id,
+            email: coreState.user.email,
+            name: coreState.user.name || coreState.user.email,
+            initials: coreState.user.name
+              ? coreState.user.name.charAt(0).toUpperCase()
+              : coreState.user.email.charAt(0).toUpperCase(),
+            avatar: coreState.user.picture,
+            preferences: coreState.user.metadata
+          },
+          tokens: {
+            access_token: coreState.access_token,
+            refresh_token: coreState.refresh_token || '',
+            expiresAt: coreState.expiresAt || Date.now() + 24 * 60 * 60 * 1000
+          },
+          authMethod: existingSessionData?.authMethod || ('passkey' as const),
+          lastActivity: Date.now()
+        };
+
+        session.getState().saveSession(sessionData);
+      }
     },
 
     startConditionalAuthentication: async (emailAddress: string) => {
@@ -396,19 +428,19 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         const response = await api.registerUser(userData);
 
-        if (response.step === 'success' && response.user && response.accessToken) {
+        if (response.step === 'success' && response.user && response.access_token) {
           authenticateUser(core, response.user, {
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : undefined
+            access_token: response.access_token,
+            refresh_token: response.refresh_token,
+            expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : undefined
           });
 
           const sessionData = createSessionData(
             response.user,
             {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              expiresIn: response.expiresIn
+              access_token: response.access_token,
+              refresh_token: response.refresh_token,
+              expires_in: response.expires_in
             },
             'passkey'
           );
@@ -491,8 +523,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         state: coreState.state,
         signInState: uiState.signInState,
         user: coreState.user,
-        accessToken: coreState.accessToken,
-        refreshToken: coreState.refreshToken,
+        access_token: coreState.access_token,
+        refresh_token: coreState.refresh_token,
         expiresAt: coreState.expiresAt,
         apiError: errorState.apiError,
         passkeysEnabled: coreState.passkeysEnabled,
@@ -623,8 +655,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
       // Update core auth state
       authenticateUser(core, convertSessionUserToUser(signInData.user), {
-        accessToken: signInData.tokens.accessToken,
-        refreshToken: signInData.tokens.refreshToken,
+        access_token: signInData.tokens.access_token,
+        refresh_token: signInData.tokens.refresh_token,
         expiresAt: signInData.tokens.expiresAt
       });
 

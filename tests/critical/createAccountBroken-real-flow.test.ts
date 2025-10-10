@@ -78,8 +78,8 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
               email: 'test@example.com',
               emailVerified: false
             },
-            accessToken: 'temp-access-token',
-            refreshToken: 'temp-refresh-token',
+            access_token: 'temp-access-token',
+            refresh_token: 'temp-refresh-token',
             emailVerifiedViaInvitation: false
           })
       })
@@ -112,8 +112,8 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
               email: 'test@example.com',
               emailVerified: false
             },
-            accessToken: 'final-access-token',
-            refreshToken: 'final-refresh-token'
+            access_token: 'final-access-token',
+            refresh_token: 'final-refresh-token'
           })
       });
 
@@ -199,7 +199,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
         email: 'test@example.com'
       })
     );
-    expect(result.accessToken).toBe('final-access-token');
+    expect(result.access_token).toBe('final-access-token');
   });
 
   test('CRITICAL: createAccountBroken should handle invitation token flow correctly', async () => {
@@ -215,8 +215,8 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
               email: 'invited@example.com',
               emailVerified: true // Already verified via invitation
             },
-            accessToken: 'invitation-access-token',
-            refreshToken: 'invitation-refresh-token',
+            access_token: 'invitation-access-token',
+            refresh_token: 'invitation-refresh-token',
             emailVerifiedViaInvitation: true // CRITICAL: This field must be present
           })
       })
@@ -245,8 +245,8 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
               email: 'invited@example.com',
               emailVerified: true
             },
-            accessToken: 'final-invitation-token',
-            refreshToken: 'final-invitation-refresh'
+            access_token: 'final-invitation-token',
+            refresh_token: 'final-invitation-refresh'
           })
       });
 
@@ -290,7 +290,7 @@ describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
         Promise.resolve({
           step: 'success',
           user: { id: 'user-789', email: 'error@example.com' },
-          accessToken: 'error-access-token'
+          access_token: 'error-access-token'
         })
     });
 

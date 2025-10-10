@@ -50,8 +50,8 @@ const createTestSession = (): SignInData => ({
     initials: 'TU'
   },
   tokens: {
-    accessToken: 'test-access-token',
-    refreshToken: 'test-refresh-token',
+    access_token: 'test-access-token',
+    refresh_token: 'test-refresh-token',
     expiresAt: Date.now() + 60000
   },
   authMethod: 'passkey',
@@ -74,7 +74,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       // Verify session is accessible through sessionManager
       const retrievedSession = getSession();
       expect(retrievedSession).not.toBeNull();
-      expect(retrievedSession?.tokens.accessToken).toBe('test-access-token');
+      expect(retrievedSession?.tokens.access_token).toBe('test-access-token');
     });
 
     it.skip('MUST NOT allow direct storage access outside sessionManager', () => {
@@ -237,8 +237,8 @@ describe('R3: Session Validation (MUST)', () => {
       const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
-          accessToken: 'expired-token',
-          refreshToken: 'expired-refresh',
+          access_token: 'expired-token',
+          refresh_token: 'expired-refresh',
           expiresAt: Date.now() - 60000 // Expired 1 minute ago
         }
       };
@@ -250,8 +250,8 @@ describe('R3: Session Validation (MUST)', () => {
       const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
-          accessToken: 'expired-token',
-          refreshToken: 'expired-refresh',
+          access_token: 'expired-token',
+          refresh_token: 'expired-refresh',
           expiresAt: Date.now() - 60000
         }
       };
@@ -341,7 +341,7 @@ describe('R4: Legacy Migration (MUST)', () => {
 
       const retrievedSession = getSession();
       expect(retrievedSession).not.toBeNull();
-      expect(retrievedSession?.tokens.accessToken).toBe('test-access-token');
+      expect(retrievedSession?.tokens.access_token).toBe('test-access-token');
     });
 
     it('MUST gracefully handle missing configuration', () => {

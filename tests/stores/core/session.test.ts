@@ -30,9 +30,9 @@ describe('Session Conversion Functions', () => {
       const result = createSessionData(
         mockUser,
         {
-          accessToken: 'access-token-123',
-          refreshToken: 'refresh-token-456',
-          expiresIn: 3600
+          access_token: 'access-token-123',
+          refresh_token: 'refresh-token-456',
+          expires_in: 3600
         },
         'passkey'
       );
@@ -48,8 +48,8 @@ describe('Session Conversion Functions', () => {
           preferences: { theme: 'dark' }
         },
         tokens: {
-          accessToken: 'access-token-123',
-          refreshToken: 'refresh-token-456',
+          access_token: 'access-token-123',
+          refresh_token: 'refresh-token-456',
           expiresAt: expect.any(Number)
         },
         authMethod: 'passkey',
@@ -57,21 +57,17 @@ describe('Session Conversion Functions', () => {
       });
 
       // Validate nested tokens structure (not flat)
-      expect(result.tokens).toHaveProperty('accessToken');
-      expect(result.tokens).toHaveProperty('refreshToken');
+      expect(result.tokens).toHaveProperty('access_token');
+      expect(result.tokens).toHaveProperty('refresh_token');
       expect(result.tokens).toHaveProperty('expiresAt');
 
       // Validate no flat token fields at root level
-      expect(result).not.toHaveProperty('accessToken');
-      expect(result).not.toHaveProperty('refreshToken');
+      expect(result).not.toHaveProperty('access_token');
+      expect(result).not.toHaveProperty('refresh_token');
     });
 
     it('should generate initials from user name', () => {
-      const result = createSessionData(
-        mockUser,
-        { accessToken: 'token' },
-        'passkey'
-      );
+      const result = createSessionData(mockUser, { access_token: 'token' }, 'passkey');
 
       expect(result.user.initials).toBe('JD');
     });
@@ -82,11 +78,7 @@ describe('Session Conversion Functions', () => {
         name: 'Madonna'
       };
 
-      const result = createSessionData(
-        singleNameUser,
-        { accessToken: 'token' },
-        'passkey'
-      );
+      const result = createSessionData(singleNameUser, { access_token: 'token' }, 'passkey');
 
       expect(result.user.initials).toBe('M');
     });
@@ -97,40 +89,32 @@ describe('Session Conversion Functions', () => {
         name: 'John Paul George Ringo'
       };
 
-      const result = createSessionData(
-        multiNameUser,
-        { accessToken: 'token' },
-        'passkey'
-      );
+      const result = createSessionData(multiNameUser, { access_token: 'token' }, 'passkey');
 
       // Should use first and last name
       expect(result.user.initials).toBe('JR');
     });
 
-    it('should calculate expiresAt from expiresIn seconds', () => {
+    it('should calculate expiresAt from expires_in seconds', () => {
       const beforeTime = Date.now();
-      const expiresIn = 3600; // 1 hour
+      const expires_in = 3600; // 1 hour
 
-      const result = createSessionData(
-        mockUser,
-        { accessToken: 'token', expiresIn },
-        'passkey'
-      );
+      const result = createSessionData(mockUser, { access_token: 'token', expires_in }, 'passkey');
 
       const afterTime = Date.now();
 
       // expiresAt should be approximately now + 3600000ms (1 hour)
-      const expectedExpiry = beforeTime + expiresIn * 1000;
+      const expectedExpiry = beforeTime + expires_in * 1000;
       expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry);
-      expect(result.tokens.expiresAt).toBeLessThanOrEqual(afterTime + expiresIn * 1000);
+      expect(result.tokens.expiresAt).toBeLessThanOrEqual(afterTime + expires_in * 1000);
     });
 
-    it('should default to 24 hours when expiresIn not provided', () => {
+    it('should default to 24 hours when expires_in not provided', () => {
       const beforeTime = Date.now();
 
       const result = createSessionData(
         mockUser,
-        { accessToken: 'token' }, // No expiresIn
+        { access_token: 'token' }, // No expires_in
         'passkey'
       );
 
@@ -139,24 +123,20 @@ describe('Session Conversion Functions', () => {
       expect(result.tokens.expiresAt).toBeLessThanOrEqual(Date.now() + 24 * 60 * 60 * 1000);
     });
 
-    it('should handle missing refreshToken gracefully', () => {
+    it('should handle missing refresh_token gracefully', () => {
       const result = createSessionData(
         mockUser,
-        { accessToken: 'token' }, // No refreshToken
+        { access_token: 'token' }, // No refresh_token
         'passkey'
       );
 
-      expect(result.tokens.refreshToken).toBe('');
+      expect(result.tokens.refresh_token).toBe('');
     });
 
     it('should set lastActivity to current timestamp', () => {
       const beforeTime = Date.now();
 
-      const result = createSessionData(
-        mockUser,
-        { accessToken: 'token' },
-        'passkey'
-      );
+      const result = createSessionData(mockUser, { access_token: 'token' }, 'passkey');
 
       const afterTime = Date.now();
 
@@ -166,47 +146,31 @@ describe('Session Conversion Functions', () => {
 
     describe('authMethod parameter', () => {
       it('should set authMethod to "passkey"', () => {
-        const result = createSessionData(
-          mockUser,
-          { accessToken: 'token' },
-          'passkey'
-        );
+        const result = createSessionData(mockUser, { access_token: 'token' }, 'passkey');
 
         expect(result.authMethod).toBe('passkey');
       });
 
       it('should set authMethod to "email-code"', () => {
-        const result = createSessionData(
-          mockUser,
-          { accessToken: 'token' },
-          'email-code'
-        );
+        const result = createSessionData(mockUser, { access_token: 'token' }, 'email-code');
 
         expect(result.authMethod).toBe('email-code');
       });
 
       it('should set authMethod to "magic-link"', () => {
-        const result = createSessionData(
-          mockUser,
-          { accessToken: 'token' },
-          'magic-link'
-        );
+        const result = createSessionData(mockUser, { access_token: 'token' }, 'magic-link');
 
         expect(result.authMethod).toBe('magic-link');
       });
 
       it('should set authMethod to "password"', () => {
-        const result = createSessionData(
-          mockUser,
-          { accessToken: 'token' },
-          'password'
-        );
+        const result = createSessionData(mockUser, { access_token: 'token' }, 'password');
 
         expect(result.authMethod).toBe('password');
       });
 
       it('should default to "passkey" when authMethod not provided', () => {
-        const result = createSessionData(mockUser, { accessToken: 'token' });
+        const result = createSessionData(mockUser, { access_token: 'token' });
 
         expect(result.authMethod).toBe('passkey');
       });
@@ -219,11 +183,7 @@ describe('Session Conversion Functions', () => {
           name: ''
         };
 
-        const result = createSessionData(
-          noNameUser,
-          { accessToken: 'token' },
-          'passkey'
-        );
+        const result = createSessionData(noNameUser, { access_token: 'token' }, 'passkey');
 
         expect(result.user.name).toBe('test@example.com');
         expect(result.user.initials).toBeTruthy();
@@ -235,11 +195,7 @@ describe('Session Conversion Functions', () => {
           picture: undefined
         };
 
-        const result = createSessionData(
-          noPictureUser,
-          { accessToken: 'token' },
-          'passkey'
-        );
+        const result = createSessionData(noPictureUser, { access_token: 'token' }, 'passkey');
 
         expect(result.user.avatar).toBeUndefined();
       });
@@ -250,19 +206,15 @@ describe('Session Conversion Functions', () => {
           metadata: undefined
         };
 
-        const result = createSessionData(
-          noMetadataUser,
-          { accessToken: 'token' },
-          'passkey'
-        );
+        const result = createSessionData(noMetadataUser, { access_token: 'token' }, 'passkey');
 
         expect(result.user.preferences).toBeUndefined();
       });
 
-      it('should handle very short expiresIn (1 second)', () => {
+      it('should handle very short expires_in (1 second)', () => {
         const result = createSessionData(
           mockUser,
-          { accessToken: 'token', expiresIn: 1 },
+          { access_token: 'token', expires_in: 1 },
           'passkey'
         );
 
@@ -271,15 +223,15 @@ describe('Session Conversion Functions', () => {
         expect(result.tokens.expiresAt).toBeLessThanOrEqual(expectedExpiry + 100);
       });
 
-      it('should handle very long expiresIn (30 days)', () => {
-        const expiresIn = 30 * 24 * 60 * 60; // 30 days in seconds
+      it('should handle very long expires_in (30 days)', () => {
+        const expires_in = 30 * 24 * 60 * 60; // 30 days in seconds
         const result = createSessionData(
           mockUser,
-          { accessToken: 'token', expiresIn },
+          { access_token: 'token', expires_in },
           'passkey'
         );
 
-        const expectedExpiry = Date.now() + expiresIn * 1000;
+        const expectedExpiry = Date.now() + expires_in * 1000;
         expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry - 1000);
         expect(result.tokens.expiresAt).toBeLessThanOrEqual(expectedExpiry + 1000);
       });
@@ -287,11 +239,7 @@ describe('Session Conversion Functions', () => {
 
     describe('type compatibility', () => {
       it('should return SignInData with correct structure', () => {
-        const result = createSessionData(
-          mockUser,
-          { accessToken: 'token' },
-          'passkey'
-        );
+        const result = createSessionData(mockUser, { access_token: 'token' }, 'passkey');
 
         // TypeScript should enforce this at compile time, but let's validate runtime
         const signInData: SignInData = result;
@@ -306,17 +254,17 @@ describe('Session Conversion Functions', () => {
         const result = createSessionData(
           mockUser,
           {
-            accessToken: 'access',
-            refreshToken: 'refresh',
-            expiresIn: 3600
+            access_token: 'access',
+            refresh_token: 'refresh',
+            expires_in: 3600
           },
           'passkey'
         );
 
         // Validate nested structure (not flat)
         expect(result.tokens).toEqual({
-          accessToken: 'access',
-          refreshToken: 'refresh',
+          access_token: 'access',
+          refresh_token: 'refresh',
           expiresAt: expect.any(Number)
         });
       });
@@ -547,9 +495,9 @@ describe('Session Conversion Functions', () => {
       const signInData = createSessionData(
         user,
         {
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-          expiresIn: 3600
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600
         },
         'passkey'
       );
@@ -578,18 +526,18 @@ describe('Session Conversion Functions', () => {
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z'
         },
-        accessToken: 'access-token-xyz',
-        refreshToken: 'refresh-token-abc',
-        expiresIn: 3600
+        access_token: 'access-token-xyz',
+        refresh_token: 'refresh-token-abc',
+        expires_in: 3600
       };
 
       // Convert using createSessionData (as done in store methods)
       const signInData = createSessionData(
         apiResponse.user,
         {
-          accessToken: apiResponse.accessToken,
-          refreshToken: apiResponse.refreshToken,
-          expiresIn: apiResponse.expiresIn
+          access_token: apiResponse.access_token,
+          refresh_token: apiResponse.refresh_token,
+          expires_in: apiResponse.expires_in
         },
         'email-code'
       );
@@ -603,8 +551,8 @@ describe('Session Conversion Functions', () => {
           initials: 'TU'
         },
         tokens: {
-          accessToken: 'access-token-xyz',
-          refreshToken: 'refresh-token-abc',
+          access_token: 'access-token-xyz',
+          refresh_token: 'refresh-token-abc',
           expiresAt: expect.any(Number)
         },
         authMethod: 'email-code',
@@ -612,8 +560,8 @@ describe('Session Conversion Functions', () => {
       });
 
       // Ensure nested tokens structure
-      expect(signInData.tokens.accessToken).toBe('access-token-xyz');
-      expect(signInData.tokens.refreshToken).toBe('refresh-token-abc');
+      expect(signInData.tokens.access_token).toBe('access-token-xyz');
+      expect(signInData.tokens.refresh_token).toBe('refresh-token-abc');
     });
 
     it('should handle passkey authentication response', () => {
@@ -626,23 +574,23 @@ describe('Session Conversion Functions', () => {
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z'
         },
-        accessToken: 'passkey-access-token',
-        refreshToken: 'passkey-refresh-token',
-        expiresIn: 7200
+        access_token: 'passkey-access-token',
+        refresh_token: 'passkey-refresh-token',
+        expires_in: 7200
       };
 
       const signInData = createSessionData(
         apiResponse.user,
         {
-          accessToken: apiResponse.accessToken,
-          refreshToken: apiResponse.refreshToken,
-          expiresIn: apiResponse.expiresIn
+          access_token: apiResponse.access_token,
+          refresh_token: apiResponse.refresh_token,
+          expires_in: apiResponse.expires_in
         },
         'passkey'
       );
 
       expect(signInData.authMethod).toBe('passkey');
-      expect(signInData.tokens.accessToken).toBe('passkey-access-token');
+      expect(signInData.tokens.access_token).toBe('passkey-access-token');
       expect(signInData.tokens.expiresAt).toBeGreaterThan(Date.now());
     });
   });

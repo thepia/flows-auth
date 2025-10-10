@@ -192,7 +192,7 @@ export function createEmailAuthStore(options: StoreOptions) {
 
         const response = await api.verifyAppEmailCode(email, code);
 
-        if (response.step === 'success' && response.user && response.accessToken) {
+        if (response.step === 'success' && response.user && response.access_token) {
           set({
             isVerifyingCode: false,
             codeVerified: true,
@@ -206,9 +206,9 @@ export function createEmailAuthStore(options: StoreOptions) {
           const signInData = createSessionData(
             response.user,
             {
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-              expiresIn: response.expiresIn
+              access_token: response.access_token,
+              refresh_token: response.refresh_token,
+              expires_in: response.expires_in
             },
             'email-code'
           );

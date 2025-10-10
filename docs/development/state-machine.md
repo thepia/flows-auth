@@ -66,8 +66,8 @@ interface AuthContext {
   
   // Session data
   sessionTokens?: {
-    accessToken: string;
-    refreshToken: string;
+    access_token: string;
+    refresh_token: string;
     expiresAt: number;
   };
   

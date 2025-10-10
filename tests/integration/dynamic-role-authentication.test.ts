@@ -18,7 +18,7 @@ vi.mock('../../src/api/auth-api', () => ({
     signIn: vi.fn(),
     signInWithPasskey: vi.fn(),
     signInWithMagicLink: vi.fn(),
-    refreshToken: vi.fn(),
+    refresh_token: vi.fn(),
     signOut: vi.fn()
   }))
 }));
@@ -79,9 +79,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee' }
         },
-        accessToken: 'employee-access-token',
-        refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        access_token: 'employee-access-token',
+        refresh_token: 'employee-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -128,9 +128,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'guest' }
         },
-        accessToken: 'guest-access-token',
-        refreshToken: 'guest-refresh-token',
-        expiresIn: 3600
+        access_token: 'guest-access-token',
+        refresh_token: 'guest-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -185,9 +185,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee', department: 'engineering' }
         },
-        accessToken: 'corporate-access-token',
-        refreshToken: 'corporate-refresh-token',
-        expiresIn: 3600
+        access_token: 'corporate-access-token',
+        refresh_token: 'corporate-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -252,9 +252,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'admin', permissions: ['read', 'write', 'admin'] }
         },
-        accessToken: 'admin-access-token',
-        refreshToken: 'admin-refresh-token',
-        expiresIn: 3600
+        access_token: 'admin-access-token',
+        refresh_token: 'admin-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -303,9 +303,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'unknown_role' }
         },
-        accessToken: 'unknown-access-token',
-        refreshToken: 'unknown-refresh-token',
-        expiresIn: 3600
+        access_token: 'unknown-access-token',
+        refresh_token: 'unknown-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -342,9 +342,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee' }
         },
-        accessToken: 'employee-access-token',
-        refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        access_token: 'employee-access-token',
+        refresh_token: 'employee-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -397,9 +397,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z'
           // No metadata field
         },
-        accessToken: 'nometa-access-token',
-        refreshToken: 'nometa-refresh-token',
-        expiresIn: 3600
+        access_token: 'nometa-access-token',
+        refresh_token: 'nometa-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -438,9 +438,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee' }
         },
-        accessToken: 'employee-access-token',
-        refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        access_token: 'employee-access-token',
+        refresh_token: 'employee-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;
@@ -504,9 +504,9 @@ describe('Dynamic Role Authentication Integration Tests', () => {
           createdAt: '2023-01-01T00:00:00Z',
           metadata: { role: 'employee' }
         },
-        accessToken: 'employee-access-token',
-        refreshToken: 'employee-refresh-token',
-        expiresIn: 3600
+        access_token: 'employee-access-token',
+        refresh_token: 'employee-refresh-token',
+        expires_in: 3600
       };
 
       const mockApi = authStore.api as any;

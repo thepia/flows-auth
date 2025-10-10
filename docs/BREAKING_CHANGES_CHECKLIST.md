@@ -29,7 +29,7 @@ These components are **PROTECTED** and require special care:
 
 ### 2. **API Compatibility Check**
 - [ ] New API response format: `{success: true, tokens: {...}, user: {...}}`
-- [ ] Legacy API response format: `{step: 'success', accessToken: '...', user: {...}}`
+- [ ] Legacy API response format: `{step: 'success', access_token: '...', user: {...}}`
 - [ ] Both formats must be supported simultaneously
 - [ ] Session normalization must work for both formats
 

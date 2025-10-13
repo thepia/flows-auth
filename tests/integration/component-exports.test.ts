@@ -3,30 +3,31 @@
  * These tests ensure components can be imported and instantiated correctly
  */
 
-import { render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithStoreProp } from '../helpers/component-test-setup';
 
 describe('Component Exports', () => {
   beforeEach(() => {
-    // Mock fetch for API calls
-    global.fetch = vi.fn();
+    vi.clearAllMocks();
 
-    // Mock localStorage
-    Object.defineProperty(global, 'localStorage', {
+    // Mock WebAuthn API
+    Object.defineProperty(navigator, 'credentials', {
       value: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn()
+        create: vi.fn(),
+        get: vi.fn()
       },
-      writable: true
+      writable: true,
+      configurable: true
     });
 
-    // Mock WebAuthn
+    // Mock PublicKeyCredential
     Object.defineProperty(global, 'PublicKeyCredential', {
-      value: class MockPublicKeyCredential {
-        static isUserVerifyingPlatformAuthenticatorAvailable = vi.fn().mockResolvedValue(true);
+      value: {
+        isUserVerifyingPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
+        isConditionalMediationAvailable: vi.fn().mockResolvedValue(true)
       },
-      writable: true
+      writable: true,
+      configurable: true
     });
   });
 
@@ -63,15 +64,16 @@ describe('Component Exports', () => {
   });
 
   it('should create and render SignInForm component without errors', async () => {
-    const { SignInForm, createDefaultConfig } = await import('../../src/index');
-
-    const config = createDefaultConfig({
-      apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
-    });
+    const { SignInForm } = await import('../../src/index');
 
     expect(() => {
-      render(SignInForm, { props: { config } });
+      renderWithStoreProp(SignInForm, {
+        authConfig: {
+          apiBaseUrl: 'https://test.com',
+          appCode: 'test-app',
+          enablePasskeys: false
+        }
+      });
     }).not.toThrow();
   });
 
@@ -136,22 +138,22 @@ describe('Component Exports', () => {
   });
 
   it('should handle component instantiation in different environments', async () => {
-    const { SignInForm, createDefaultConfig } = await import('../../src/index');
+    const { SignInForm } = await import('../../src/index');
 
-    const config = createDefaultConfig({
+    const baseAuthConfig = {
       apiBaseUrl: 'https://test.com',
-      clientId: 'test-client'
-    });
+      appCode: 'test-app',
+      enablePasskeys: false
+    };
 
     // Test with different prop combinations
     const propCombinations = [
-      { config },
-      { config, showLogo: false },
-      { config, compact: true },
-      { config, className: 'custom-class' },
-      { config, initialEmail: 'test@example.com' },
+      {},
+      { showLogo: false },
+      { compact: true },
+      { className: 'custom-class' },
+      { initialEmail: 'test@example.com' },
       {
-        config,
         showLogo: false,
         compact: true,
         className: 'custom-class',
@@ -161,7 +163,10 @@ describe('Component Exports', () => {
 
     for (const props of propCombinations) {
       expect(() => {
-        const { unmount } = render(SignInForm, { props });
+        const { unmount } = renderWithStoreProp(SignInForm, {
+          props,
+          authConfig: baseAuthConfig
+        });
         unmount();
       }).not.toThrow();
     }

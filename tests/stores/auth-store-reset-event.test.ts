@@ -12,9 +12,10 @@ vi.mock('../../src/utils/webauthn', () => ({
   startConditionalAuthentication: vi.fn(() => Promise.resolve())
 }));
 
-// Mock error reporter
+// Mock telemetry
 vi.mock('../../src/utils/telemetry', () => ({
-  reportError: vi.fn()
+  reportError: vi.fn(),
+  initializeTelemetry: vi.fn()
 }));
 
 describe('Auth Store RESET Event Handling', () => {

@@ -43,7 +43,7 @@ describe('Token Refresh Security & Edge Cases', () => {
     createdAt: new Date().toISOString()
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Set up localStorage mock
     localStorageMock = (() => {
       let store: Record<string, string> = {};
@@ -88,7 +88,7 @@ describe('Token Refresh Security & Edge Cases', () => {
 
     // Set up initial authenticated state
     authStore.core.getState().updateUser(mockUser);
-    authStore.core.getState().updateTokens({
+    await authStore.core.getState().updateTokens({
       access_token: 'initial-access-token',
       refresh_token: 'super-secret-refresh-token-abc123xyz',
       expiresAt: Date.now() + 900000 // 15 minutes
@@ -140,9 +140,10 @@ describe('Token Refresh Security & Edge Cases', () => {
       const allLogCalls = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call));
 
       // Verify full refresh token is NOT in any logs
-      const fullRefreshTokenInLogs = allLogCalls.some((log) =>
-        log.includes('super-secret-refresh-token-abc123xyz') ||
-        log.includes('new-super-secret-refresh-token-xyz789')
+      const fullRefreshTokenInLogs = allLogCalls.some(
+        (log) =>
+          log.includes('super-secret-refresh-token-abc123xyz') ||
+          log.includes('new-super-secret-refresh-token-xyz789')
       );
 
       expect(fullRefreshTokenInLogs).toBe(false);
@@ -274,9 +275,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       expect(afterState.refresh_token).toBeNull();
 
       // Verify warning logged
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('already exchanged')
-      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('already exchanged'));
     });
 
     it('should clear localStorage on "already exchanged" error to prevent retry', async () => {
@@ -455,7 +454,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       newStore.destroy();
     });
 
-    it('should handle missing localStorage access (incognito mode recovery)', () => {
+    it('should handle missing localStorage access (incognito mode recovery)', async () => {
       // Simulate localStorage unavailable
       Object.defineProperty(window, 'localStorage', {
         get() {
@@ -468,7 +467,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       const incognitoStore = createAuthStore(mockConfig, mockApiClient);
 
       // Should work in memory-only mode
-      incognitoStore.core.getState().updateTokens({
+      await incognitoStore.core.getState().updateTokens({
         access_token: 'memory-only-access',
         refresh_token: 'memory-only-refresh',
         expiresAt: Date.now() + 900000
@@ -506,7 +505,7 @@ describe('Token Refresh Security & Edge Cases', () => {
   describe('Edge Case: Token Expiry Edge Cases', () => {
     it('should handle refresh when token already expired', async () => {
       // Set expired token
-      authStore.core.getState().updateTokens({
+      await authStore.core.getState().updateTokens({
         access_token: 'expired-access-token',
         refresh_token: 'valid-refresh-token',
         expiresAt: Date.now() - 10000 // Expired 10 seconds ago
@@ -535,7 +534,7 @@ describe('Token Refresh Security & Edge Cases', () => {
     });
 
     it('should handle refresh with undefined expiresAt', async () => {
-      authStore.core.getState().updateTokens({
+      await authStore.core.getState().updateTokens({
         access_token: 'access-token',
         refresh_token: 'refresh-token',
         expiresAt: undefined // No expiry set

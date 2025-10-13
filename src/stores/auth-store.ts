@@ -20,14 +20,14 @@ import type { AuthEventData, AuthEventHandler, AuthEventType, StoreOptions } fro
 
 // Core stores
 import { authenticateUser, createAuthCoreStore } from './core/auth-core';
+import { createLocalStorageAdapter } from './core/database';
 import { createErrorStore } from './core/error';
 import { createEventStore, createTypedEventEmitters } from './core/events';
 import {
   convertSessionUserToUser,
   createSessionData,
   createSessionStore,
-  getCurrentSession,
-  initializeSessionStore
+  getCurrentSession
 } from './core/session';
 
 // Feature stores
@@ -79,14 +79,15 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
   // Create shared API client - use injected one or create new
   const api = apiClient || new AuthApiClient(config);
 
+  // Create database adapter - use provided or default to localStorage
+  const db = config.database || createLocalStorageAdapter(config);
+
   const storeOptions: StoreOptions = {
     api,
     config,
+    db,
     devtools: config.enableDevtools || false
   };
-
-  // Create all individual stores
-  console.log('🔧 Creating modular auth stores...');
 
   const core = createAuthCoreStore({ ...storeOptions, name: 'auth-core' });
   const session = createSessionStore({ ...storeOptions, name: 'session' });
@@ -106,18 +107,87 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     eventStore: events
   });
 
-  console.log('✅ All modular stores created');
-
   // Initialize telemetry
   initializeTelemetry(api, config);
 
-  // Initialize with existing session if available
-  const existingAuth = initializeSessionStore(session);
-  if (existingAuth) {
-    console.log('🔄 Restoring existing session');
-    authenticateUser(core, existingAuth.user, existingAuth.tokens);
-    signInStateTransitions.authenticationSuccess(ui);
-  }
+  // Trigger async session initialization directly using db adapter
+  // Store remains synchronous, but session restoration happens asynchronously
+  db.loadSession()
+    .then(async (sessionData) => {
+      if (!sessionData) {
+        console.log('ℹ️ No existing session found');
+        return;
+      }
+
+      const isExpired = sessionData.expiresAt <= Date.now();
+      const hasRefreshToken = !!sessionData.refreshToken;
+
+      if (!isExpired) {
+        // Access token is still valid - restore session normally
+        console.log('🔄 Restoring existing session');
+
+        // Convert SessionData to User format
+        const user = {
+          id: sessionData.userId,
+          email: sessionData.email,
+          name: sessionData.name,
+          picture: undefined,
+          emailVerified: sessionData.emailVerified ?? true,
+          createdAt: new Date().toISOString(),
+          metadata: sessionData.metadata
+        };
+
+        const tokens = {
+          access_token: sessionData.accessToken,
+          refresh_token: sessionData.refreshToken,
+          expiresAt: sessionData.expiresAt
+        };
+
+        authenticateUser(core, user, tokens);
+        signInStateTransitions.authenticationSuccess(ui);
+        session.getState().updateLastActivity();
+      } else if (hasRefreshToken) {
+        // Access token expired but we have a refresh token - restore and refresh
+        console.log('🔄 Restoring expired session with refresh token, triggering refresh...');
+
+        // First restore the session with expired token
+        const user = {
+          id: sessionData.userId,
+          email: sessionData.email,
+          name: sessionData.name,
+          picture: undefined,
+          emailVerified: sessionData.emailVerified ?? true,
+          createdAt: new Date().toISOString(),
+          metadata: sessionData.metadata
+        };
+
+        const tokens = {
+          access_token: sessionData.accessToken,
+          refresh_token: sessionData.refreshToken,
+          expiresAt: sessionData.expiresAt
+        };
+
+        authenticateUser(core, user, tokens);
+        signInStateTransitions.authenticationSuccess(ui);
+        session.getState().updateLastActivity();
+
+        // Immediately trigger token refresh
+        try {
+          await core.getState().refreshTokens();
+          console.log('✅ Token refresh successful after session restore');
+        } catch (error) {
+          console.error('❌ Token refresh failed after session restore:', error);
+          // If refresh fails, sign out
+          core.getState().signOut();
+        }
+      } else {
+        console.log('ℹ️ Session expired with no refresh token - clearing');
+        await db.clearSession();
+      }
+    })
+    .catch((error) => {
+      console.error('❌ Session initialization failed:', error);
+    });
 
   // Set up cross-store communication
   setupCrossStoreIntegration();

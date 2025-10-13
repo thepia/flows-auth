@@ -9,7 +9,7 @@ import { createEventDispatcher } from 'svelte';
 import { m } from '../../utils/i18n';
 import { "code.label" as codeLabel } from '../../paraglide/messages';
 
-// Non-prop
+// Internal state (non-controlled)
 let value = '';
 
 // Props
@@ -73,7 +73,8 @@ function handleInput(event: Event) {
   // Update the target to show filtered value
   target.value = numericValue;
 
-  // Update internal value and length tracker
+  // Update value (exported prop) and internal tracking
+  value = numericValue;
   internalValue = numericValue;
   currentLength = numericValue.length;
 
@@ -158,12 +159,12 @@ function handleFocus(event: Event) {
   const target = event.target as HTMLInputElement;
   // Auto-select all text for easier replacement
   target.select();
-  dispatch('focus', { value: target.value });
+  dispatch('focus', { value });
 }
 
 function handleBlur(event: Event) {
   const target = event.target as HTMLInputElement;
-  dispatch('blur', { value: target.value });
+  dispatch('blur', { value });
 }
 
 function getInputClasses(): string {

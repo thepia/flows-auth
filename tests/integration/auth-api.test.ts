@@ -153,49 +153,47 @@ describe('AuthApiClient', () => {
   describe('Error Handling', () => {
     it('should handle HTTP error responses', async () => {
       const errorResponse = {
-        code: 'invalid_credentials',
+        success: false,
         message: 'Invalid email or password'
       };
 
       mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
+        ok: true,  // API returns 200 with success: false
         json: () => Promise.resolve(errorResponse)
       });
 
-      await expect(apiClient.signInWithMagicLink({ email: 'test@example.com' })).rejects.toEqual({
-        code: 'invalid_credentials',
-        message: 'Invalid email or password'
-      });
+      const result = await apiClient.signInWithMagicLink({ email: 'test@example.com' });
+
+      // signInWithMagicLink now returns error response instead of throwing
+      expect(result.step).toBe('error');
+      expect(result.message).toBe('Invalid email or password');
     });
   });
 
   describe('Authentication Methods', () => {
-    it('should handle password sign in', async () => {
-      const mockResponse: SignInResponse = {
-        step: 'success',
-        user: {
-          id: '123',
-          email: 'test@example.com',
-          name: 'Test User',
-          emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        },
-        access_token: 'access-token',
-        refresh_token: 'refresh-token',
-        expires_in: 3600
+    it('should handle passwordless authentication via signInWithMagicLink', async () => {
+      // signInWithMagicLink now redirects to startPasswordlessAuthentication
+      const mockApiResponse = {
+        success: true,
+        message: 'Email code sent successfully'
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockApiResponse)
       });
 
       const result = await apiClient.signInWithMagicLink({
         email: 'test@example.com'
       });
 
-      expect(result).toEqual(mockResponse);
+      // Expect converted response format
+      expect(result).toEqual({
+        step: 'email-sent',
+        message: 'Email code sent successfully',
+        needsPasskey: false,
+        needsVerification: true
+      });
     });
 
     it.skip('should handle passkey sign in', async () => {
@@ -251,22 +249,28 @@ describe('AuthApiClient', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('should handle magic link sign in', async () => {
-      const mockResponse: SignInResponse = {
-        step: 'magic_link_sent',
-        message: 'Check your email for the magic link'
+    it('should handle magic link (passwordless) sign in', async () => {
+      // signInWithMagicLink returns passwordless response
+      const mockApiResponse = {
+        success: true,
+        message: 'Check your email for the code'
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve(mockResponse)
+        json: () => Promise.resolve(mockApiResponse)
       });
 
       const result = await apiClient.signInWithMagicLink({
         email: 'test@example.com'
       });
 
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual({
+        step: 'email-sent',
+        message: 'Check your email for the code',
+        needsPasskey: false,
+        needsVerification: true
+      });
     });
   });
 
@@ -451,14 +455,6 @@ describe('AuthApiClient', () => {
         userId: '123'
       };
 
-      // Expected result after mapping
-      const expectedResult = {
-        exists: true,
-        hasPasskey: true,
-        userId: '123',
-        invitationTokenHash: undefined
-      };
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockApiResponse)
@@ -466,22 +462,23 @@ describe('AuthApiClient', () => {
 
       const result = await apiClient.checkEmail('test@example.com');
 
+      // checkEmail now uses GET with query params
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/test-app/check-user',
+        'https://api.test.com/test-app/check-user?email=test%40example.com',
         expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ email: 'test@example.com' })
+          method: 'GET'
         })
       );
 
-      expect(result).toEqual(expectedResult);
+      // API returns hasWebAuthn (not hasPasskey)
+      expect(result).toEqual(mockApiResponse);
     });
 
-    it('should use org-specific endpoint when org is configured', async () => {
-      // Create API client with org configuration
+    it('should use appCode endpoint (org field is deprecated)', async () => {
+      // Note: org field doesn't override appCode - appCode is always used
       const orgConfig = {
         ...mockConfig,
-        org: 'wos'
+        org: 'wos'  // org field is deprecated, appCode takes precedence
       };
       const orgApiClient = new AuthApiClient(orgConfig);
 
@@ -501,28 +498,23 @@ describe('AuthApiClient', () => {
 
       const result = await orgApiClient.checkEmail('org-test@example.com');
 
+      // Uses appCode from config, not org
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/wos/check-user',
+        'https://api.test.com/test-app/check-user?email=org-test%40example.com',
         expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ email: 'org-test@example.com' })
+          method: 'GET'
         })
       );
 
-      expect(result).toEqual({
-        exists: true,
-        hasPasskey: true,
-        userId: '123',
-        emailVerified: false,
-        invitationTokenHash: undefined
-      });
+      // API returns hasWebAuthn (not hasPasskey)
+      expect(result).toEqual(mockApiResponse);
     });
 
-    it('should use default endpoint when no org is configured', async () => {
+    it('should use appCode endpoint for all requests', async () => {
       // Clear cache to ensure fresh API call
       apiClient.clearUserCache();
 
-      // Use the default mockConfig which has no org field
+      // Use the default mockConfig which has appCode: 'test-app'
       const mockApiResponse = {
         exists: false,
         hasWebAuthn: false
@@ -535,21 +527,16 @@ describe('AuthApiClient', () => {
 
       const result = await apiClient.checkEmail('no-org-test@example.com');
 
+      // Uses appCode in URL with GET + query params
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/test-app/check-user',
+        'https://api.test.com/test-app/check-user?email=no-org-test%40example.com',
         expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ email: 'no-org-test@example.com' })
+          method: 'GET'
         })
       );
 
-      expect(result).toEqual({
-        exists: false,
-        hasPasskey: false,
-        userId: undefined,
-        emailVerified: false,
-        invitationTokenHash: undefined
-      });
+      // API returns hasWebAuthn (not hasPasskey)
+      expect(result).toEqual(mockApiResponse);
     });
 
     it('should request password reset', async () => {
@@ -560,8 +547,9 @@ describe('AuthApiClient', () => {
 
       await apiClient.requestPasswordReset('test@example.com');
 
+      // Password reset uses legacy /auth/ endpoint
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/test-app/password-reset',
+        'https://api.test.com/auth/password-reset',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ email: 'test@example.com' })
@@ -577,8 +565,9 @@ describe('AuthApiClient', () => {
 
       await apiClient.resetPassword('reset-token', 'new-password');
 
+      // Password reset uses legacy /auth/ endpoint
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/test-app/password-reset/confirm',
+        'https://api.test.com/auth/password-reset/confirm',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({

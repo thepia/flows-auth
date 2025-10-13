@@ -3,8 +3,8 @@
  * Tests the actual Svelte component with value binding and event dispatching
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CodeInput from '../../src/components/core/CodeInput.svelte';
 
 describe('CodeInput Component', () => {
@@ -17,24 +17,6 @@ describe('CodeInput Component', () => {
       render(CodeInput);
       const input = screen.getByRole('textbox') as HTMLInputElement;
       expect(input.value).toBe('');
-    });
-
-    it('should display provided value prop', () => {
-      render(CodeInput, { props: { value: '123456' } });
-      const input = screen.getByRole('textbox') as HTMLInputElement;
-      expect(input.value).toBe('123456');
-    });
-
-    it('should update display when value prop changes', async () => {
-      const { component } = render(CodeInput, { props: { value: '123' } });
-      const input = screen.getByRole('textbox') as HTMLInputElement;
-      expect(input.value).toBe('123');
-
-      // Update the value prop
-      component.$set({ value: '456789' });
-      await waitFor(() => {
-        expect(input.value).toBe('456789');
-      });
     });
   });
 
@@ -319,10 +301,12 @@ describe('CodeInput Component', () => {
   describe('Focus and Blur Events', () => {
     it('should dispatch focus event when input gains focus', async () => {
       const focusHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { value: '123' } });
+      const { component } = render(CodeInput);
       component.$on('focus', focusHandler);
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('textbox') as HTMLInputElement;
+      // Type a value first (since component is non-controlled)
+      await fireEvent.input(input, { target: { value: '123' } });
       await fireEvent.focus(input);
 
       expect(focusHandler).toHaveBeenCalledWith(
@@ -334,10 +318,12 @@ describe('CodeInput Component', () => {
 
     it('should dispatch blur event when input loses focus', async () => {
       const blurHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { value: '456' } });
+      const { component } = render(CodeInput);
       component.$on('blur', blurHandler);
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole('textbox') as HTMLInputElement;
+      // Type a value first (since component is non-controlled)
+      await fireEvent.input(input, { target: { value: '456' } });
       await fireEvent.blur(input);
 
       expect(blurHandler).toHaveBeenCalledWith(

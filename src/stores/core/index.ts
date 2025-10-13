@@ -5,7 +5,7 @@
  */
 
 export { createAuthCoreStore, authenticateUser, isTokenExpired, isUserAuthenticated } from './auth-core';
-export { createSessionStore, initializeSessionStore, createSessionData } from './session';
+export { createSessionStore, createSessionData } from './session';
 export { createErrorStore } from './error';
 export { createEventStore, createTypedEventEmitters } from './events';
 

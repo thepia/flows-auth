@@ -446,7 +446,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
 
       // Update core store with authenticated state
       authStore.core.getState().updateUser(mockUser);
-      authStore.core.getState().updateTokens(initialTokens);
+      await authStore.core.getState().updateTokens(initialTokens);
 
       // Emit sign_in_success to trigger session saving (simulates real sign-in flow)
       authStore.events.getState().emit('sign_in_success', {

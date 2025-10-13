@@ -228,7 +228,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
       createdAt: new Date().toISOString()
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
       mockApiClient = {
         refreshToken: vi.fn(),
         config: {
@@ -242,7 +242,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
 
       // Set up initial authenticated state
       authStore.core.getState().updateUser(mockUser);
-      authStore.core.getState().updateTokens({
+      await authStore.core.getState().updateTokens({
         access_token: 'initial-access-token',
         refresh_token: 'initial-refresh-token',
         expiresAt: Date.now() + 900000 // 15 minutes
@@ -364,15 +364,14 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: () => Promise.resolve({
-          error: 'invalid_grant',
-          error_description: 'Refresh token is invalid or expired'
-        })
+        json: () =>
+          Promise.resolve({
+            error: 'invalid_grant',
+            error_description: 'Refresh token is invalid or expired'
+          })
       });
 
-      await expect(
-        apiClient.refreshToken({ refresh_token: 'invalid-token' })
-      ).rejects.toThrow();
+      await expect(apiClient.refreshToken({ refresh_token: 'invalid-token' })).rejects.toThrow();
     });
 
     it('should handle server error maintaining OAuth2 semantics', async () => {
@@ -380,15 +379,14 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.resolve({
-          error: 'server_error',
-          error_description: 'Token refresh temporarily unavailable'
-        })
+        json: () =>
+          Promise.resolve({
+            error: 'server_error',
+            error_description: 'Token refresh temporarily unavailable'
+          })
       });
 
-      await expect(
-        apiClient.refreshToken({ refresh_token: 'test-token' })
-      ).rejects.toThrow();
+      await expect(apiClient.refreshToken({ refresh_token: 'test-token' })).rejects.toThrow();
     });
   });
 });

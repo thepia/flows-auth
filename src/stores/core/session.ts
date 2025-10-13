@@ -9,16 +9,13 @@
  */
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { createStore } from 'zustand/vanilla';
+import { createStore, type StateCreator } from 'zustand/vanilla';
 import type { SignInData, User } from '../../types';
+import type { DatabaseAdapter } from '../../types/database';
 import {
-  clearSession as clearSessionUtil,
-  configureSessionStorage,
   generateInitials,
-  getOptimalSessionConfig,
   getSession as getSessionUtil,
-  isSessionValid as isSessionValidUtil,
-  saveSession as saveSessionUtil
+  isSessionValid as isSessionValidUtil
 } from '../../utils/sessionManager';
 import type { SessionActions, SessionState, SessionStore, StoreOptions } from '../types';
 
@@ -35,187 +32,80 @@ const initialState: SessionState = {
  * Create the session management store
  */
 export function createSessionStore(options: StoreOptions) {
-  const { config, devtools: enableDevtools = false, name = 'session' } = options;
+  const { db, devtools: enableDevtools = false, name = 'session' } = options;
 
-  // Configure session storage based on config or optimal defaults
-  if (typeof window !== 'undefined') {
-    const storageConfig = config.storage || getOptimalSessionConfig();
-    configureSessionStorage(storageConfig);
-  }
+  // @ts-expect-error - Zustand's complex middleware typing causes issues here, but the implementation is correct
+  const storeImpl = (set, _get) => ({
+    ...initialState,
+
+    saveSession: async (data: SignInData) => {
+      if (typeof window === 'undefined') return;
+
+      // Convert SignInData to SessionData format
+      const sessionData = {
+        userId: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        emailVerified: true,
+        metadata: data.user.preferences,
+        accessToken: data.tokens.access_token,
+        refreshToken: data.tokens.refresh_token,
+        expiresAt: data.tokens.expiresAt,
+        authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link'
+      };
+
+      await db.saveSession(sessionData);
+
+      set({
+        lastActivity: Date.now()
+      });
+    },
+
+    clearSession: async () => {
+      if (typeof window === 'undefined') return;
+
+      await db.clearSession();
+
+      set({
+        lastActivity: null
+      });
+    },
+
+    isSessionValid: async () => {
+      if (typeof window === 'undefined') return false;
+
+      const session = await db.loadSession();
+      return session !== null && session.expiresAt > Date.now();
+    },
+
+    updateLastActivity: async () => {
+      const now = Date.now();
+
+      // Reload session, update activity, and save back
+      if (typeof window !== 'undefined') {
+        const session = await db.loadSession();
+        if (session) {
+          await db.saveSession({ ...session });
+        }
+      }
+
+      set({
+        lastActivity: now
+      });
+    },
+
+    configureStorage: (config: Partial<SessionState>) => {
+      // Note: Storage configuration now handled by DatabaseAdapter
+      // This method just updates local state for backward compatibility
+      set((state: SessionState) => ({
+        ...state,
+        ...config
+      }));
+    }
+  });
 
   const store = createStore<SessionStore>()(
-    subscribeWithSelector(
-      enableDevtools
-        ? devtools(
-            (set, get) => ({
-              ...initialState,
-
-              saveSession: (data: SignInData) => {
-                if (typeof window === 'undefined') return;
-
-                const sessionData: SignInData = {
-                  user: {
-                    id: data.user.id,
-                    email: data.user.email,
-                    name: data.user.name,
-                    initials: data.user.initials || generateInitials(data.user.name),
-                    avatar: data.user.avatar,
-                    preferences: data.user.preferences
-                  },
-                  tokens: {
-                    access_token: data.tokens.access_token,
-                    refresh_token: data.tokens.refresh_token,
-                    expiresAt: data.tokens.expiresAt
-                  },
-                  authMethod: data.authMethod,
-                  lastActivity: Date.now()
-                };
-
-                saveSessionUtil(sessionData);
-
-                set({
-                  lastActivity: Date.now()
-                });
-              },
-
-              clearSession: () => {
-                if (typeof window === 'undefined') return;
-
-                clearSessionUtil();
-
-                set({
-                  lastActivity: null
-                });
-              },
-
-              isSessionValid: () => {
-                if (typeof window === 'undefined') return false;
-
-                const session = getSessionUtil();
-                return isSessionValidUtil(session);
-              },
-
-              updateLastActivity: () => {
-                const now = Date.now();
-
-                // Update session last activity if session exists
-                if (typeof window !== 'undefined') {
-                  const session = getSessionUtil();
-                  if (session) {
-                    session.lastActivity = now;
-                    saveSessionUtil(session);
-                  }
-                }
-
-                set({
-                  lastActivity: now
-                });
-              },
-
-              configureStorage: (config) => {
-                set((state) => ({
-                  ...state,
-                  ...config
-                }));
-
-                // Apply configuration to session storage utility
-                if (typeof window !== 'undefined') {
-                  configureSessionStorage({
-                    type: config.storageType || get().storageType,
-                    sessionTimeout: config.sessionTimeout || get().sessionTimeout,
-                    persistentSessions: config.storageType === 'localStorage',
-                    userRole: 'guest', // Default role
-                    migrateExistingSession: false
-                  });
-                }
-              }
-            }),
-            { name }
-          )
-        : (set, get) => ({
-            ...initialState,
-
-            saveSession: (data: SignInData) => {
-              if (typeof window === 'undefined') return;
-
-              const sessionData: SignInData = {
-                user: {
-                  id: data.user.id,
-                  email: data.user.email,
-                  name: data.user.name,
-                  initials: data.user.initials || generateInitials(data.user.name),
-                  avatar: data.user.avatar,
-                  preferences: data.user.preferences
-                },
-                tokens: {
-                  access_token: data.tokens.access_token,
-                  refresh_token: data.tokens.refresh_token,
-                  expiresAt: data.tokens.expiresAt
-                },
-                authMethod: data.authMethod,
-                lastActivity: Date.now()
-              };
-
-              saveSessionUtil(sessionData);
-
-              set({
-                lastActivity: Date.now()
-              });
-            },
-
-            clearSession: () => {
-              if (typeof window === 'undefined') return;
-
-              clearSessionUtil();
-
-              set({
-                lastActivity: null
-              });
-            },
-
-            isSessionValid: () => {
-              if (typeof window === 'undefined') return false;
-
-              const session = getSessionUtil();
-              return isSessionValidUtil(session);
-            },
-
-            updateLastActivity: () => {
-              const now = Date.now();
-
-              // Update session last activity if session exists
-              if (typeof window !== 'undefined') {
-                const session = getSessionUtil();
-                if (session) {
-                  session.lastActivity = now;
-                  saveSessionUtil(session);
-                }
-              }
-
-              set({
-                lastActivity: now
-              });
-            },
-
-            configureStorage: (config) => {
-              set((state) => ({
-                ...state,
-                ...config
-              }));
-
-              // Apply configuration to session storage utility
-              if (typeof window !== 'undefined') {
-                configureSessionStorage({
-                  type: config.storageType || get().storageType,
-                  sessionTimeout: config.sessionTimeout || get().sessionTimeout,
-                  persistentSessions: config.storageType === 'localStorage',
-                  userRole: 'guest', // Default role
-                  migrateExistingSession: false
-                });
-              }
-            }
-          })
-    )
+    subscribeWithSelector(enableDevtools ? devtools(storeImpl, { name }) : storeImpl)
   );
 
   return store;
@@ -296,27 +186,6 @@ export function createSessionData(
     },
     authMethod,
     lastActivity: Date.now()
-  };
-}
-
-/**
- * Helper to initialize session store with existing session
- */
-export function initializeSessionStore(store: ReturnType<typeof createSessionStore>) {
-  if (typeof window === 'undefined') return null;
-
-  const existingSession = getCurrentSession();
-  if (!existingSession || !isSessionValidUtil(existingSession)) {
-    return null;
-  }
-
-  // Update last activity
-  store.getState().updateLastActivity();
-
-  return {
-    user: convertSessionUserToUser(existingSession.user),
-    tokens: existingSession.tokens,
-    authMethod: existingSession.authMethod
   };
 }
 

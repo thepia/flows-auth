@@ -395,7 +395,7 @@ describe('Svelte Store Adapter', () => {
       // Should have core state
       expect(state.state).toBeDefined();
       expect(state.user).toBeDefined();
-      expect(state.access_tokenn).toBeDefined();
+      expect(state.access_token).toBeDefined();
 
       // Should have UI state
       expect(state.signInState).toBeDefined();

@@ -231,7 +231,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
   });
 
   describe('Unified API Methods', () => {
-    it('should correctly identify authenticated state via unified API', () => {
+    it('should correctly identify authenticated state via unified API', async () => {
       // Test initial unauthenticated state
       expect(composedStore.isAuthenticated()).toBe(false);
       expect(composedStore.core.getState().isAuthenticated()).toBe(false);
@@ -253,14 +253,14 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // Update core authentication state
       composedStore.core.getState().updateUser(mockUser);
-      composedStore.core.getState().updateTokens(mockTokens);
+      await composedStore.core.getState().updateTokens(mockTokens);
 
       // Test that authentication is now detected
       expect(composedStore.isAuthenticated()).toBe(true);
       expect(composedStore.core.getState().isAuthenticated()).toBe(true);
     });
 
-    it('should return access token when authenticated via unified API', () => {
+    it('should return access token when authenticated via unified API', async () => {
       // Test initial null access token
       expect(composedStore.getAccessToken()).toBeNull();
       expect(composedStore.core.getState().getAccessToken()).toBeNull();
@@ -272,7 +272,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
         expiresAt: Date.now() + 3600000
       };
 
-      composedStore.core.getState().updateTokens(mockTokens);
+      await composedStore.core.getState().updateTokens(mockTokens);
 
       // Test that access token is now available
       expect(composedStore.getAccessToken()).toBe('test-access-token');
@@ -297,7 +297,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // Set authenticated state
       composedStore.core.getState().updateUser(mockUser);
-      composedStore.core.getState().updateTokens(mockTokens);
+      await composedStore.core.getState().updateTokens(mockTokens);
       composedStore.ui.getState().setEmail('test@example.com');
       composedStore.ui.getState().setSignInState('signedIn');
 

@@ -85,8 +85,7 @@ The flows-auth library provides a **singleton auth store pattern** that ensures 
     apiBaseUrl: 'https://api.yourapp.com',
     clientId: 'your-client-id',
     domain: 'yourapp.com',
-    enablePasskeys: true,
-    enableMagicLinks: false
+    enablePasskeys: true
   };
 
   // ✅ Initialize the auth store ONCE in root layout
@@ -140,8 +139,7 @@ const authStore = initializeAuth({
   apiBaseUrl: 'https://api.yourapp.com',
   clientId: 'your-client-id',
   domain: 'yourapp.com',
-  enablePasskeys: true,
-  enableMagicLinks: false
+  enablePasskeys: true
 });
 ```
 
@@ -209,7 +207,6 @@ resetGlobalAuthStore();
     clientId: 'proof-test',
     domain: 'thepia.net',
     enablePasskeys: false,
-    enableMagicLinks: true,
     errorReporting: { enabled: true },
     appCode: 'demo',
     branding: {

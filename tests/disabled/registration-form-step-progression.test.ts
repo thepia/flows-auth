@@ -137,7 +137,7 @@ describe('RegistrationForm Step Progression Debug', () => {
     // Wait for button to be enabled
     await waitFor(() => {
       const acceptButton = screen.getByText('Accept & Continue');
-      console.log('Button disabled?', acceptButton.disabled);
+      // console.log('Button disabled?', acceptButton.disabled);
       expect(acceptButton.disabled).toBe(false);
     });
 

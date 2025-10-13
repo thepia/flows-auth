@@ -4,6 +4,7 @@
  */
 
 import type { AuthApiClient } from '../api/auth-api';
+import type { DatabaseAdapter } from './database';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 // SignIn state types (keeping only the types, removed the class)
 import type {
@@ -14,6 +15,7 @@ import type {
   WebAuthnError
 } from './signin-state-machine';
 export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
+export type { DatabaseAdapter, SessionData } from './database';
 
 // User types
 export interface User {
@@ -175,6 +177,9 @@ export interface AuthConfig {
 
   // Development configuration
   enableDevtools?: boolean; // Enable Zustand devtools integration
+
+  // Database adapter for session persistence
+  database?: DatabaseAdapter; // Optional database adapter for automatic session persistence
 }
 
 // Auth0 configuration

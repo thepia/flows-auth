@@ -281,7 +281,6 @@ export function createUIStore(options: StoreOptions) {
         switch (signInState) {
           case 'emailEntry':
             isDisabled = true;
-            console.log('🔘 Button disabled - emailEntry state: always disabled');
             break;
           case 'userChecked':
             if (config.signInMode === 'login-only') {
@@ -289,18 +288,7 @@ export function createUIStore(options: StoreOptions) {
             } else {
               isDisabled = userExists ? false : !fullName || fullName.trim().length < 3;
             }
-            console.log('🔘 Button disabled - userChecked state:', {
-              fullName,
-              fullNameTrimmed: fullName?.trim(),
-              fullNameLength: fullName?.trim().length,
-              disabled: isDisabled
-            });
             break;
-          default:
-            console.log('🔘 Button disabled - other state:', {
-              signInState,
-              disabled: isDisabled
-            });
         }
 
         const emailCodeOnlyConfig = {
@@ -313,10 +301,6 @@ export function createUIStore(options: StoreOptions) {
           },
           secondary: null
         };
-        console.log('🔘 Button config - emailCodeOnly state:', {
-          loading,
-          primaryDisabled: emailCodeOnlyConfig.primary.disabled
-        });
         return emailCodeOnlyConfig;
       }
 
@@ -355,16 +339,6 @@ export function createUIStore(options: StoreOptions) {
           },
           secondary
         };
-        console.log('🔘 Button config - final result:', {
-          signInState,
-          email,
-          fullName,
-          loading,
-          primaryMethod: buttonConfig.primary.method,
-          primaryTextKey: buttonConfig.primary.textKey,
-          primaryDisabled: buttonConfig.primary.disabled,
-          secondaryDisabled: buttonConfig.secondary?.disabled
-        });
         return buttonConfig;
       }
     },

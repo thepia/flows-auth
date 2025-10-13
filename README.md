@@ -67,10 +67,15 @@ yarn add @thepia/flows-auth
 
 ### Basic Usage
 
+**Recommended: Using Context Pattern (SvelteKit/Svelte Apps)**
+
+Set up once in your root layout, access anywhere:
+
 ```svelte
+<!-- +layout.svelte -->
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
-  
+  import { setupAuthContext } from '@thepia/flows-auth';
+
   const authConfig = {
     apiBaseUrl: 'https://api.yourapp.com',
     clientId: 'your-client-id',
@@ -83,15 +88,60 @@ yarn add @thepia/flows-auth
       primaryColor: '#0066cc'
     }
   };
-  
+
+  // Initialize once - available to all child components
+  const authStore = setupAuthContext(authConfig);
+</script>
+
+<slot />
+```
+
+Then use in any page/component:
+
+```svelte
+<!-- any-page.svelte -->
+<script>
+  import { getAuthStoreFromContext, SignInForm } from '@thepia/flows-auth';
+
+  const authStore = getAuthStoreFromContext();
+
+  // Subscribe to auth state
+  $: isAuthenticated = $authStore.isAuthenticated;
+  $: user = $authStore.session?.user;
+</script>
+
+{#if isAuthenticated}
+  <p>Welcome, {user?.email}!</p>
+  <button onclick={() => authStore.signOut()}>Sign Out</button>
+{:else}
+  <SignInForm />
+{/if}
+```
+
+**Alternative: Standalone Usage**
+
+For single-page apps or when you don't need context:
+
+```svelte
+<script>
+  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+
+  const authConfig = {
+    apiBaseUrl: 'https://api.yourapp.com',
+    clientId: 'your-client-id',
+    domain: 'yourapp.com',
+    enablePasskeys: true,
+    enableMagicLinks: false
+  };
+
   const auth = createAuthStore(authConfig);
-  
+
   function handleSuccess({ detail }) {
     console.log('Signed in:', detail.user);
   }
 </script>
 
-<SignInForm 
+<SignInForm
   config={authConfig}
   on:success={handleSuccess}
 />
@@ -234,6 +284,97 @@ interface AuthBranding {
   customCSS?: string;
 }
 ```
+
+### Database Adapter for Session Persistence
+
+flows-auth uses a `DatabaseAdapter` interface for all session persistence. By default, it uses a localStorage/sessionStorage adapter, but you can provide any custom adapter (flows-db, IndexedDB, Service Worker, etc.).
+
+**Default Behavior:**
+- If no `database` config is provided, sessions are stored in localStorage/sessionStorage (via `createLocalStorageAdapter()`)
+- The auth store remains synchronous (`createAuthStore()`)
+- Session restoration happens asynchronously after store creation
+- Store starts as `unauthenticated` and transitions to `authenticated` once session loads
+
+**Example: Using flows-db for Service Worker persistence**
+
+```svelte
+<!-- +layout.svelte -->
+<script>
+  import { setupAuthContext } from '@thepia/flows-auth';
+  import { getFlowsDB } from '@thepia/flows-db/client';
+
+  // Get flows-db client - provides session property that implements DatabaseAdapter
+  const flowsDB = getFlowsDB();
+
+  const authConfig = {
+    apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'demo',
+    domain: 'thepia.net',
+    enablePasskeys: true,
+    enableMagicLinks: false,
+    // Automatic session persistence via flows-db service worker
+    database: flowsDB.session
+  };
+
+  const authStore = setupAuthContext(authConfig);
+</script>
+```
+
+**Note:** The `flowsDB.session` object implements the `DatabaseAdapter` interface natively - no wrapper function needed!
+
+**Using explicit localStorage adapter (with custom storage config)**
+
+```typescript
+import { createLocalStorageAdapter } from '@thepia/flows-auth';
+
+const authConfig = {
+  // ... other config
+  storage: {
+    type: 'localStorage', // or 'sessionStorage'
+    sessionTimeout: 28800000, // 8 hours in milliseconds
+    persistentSessions: true,
+    userRole: 'employee'
+  },
+  // Explicitly use localStorage adapter (optional - this is the default)
+  database: createLocalStorageAdapter()
+};
+```
+
+**Custom Database Adapter**
+
+Implement the `DatabaseAdapter` interface for any storage system:
+
+```typescript
+import type { DatabaseAdapter, SessionData } from '@thepia/flows-auth';
+
+const myAdapter: DatabaseAdapter = {
+  async saveSession(session: SessionData): Promise<void> {
+    // Save to your database
+    await myDB.sessions.put(session);
+  },
+
+  async loadSession(): Promise<SessionData | null> {
+    // Load from your database
+    return await myDB.sessions.get();
+  },
+
+  async clearSession(): Promise<void> {
+    // Clear from your database
+    await myDB.sessions.delete();
+  }
+};
+
+// Use in auth config
+const authConfig = {
+  // ... other config
+  database: myAdapter
+};
+```
+
+When configured, the auth store will automatically:
+- Save sessions when users sign in
+- Load sessions on initialization
+- Clear sessions when users sign out
 
 ## Whitelabel Theming
 

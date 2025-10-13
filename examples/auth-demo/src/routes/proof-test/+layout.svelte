@@ -18,7 +18,6 @@
     clientId: 'proof-test',
     domain: 'thepia.net',
     enablePasskeys: false,
-    enableMagicLinks: true,
     errorReporting: {
       enabled: true,
       debug: true

@@ -92,7 +92,7 @@ describe('New Modular Auth Store Architecture', () => {
         expect(state.refresh_token).toBeNull();
       });
 
-      it('should update authentication state', () => {
+      it('should update authentication state', async () => {
         const mockUser = {
           id: '123',
           email: 'test@example.com',
@@ -102,7 +102,7 @@ describe('New Modular Auth Store Architecture', () => {
         };
 
         authCore.getState().updateUser(mockUser);
-        authCore.getState().updateTokens({
+        await authCore.getState().updateTokens({
           access_token: 'token123',
           refresh_token: 'refresh123',
           expiresAt: Date.now() + 3600000

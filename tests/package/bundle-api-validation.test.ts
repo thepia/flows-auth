@@ -319,7 +319,8 @@ describe('Bundle API Validation (Integration)', () => {
       const apiClient = new AuthApiClient(config);
 
       expect(apiClient).toBeDefined();
-      expect(typeof apiClient.signIn).toBe('function');
+      expect(typeof apiClient.sendAppEmailCode).toBe('function');
+      expect(typeof apiClient.verifyAppEmailCode).toBe('function');
       expect(typeof apiClient.checkEmail).toBe('function');
     });
 
@@ -382,7 +383,7 @@ describe('Bundle API Validation (Integration)', () => {
       expect(devExports.SessionStateMachineFlow).toBeDefined();
       expect(devExports.SignInStateMachineFlow).toBeDefined();
       expect(devExports.TestFlow).toBeDefined();
-    });
+    }, 30000); // Increase timeout for Flow component imports
 
     it('should have correct TypeScript definitions for /dev export', () => {
       const devDts = readFileSync(DEV_TYPES_PATH, 'utf-8');

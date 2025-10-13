@@ -11,6 +11,7 @@ import type {
   AuthEventType,
   AuthEvents,
   ButtonConfig,
+  DatabaseAdapter,
   ExplainerConfig,
   SignInData,
   SignInEvent,
@@ -32,6 +33,7 @@ export interface AuthCoreState {
   access_token: string | null;
   refresh_token: string | null;
   expiresAt: number | null;
+  refreshedAt: number | null; // Timestamp when token was last refreshed (spam protection)
 
   // Capabilities
   passkeysEnabled: boolean;
@@ -49,7 +51,7 @@ export interface AuthCoreActions {
     access_token: string;
     refresh_token?: string;
     expiresAt?: number;
-  }) => void;
+  }) => Promise<void>;
 
   // State helpers
   isAuthenticated: () => boolean;
@@ -75,10 +77,10 @@ export interface SessionState {
  * Session store actions
  */
 export interface SessionActions {
-  saveSession: (data: SignInData) => void;
-  clearSession: () => void;
-  isSessionValid: () => boolean;
-  updateLastActivity: () => void;
+  saveSession: (data: SignInData) => Promise<void>;
+  clearSession: () => Promise<void>;
+  isSessionValid: () => Promise<boolean>;
+  updateLastActivity: () => Promise<void>;
   configureStorage: (config: Partial<SessionState>) => void;
 }
 
@@ -235,4 +237,5 @@ export interface StoreOptions {
   devtools?: boolean;
   name?: string;
   api: AuthApiClient;
+  db: DatabaseAdapter;
 }

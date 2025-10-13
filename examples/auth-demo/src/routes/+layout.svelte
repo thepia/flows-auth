@@ -27,7 +27,6 @@ const authConfig = {
   clientId: 'demo',
   domain: 'thepia.net',
   enablePasskeys: false,
-  enableMagicLinks: true,
   errorReporting: {
     enabled: true,
     // Endpoint will be auto-constructed as: ${apiBaseUrl}/dev/error-reports

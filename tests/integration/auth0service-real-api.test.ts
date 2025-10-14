@@ -123,12 +123,12 @@ describe('Auth0Service Real API Integration Tests', () => {
       const result = await authApiClient.checkEmail(testEmail);
 
       expect(result).toHaveProperty('exists');
-      expect(result).toHaveProperty('hasPasskey');
+      expect(result).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
 
       if (result.exists) {
         expect(result).toHaveProperty('userId');
         expect(result.userId).toMatch(/^auth0\|/);
-        console.log(`✅ Test user ${testEmail} exists with passkey: ${result.hasPasskey}`);
+        console.log(`✅ Test user ${testEmail} exists with WebAuthn: ${result.hasWebAuthn}`);
       } else {
         console.log(`ℹ️ Test user ${testEmail} does not exist in the system`);
       }
@@ -144,7 +144,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       const result = await authApiClient.checkEmail(nonExistentEmail);
 
       expect(result.exists).toBe(false);
-      expect(result.hasPasskey).toBe(false);
+      expect(result.hasWebAuthn).toBe(false);
       console.log(`✅ Non-existent user ${nonExistentEmail} correctly identified`);
     });
 
@@ -188,7 +188,7 @@ describe('Auth0Service Real API Integration Tests', () => {
         expect(challenge).toHaveProperty('rpId');
         expect(challenge.rpId).toBe('dev.thepia.net');
 
-        if (userCheck.hasPasskey) {
+        if (userCheck.hasWebAuthn) {
           expect(challenge).toHaveProperty('allowCredentials');
           expect(Array.isArray(challenge.allowCredentials)).toBe(true);
         }
@@ -276,7 +276,7 @@ describe('Auth0Service Real API Integration Tests', () => {
 
         // Even if the API is slow, we should get a proper response structure
         expect(result).toHaveProperty('exists');
-        expect(result).toHaveProperty('hasPasskey');
+        expect(result).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
         console.log(`✅ API timeout test completed successfully`);
       } catch (error: any) {
         console.log(`⚠️ API timeout error (may be expected): ${error.message}`);
@@ -341,7 +341,7 @@ describe('Auth0Service Real API Integration Tests', () => {
           console.log(`Request ${index + 1} failed: ${result.error}`);
         } else {
           expect(result).toHaveProperty('exists');
-          expect(result).toHaveProperty('hasPasskey');
+          expect(result).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
         }
       });
     });

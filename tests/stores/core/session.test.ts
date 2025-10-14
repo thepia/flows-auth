@@ -265,6 +265,7 @@ describe('Session Conversion Functions', () => {
         expect(result.tokens).toEqual({
           access_token: 'access',
           refresh_token: 'refresh',
+          refreshedAt: expect.any(Number),
           expiresAt: expect.any(Number)
         });
       });

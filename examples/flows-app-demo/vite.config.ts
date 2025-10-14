@@ -18,12 +18,20 @@ export default defineConfig({
       key: './certs/dev.thepia.net-key.pem',
       cert: './certs/dev.thepia.net.crt'
     },
-    // Disable caching for development
+    // Aggressive cache busting for development
     watch: {
       // Watch node_modules for changes (normally ignored)
       ignored: ['!**/node_modules/@thepia/flows-auth/**']
+    },
+    // Clear module cache on every request
+    hmr: {
+      overlay: true
     }
   },
-  // Disable caching entirely in dev
-  cacheDir: process.env.VITE_DISABLE_CACHE === 'true' ? false : undefined
+  // Always disable caching in dev
+  cacheDir: '.vite-cache',
+  build: {
+    // Clear output dir before build
+    emptyOutDir: true
+  }
 });

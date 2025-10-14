@@ -180,7 +180,7 @@ describe('API Environment Integration', () => {
 
         // This is a validation warning, not a hard failure for environment setup
         expect(response).toHaveProperty('exists');
-        expect(response).toHaveProperty('hasPasskey');
+        expect(response).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
       } catch (error) {
         console.warn(`⚠️  API endpoint may differ on production server: ${error}`);
         console.warn(`   This is expected if production API has different endpoint structure`);
@@ -200,7 +200,7 @@ describe('API Environment Integration', () => {
         }
 
         expect(response).toHaveProperty('exists');
-        expect(response).toHaveProperty('hasPasskey');
+        expect(response).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
       } catch (error) {
         console.warn(`⚠️  API endpoint may differ on production server: ${error}`);
         console.warn(`   This is expected if production API has different endpoint structure`);
@@ -215,11 +215,11 @@ describe('API Environment Integration', () => {
       try {
         const response = await apiClient.checkEmail('contract-test@example.com');
 
-        // Required fields
+        // Required fields - API returns hasWebAuthn, not hasPasskey
         expect(response).toHaveProperty('exists');
-        expect(response).toHaveProperty('hasPasskey');
+        expect(response).toHaveProperty('hasWebAuthn');
         expect(typeof response.exists).toBe('boolean');
-        expect(typeof response.hasPasskey).toBe('boolean');
+        expect(typeof response.hasWebAuthn).toBe('boolean');
 
         console.log(`✅ API contract validation successful`);
       } catch (error) {

@@ -22,7 +22,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - DNS resolution failures
       // - Connection timeouts
       // - Should show user-friendly messages
-      expect.todo('Implement network failure test');
+      test.todo('Implement network failure test');
     });
 
     test('STUB: should handle API server errors', async () => {
@@ -31,7 +31,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - 502 bad gateway
       // - 503 service unavailable
       // - Should provide retry options
-      expect.todo('Implement API server error test');
+      test.todo('Implement API server error test');
     });
 
     test('STUB: should handle API validation errors', async () => {
@@ -40,7 +40,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - 422 validation errors
       // - Field-specific error messages
       // - Should highlight problematic fields
-      expect.todo('Implement API validation error test');
+      test.todo('Implement API validation error test');
     });
 
     test('STUB: should handle authentication errors', async () => {
@@ -49,7 +49,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - 403 forbidden
       // - Token expiration
       // - Should handle re-authentication
-      expect.todo('Implement authentication error test');
+      test.todo('Implement authentication error test');
     });
 
     test('STUB: should handle rate limiting', async () => {
@@ -58,7 +58,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Exponential backoff
       // - User notification
       // - Automatic retry
-      expect.todo('Implement rate limiting test');
+      test.todo('Implement rate limiting test');
     });
   });
 
@@ -69,7 +69,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Feature disabled
       // - Should provide fallback options
       // - Clear error messaging
-      expect.todo('Implement WebAuthn not supported test');
+      test.todo('Implement WebAuthn not supported test');
     });
 
     test('STUB: should handle platform authenticator unavailable', async () => {
@@ -77,7 +77,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - No Touch ID/Face ID/Windows Hello
       // - Hardware not available
       // - Should suggest alternatives
-      expect.todo('Implement platform authenticator unavailable test');
+      test.todo('Implement platform authenticator unavailable test');
     });
 
     test('STUB: should handle user cancellation', async () => {
@@ -86,7 +86,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Should not break application state
       // - Should allow retry
       // - Clear messaging about cancellation
-      expect.todo('Implement user cancellation test');
+      test.todo('Implement user cancellation test');
     });
 
     test('STUB: should handle credential creation failures', async () => {
@@ -95,7 +95,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Security key errors
       // - Biometric failures
       // - Should provide troubleshooting
-      expect.todo('Implement credential creation failure test');
+      test.todo('Implement credential creation failure test');
     });
 
     test('STUB: should handle credential verification failures', async () => {
@@ -104,7 +104,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Corrupted data
       // - Server verification errors
       // - Should allow retry or recovery
-      expect.todo('Implement credential verification failure test');
+      test.todo('Implement credential verification failure test');
     });
 
     test('STUB: should handle timeout errors', async () => {
@@ -113,7 +113,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - User takes too long
       // - Should provide clear timeout messaging
       // - Should allow retry
-      expect.todo('Implement timeout error test');
+      test.todo('Implement timeout error test');
     });
   });
 
@@ -124,7 +124,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Empty email
       // - Email too long
       // - Should show field-specific errors
-      expect.todo('Implement email validation error test');
+      test.todo('Implement email validation error test');
     });
 
     test('STUB: should handle missing required fields', async () => {
@@ -133,7 +133,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Unchecked terms/privacy
       // - Missing name fields
       // - Should prevent submission
-      expect.todo('Implement required field error test');
+      test.todo('Implement required field error test');
     });
 
     test('STUB: should handle terms and privacy validation', async () => {
@@ -141,7 +141,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Terms not accepted
       // - Privacy not accepted
       // - Should show clear requirements
-      expect.todo('Implement terms privacy error test');
+      test.todo('Implement terms privacy error test');
     });
 
     test('STUB: should handle field length limits', async () => {
@@ -149,7 +149,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Email too long
       // - Name fields too long
       // - Should show character limits
-      expect.todo('Implement field length error test');
+      test.todo('Implement field length error test');
     });
   });
 
@@ -159,7 +159,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Invalid state values
       // - Missing state properties
       // - Should reset to safe state
-      expect.todo('Implement corrupted state test');
+      test.todo('Implement corrupted state test');
     });
 
     test('STUB: should handle storage errors', async () => {
@@ -168,7 +168,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Storage quota exceeded
       // - Storage corruption
       // - Should provide fallbacks
-      expect.todo('Implement storage error test');
+      test.todo('Implement storage error test');
     });
 
     test('STUB: should handle session management errors', async () => {
@@ -177,7 +177,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Session expiration
       // - Invalid session data
       // - Should handle gracefully
-      expect.todo('Implement session error test');
+      test.todo('Implement session error test');
     });
   });
 
@@ -188,7 +188,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Invalid configuration
       // - Dependency failures
       // - Should fail gracefully
-      expect.todo('Implement initialization error test');
+      test.todo('Implement initialization error test');
     });
 
     test('STUB: should handle component destruction errors', async () => {
@@ -197,7 +197,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Memory leaks
       // - Event listener cleanup
       // - Should not affect other components
-      expect.todo('Implement destruction error test');
+      test.todo('Implement destruction error test');
     });
 
     test('STUB: should handle prop validation errors', async () => {
@@ -206,7 +206,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Missing required props
       // - Prop constraint violations
       // - Should show development warnings
-      expect.todo('Implement prop validation error test');
+      test.todo('Implement prop validation error test');
     });
   });
 
@@ -217,7 +217,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Invalid event data
       // - Event serialization failures
       // - Should not break component
-      expect.todo('Implement event emission error test');
+      test.todo('Implement event emission error test');
     });
 
     test('STUB: should handle parent component errors', async () => {
@@ -226,7 +226,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Invalid parent state
       // - Communication failures
       // - Should isolate errors
-      expect.todo('Implement parent component error test');
+      test.todo('Implement parent component error test');
     });
 
     test('STUB: should handle dependency injection errors', async () => {
@@ -235,7 +235,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Invalid dependencies
       // - Circular dependencies
       // - Should provide clear errors
-      expect.todo('Implement dependency injection error test');
+      test.todo('Implement dependency injection error test');
     });
   });
 
@@ -246,7 +246,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - WebAuthn errors should allow retry
       // - Should implement exponential backoff
       // - Should limit retry attempts
-      expect.todo('Implement retry mechanism test');
+      test.todo('Implement retry mechanism test');
     });
 
     test('STUB: should provide recovery options for permanent errors', async () => {
@@ -255,7 +255,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Fallback flows
       // - Contact support options
       // - Clear next steps
-      expect.todo('Implement recovery option test');
+      test.todo('Implement recovery option test');
     });
 
     test('STUB: should reset component state after errors', async () => {
@@ -264,7 +264,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Should reset to initial state
       // - Should preserve user input when appropriate
       // - Should allow fresh attempts
-      expect.todo('Implement state reset test');
+      test.todo('Implement state reset test');
     });
   });
 
@@ -275,7 +275,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Actionable error messages
       // - Clear next steps
       // - No technical jargon
-      expect.todo('Implement user-friendly error test');
+      test.todo('Implement user-friendly error test');
     });
 
     test('STUB: should maintain application usability during errors', async () => {
@@ -283,7 +283,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Application should not crash
       // - Other features should remain functional
       // - Should provide alternative paths
-      expect.todo('Implement usability during error test');
+      test.todo('Implement usability during error test');
     });
 
     test('STUB: should provide progress indication during recovery', async () => {
@@ -292,7 +292,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Show recovery progress
       // - Provide time estimates
       // - Keep user informed
-      expect.todo('Implement progress indication test');
+      test.todo('Implement progress indication test');
     });
   });
 
@@ -303,7 +303,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Should include context information
       // - Should not log sensitive data
       // - Should be useful for debugging
-      expect.todo('Implement error logging test');
+      test.todo('Implement error logging test');
     });
 
     test('STUB: should report errors to monitoring systems', async () => {
@@ -312,7 +312,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Should include user context
       // - Should respect privacy
       // - Should be actionable
-      expect.todo('Implement error reporting test');
+      test.todo('Implement error reporting test');
     });
 
     test('STUB: should provide error context for debugging', async () => {
@@ -321,7 +321,7 @@ describe('CRITICAL: Error Handling Scenarios', () => {
       // - Should include user actions
       // - Should include environment info
       // - Should help reproduce issues
-      expect.todo('Implement error context test');
+      test.todo('Implement error context test');
     });
   });
 });

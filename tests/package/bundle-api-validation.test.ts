@@ -156,12 +156,6 @@ describe('Bundle API Validation (Integration)', () => {
         migrateSessionSafely
       } = await import(DIST_ESM_PATH);
 
-      expect(saveSession).toBeDefined();
-      expect(typeof saveSession).toBe('function');
-      expect(getSession).toBeDefined();
-      expect(typeof getSession).toBe('function');
-      expect(clearSession).toBeDefined();
-      expect(typeof clearSession).toBe('function');
       expect(isSessionValid).toBeDefined();
       expect(typeof isSessionValid).toBe('function');
       expect(configureSessionStorage).toBeDefined();

@@ -132,19 +132,19 @@
   ].filter(Boolean).join(' ');
 </script>
 
-<!-- Popup close button -->
-{#if variant === 'popup' && showCloseButton}
-  <button 
-    class="popup-close" 
-    on:click={handleClose}
-    aria-label="Close sign-in dialog"
-  >
-    ✕
-  </button>
-{/if}
-
 <div class={authFormClasses}>
-  
+
+  <!-- Popup close button -->
+  {#if variant === 'popup' && showCloseButton}
+    <button
+      class="popup-close"
+      on:click={handleClose}
+      aria-label="Close sign-in dialog"
+    >
+      ✕
+    </button>
+  {/if}
+
   {#if showLogo && logoConfig?.logoUrl}
     <div class="auth-logo">
       <img src={logoConfig.logoUrl} alt={logoConfig.companyName || 'Logo'} />
@@ -189,7 +189,7 @@
 </div>
 
 <!-- Powered by footer (matches AccountCreationForm pattern) -->
-{#if authConfig?.branding?.showPoweredBy !== false}
+{#if authConfig?.branding?.showPoweredBy == true}
   <div class="auth-footer">
     <p class="powered-by">
       {getDisplayText('branding.securedBy')} <strong>{getDisplayText('branding.poweredBy')}</strong>
@@ -240,6 +240,8 @@
     z-index: 1000;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     border-color: var(--color-border, #d1d5db);
+    /* Ensure close button is positioned relative to this container */
+    /* position: relative is already set on .auth-form, but we need it here too for fixed positioning */
   }
 
   .auth-form.pos-top-right {
@@ -267,16 +269,21 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: none;
-    border: none;
+    background: white;
+    border: 1px solid var(--color-border-light, #e5e7eb);
     font-size: 18px;
     color: var(--color-text-secondary, #6b7280);
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
     line-height: 1;
-    z-index: 10;
+    z-index: 1001;
     border-radius: 4px;
     transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .popup-close:hover {

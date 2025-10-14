@@ -29,6 +29,27 @@ Modular Zustand-based state management:
 
 This package is published to GitHub Packages. You'll need to configure your package manager to use the GitHub registry for `@thepia` scoped packages.
 
+#### Publishing the Package
+
+For maintainers, to publish a new version:
+
+```bash
+# 1. Update version in package.json
+npm version patch  # or minor/major
+
+# 2. Build and test
+pnpm build
+pnpm test
+
+# 3. Publish to GitHub Packages
+pnpm publish --no-git-checks
+
+# 4. Create GitHub release (optional)
+git push --tags
+```
+
+> **Note**: Publishing requires a GitHub Personal Access Token with `write:packages` scope configured in your global `~/.npmrc` file.
+
 **Using npm:**
 
 ```bash
@@ -67,9 +88,13 @@ yarn add @thepia/flows-auth
 
 ### Basic Usage
 
-**Recommended: Using Context Pattern (SvelteKit/Svelte Apps)**
+Choose the pattern that best fits your application architecture:
 
-Set up once in your root layout, access anywhere:
+#### 1. Context Pattern (SvelteKit/Svelte Apps)
+
+**Best for**: Traditional Svelte/SvelteKit applications with component hierarchies
+
+Set up once in your root layout, access anywhere with `getAuthStoreFromContext()`:
 
 ```svelte
 <!-- +layout.svelte -->
@@ -89,20 +114,21 @@ Set up once in your root layout, access anywhere:
     }
   };
 
-  // Initialize once - available to all child components
+  // Initialize once - available to all child components via context
   const authStore = setupAuthContext(authConfig);
 </script>
 
 <slot />
 ```
 
-Then use in any page/component:
+Then use `getAuthStoreFromContext()` in any child component:
 
 ```svelte
 <!-- any-page.svelte -->
 <script>
   import { getAuthStoreFromContext, SignInForm } from '@thepia/flows-auth';
 
+  // Get the auth store from context (no store creation needed)
   const authStore = getAuthStoreFromContext();
 
   // Subscribe to auth state
@@ -117,6 +143,88 @@ Then use in any page/component:
   <SignInForm />
 {/if}
 ```
+
+#### 2. Astro Islands Pattern (Shared Zustand Store)
+
+**Best for**: Astro applications using islands architecture with partial hydration
+
+Create a singleton Zustand store that all islands share:
+
+```typescript
+// src/lib/auth-store.ts - Singleton store shared across all islands
+import { createAstroAuthStore, getAstroApiUrl } from '@thepia/flows-auth/stores/adapters/astro';
+
+// This is the ONLY store instance - all islands import this same instance
+export const authStore = createAstroAuthStore({
+  apiBaseUrl: getAstroApiUrl(),
+  domain: 'yourapp.com',
+  enablePasskeys: true,
+  enableMagicLinks: false,
+  signInMode: 'login-or-register'
+});
+```
+
+Use the shared store in Svelte islands:
+
+```svelte
+<!-- src/components/SignInIsland.svelte -->
+<script>
+  import { authStore } from '../lib/auth-store';
+  import { makeSvelteCompatible } from '@thepia/flows-auth/stores/adapters/svelte';
+
+  // Wrap the shared Zustand store for Svelte reactivity
+  const auth = makeSvelteCompatible(authStore);
+
+  $: isAuthenticated = $auth.isAuthenticated;
+  $: user = $auth.session?.user;
+</script>
+
+{#if isAuthenticated}
+  <p>Welcome, {user?.email}!</p>
+  <button onclick={() => auth.signOut()}>Sign Out</button>
+{:else}
+  <!-- Your sign-in UI here -->
+{/if}
+```
+
+```svelte
+<!-- src/components/UserStatusIsland.svelte -->
+<script>
+  import { authStore } from '../lib/auth-store'; // Same store instance!
+  import { makeSvelteCompatible } from '@thepia/flows-auth/stores/adapters/svelte';
+
+  const auth = makeSvelteCompatible(authStore);
+
+  // This island automatically updates when SignInIsland changes the store
+</script>
+
+<div>
+  <p>Current user: {$auth.session?.user?.email || 'Not signed in'}</p>
+  <p>Auth state: {$auth.signInState}</p>
+</div>
+```
+
+Use islands in Astro pages:
+
+```astro
+<!-- src/pages/index.astro -->
+---
+import SignInIsland from '../components/SignInIsland.svelte';
+import UserStatusIsland from '../components/UserStatusIsland.svelte';
+---
+<html>
+  <body>
+    <!-- Both islands share the same auth store and stay synchronized -->
+    <SignInIsland client:load />
+    <UserStatusIsland client:visible />
+  </body>
+</html>
+```
+
+**Key Differences**:
+- **Context Pattern**: Uses Svelte context (`setupAuthContext` + `getAuthStoreFromContext`)
+- **Astro Islands**: Uses shared Zustand store (`createAstroAuthStore` + `makeSvelteCompatible`)
+- **State Sharing**: Context works within component trees; Astro islands share via ES module singleton
 
 **Alternative: Standalone Usage**
 
@@ -232,17 +340,62 @@ import {
 
 ## Authentication Store
 
-The auth store manages authentication state and provides methods for sign-in/out.
+The auth store manages authentication state and provides methods for sign-in/out. Access patterns depend on your application architecture:
+
+### Context Pattern (SvelteKit/Svelte)
+
+Use `getAuthStoreFromContext()` to access the store initialized in your root layout:
+
+```javascript
+import { getAuthStoreFromContext } from '@thepia/flows-auth';
+
+// In any component after setupAuthContext() was called in root layout
+const authStore = getAuthStoreFromContext();
+
+// Subscribe to auth state (Svelte reactive)
+$: isAuthenticated = $authStore.isAuthenticated;
+$: user = $authStore.session?.user;
+
+// Call auth methods
+await authStore.signIn('user@example.com');
+await authStore.signInWithPasskey('user@example.com');
+await authStore.signOut();
+```
+
+### Astro Islands Pattern
+
+Use the shared Zustand store with Svelte adapter:
+
+```javascript
+import { authStore } from '../lib/auth-store'; // Your singleton store
+import { makeSvelteCompatible } from '@thepia/flows-auth/stores/adapters/svelte';
+
+// In any Svelte island component
+const auth = makeSvelteCompatible(authStore);
+
+// Subscribe to auth state (Svelte reactive)
+$: isAuthenticated = $auth.isAuthenticated;
+$: user = $auth.session?.user;
+
+// Call auth methods
+await auth.signIn('user@example.com');
+await auth.signInWithPasskey('user@example.com');
+await auth.signOut();
+```
+
+### Direct Store Creation (Advanced)
+
+For custom implementations or when you need direct control:
 
 ```javascript
 import { createAuthStore } from '@thepia/flows-auth/stores';
 
 const auth = createAuthStore(config);
 
-// Subscribe to auth state
+// Subscribe to auth state (Zustand)
 auth.subscribe($auth => {
-  console.log('Auth state:', $auth.state);
-  console.log('User:', $auth.user);
+  console.log('Auth state:', $auth.signInState);
+  console.log('User:', $auth.session?.user);
 });
 
 // Sign in methods
@@ -287,7 +440,7 @@ interface AuthBranding {
 
 ### Database Adapter for Session Persistence
 
-flows-auth uses a `DatabaseAdapter` interface for all session persistence. By default, it uses a localStorage/sessionStorage adapter, but you can provide any custom adapter (flows-db, IndexedDB, Service Worker, etc.).
+flows-auth uses a `SessionPersistence` interface for all session persistence. By default, it uses a localStorage/sessionStorage adapter, but you can provide any custom adapter (flows-db, IndexedDB, Service Worker, etc.).
 
 **Default Behavior:**
 - If no `database` config is provided, sessions are stored in localStorage/sessionStorage (via `createLocalStorageAdapter()`)
@@ -303,7 +456,7 @@ flows-auth uses a `DatabaseAdapter` interface for all session persistence. By de
   import { setupAuthContext } from '@thepia/flows-auth';
   import { getFlowsDB } from '@thepia/flows-db/client';
 
-  // Get flows-db client - provides session property that implements DatabaseAdapter
+  // Get flows-db client - provides session property that implements SessionPersistence
   const flowsDB = getFlowsDB();
 
   const authConfig = {
@@ -320,7 +473,7 @@ flows-auth uses a `DatabaseAdapter` interface for all session persistence. By de
 </script>
 ```
 
-**Note:** The `flowsDB.session` object implements the `DatabaseAdapter` interface natively - no wrapper function needed!
+**Note:** The `flowsDB.session` object implements the `SessionPersistence` interface natively - no wrapper function needed!
 
 **Using explicit localStorage adapter (with custom storage config)**
 
@@ -342,12 +495,12 @@ const authConfig = {
 
 **Custom Database Adapter**
 
-Implement the `DatabaseAdapter` interface for any storage system:
+Implement the `SessionPersistence` interface for any storage system:
 
 ```typescript
-import type { DatabaseAdapter, SessionData } from '@thepia/flows-auth';
+import type { SessionPersistence, SessionData } from '@thepia/flows-auth';
 
-const myAdapter: DatabaseAdapter = {
+const myAdapter: SessionPersistence = {
   async saveSession(session: SessionData): Promise<void> {
     // Save to your database
     await myDB.sessions.put(session);

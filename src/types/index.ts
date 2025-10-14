@@ -4,7 +4,7 @@
  */
 
 import type { AuthApiClient } from '../api/auth-api';
-import type { DatabaseAdapter } from './database';
+import type { SessionPersistence } from './database';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 // SignIn state types (keeping only the types, removed the class)
 import type {
@@ -15,7 +15,7 @@ import type {
   WebAuthnError
 } from './signin-state-machine';
 export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
-export type { DatabaseAdapter, SessionData } from './database';
+export type { SessionPersistence, SessionData, UserData, DatabaseAdapter } from './database';
 
 // User types
 export interface User {
@@ -91,16 +91,19 @@ export interface SignInData {
   /** Authentication tokens (nested structure matching server API) */
   tokens: {
     access_token: string;
-    refresh_token: string;
+    refresh_token?: string; // Optional - sessions without refresh tokens expire permanently
     expires_in?: number; // Server provides duration in seconds
+    refreshedAt: number;
     expiresAt: number; // Absolute timestamp in milliseconds
+    supabase_token?: string; // Supabase JWT for database access with RLS
+    supabase_expires_at?: number; // Supabase token expiration timestamp in milliseconds
   };
 
   /** Authentication method used */
   authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
 
   /** Client-side session management */
-  lastActivity: number; // Timestamp of last activity (milliseconds)
+  lastActivity: number; // Timestamp of last activity (milliseconds) TODO this must be part of SessionData for it to be persisted
 }
 
 // Storage configuration
@@ -179,7 +182,7 @@ export interface AuthConfig {
   enableDevtools?: boolean; // Enable Zustand devtools integration
 
   // Database adapter for session persistence
-  database?: DatabaseAdapter; // Optional database adapter for automatic session persistence
+  database?: SessionPersistence; // Optional database adapter for automatic session persistence
 }
 
 // Auth0 configuration
@@ -217,6 +220,18 @@ export interface SignInRequest {
   redirectUri?: string;
 }
 
+/**
+ * SignInResponse - Returned by authentication endpoints
+ *
+ * Used by:
+ * - POST /auth/webauthn/verify (passkey authentication)
+ * - POST /api/auth/create-user (user registration with auto-sign-in)
+ * - POST /api/app/email-signin (email code verification)
+ *
+ * Structure: Flat token fields (not nested)
+ * - access_token, refresh_token, expires_in are at root level
+ * - This matches Auth0/WorkOS response structure
+ */
 export interface SignInResponse {
   user?: User;
   access_token?: string;
@@ -225,8 +240,56 @@ export interface SignInResponse {
   requiresPasskey?: boolean;
   magicLinkSent?: boolean;
   challengeId?: string;
-  step: SignInStep;
+  step: SignInStep; // TODO align server and client
   emailVerifiedViaInvitation?: boolean; // True if email was verified via invitation token
+  id_token?: string; // ID token (JWT) - Auth0 specific
+  supabase_token?: string; // Supabase JWT for database access with RLS
+  supabase_expires_at?: number; // Supabase token expiration timestamp in milliseconds
+  error?: string; // Error message when authentication fails
+  message?: string; // Success or informational message from server
+}
+
+/**
+ * CheckUserResponse - Returned by user lookup endpoints
+ *
+ * Used by:
+ * - GET /api/org/{code}/check-user
+ * - GET /api/app/check-user
+ * - user cache
+ *
+ * This response determines:
+ * - Whether user exists in the system
+ * - What authentication methods are available
+ * - Whether existing PIN can be reused
+ */
+export interface CheckUserResponse {
+  // Core response (always present)
+  exists: boolean;
+  hasWebAuthn: boolean; // Note: API uses hasWebAuthn, not hasPasskey
+
+  // Optional fields (only present if user exists)
+  userId?: string; // WorkOS user ID
+  emailVerified?: boolean; // From WorkOS user profile
+
+  // Pin validation fields (from user metadata)
+  lastPinExpiry?: string | null; // ISO string from user.metadata.lastPinExpiry
+  lastPinSentAt?: string | null; // ISO string from user.metadata.lastPinSentAt
+
+  // Invitation system
+  invitationTokenHash?: string | null; // For invitation token validation
+
+  // Organization context (added by check-user.ts:60-67)
+  organization?: {
+    code: string; // App code (e.g., "demo")
+    name: string; // Organization name
+    provider: 'auth0' | 'workos';
+
+    // features: string[]; seems to be the old plan
+    features?: {
+      webauthn?: boolean;
+      sso?: boolean;
+    };
+  };
 }
 
 export interface PasskeyRequest {
@@ -238,6 +301,46 @@ export interface PasskeyRequest {
 export interface MagicLinkRequest {
   email: string;
   redirectUri?: string;
+}
+
+/**
+ * Email Code Send Response
+ *
+ * Returned when sending email verification codes via app-specific endpoints.
+ * Includes user context and organization information for unified registration/login flows.
+ *
+ * Used by:
+ * - POST /{appCode}/send-email
+ * - App-specific email authentication endpoints
+ */
+export interface EmailCodeSendResponse {
+  /** Whether the email was sent successfully */
+  success: boolean;
+
+  /** Current step in authentication flow */
+  step: 'code_sent' | 'email-sent';
+
+  /** Human-readable message for user */
+  message: string;
+
+  /** Email address (echoed back for confirmation) */
+  email?: string;
+
+  /** Whether this is an existing user (false = new registration) */
+  userExists?: boolean;
+
+  /** ISO timestamp when code expires */
+  expiresAt?: string;
+
+  /** Unix timestamp in milliseconds when code was sent */
+  timestamp?: number;
+
+  /** Organization/app context */
+  organization?: {
+    code: string;
+    name: string;
+    provider: 'auth0' | 'workos';
+  };
 }
 
 export interface RefreshTokenRequest {
@@ -417,38 +520,6 @@ export type AuthErrorCode =
   | 'error.invalidInput'
   | 'error.invalidCode'
   | 'error.unknown';
-
-/**
- * User check data structure - aligned with actual API server implementation
- * Based on checkUser function in thepia.com/src/api/workos.ts:234-265
- */
-export interface UserCheckData {
-  // Core response (always present)
-  exists: boolean;
-  hasWebAuthn: boolean; // Note: API uses hasWebAuthn, not hasPasskey
-
-  // Optional fields (only present if user exists)
-  userId?: string; // WorkOS user ID
-  emailVerified?: boolean; // From WorkOS user profile
-
-  // Pin validation fields (from user metadata)
-  lastPinExpiry?: string; // ISO string from user.metadata.lastPinExpiry
-  lastPinSentAt?: string; // ISO string from user.metadata.lastPinSentAt
-
-  // Invitation system
-  invitationTokenHash?: string; // For invitation token validation
-
-  // Organization context (added by check-user.ts:60-67)
-  organization?: {
-    code: string; // App code (e.g., "demo")
-    name: string; // Organization name
-    provider: string; // "workos"
-    features?: {
-      webauthn?: boolean;
-      sso?: boolean;
-    };
-  };
-}
 
 // Events
 export interface AuthEventData {
@@ -690,6 +761,8 @@ export interface AuthStore {
   access_token: string | null;
   refresh_token: string | null;
   expiresAt: number | null;
+  supabase_token: string | null; // Supabase JWT for database access with RLS
+  supabase_expires_at: number | null; // Supabase token expiration timestamp
   apiError: ApiError | null; // Centralized API error management
   passkeysEnabled: boolean; // Added: Centralized passkey availability determination
 

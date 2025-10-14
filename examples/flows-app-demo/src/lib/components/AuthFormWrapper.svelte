@@ -50,7 +50,6 @@
 
   <!-- Use real flows-auth SignInForm with direct import -->
   <SignInForm
-    {config}
     on:success={handleSuccess}
     on:error={handleError}
   />

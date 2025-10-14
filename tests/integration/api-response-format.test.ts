@@ -6,6 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { AuthConfig, User } from '../../src/types';
+import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock';
 
 // Set up global mocks before any imports
 vi.mock('../../src/utils/webauthn', () => ({
@@ -16,11 +17,9 @@ vi.mock('../../src/utils/webauthn', () => ({
   serializeCredential: vi.fn().mockReturnValue('serialized-credential')
 }));
 
+let mockStorage: Record<string, string> = {};
+
 vi.mock('../../src/utils/sessionManager', () => ({
-  saveSession: vi.fn(),
-  getSession: vi.fn().mockReturnValue(null),
-  clearSession: vi.fn(),
-  isSessionValid: vi.fn().mockReturnValue(false),
   getOptimalSessionConfig: vi.fn().mockReturnValue({
     type: 'sessionStorage',
     sessionTimeout: 28800000,
@@ -28,16 +27,31 @@ vi.mock('../../src/utils/sessionManager', () => ({
     userRole: 'guest'
   }),
   configureSessionStorage: vi.fn(),
-  isAuthenticatedFromSession: vi.fn().mockReturnValue(false),
-  getCurrentUserFromSession: vi.fn().mockReturnValue(null),
   generateInitials: vi.fn((name: string) => {
     if (!name) return '?';
-    const parts = name.trim().split(' ');
+    const parts = name.split(' ');
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return name.charAt(0).toUpperCase();
   })
+}));
+
+vi.mock('../../src/utils/storageManager', () => ({
+  getStorageManager: vi.fn(() => ({
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: vi.fn(() => {
+      mockStorage = {};
+    }),
+    getConfig: vi.fn(() => ({ type: 'sessionStorage' })),
+    getSessionTimeout: vi.fn(() => 8 * 60 * 60 * 1000)
+  }))
 }));
 
 vi.mock('../../src/api/auth-api', () => ({
@@ -94,12 +108,8 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       verifyWebAuthnRegistration: vi.fn()
     };
 
-    // Create a mock database adapter
-    mockDatabase = {
-      saveSession: vi.fn(),
-      loadSession: vi.fn().mockResolvedValue(null),
-      clearSession: vi.fn()
-    };
+    // Create a mock database adapter with full SessionPersistence interface
+    mockDatabase = createSimpleMockSessionPersistence();
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://test-api.example.com',
@@ -338,5 +348,119 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       const storeState = authStore.getState();
       expect(storeState.state).not.toBe('authenticated');
     }
+  });
+
+  test('Should handle API response with Supabase tokens', async () => {
+    const mockUser: User = {
+      id: 'user-supabase-123',
+      email: 'supabase@example.com',
+      name: 'Supabase User',
+      emailVerified: true,
+      createdAt: new Date().toISOString()
+    };
+
+    const responseWithSupabase = {
+      step: 'success' as const,
+      access_token: 'auth0-access-token',
+      refresh_token: 'auth0-refresh-token',
+      expires_in: 3600,
+      user: mockUser,
+      supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXN1cGFiYXNlLTEyMyJ9.abc123',
+      supabase_expires_at: Date.now() + 3600000
+    };
+
+    // Setup mocks
+    mockApiClient.checkEmail.mockResolvedValue({
+      exists: true,
+      hasPasskey: true,
+      userId: 'user-supabase-123'
+    });
+
+    mockApiClient.getPasskeyChallenge.mockResolvedValue({
+      challenge: 'test-challenge',
+      rpId: 'test.example.com'
+    });
+
+    mockApiClient.signInWithPasskey.mockResolvedValue(responseWithSupabase);
+
+    mockWebAuthn.authenticateWithPasskey.mockResolvedValue({
+      id: 'credential-id',
+      response: { authenticatorData: 'test-data' }
+    });
+
+    // Execute signInWithPasskey
+    const result = await authStore.signInWithPasskey('supabase@example.com');
+
+    // Verify SignInData includes Supabase tokens
+    expect(result.tokens.supabase_token).toBe(responseWithSupabase.supabase_token);
+    expect(result.tokens.supabase_expires_at).toBe(responseWithSupabase.supabase_expires_at);
+
+    // Verify session was saved with Supabase tokens
+    expect(mockDatabase.saveSession).toHaveBeenCalled();
+    const savedSession = mockDatabase.saveSession.mock.calls[0][0];
+    expect(savedSession.supabaseToken).toBe(responseWithSupabase.supabase_token);
+    expect(savedSession.supabaseExpiresAt).toBe(responseWithSupabase.supabase_expires_at);
+
+    // Verify store state includes standard tokens
+    const storeState = authStore.getState();
+    expect(storeState.state).toBe('authenticated');
+    expect(storeState.access_token).toBe('auth0-access-token');
+    expect(storeState.refresh_token).toBe('auth0-refresh-token');
+  });
+
+  test('Should handle API response without Supabase tokens (backward compatibility)', async () => {
+    const mockUser: User = {
+      id: 'user-no-supabase',
+      email: 'no-supabase@example.com',
+      name: 'No Supabase User',
+      emailVerified: true,
+      createdAt: new Date().toISOString()
+    };
+
+    const responseWithoutSupabase = {
+      step: 'success' as const,
+      access_token: 'auth0-only-token',
+      refresh_token: 'auth0-only-refresh',
+      expires_in: 3600,
+      user: mockUser
+      // No Supabase tokens
+    };
+
+    // Setup mocks
+    mockApiClient.checkEmail.mockResolvedValue({
+      exists: true,
+      hasPasskey: true,
+      userId: 'user-no-supabase'
+    });
+
+    mockApiClient.getPasskeyChallenge.mockResolvedValue({
+      challenge: 'test-challenge',
+      rpId: 'test.example.com'
+    });
+
+    mockApiClient.signInWithPasskey.mockResolvedValue(responseWithoutSupabase);
+
+    mockWebAuthn.authenticateWithPasskey.mockResolvedValue({
+      id: 'credential-id',
+      response: { authenticatorData: 'test-data' }
+    });
+
+    // Execute signInWithPasskey
+    const result = await authStore.signInWithPasskey('no-supabase@example.com');
+
+    // Verify SignInData does not include Supabase tokens
+    expect(result.tokens.supabase_token).toBeUndefined();
+    expect(result.tokens.supabase_expires_at).toBeUndefined();
+
+    // Verify session was saved without Supabase tokens
+    expect(mockDatabase.saveSession).toHaveBeenCalled();
+    const savedSession = mockDatabase.saveSession.mock.calls[0][0];
+    expect(savedSession.supabaseToken).toBeUndefined();
+    expect(savedSession.supabaseExpiresAt).toBeUndefined();
+
+    // Verify store state works normally
+    const storeState = authStore.getState();
+    expect(storeState.state).toBe('authenticated');
+    expect(storeState.access_token).toBe('auth0-only-token');
   });
 });

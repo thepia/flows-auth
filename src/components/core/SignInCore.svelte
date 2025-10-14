@@ -482,6 +482,7 @@ $: if (authStore && email && (currentSignInState === 'emailEntry' || currentSign
       <UserManagement
         user={$authStore.user}
         onSignOut={() => authStore.signOut()}
+        onRefreshTokens={() => authStore.refreshTokens()}
         on:navigate
       />
     {/if}

@@ -105,9 +105,9 @@ describe('SignInForm Registration Flow Regression', () => {
         console.log('✅ checkEmail result for test@thepia.com:', result);
 
         expect(result).toHaveProperty('exists');
-        expect(result).toHaveProperty('hasPasskey');
+        expect(result).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
 
-        console.log(`📊 User exists: ${result.exists}, Has passkey: ${result.hasPasskey}`);
+        console.log(`📊 User exists: ${result.exists}, Has WebAuthn: ${result.hasWebAuthn}`);
       } catch (error) {
         console.error('❌ checkEmail failed for existing user:', error);
         throw error;
@@ -217,12 +217,12 @@ describe('SignInForm Registration Flow Regression', () => {
         // Step 1: Check what auth methods are available for this email
         const emailCheck = await authStore.api.checkEmail(email);
         const userExists = emailCheck.exists;
-        const hasPasskeys = emailCheck.hasPasskey;
+        const hasPasskeys = emailCheck.hasWebAuthn; // API returns hasWebAuthn, not hasPasskey
 
         console.log(`📊 Email check results:`, {
           email,
           userExists,
-          hasPasskeys,
+          hasPasskeys: hasPasskeys, // Keep variable name for readability
           fullResult: emailCheck
         });
 

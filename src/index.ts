@@ -114,6 +114,17 @@ export {
 export * from './utils/local-storage';
 export * from './utils/service-worker';
 
+// Date Helper Utilities
+export {
+  daysSince,
+  formatDate,
+  formatDateTime,
+  isOlderThan,
+  isWithin,
+  millisecondsSince,
+  nowISO
+} from './utils/date-helpers';
+
 // Session Migration Utilities
 export {
   getRoleBasedStorageConfig,
@@ -126,16 +137,13 @@ export {
 
 export type { SignInData } from './types';
 export {
-  clearSession,
   configureSessionStorage,
   getAccessToken as getAccessTokenFromSession,
   getCurrentUser as getCurrentUserFromSession,
   getOptimalSessionConfig,
-  getSession,
   getStorageConfig,
   isAuthenticated as isAuthenticatedFromSession,
   isSessionValid,
-  saveSession,
   supportsPersistentSessions
 } from './utils/sessionManager';
 // WebAuthn utilities - exported individually to avoid static import issues

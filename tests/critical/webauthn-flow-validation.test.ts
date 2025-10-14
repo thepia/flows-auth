@@ -20,7 +20,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should return true when supported
       // - Should return false when not supported
       // - Should handle edge cases (partial support)
-      expect.todo('Implement WebAuthn support detection test');
+      test.todo('Implement WebAuthn support detection test');
     });
 
     test('STUB: should detect platform authenticator availability', async () => {
@@ -28,7 +28,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should return true when available (Touch ID, Face ID, Windows Hello)
       // - Should return false when not available
       // - Should handle async detection properly
-      expect.todo('Implement platform authenticator detection test');
+      test.todo('Implement platform authenticator detection test');
     });
 
     test('STUB: should handle browser compatibility issues', async () => {
@@ -36,7 +36,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should work in Chrome/Safari/Firefox
       // - Should handle mobile browsers
       // - Should provide fallbacks for unsupported browsers
-      expect.todo('Implement browser compatibility test');
+      test.todo('Implement browser compatibility test');
     });
   });
 
@@ -46,7 +46,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should call navigator.credentials.create with correct options
       // - Should handle challenge conversion (base64 to ArrayBuffer)
       // - Should return valid credential object
-      expect.todo('Implement credential creation test');
+      test.todo('Implement credential creation test');
     });
 
     test('STUB: should handle invalid registration options', async () => {
@@ -54,7 +54,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Invalid challenge format
       // - Missing required fields
       // - Invalid user data
-      expect.todo('Implement invalid options test');
+      test.todo('Implement invalid options test');
     });
 
     test('STUB: should convert API response to WebAuthn options correctly', async () => {
@@ -63,7 +63,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - User ID encoding
       // - Challenge encoding
       // - Proper option structure
-      expect.todo('Implement options conversion test');
+      test.todo('Implement options conversion test');
     });
 
     test('STUB: should handle user cancellation gracefully', async () => {
@@ -71,7 +71,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should catch cancellation error
       // - Should provide user-friendly message
       // - Should not break application state
-      expect.todo('Implement user cancellation test');
+      test.todo('Implement user cancellation test');
     });
 
     test('STUB: should handle device-specific errors', async () => {
@@ -80,7 +80,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Face ID failure
       // - Windows Hello failure
       // - Hardware security key errors
-      expect.todo('Implement device error tests');
+      test.todo('Implement device error tests');
     });
   });
 
@@ -90,7 +90,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should send credential to server for verification
       // - Should handle verification response
       // - Should complete registration on success
-      expect.todo('Implement credential verification test');
+      test.todo('Implement credential verification test');
     });
 
     test('STUB: should handle verification failures', async () => {
@@ -98,7 +98,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Invalid credential data
       // - Server verification errors
       // - Timeout errors
-      expect.todo('Implement verification failure tests');
+      test.todo('Implement verification failure tests');
     });
 
     test('STUB: should convert credential response for API', async () => {
@@ -106,7 +106,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - ArrayBuffers to base64 strings
       // - Proper response structure
       // - Required fields included
-      expect.todo('Implement response conversion test');
+      test.todo('Implement response conversion test');
     });
   });
 
@@ -116,7 +116,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should get authentication options
       // - Should prompt for credential
       // - Should verify authentication
-      expect.todo('Implement authentication flow test');
+      test.todo('Implement authentication flow test');
     });
 
     test('STUB: should handle authentication failures', async () => {
@@ -124,7 +124,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Wrong credential
       // - User cancellation
       // - Device errors
-      expect.todo('Implement authentication failure tests');
+      test.todo('Implement authentication failure tests');
     });
 
     test('STUB: should handle multiple credentials', async () => {
@@ -132,7 +132,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should allow user to choose credential
       // - Should handle credential selection
       // - Should work with multiple devices
-      expect.todo('Implement multiple credentials test');
+      test.todo('Implement multiple credentials test');
     });
   });
 
@@ -142,7 +142,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - User verification required
       // - Resident key requirements
       // - Attestation validation
-      expect.todo('Implement security validation test');
+      test.todo('Implement security validation test');
     });
 
     test('STUB: should prevent credential replay attacks', async () => {
@@ -150,7 +150,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Challenge uniqueness
       // - Credential uniqueness
       // - Proper nonce handling
-      expect.todo('Implement replay attack prevention test');
+      test.todo('Implement replay attack prevention test');
     });
 
     test('STUB: should validate origin and RP ID', async () => {
@@ -158,7 +158,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Correct RP ID
       // - Origin matching
       // - Cross-origin prevention
-      expect.todo('Implement origin validation test');
+      test.todo('Implement origin validation test');
     });
   });
 
@@ -168,7 +168,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Technical errors translated to user-friendly messages
       // - Actionable error messages
       // - Proper error categorization
-      expect.todo('Implement error message tests');
+      test.todo('Implement error message tests');
     });
 
     test('STUB: should allow retry after errors', async () => {
@@ -176,7 +176,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Should reset error state
       // - Should allow new attempts
       // - Should not be stuck in error state
-      expect.todo('Implement retry tests');
+      test.todo('Implement retry tests');
     });
 
     test('STUB: should handle network interruptions', async () => {
@@ -184,7 +184,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Connection lost during registration
       // - Connection lost during authentication
       // - Proper recovery mechanisms
-      expect.todo('Implement network interruption tests');
+      test.todo('Implement network interruption tests');
     });
   });
 
@@ -194,7 +194,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Touch ID integration
       // - Face ID integration
       // - Safari WebAuthn support
-      expect.todo('Implement iOS compatibility test');
+      test.todo('Implement iOS compatibility test');
     });
 
     test('STUB: should work on Android devices', async () => {
@@ -202,7 +202,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Fingerprint integration
       // - Face unlock integration
       // - Chrome WebAuthn support
-      expect.todo('Implement Android compatibility test');
+      test.todo('Implement Android compatibility test');
     });
 
     test('STUB: should work on Windows devices', async () => {
@@ -210,7 +210,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Windows Hello integration
       // - Hardware security keys
       // - Edge/Chrome WebAuthn support
-      expect.todo('Implement Windows compatibility test');
+      test.todo('Implement Windows compatibility test');
     });
 
     test('STUB: should work on macOS devices', async () => {
@@ -218,7 +218,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Touch ID integration
       // - Safari WebAuthn support
       // - Chrome WebAuthn support
-      expect.todo('Implement macOS compatibility test');
+      test.todo('Implement macOS compatibility test');
     });
   });
 
@@ -228,7 +228,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Registration should complete within 30 seconds
       // - Authentication should complete within 10 seconds
       // - No memory leaks during operations
-      expect.todo('Implement performance tests');
+      test.todo('Implement performance tests');
     });
 
     test('STUB: should handle concurrent operations', async () => {
@@ -236,7 +236,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Multiple registration attempts
       // - Registration and authentication simultaneously
       // - Proper operation queuing
-      expect.todo('Implement concurrency tests');
+      test.todo('Implement concurrency tests');
     });
 
     test('STUB: should be reliable across sessions', async () => {
@@ -244,7 +244,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       // - Credentials persist across browser sessions
       // - Authentication works after browser restart
       // - No credential corruption
-      expect.todo('Implement reliability tests');
+      test.todo('Implement reliability tests');
     });
   });
 });

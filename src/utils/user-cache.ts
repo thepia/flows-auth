@@ -3,9 +3,9 @@
  * Reduces API calls by caching user check data
  */
 
-import type { UserCheckData } from '../types';
+import type { CheckUserResponse } from '../types';
 
-interface CacheEntry extends UserCheckData {
+interface CacheEntry extends CheckUserResponse {
   timestamp: number; // Required for cache expiry
 }
 
@@ -45,7 +45,7 @@ export class UserCache {
   /**
    * Set cached user data
    */
-  set(email: string, data: UserCheckData): void {
+  set(email: string, data: CheckUserResponse): void {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Implement simple LRU by removing oldest entries

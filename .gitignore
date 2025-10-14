@@ -45,3 +45,4 @@ pnpm-debug.log*
 vite.config.ts.timestamp*
 /examples/auth-demo/test-results
 /test-results
+/examples/flows-app-demo/.vite-cache

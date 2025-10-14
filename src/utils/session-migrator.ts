@@ -192,6 +192,7 @@ export class SessionMigrator {
       migratedSession.tokens = {
         access_token: '',
         refresh_token: '',
+        refreshedAt: 0,
         expiresAt: 0
       };
     }

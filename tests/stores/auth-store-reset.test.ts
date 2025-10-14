@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig, SignInData } from '../../src/types';
-import { clearSession, getSession, saveSession } from '../../src/utils/sessionManager';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');
@@ -25,7 +24,8 @@ describe('Auth Store reset() Method', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    clearSession(); // Ensure clean session state
+    localStorage.clear();
+    sessionStorage.clear();
 
     // Create mock API client
     mockApiClient = {
@@ -148,35 +148,37 @@ describe('Auth Store reset() Method', () => {
     });
 
     it('should clear session storage', () => {
-      // Setup: Create a session
+      // Setup: Create a session by authenticating
       const sessionData: SignInData = {
         user: {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          initials: ''
+          initials: 'TU'
         },
         authMethod: 'email-code',
         lastActivity: Date.now(),
-        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
-        // lastActivity: number;
-
         tokens: {
           access_token: 'test-token',
           refresh_token: 'test-refresh',
+          refreshedAt: Date.now(),
           expiresAt: Date.now() + 3600000
         }
       };
-      saveSession(sessionData);
 
-      // Verify session exists
-      expect(getSession()).toBeDefined();
+      // Authenticate via notifyPinVerified which saves session
+      authStore.notifyPinVerified(sessionData);
+
+      // Verify session exists (user should be authenticated)
+      expect(authStore.isAuthenticated()).toBe(true);
+      expect(authStore.getState().user).toBeDefined();
 
       // Act: Reset
       authStore.reset();
 
-      // Assert: Session cleared
-      expect(getSession()).toBeNull();
+      // Assert: Session cleared (user should no longer be authenticated)
+      expect(authStore.isAuthenticated()).toBe(false);
+      expect(authStore.getState().user).toBeNull();
     });
 
     it('should reset signInState to emailEntry', async () => {

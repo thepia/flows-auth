@@ -3,6 +3,11 @@
  *
  * These tests verify compliance with SESSION_MANAGEMENT_REQUIREMENTS.md
  * Each test maps to specific requirements (R1, R2, etc.)
+ *
+ * ⚠️ LEGACY: These tests directly import sessionManager utilities which are
+ * internal implementation details. New code should test via SessionPersistence
+ * and public auth store APIs instead. This file is kept for validating the
+ * legacy sessionManager behavior during the transition to SessionPersistence.
  */
 
 import { get } from 'svelte/store';
@@ -52,6 +57,7 @@ const createTestSession = (): SignInData => ({
   tokens: {
     access_token: 'test-access-token',
     refresh_token: 'test-refresh-token',
+    refreshedAt: Date.now(),
     expiresAt: Date.now() + 60000
   },
   authMethod: 'passkey',
@@ -234,16 +240,31 @@ describe('R3: Session Validation (MUST)', () => {
 
   describe('R3.1: Token Expiration', () => {
     it('MUST check tokens.expiresAt against current time', () => {
-      const expiredSession: SignInData = {
+      // Test case 1: Expired token WITHOUT refresh token = INVALID
+      const expiredSessionNoRefresh: SignInData = {
         ...createTestSession(),
         tokens: {
           access_token: 'expired-token',
-          refresh_token: 'expired-refresh',
+          refresh_token: '', // No refresh token
+          refreshedAt: Date.now(),
           expiresAt: Date.now() - 60000 // Expired 1 minute ago
         }
       };
 
-      expect(isSessionValid(expiredSession)).toBe(false);
+      expect(isSessionValid(expiredSessionNoRefresh)).toBe(false);
+
+      // Test case 2: Expired token WITH refresh token = VALID (can be refreshed)
+      const expiredSessionWithRefresh: SignInData = {
+        ...createTestSession(),
+        tokens: {
+          access_token: 'expired-token',
+          refresh_token: 'valid-refresh-token',
+          refreshedAt: Date.now(),
+          expiresAt: Date.now() - 60000 // Expired 1 minute ago
+        }
+      };
+
+      expect(isSessionValid(expiredSessionWithRefresh)).toBe(true);
     });
 
     it('MUST clear expired sessions automatically', () => {
@@ -252,6 +273,7 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           access_token: 'expired-token',
           refresh_token: 'expired-refresh',
+          refreshedAt: Date.now(),
           expiresAt: Date.now() - 60000
         }
       };

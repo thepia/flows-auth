@@ -73,12 +73,11 @@ describe('WebAuthn Verification Behavior', () => {
       const userCheck = await authStore.checkUser(TEST_USER_EMAIL);
 
       expect(userCheck.exists).toBe(true);
-      expect(userCheck.hasWebAuthn || userCheck.hasPasskey).toBe(true);
+      expect(userCheck.hasWebAuthn).toBe(true);
 
       console.log('✅ User check works correctly:', {
         exists: userCheck.exists,
-        hasWebAuthn: userCheck.hasWebAuthn,
-        hasPasskey: userCheck.hasPasskey
+        hasWebAuthn: userCheck.hasWebAuthn
       });
     });
   });

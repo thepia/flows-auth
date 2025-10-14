@@ -6,6 +6,8 @@
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import type { User } from '../types';
+import Icon from './icons/Icon.svelte';
+import { ArrowsClockwise } from 'phosphor-svelte';
 import {
   "user.privacy.dataPolicy" as userPrivacyDataPolicy,
   "user.privacy.description" as userPrivacyDescription,
@@ -24,14 +26,30 @@ import {
 // Props
 export let user: User;
 export let onSignOut: () => void;
+export let onRefreshTokens: (() => Promise<void>) | undefined = undefined;
 
 // Events
 const dispatch = createEventDispatcher<{
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
 
+let refreshing = false;
+
 function handleSignOut() {
   onSignOut();
+}
+
+async function handleRefreshTokens() {
+  if (!onRefreshTokens || refreshing) return;
+
+  try {
+    refreshing = true;
+    await onRefreshTokens();
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+  } finally {
+    refreshing = false;
+  }
 }
 </script>
 
@@ -42,15 +60,36 @@ function handleSignOut() {
       <p class="user-name">{user.name || user.email}</p>
       <p class="user-email">{user.email}</p>
     </div>
-    
-    <button
-      type="button"
-      class="sign-out-button"
-      on:click={handleSignOut}
-      title={userSignOut()}
-    >
-      {userSignOut()}
-    </button>
+
+    <div class="header-actions">
+      {#if onRefreshTokens}
+        <button
+          type="button"
+          class="refresh-button"
+          on:click={handleRefreshTokens}
+          disabled={refreshing}
+          title="Refresh tokens"
+          aria-label="Refresh tokens"
+        >
+          <span class="icon-wrapper" class:spinning={refreshing}>
+            <Icon
+              icon={ArrowsClockwise}
+              size={20}
+              variant="secondary"
+            />
+          </span>
+        </button>
+      {/if}
+
+      <button
+        type="button"
+        class="sign-out-button"
+        on:click={handleSignOut}
+        title={userSignOut()}
+      >
+        {userSignOut()}
+      </button>
+    </div>
   </div>
 
   <div class="management-sections">
@@ -150,6 +189,57 @@ function handleSignOut() {
     font-size: 0.875rem;
     color: var(--auth-text-secondary, #6b7280);
     margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .refresh-button {
+    background: var(--auth-button-secondary-bg, #f9fafb);
+    color: var(--auth-button-secondary-text, #374151);
+    border: 1px solid var(--auth-button-secondary-border, #d1d5db);
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .refresh-button:hover:not(:disabled) {
+    background: var(--auth-button-secondary-hover-bg, #f3f4f6);
+    border-color: var(--auth-button-secondary-hover-border, #9ca3af);
+  }
+
+  .refresh-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+
+  .icon-wrapper.spinning {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .sign-out-button {
@@ -257,7 +347,7 @@ function handleSignOut() {
       gap: 16px;
     }
 
-    .sign-out-button {
+    .header-actions {
       align-self: flex-start;
     }
 

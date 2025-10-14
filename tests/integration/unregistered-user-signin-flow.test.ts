@@ -172,7 +172,7 @@ describe('Unregistered User Sign-In Flow', () => {
         console.log('1️⃣ Checking email...');
         const emailCheck = await apiClient.checkEmail(email);
         const userExists = emailCheck.exists;
-        const hasPasskeys = emailCheck.hasPasskey;
+        const hasPasskeys = emailCheck.hasWebAuthn;
 
         console.log(`📊 Email check results:`, {
           email,

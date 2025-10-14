@@ -977,7 +977,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     try {
       updateStore((s) => ({ ...s, loading: true }));
       const result = await api.checkEmail(email);
-      const userData = result; // UserCheckData is already in the correct format
+      const userData = result; // CheckUserResponse is already in the correct format
       updateStore((s) => ({ ...s, loading: false }));
 
       // Send USER_CHECKED event with user data

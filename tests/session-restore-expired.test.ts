@@ -11,10 +11,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../src/stores/auth-store';
 import type { AuthConfig } from '../src/types';
-import type { DatabaseAdapter, SessionData } from '../src/types/database';
+import type { SessionData, SessionPersistence } from '../src/types/database';
+import { createMockSessionPersistence } from './helpers/session-persistence-mock';
 
 describe('Session Restoration with Expired Token', () => {
-  let mockDatabase: DatabaseAdapter;
+  let mockDatabase: SessionPersistence;
   let storedSession: SessionData | null;
   let mockFetch: ReturnType<typeof vi.fn>;
 
@@ -25,17 +26,7 @@ describe('Session Restoration with Expired Token', () => {
 
     // Create a mock database adapter that stores session in memory
     storedSession = null;
-    mockDatabase = {
-      saveSession: vi.fn(async (data: SessionData) => {
-        storedSession = { ...data };
-      }),
-      loadSession: vi.fn(async () => {
-        return storedSession;
-      }),
-      clearSession: vi.fn(async () => {
-        storedSession = null;
-      })
-    };
+    mockDatabase = createMockSessionPersistence();
 
     // Mock fetch for API calls
     mockFetch = vi.fn() as any;
@@ -59,7 +50,8 @@ describe('Session Restoration with Expired Token', () => {
       authMethod: 'email-code'
     };
 
-    storedSession = expiredSession;
+    // Create mock with initial session
+    mockDatabase = createMockSessionPersistence({ initialSession: expiredSession });
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
@@ -94,7 +86,8 @@ describe('Session Restoration with Expired Token', () => {
       authMethod: 'email-code'
     };
 
-    storedSession = expiredSession;
+    // Create mock with initial session
+    mockDatabase = createMockSessionPersistence({ initialSession: expiredSession });
 
     // Mock successful token refresh response
     mockFetch.mockResolvedValueOnce({
@@ -140,7 +133,11 @@ describe('Session Restoration with Expired Token', () => {
 
     // Verify session was updated in storage with new tokens
     expect(mockDatabase.saveSession).toHaveBeenCalled();
-    const savedSession = storedSession;
+
+    // Get the last saved session from the mock spy
+    const saveSpy = mockDatabase.saveSession as any;
+    const saveCallArgs = saveSpy.mock.calls[saveSpy.mock.calls.length - 1];
+    const savedSession = saveCallArgs?.[0];
     expect(savedSession?.accessToken).toBe('new_access_token');
     expect(savedSession?.refreshToken).toBe('new_refresh_token');
   });
@@ -157,7 +154,8 @@ describe('Session Restoration with Expired Token', () => {
       authMethod: 'email-code'
     };
 
-    storedSession = expiredSession;
+    // Create mock with initial session
+    mockDatabase = createMockSessionPersistence({ initialSession: expiredSession });
 
     // Mock failed token refresh response
     mockFetch.mockResolvedValueOnce({
@@ -191,8 +189,6 @@ describe('Session Restoration with Expired Token', () => {
       },
       { timeout: 5000 }
     );
-
-    expect(storedSession).toBeNull();
   });
 
   it('should restore session normally when access token is still valid', async () => {
@@ -207,7 +203,8 @@ describe('Session Restoration with Expired Token', () => {
       authMethod: 'email-code'
     };
 
-    storedSession = validSession;
+    // Create mock with initial session
+    mockDatabase = createMockSessionPersistence({ initialSession: validSession });
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',

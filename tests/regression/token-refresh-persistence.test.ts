@@ -16,7 +16,7 @@
  * 2. Auto-refresh: scheduleTokenRefresh() → calls core.refreshTokens() directly
  *
  * The bug was in path #2: core.refreshTokens() was calling set() directly,
- * bypassing DatabaseAdapter.saveSession() in updateTokens().
+ * bypassing SessionPersistence.saveSession() in updateTokens().
  *
  * Fix: Changed core.refreshTokens() to call updateTokens() which:
  * - Updates store state
@@ -30,6 +30,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/api/auth-api';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
+import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -96,14 +97,9 @@ describe('REGRESSION: Token Refresh Persistence', () => {
       }
     };
 
-    // Create spy for DatabaseAdapter.saveSession
-    saveSessionSpy = vi.fn().mockResolvedValue(undefined);
-
-    mockDatabaseAdapter = {
-      saveSession: saveSessionSpy,
-      loadSession: vi.fn().mockResolvedValue(null),
-      clearSession: vi.fn().mockResolvedValue(undefined)
-    };
+    // Create mock SessionPersistence adapter with all required methods
+    mockDatabaseAdapter = createSimpleMockSessionPersistence();
+    saveSessionSpy = mockDatabaseAdapter.saveSession;
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
@@ -121,7 +117,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     authStore.destroy();
   });
 
-  it('should persist new refresh token to DatabaseAdapter after successful refresh', async () => {
+  it('should persist new refresh token to SessionPersistence after successful refresh', async () => {
     // ARRANGE: Set up initial authenticated session
     authStore.core.getState().updateUser(mockUser);
     await authStore.core.getState().updateTokens({
@@ -136,7 +132,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     // ACT: Call refreshTokens (simulates auto-refresh or manual refresh)
     await authStore.refreshTokens();
 
-    // ASSERT: DatabaseAdapter.saveSession must be called during refresh
+    // ASSERT: SessionPersistence.saveSession must be called during refresh
     expect(saveSessionSpy).toHaveBeenCalled();
 
     // Verify the new refresh token is passed to saveSession
@@ -170,7 +166,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     // ACT 1: First refresh
     await authStore.refreshTokens();
 
-    // Verify new token was saved to DatabaseAdapter
+    // Verify new token was saved to SessionPersistence
     let lastSaveCall = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
     expect(lastSaveCall.refreshToken).toBe(mockRefreshedTokens.refresh_token);
 
@@ -191,13 +187,13 @@ describe('REGRESSION: Token Refresh Persistence', () => {
       refresh_token: mockRefreshedTokens.refresh_token // NOT the initial token!
     });
 
-    // Verify the second new token was saved to DatabaseAdapter
+    // Verify the second new token was saved to SessionPersistence
     lastSaveCall = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
     expect(lastSaveCall.refreshToken).toBe(mockSecondRefreshTokens.refresh_token);
   });
 
   it('should save session after manual refresh via authStore.refreshTokens()', async () => {
-    // This verifies that authStore.refreshTokens() (the wrapper) also saves to DatabaseAdapter
+    // This verifies that authStore.refreshTokens() (the wrapper) also saves to SessionPersistence
     // Both manual (authStore) and auto (core) refresh paths must persist tokens
 
     // ARRANGE
@@ -213,7 +209,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     // ACT: Refresh tokens via authStore wrapper (manual refresh path)
     await authStore.refreshTokens();
 
-    // ASSERT: DatabaseAdapter.saveSession should be called
+    // ASSERT: SessionPersistence.saveSession should be called
     expect(saveSessionSpy).toHaveBeenCalled();
     const lastCall = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
     expect(lastCall.refreshToken).toBe(mockRefreshedTokens.refresh_token);
@@ -255,10 +251,10 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     saveSessionSpy.mockClear();
 
     // ACT: Call core.refreshTokens() directly (simulates auto-refresh timer)
-    // This is the buggy path that was NOT saving to DatabaseAdapter
+    // This is the buggy path that was NOT saving to SessionPersistence
     await authStore.core.getState().refreshTokens();
 
-    // ASSERT: DatabaseAdapter.saveSession MUST be called even on auto-refresh
+    // ASSERT: SessionPersistence.saveSession MUST be called even on auto-refresh
     expect(saveSessionSpy).toHaveBeenCalled();
 
     // Verify the new refresh token is passed to saveSession
@@ -271,8 +267,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     expect(lastCall.userId).toBe(mockUser.id);
   });
 
-  it('should handle refresh when no prior session exists in DatabaseAdapter', async () => {
-    // ARRANGE: No session in DatabaseAdapter (loadSession returns null), but tokens in core store
+  it('should handle refresh when no prior session exists in SessionPersistence', async () => {
+    // ARRANGE: No session in SessionPersistence (loadSession returns null), but tokens in core store
     mockDatabaseAdapter.loadSession.mockResolvedValue(null);
 
     authStore.core.getState().updateUser(mockUser);
@@ -293,5 +289,95 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     const lastCall = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
     expect(lastCall.refreshToken).toBe(mockRefreshedTokens.refresh_token);
     expect(lastCall.authMethod).toBe('passkey'); // Default fallback when no existing session
+  });
+
+  it('should preserve Supabase tokens during token refresh', async () => {
+    // REGRESSION TEST: Ensures Supabase tokens are included in session data during refresh
+    // This test verifies the fix for the bug where Supabase tokens were lost during refresh
+
+    // ARRANGE: Set up initial authenticated session WITH Supabase tokens
+    const initialSupabaseToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.initial';
+    const initialSupabaseExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    authStore.core.getState().updateUser(mockUser);
+    await authStore.core.getState().updateTokens({
+      access_token: mockInitialTokens.access_token,
+      refresh_token: mockInitialTokens.refresh_token,
+      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
+      supabase_token: initialSupabaseToken,
+      supabase_expires_at: initialSupabaseExpiresAt
+    });
+
+    // Mock refresh response with NEW Supabase tokens
+    const refreshedSupabaseToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.refreshed';
+    const refreshedSupabaseExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    mockApiClient.refreshToken.mockResolvedValueOnce({
+      ...mockRefreshedTokens,
+      supabase_token: refreshedSupabaseToken,
+      supabase_expires_at: refreshedSupabaseExpiresAt
+    });
+
+    saveSessionSpy.mockClear();
+
+    // ACT: Refresh tokens
+    await authStore.refreshTokens();
+
+    // ASSERT: Verify Supabase tokens are preserved in session data
+    expect(saveSessionSpy).toHaveBeenCalled();
+
+    const sessionData = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
+
+    // Verify NEW Supabase tokens from refresh response are saved
+    expect(sessionData.supabaseToken).toBe(refreshedSupabaseToken);
+    expect(sessionData.supabaseExpiresAt).toBe(refreshedSupabaseExpiresAt);
+
+    // Verify other tokens are also updated
+    expect(sessionData.accessToken).toBe(mockRefreshedTokens.access_token);
+    expect(sessionData.refreshToken).toBe(mockRefreshedTokens.refresh_token);
+    expect(sessionData.userId).toBe(mockUser.id);
+  });
+
+  it('should handle refresh when server omits Supabase tokens', async () => {
+    // EDGE CASE: Server doesn't provide Supabase tokens in refresh response
+    // Should clear old Supabase tokens (not preserve them)
+
+    // ARRANGE: Set up initial session WITH Supabase tokens
+    const initialSupabaseToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.initial';
+    const initialSupabaseExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+
+    authStore.core.getState().updateUser(mockUser);
+    await authStore.core.getState().updateTokens({
+      access_token: mockInitialTokens.access_token,
+      refresh_token: mockInitialTokens.refresh_token,
+      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
+      supabase_token: initialSupabaseToken,
+      supabase_expires_at: initialSupabaseExpiresAt
+    });
+
+    // Mock refresh response WITHOUT Supabase tokens (server omits them)
+    mockApiClient.refreshToken.mockResolvedValueOnce({
+      ...mockRefreshedTokens
+      // No supabase_token or supabase_expires_at fields
+    });
+
+    saveSessionSpy.mockClear();
+
+    // ACT: Refresh tokens
+    await authStore.refreshTokens();
+
+    // ASSERT: Supabase tokens should be cleared (undefined) in session data
+    expect(saveSessionSpy).toHaveBeenCalled();
+
+    const sessionData = saveSessionSpy.mock.calls[saveSessionSpy.mock.calls.length - 1][0];
+
+    // Verify Supabase tokens are cleared when server omits them
+    expect(sessionData.supabaseToken).toBeUndefined();
+    expect(sessionData.supabaseExpiresAt).toBeUndefined();
+
+    // Verify other tokens are still updated correctly
+    expect(sessionData.accessToken).toBe(mockRefreshedTokens.access_token);
+    expect(sessionData.refreshToken).toBe(mockRefreshedTokens.refresh_token);
   });
 });

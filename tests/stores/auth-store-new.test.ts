@@ -41,14 +41,28 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock session manager
+let mockStorage: Record<string, string> = {};
+
 vi.mock('../../src/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
-  getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
-  getSession: vi.fn(() => null),
-  isSessionValid: vi.fn(() => false),
-  saveSession: vi.fn(),
-  clearSession: vi.fn(),
-  generateInitials: vi.fn((name: string) => name.charAt(0).toUpperCase())
+  getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' }))
+}));
+
+vi.mock('../../src/utils/storageManager', () => ({
+  getStorageManager: vi.fn(() => ({
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: vi.fn(() => {
+      mockStorage = {};
+    }),
+    getConfig: vi.fn(() => ({ type: 'sessionStorage' })),
+    getSessionTimeout: vi.fn(() => 8 * 60 * 60 * 1000)
+  }))
 }));
 
 // Mock browser environment

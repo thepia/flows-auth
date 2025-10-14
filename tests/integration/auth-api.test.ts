@@ -158,7 +158,7 @@ describe('AuthApiClient', () => {
       };
 
       mockFetch.mockResolvedValueOnce({
-        ok: true,  // API returns 200 with success: false
+        ok: true, // API returns 200 with success: false
         json: () => Promise.resolve(errorResponse)
       });
 
@@ -303,6 +303,140 @@ describe('AuthApiClient', () => {
       );
 
       expect(result).toEqual(mockResponse);
+    });
+
+    it('should handle refresh response with Supabase tokens', async () => {
+      // REGRESSION TEST: Ensures API client correctly handles Supabase tokens in refresh response
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+        supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc123',
+        supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await apiClient.refreshToken({
+        refresh_token: 'old-refresh-token'
+      });
+
+      // Verify API client passes through Supabase tokens unchanged
+      expect(result.supabase_token).toBe(mockResponse.supabase_token);
+      expect(result.supabase_expires_at).toBe(mockResponse.supabase_expires_at);
+
+      // Verify other standard fields are also present
+      expect(result.access_token).toBe('new-access-token');
+      expect(result.refresh_token).toBe('new-refresh-token');
+      expect(result.expires_in).toBe(3600);
+      expect(result.step).toBe('success');
+    });
+
+    it('should handle refresh response without Supabase tokens', async () => {
+      // EDGE CASE: Server doesn't provide Supabase tokens (feature disabled, generation failed, etc.)
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600
+        // No supabase_token or supabase_expires_at fields
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await apiClient.refreshToken({
+        refresh_token: 'old-refresh-token'
+      });
+
+      // Verify Supabase tokens are undefined when not provided by server
+      expect(result.supabase_token).toBeUndefined();
+      expect(result.supabase_expires_at).toBeUndefined();
+
+      // Verify other standard fields are still present
+      expect(result.access_token).toBe('new-access-token');
+      expect(result.refresh_token).toBe('new-refresh-token');
+      expect(result.expires_in).toBe(3600);
+      expect(result.step).toBe('success');
+    });
+
+    it('should handle verifyAppEmailCode response with Supabase tokens', async () => {
+      // REGRESSION TEST: Ensures verifyAppEmailCode correctly handles Supabase tokens
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2024-01-01T00:00:00Z'
+        },
+        access_token: 'access-token-123',
+        refresh_token: 'refresh-token-456',
+        expires_in: 3600,
+        supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.email_verify',
+        supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await apiClient.verifyAppEmailCode('test@example.com', '123456');
+
+      // Verify API client passes through Supabase tokens unchanged
+      expect(result.supabase_token).toBe(mockResponse.supabase_token);
+      expect(result.supabase_expires_at).toBe(mockResponse.supabase_expires_at);
+
+      // Verify other standard fields are also present
+      expect(result.access_token).toBe('access-token-123');
+      expect(result.refresh_token).toBe('refresh-token-456');
+      expect(result.expires_in).toBe(3600);
+      expect(result.step).toBe('success');
+      expect(result.user).toEqual(mockResponse.user);
+    });
+
+    it('should handle verifyAppEmailCode response without Supabase tokens', async () => {
+      // EDGE CASE: Server doesn't provide Supabase tokens in email verification
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2024-01-01T00:00:00Z'
+        },
+        access_token: 'access-token-123',
+        refresh_token: 'refresh-token-456',
+        expires_in: 3600
+        // No supabase_token or supabase_expires_at fields
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await apiClient.verifyAppEmailCode('test@example.com', '123456');
+
+      // Verify Supabase tokens are undefined when not provided by server
+      expect(result.supabase_token).toBeUndefined();
+      expect(result.supabase_expires_at).toBeUndefined();
+
+      // Verify other standard fields are still present
+      expect(result.access_token).toBe('access-token-123');
+      expect(result.refresh_token).toBe('refresh-token-456');
+      expect(result.expires_in).toBe(3600);
+      expect(result.step).toBe('success');
+      expect(result.user).toEqual(mockResponse.user);
     });
 
     it('should sign out using app-specific endpoint', async () => {
@@ -478,7 +612,7 @@ describe('AuthApiClient', () => {
       // Note: org field doesn't override appCode - appCode is always used
       const orgConfig = {
         ...mockConfig,
-        org: 'wos'  // org field is deprecated, appCode takes precedence
+        org: 'wos' // org field is deprecated, appCode takes precedence
       };
       const orgApiClient = new AuthApiClient(orgConfig);
 

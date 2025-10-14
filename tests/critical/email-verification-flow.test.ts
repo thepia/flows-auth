@@ -21,7 +21,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should detect emailVerifiedViaInvitation = true
       // - Should handle invitation token presence
       // - Should differentiate from standard users
-      expect.todo('Implement invitation user detection test');
+      test.todo('Implement invitation user detection test');
     });
 
     test('STUB: should show verified message for invitation users', async () => {
@@ -29,7 +29,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should show "email has been verified" message
       // - Should show "full access to all features" message
       // - Should NOT show "verify your email" message
-      expect.todo('Implement invitation user message test');
+      test.todo('Implement invitation user message test');
     });
 
     test('STUB: should trigger auto-sign-in for invitation users', async () => {
@@ -38,7 +38,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should include autoSignIn flag
       // - Should hide registration form
       // - Should not show success message UI
-      expect.todo('Implement auto-sign-in test');
+      test.todo('Implement auto-sign-in test');
     });
 
     test('STUB: should handle invitation token validation', async () => {
@@ -46,7 +46,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should validate token format
       // - Should handle expired tokens
       // - Should handle invalid tokens
-      expect.todo('Implement invitation token validation test');
+      test.todo('Implement invitation token validation test');
     });
 
     test('STUB: should clean up invitation URL after registration', async () => {
@@ -54,7 +54,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should remove invitation token from URL
       // - Should clean up other invitation parameters
       // - Should maintain clean URL state
-      expect.todo('Implement URL cleanup test');
+      test.todo('Implement URL cleanup test');
     });
   });
 
@@ -64,7 +64,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should detect emailVerifiedViaInvitation = false
       // - Should handle missing emailVerifiedViaInvitation field
       // - Should default to standard flow
-      expect.todo('Implement standard user detection test');
+      test.todo('Implement standard user detection test');
     });
 
     test('STUB: should show verification message for standard users', async () => {
@@ -72,7 +72,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should show "sent a welcome email" message
       // - Should show "verify your email to unlock" message
       // - Should NOT show "email has been verified" message
-      expect.todo('Implement standard user message test');
+      test.todo('Implement standard user message test');
     });
 
     test('STUB: should show success UI for standard users', async () => {
@@ -81,7 +81,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should emit success event
       // - Should not auto-sign-in
       // - Should allow user to see success message
-      expect.todo('Implement success UI test');
+      test.todo('Implement success UI test');
     });
 
     test('STUB: should handle email verification process', async () => {
@@ -89,7 +89,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should send verification email
       // - Should handle verification link clicks
       // - Should update user verification status
-      expect.todo('Implement email verification process test');
+      test.todo('Implement email verification process test');
     });
   });
 
@@ -100,7 +100,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should parse welcomeEmailSent field
       // - Should parse emailVerificationRequired field
       // - Should handle all response variations
-      expect.todo('Implement complete response test');
+      test.todo('Implement complete response test');
     });
 
     test('STUB: should handle missing response fields', async () => {
@@ -108,7 +108,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should handle missing emailVerifiedViaInvitation
       // - Should default to safe behavior
       // - Should not break application
-      expect.todo('Implement missing field test');
+      test.todo('Implement missing field test');
     });
 
     test('STUB: should validate response field types', async () => {
@@ -116,7 +116,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - emailVerifiedViaInvitation should be boolean
       // - welcomeEmailSent should be boolean
       // - emailVerificationRequired should be boolean
-      expect.todo('Implement field type validation test');
+      test.todo('Implement field type validation test');
     });
 
     test('STUB: should handle malformed responses', async () => {
@@ -124,7 +124,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Invalid JSON
       // - Missing required fields
       // - Unexpected data types
-      expect.todo('Implement malformed response test');
+      test.todo('Implement malformed response test');
     });
   });
 
@@ -135,7 +135,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should include emailVerifiedViaInvitation: true
       // - Should include autoSignIn: true
       // - Should NOT emit success event
-      expect.todo('Implement invitation user events test');
+      test.todo('Implement invitation user events test');
     });
 
     test('STUB: should emit correct events for standard users', async () => {
@@ -144,7 +144,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should emit success event
       // - Should include emailVerifiedViaInvitation: false
       // - Should NOT include autoSignIn flag
-      expect.todo('Implement standard user events test');
+      test.todo('Implement standard user events test');
     });
 
     test('STUB: should handle event listener errors', async () => {
@@ -152,7 +152,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should handle listener errors gracefully
       // - Should not break registration flow
       // - Should log errors appropriately
-      expect.todo('Implement event error test');
+      test.todo('Implement event error test');
     });
   });
 
@@ -162,7 +162,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should not show registration success step
       // - Should hide form after registration
       // - Should show loading state during auto-sign-in
-      expect.todo('Implement invitation UI state test');
+      test.todo('Implement invitation UI state test');
     });
 
     test('STUB: should manage UI state for standard users', async () => {
@@ -170,7 +170,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should show registration success step
       // - Should display verification message
       // - Should maintain form visibility
-      expect.todo('Implement standard UI state test');
+      test.todo('Implement standard UI state test');
     });
 
     test('STUB: should handle state transitions correctly', async () => {
@@ -178,7 +178,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - From loading to success
       // - From success to auto-sign-in (invitation)
       // - From success to verification prompt (standard)
-      expect.todo('Implement state transition test');
+      test.todo('Implement state transition test');
     });
   });
 
@@ -188,7 +188,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - emailVerifiedViaInvitation = true but no invitation token
       // - emailVerifiedViaInvitation = false but invitation token present
       // - Should resolve conflicts safely
-      expect.todo('Implement conflicting status test');
+      test.todo('Implement conflicting status test');
     });
 
     test('STUB: should handle verification API failures', async () => {
@@ -196,7 +196,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Email sending failures
       // - Verification link failures
       // - Should provide fallback options
-      expect.todo('Implement verification API failure test');
+      test.todo('Implement verification API failure test');
     });
 
     test('STUB: should handle edge cases gracefully', async () => {
@@ -204,7 +204,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Null/undefined values
       // - Empty strings
       // - Invalid boolean values
-      expect.todo('Implement edge case test');
+      test.todo('Implement edge case test');
     });
   });
 
@@ -214,7 +214,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should handle appAccess events correctly
       // - Should handle success events correctly
       // - Should manage component visibility
-      expect.todo('Implement AuthSection integration test');
+      test.todo('Implement AuthSection integration test');
     });
 
     test('STUB: should integrate correctly with flows.thepia.net', async () => {
@@ -222,7 +222,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should handle demo initialization
       // - Should handle storage configuration
       // - Should handle URL cleanup
-      expect.todo('Implement flows.thepia.net integration test');
+      test.todo('Implement flows.thepia.net integration test');
     });
 
     test('STUB: should provide consistent API for consumers', async () => {
@@ -230,7 +230,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Consistent event structure
       // - Predictable behavior
       // - Clear documentation
-      expect.todo('Implement consumer API test');
+      test.todo('Implement consumer API test');
     });
   });
 
@@ -240,7 +240,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should not block UI during checks
       // - Should cache verification status
       // - Should minimize API calls
-      expect.todo('Implement performance test');
+      test.todo('Implement performance test');
     });
 
     test('STUB: should be reliable across different scenarios', async () => {
@@ -248,7 +248,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Should work consistently
       // - Should handle race conditions
       // - Should be deterministic
-      expect.todo('Implement reliability test');
+      test.todo('Implement reliability test');
     });
 
     test('STUB: should handle concurrent operations', async () => {
@@ -256,7 +256,7 @@ describe('CRITICAL: Email Verification Flow', () => {
       // - Multiple registration attempts
       // - Concurrent verification checks
       // - Proper operation queuing
-      expect.todo('Implement concurrency test');
+      test.todo('Implement concurrency test');
     });
   });
 });

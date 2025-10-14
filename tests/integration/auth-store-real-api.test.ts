@@ -209,7 +209,7 @@ describe('Auth Store Real API Integration Tests', () => {
         const result = await authStore.api.checkEmail(testEmail);
 
         expect(result).toHaveProperty('exists');
-        expect(result).toHaveProperty('hasPasskey');
+        expect(result).toHaveProperty('hasWebAuthn'); // API returns hasWebAuthn, not hasPasskey
 
         if (result.exists) {
           console.log(`✅ Auth store API: User ${testEmail} exists`);

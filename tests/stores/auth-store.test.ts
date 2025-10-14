@@ -37,20 +37,45 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock session manager
-let mockSignInData: any = null;
+let mockStorage: Record<string, string> = {};
+
 vi.mock('../../src/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
-  getSession: vi.fn(() => mockSignInData),
-  getCurrentSession: vi.fn(() => mockSignInData),
-  isSessionValid: vi.fn((session) => !!session && session.tokens?.expiresAt > Date.now()),
-  saveSession: vi.fn((data) => {
-    mockSignInData = data;
+  getSession: vi.fn(() => {
+    const data = mockStorage['thepia_auth_session'];
+    return data ? JSON.parse(data) : null;
+  }),
+  saveSession: vi.fn((data: any) => {
+    mockStorage['thepia_auth_session'] = JSON.stringify(data);
   }),
   clearSession: vi.fn(() => {
-    mockSignInData = null;
+    delete mockStorage['thepia_auth_session'];
   }),
-  generateInitials: vi.fn((name: string) => name.charAt(0).toUpperCase())
+  isSessionValid: vi.fn((session: any) => {
+    if (!session) return false;
+    if (session.tokens?.expiresAt && session.tokens.expiresAt < Date.now()) {
+      return !!session.tokens.refresh_token;
+    }
+    return true;
+  })
+}));
+
+vi.mock('../../src/utils/storageManager', () => ({
+  getStorageManager: vi.fn(() => ({
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: vi.fn(() => {
+      mockStorage = {};
+    }),
+    getConfig: vi.fn(() => ({ type: 'sessionStorage' })),
+    getSessionTimeout: vi.fn(() => 8 * 60 * 60 * 1000)
+  }))
 }));
 
 // Mock browser environment check
@@ -83,7 +108,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    mockSignInData = null; // Clear mock session data
+    mockStorage = {}; // Clear mock storage
 
     // Create the composed store with new architecture
     composedStore = createAuthStore(mockConfig);
@@ -248,7 +273,9 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'token',
         refresh_token: 'refresh-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: Date.now() + 3600000,
+        supabase_token: 'supabase-test-token',
+        supabase_expires_at: Date.now() + 3600000
       };
 
       // Update core authentication state
@@ -258,6 +285,11 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Test that authentication is now detected
       expect(composedStore.isAuthenticated()).toBe(true);
       expect(composedStore.core.getState().isAuthenticated()).toBe(true);
+
+      // Verify Supabase tokens are stored
+      const coreState = composedStore.core.getState();
+      expect(coreState.supabase_token).toBe('supabase-test-token');
+      expect(coreState.supabase_expires_at).toBe(mockTokens.supabase_expires_at);
     });
 
     it('should return access token when authenticated via unified API', async () => {
@@ -312,6 +344,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(coreState.state).toBe('unauthenticated');
       expect(coreState.user).toBeNull();
       expect(coreState.access_token).toBeNull();
+      expect(coreState.supabase_token).toBeNull();
+      expect(coreState.supabase_expires_at).toBeNull();
 
       const uiState = composedStore.ui.getState();
       expect(uiState.signInState).toBe('emailEntry');
@@ -409,6 +443,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(coreState).toHaveProperty('state');
       expect(coreState).toHaveProperty('user');
       expect(coreState).toHaveProperty('access_token');
+      expect(coreState).toHaveProperty('supabase_token');
+      expect(coreState).toHaveProperty('supabase_expires_at');
 
       expect(uiState).toHaveProperty('signInState'); // Single source of truth
       expect(uiState).toHaveProperty('email');
@@ -425,6 +461,71 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(uiState).not.toHaveProperty('access_token');
       expect(passkeyState).not.toHaveProperty('signInState');
       expect(emailState).not.toHaveProperty('signInState');
+    });
+
+    it('should expose Supabase tokens in getState() unified API', async () => {
+      const mockUser = {
+        id: '123',
+        email: 'test@example.com',
+        name: 'Test User',
+        emailVerified: true,
+        createdAt: '2023-01-01T00:00:00Z'
+      };
+
+      const supabaseExpiresAt = Date.now() + 3600000;
+      const mockTokens = {
+        access_token: 'auth0-token',
+        refresh_token: 'refresh-token',
+        expiresAt: Date.now() + 3600000,
+        supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc',
+        supabase_expires_at: supabaseExpiresAt
+      };
+
+      // Authenticate with Supabase tokens
+      composedStore.core.getState().updateUser(mockUser);
+      await composedStore.core.getState().updateTokens(mockTokens);
+
+      // Verify getState() exposes Supabase tokens
+      const state = composedStore.getState();
+      expect(state.supabase_token).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc');
+      expect(state.supabase_expires_at).toBe(supabaseExpiresAt);
+
+      // Verify other standard fields are present
+      expect(state.access_token).toBe('auth0-token');
+      expect(state.refresh_token).toBe('refresh-token');
+      expect(state.user).toEqual(mockUser);
+      expect(state.state).toBe('authenticated');
+    });
+
+    it('should handle getState() when Supabase tokens are not present', async () => {
+      const mockUser = {
+        id: '456',
+        email: 'nosupabase@example.com',
+        name: 'No Supabase User',
+        emailVerified: true,
+        createdAt: '2023-01-01T00:00:00Z'
+      };
+
+      const mockTokens = {
+        access_token: 'auth0-only-token',
+        refresh_token: 'refresh-only-token',
+        expiresAt: Date.now() + 3600000
+        // No Supabase tokens
+      };
+
+      // Authenticate without Supabase tokens
+      composedStore.core.getState().updateUser(mockUser);
+      await composedStore.core.getState().updateTokens(mockTokens);
+
+      // Verify getState() has null/undefined Supabase tokens (backward compatibility)
+      const state = composedStore.getState();
+      expect(state.supabase_token).toBeUndefined();
+      expect(state.supabase_expires_at).toBeUndefined();
+
+      // Verify authentication still works
+      expect(state.access_token).toBe('auth0-only-token');
+      expect(state.state).toBe('authenticated');
+      expect(composedStore.isAuthenticated()).toBe(true);
     });
   });
 });

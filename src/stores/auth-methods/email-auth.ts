@@ -208,7 +208,9 @@ export function createEmailAuthStore(options: StoreOptions) {
             {
               access_token: response.access_token,
               refresh_token: response.refresh_token,
-              expires_in: response.expires_in
+              expires_in: response.expires_in,
+              supabase_token: response.supabase_token,
+              supabase_expires_at: response.supabase_expires_at
             },
             'email-code'
           );

@@ -14,23 +14,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, RegistrationRequest } from '../../src/types';
-import {
-  getAccessToken,
-  getCurrentUser,
-  getSession,
-  isAuthenticated
-} from '../../src/utils/sessionManager';
 
 // Mock sessionManager (we verify calls but don't control implementation)
+let mockStorage: Record<string, string> = {};
+
 vi.mock('../../src/utils/sessionManager', () => ({
-  saveSession: vi.fn(),
-  getSession: vi.fn(),
-  clearSession: vi.fn(),
-  isSessionValid: vi.fn(),
-  isAuthenticated: vi.fn(),
-  getCurrentUser: vi.fn(),
-  getAccessToken: vi.fn(),
-  generateInitials: vi.fn((name) => name.charAt(0).toUpperCase()),
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn().mockReturnValue({
     type: 'sessionStorage',
@@ -38,6 +26,23 @@ vi.mock('../../src/utils/sessionManager', () => ({
     persistentSessions: false,
     userRole: 'guest'
   })
+}));
+
+vi.mock('../../src/utils/storageManager', () => ({
+  getStorageManager: vi.fn(() => ({
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: vi.fn(() => {
+      mockStorage = {};
+    }),
+    getConfig: vi.fn(() => ({ type: 'sessionStorage' })),
+    getSessionTimeout: vi.fn(() => 8 * 60 * 60 * 1000)
+  }))
 }));
 
 vi.mock('../../src/utils/webauthn', () => ({

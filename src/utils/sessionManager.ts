@@ -11,7 +11,7 @@
  * - Role-based storage strategy
  */
 
-import type { SignInData, StorageConfig } from '../types';
+import type { SignInData, StorageConfig, UserData } from '../types';
 import {
   getOptimalStorageConfig,
   getStorageManager,
@@ -19,15 +19,7 @@ import {
 } from './storageManager';
 
 const SESSION_KEY = 'thepia_auth_session';
-const LAST_USER_KEY = 'thepia_last_user';
 const EMAIL_PREFILL_KEY = 'thepia_email_prefill';
-
-interface LastUserData {
-  email: string;
-  name: string;
-  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
-  lastLoginAt: number;
-}
 
 export function getSession(): SignInData | null {
   try {
@@ -65,9 +57,6 @@ export function saveSession(sessionData: SignInData): void {
   try {
     const storage = getStorageManager();
     storage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-
-    // Also save last user data for future automatic authentication
-    saveLastUser(sessionData);
 
     // Emit session update event
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
@@ -139,59 +128,6 @@ export function isSessionValid(session: SignInData | null): boolean {
   }
 
   return true;
-}
-
-export function updateLastActivity(): void {
-  const session = getSession();
-  if (session) {
-    session.lastActivity = Date.now();
-    saveSession(session);
-  }
-}
-
-export function getLastUser(): LastUserData | null {
-  try {
-    const lastUserData = localStorage.getItem(LAST_USER_KEY);
-    if (!lastUserData) return null;
-
-    const lastUser = JSON.parse(lastUserData) as LastUserData;
-
-    // Only return if the last login was within the last 30 days
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    if (lastUser.lastLoginAt < thirtyDaysAgo) {
-      clearLastUser();
-      return null;
-    }
-
-    return lastUser;
-  } catch (error) {
-    console.error('Failed to get last user:', error);
-    clearLastUser();
-    return null;
-  }
-}
-
-export function saveLastUser(sessionData: SignInData): void {
-  try {
-    const lastUserData: LastUserData = {
-      email: sessionData.user.email,
-      name: sessionData.user.name,
-      authMethod: sessionData.authMethod,
-      lastLoginAt: Date.now()
-    };
-
-    localStorage.setItem(LAST_USER_KEY, JSON.stringify(lastUserData));
-  } catch (error) {
-    console.error('Failed to save last user:', error);
-  }
-}
-
-export function clearLastUser(): void {
-  try {
-    localStorage.removeItem(LAST_USER_KEY);
-  } catch (error) {
-    console.error('Failed to clear last user:', error);
-  }
 }
 
 // Email prefill functions for session-based convenience

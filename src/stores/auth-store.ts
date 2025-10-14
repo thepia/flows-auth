@@ -140,7 +140,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const tokens = {
           access_token: sessionData.accessToken,
           refresh_token: sessionData.refreshToken,
-          expiresAt: sessionData.expiresAt
+          expiresAt: sessionData.expiresAt,
+          supabase_token: sessionData.supabaseToken,
+          supabase_expires_at: sessionData.supabaseExpiresAt
         };
 
         authenticateUser(core, user, tokens);
@@ -164,7 +166,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const tokens = {
           access_token: sessionData.accessToken,
           refresh_token: sessionData.refreshToken,
-          expiresAt: sessionData.expiresAt
+          expiresAt: sessionData.expiresAt,
+          supabase_token: sessionData.supabaseToken,
+          supabase_expires_at: sessionData.supabaseExpiresAt
         };
 
         authenticateUser(core, user, tokens);
@@ -413,7 +417,10 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           tokens: {
             access_token: coreState.access_token,
             refresh_token: coreState.refresh_token || '',
-            expiresAt: coreState.expiresAt || Date.now() + 24 * 60 * 60 * 1000
+            refreshedAt: Date.now(),
+            expiresAt: coreState.expiresAt || Date.now() + 24 * 60 * 60 * 1000,
+            supabase_token: coreState.supabase_token || undefined,
+            supabase_expires_at: coreState.supabase_expires_at || undefined
           },
           authMethod: existingSessionData?.authMethod || ('passkey' as const),
           lastActivity: Date.now()
@@ -502,7 +509,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           authenticateUser(core, response.user, {
             access_token: response.access_token,
             refresh_token: response.refresh_token,
-            expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : undefined
+            expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
+            supabase_token: response.supabase_token,
+            supabase_expires_at: response.supabase_expires_at
           });
 
           const sessionData = createSessionData(
@@ -510,7 +519,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
             {
               access_token: response.access_token,
               refresh_token: response.refresh_token,
-              expires_in: response.expires_in
+              expires_in: response.expires_in,
+              supabase_token: response.supabase_token,
+              supabase_expires_at: response.supabase_expires_at
             },
             'passkey'
           );
@@ -596,6 +607,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         access_token: coreState.access_token,
         refresh_token: coreState.refresh_token,
         expiresAt: coreState.expiresAt,
+        supabase_token: coreState.supabase_token,
+        supabase_expires_at: coreState.supabase_expires_at,
         apiError: errorState.apiError,
         passkeysEnabled: coreState.passkeysEnabled,
         email: uiState.email,

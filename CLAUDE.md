@@ -230,6 +230,16 @@ cd examples/tasks-app-demo && pnpm dev             # Task management demo
 <!-- ✅ CORRECT - Use dynamic imports in onMount -->
 ```
 
+## Svelte MCP Server
+
+When configured in VSCode, the Svelte MCP server provides documentation and code analysis tools:
+
+- **REQUIRED**: Use `svelte-autofixer` tool on all Svelte code before sending to user
+- **Documentation**: Use `list-sections` and `get-documentation` for Svelte 5/SvelteKit help
+- **Playground**: Generate Svelte Playground links with `playground-link`
+
+📋 **Full MCP usage guide**: https://svelte.dev/docs/mcp/overview
+
 ## API Server Architecture
 
 ### Development Environment Detection

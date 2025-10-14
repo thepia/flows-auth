@@ -37,7 +37,9 @@ vi.mock('../../src/api/auth-api', () => ({
       },
       access_token: 'access-token',
       refresh_token: 'refresh-token',
-      expires_in: 3600
+      expires_in: 3600,
+      supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.mock',
+      supabase_expires_at: Date.now() + 3600000
     })
   }))
 }));
@@ -50,20 +52,28 @@ vi.mock('../../src/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
 
-let mockSessionData: any = null;
+let mockStorage: Record<string, string> = {};
+
 vi.mock('../../src/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
-  getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
-  getSession: vi.fn(() => mockSessionData),
-  getCurrentSession: vi.fn(() => mockSessionData),
-  isSessionValid: vi.fn((session) => !!session && session.tokens?.expiresAt > Date.now()),
-  saveSession: vi.fn((data) => {
-    mockSessionData = data;
-  }),
-  clearSession: vi.fn(() => {
-    mockSessionData = null;
-  }),
-  generateInitials: vi.fn((name: string) => name.charAt(0).toUpperCase())
+  getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' }))
+}));
+
+vi.mock('../../src/utils/storageManager', () => ({
+  getStorageManager: vi.fn(() => ({
+    getItem: vi.fn((key: string) => mockStorage[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      mockStorage[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete mockStorage[key];
+    }),
+    clear: vi.fn(() => {
+      mockStorage = {};
+    }),
+    getConfig: vi.fn(() => ({ type: 'sessionStorage' })),
+    getSessionTimeout: vi.fn(() => 8 * 60 * 60 * 1000)
+  }))
 }));
 
 const mockConfig: AuthConfig = {
@@ -80,7 +90,9 @@ describe('Svelte Store Adapter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSessionData = null;
+    mockStorage = {};
+    localStorage.clear();
+    sessionStorage.clear();
     const baseStore = createAuthStore(mockConfig);
     store = makeSvelteCompatible(baseStore);
   });
@@ -396,6 +408,8 @@ describe('Svelte Store Adapter', () => {
       expect(state.state).toBeDefined();
       expect(state.user).toBeDefined();
       expect(state.access_token).toBeDefined();
+      expect(state.supabase_token).toBeDefined();
+      expect(state.supabase_expires_at).toBeDefined();
 
       // Should have UI state
       expect(state.signInState).toBeDefined();

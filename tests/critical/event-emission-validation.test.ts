@@ -22,7 +22,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should include user data
       // - Should include emailVerifiedViaInvitation flag
       // - Should include autoSignIn flag
-      expect.todo('Implement appAccess event test');
+      test.todo('Implement appAccess event test');
     });
 
     test('STUB: should emit success event for standard users', async () => {
@@ -31,7 +31,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should include user data
       // - Should include step information
       // - Should NOT include autoSignIn flag
-      expect.todo('Implement success event test');
+      test.todo('Implement success event test');
     });
 
     test('STUB: should emit error events on failures', async () => {
@@ -40,7 +40,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should include error information
       // - Should include error code/type
       // - Should allow error handling by parent
-      expect.todo('Implement error event test');
+      test.todo('Implement error event test');
     });
 
     test('STUB: should emit stepChange events during flow', async () => {
@@ -49,7 +49,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should include current step
       // - Should include previous step
       // - Should allow step tracking
-      expect.todo('Implement stepChange event test');
+      test.todo('Implement stepChange event test');
     });
 
     test('STUB: should emit terms_accepted events', async () => {
@@ -57,14 +57,14 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should emit when terms are accepted
       // - Should include acceptance status
       // - Should include timestamp
-      expect.todo('Implement terms_accepted event test');
+      test.todo('Implement terms_accepted event test');
     });
 
     test('STUB: should emit switchToSignIn events', async () => {
       // TODO: Test switchToSignIn event emission:
       // - Should emit when user wants to switch to sign-in
       // - Should allow parent to handle mode switching
-      expect.todo('Implement switchToSignIn event test');
+      test.todo('Implement switchToSignIn event test');
     });
   });
 
@@ -75,7 +75,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should initialize demo/app
       // - Should configure storage
       // - Should clean up invitation URL
-      expect.todo('Implement appAccess handling test');
+      test.todo('Implement appAccess handling test');
     });
 
     test('STUB: should handle success events correctly', async () => {
@@ -83,7 +83,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should show success message
       // - Should maintain form visibility
       // - Should allow user to see verification prompt
-      expect.todo('Implement success handling test');
+      test.todo('Implement success handling test');
     });
 
     test('STUB: should handle error events correctly', async () => {
@@ -91,7 +91,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should display error messages
       // - Should allow retry
       // - Should not break component state
-      expect.todo('Implement error handling test');
+      test.todo('Implement error handling test');
     });
 
     test('STUB: should handle stepChange events correctly', async () => {
@@ -99,7 +99,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should update UI based on step
       // - Should track progress
       // - Should provide user feedback
-      expect.todo('Implement stepChange handling test');
+      test.todo('Implement stepChange handling test');
     });
   });
 
@@ -110,7 +110,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - emailVerifiedViaInvitation boolean
       // - autoSignIn boolean (for invitation users)
       // - timestamp
-      expect.todo('Implement appAccess data validation test');
+      test.todo('Implement appAccess data validation test');
     });
 
     test('STUB: should include required data in success events', async () => {
@@ -119,7 +119,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - step information
       // - registration method used
       // - timestamp
-      expect.todo('Implement success data validation test');
+      test.todo('Implement success data validation test');
     });
 
     test('STUB: should include required data in error events', async () => {
@@ -128,7 +128,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - error code/type
       // - context information
       // - timestamp
-      expect.todo('Implement error data validation test');
+      test.todo('Implement error data validation test');
     });
 
     test('STUB: should validate event data types', async () => {
@@ -137,7 +137,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - emailVerifiedViaInvitation should be boolean
       // - autoSignIn should be boolean
       // - step should be string
-      expect.todo('Implement event data type validation test');
+      test.todo('Implement event data type validation test');
     });
   });
 
@@ -147,7 +147,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - stepChange before appAccess/success
       // - error events should not conflict with success
       // - proper event ordering
-      expect.todo('Implement event sequence test');
+      test.todo('Implement event sequence test');
     });
 
     test('STUB: should emit events at correct times', async () => {
@@ -155,7 +155,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Events should fire after state changes
       // - Events should not fire prematurely
       // - Events should be synchronous when possible
-      expect.todo('Implement event timing test');
+      test.todo('Implement event timing test');
     });
 
     test('STUB: should handle rapid event emission', async () => {
@@ -163,7 +163,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should handle multiple quick events
       // - Should not drop events
       // - Should maintain event order
-      expect.todo('Implement rapid event test');
+      test.todo('Implement rapid event test');
     });
 
     test('STUB: should prevent duplicate events', async () => {
@@ -171,7 +171,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should not emit duplicate success events
       // - Should not emit conflicting events
       // - Should debounce rapid identical events
-      expect.todo('Implement duplicate prevention test');
+      test.todo('Implement duplicate prevention test');
     });
   });
 
@@ -181,7 +181,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should not break component if listener throws
       // - Should log listener errors
       // - Should continue normal operation
-      expect.todo('Implement listener error test');
+      test.todo('Implement listener error test');
     });
 
     test('STUB: should handle missing event listeners', async () => {
@@ -189,7 +189,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should not break if no listeners attached
       // - Should continue normal operation
       // - Should not throw errors
-      expect.todo('Implement missing listener test');
+      test.todo('Implement missing listener test');
     });
 
     test('STUB: should handle event data serialization errors', async () => {
@@ -197,7 +197,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should handle circular references
       // - Should handle non-serializable data
       // - Should provide fallback data
-      expect.todo('Implement serialization error test');
+      test.todo('Implement serialization error test');
     });
   });
 
@@ -207,7 +207,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - RegistrationForm to AuthSection
       // - AuthSection to parent page
       // - Proper event bubbling
-      expect.todo('Implement parent-child communication test');
+      test.todo('Implement parent-child communication test');
     });
 
     test('STUB: should enable proper sibling communication', async () => {
@@ -215,7 +215,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Between different auth components
       // - Through shared parent
       // - Event coordination
-      expect.todo('Implement sibling communication test');
+      test.todo('Implement sibling communication test');
     });
 
     test('STUB: should handle component lifecycle events', async () => {
@@ -223,7 +223,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Component mount/unmount
       // - Event listener cleanup
       // - Memory leak prevention
-      expect.todo('Implement lifecycle event test');
+      test.todo('Implement lifecycle event test');
     });
   });
 
@@ -233,7 +233,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should not block UI
       // - Should minimize event payload size
       // - Should batch events when appropriate
-      expect.todo('Implement event performance test');
+      test.todo('Implement event performance test');
     });
 
     test('STUB: should be reliable across different scenarios', async () => {
@@ -241,7 +241,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Should work consistently
       // - Should handle edge cases
       // - Should be deterministic
-      expect.todo('Implement event reliability test');
+      test.todo('Implement event reliability test');
     });
 
     test('STUB: should handle concurrent event emission', async () => {
@@ -249,7 +249,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Multiple components emitting simultaneously
       // - Event queue management
       // - Proper event ordering
-      expect.todo('Implement concurrent event test');
+      test.todo('Implement concurrent event test');
     });
   });
 
@@ -259,7 +259,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Consistent event structure
       // - Backward compatibility
       // - Clear event documentation
-      expect.todo('Implement event contract test');
+      test.todo('Implement event contract test');
     });
 
     test('STUB: should provide type safety for events', async () => {
@@ -267,7 +267,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - TypeScript event types
       // - Runtime type validation
       // - Clear type errors
-      expect.todo('Implement event type safety test');
+      test.todo('Implement event type safety test');
     });
 
     test('STUB: should validate against event specifications', async () => {
@@ -275,7 +275,7 @@ describe('CRITICAL: Event Emission Validation', () => {
       // - Events match documented behavior
       // - Events include required fields
       // - Events follow naming conventions
-      expect.todo('Implement specification validation test');
+      test.todo('Implement specification validation test');
     });
   });
 });

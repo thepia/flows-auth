@@ -10,28 +10,31 @@ Session management works correctly, but the **tokens being stored are incorrect*
 
 ## Problem Statement
 
-**Current Issue**: flows-auth has inconsistent session storage between components:
-- `sessionManager.ts` uses `sessionStorage` with key `'thepia_auth_session'`
-- `auth-state-machine.ts` uses `localStorage` with keys `'auth_access_token'`, `'auth_user'`
+**Historical Issue** (RESOLVED): flows-auth previously had inconsistent session storage between components. This has been resolved through the SessionPersistence abstraction.
 
-**Impact**: Users sign in successfully but appear unauthenticated on page reload because the state machine cannot find sessions saved by sessionManager.
+**Current Architecture**:
+- `SessionPersistence` interface provides storage abstraction
+- `createLocalStorageAdapter()` implements default storage using StorageManager
+- All stores use SessionPersistence for session/user persistence
+- sessionManager utilities are legacy internal helpers (being phased out)
 
 ## Requirements
 
 ### R1: Session Storage Consistency (CRITICAL)
 
 **R1.1 Single Source of Truth**
-- **MUST**: All authentication components use sessionManager as the single source of truth
-- **MUST**: No direct `localStorage` or `sessionStorage` access outside sessionManager
-- **MUST**: All session reads/writes go through sessionManager functions
+- **MUST**: All authentication stores use SessionPersistence for session persistence
+- **MUST**: No direct `localStorage` or `sessionStorage` access in stores
+- **MUST**: All session reads/writes go through SessionPersistence methods
 
 **R1.2 Unified Storage Key**
 - **MUST**: Use single session key `'thepia_auth_session'` for all session data
 - **MUST NOT**: Use legacy keys like `'auth_access_token'`, `'auth_user'`, `'auth_refresh_token'`
 
-**R1.3 State Machine Integration**
-- **MUST**: auth-state-machine.ts uses `getSession()` and `isSessionValid()` from sessionManager
-- **MUST**: State machine initialization checks sessionManager, not localStorage directly
+**R1.3 Store Integration**
+- **MUST**: Auth stores use `db.loadSession()` and `db.saveSession()` from SessionPersistence
+- **MUST**: Store initialization checks SessionPersistence, not storage directly
+- **MUST**: session.ts and auth-core.ts use injected SessionPersistence instance
 
 ### R2: Storage Configuration (SHOULD)
 
@@ -119,6 +122,49 @@ Session management works correctly, but the **tokens being stored are incorrect*
 - **MUST**: Store minimal session data
 - **MUST**: No sensitive data in localStorage
 - **MUST**: Clear sessions on sign out
+
+### R8: Token Refresh Retry Logic (MUST)
+
+**R8.1 Automatic Token Refresh**
+- **MUST**: Automatically refresh tokens before expiration (default: 5 minutes before)
+- **MUST**: Schedule refresh via `scheduleTokenRefresh()` after successful token update
+- **MUST**: Use `refreshInProgress` lock to prevent concurrent refresh calls
+- **MUST**: Clear session if refresh fails after all retries exhausted
+
+**R8.2 Retry Strategy for Transient Failures**
+- **MUST**: Retry transient errors with exponential backoff
+- **MUST**: Max retry attempts: 3 (total 4 attempts including initial)
+- **MUST**: Backoff schedule: 60s → 300s → 1500s (1min → 5min → 25min)
+- **MUST**: Backoff formula: `60s × 5^(attempt-1)`
+
+**R8.3 Error Classification**
+- **MUST**: Classify errors as permanent or transient
+- **MUST**: Permanent errors (no retry):
+  - HTTP 400 Bad Request
+  - Error messages containing: "invalid_token", "token_expired", "malformed", "already exchanged", "invalid_grant"
+- **MUST**: Transient errors (retry with backoff):
+  - Network errors and timeouts
+  - HTTP 500 Internal Server Error
+  - HTTP 503 Service Unavailable
+  - HTTP 429 Rate Limiting
+  - Any error not classified as permanent
+
+**R8.4 Retry Counter Management**
+- **MUST**: Reset retry counter to 0 after successful token refresh
+- **MUST**: Reset retry counter to 0 for permanent failures
+- **MUST**: Increment retry counter only on transient failures
+- **MUST**: Auto-reset retry counter after 1 hour of successful operation
+
+**R8.5 Session Behavior During Retries**
+- **MUST**: Keep session valid with current access token while retries are pending
+- **MUST NOT**: Auto-signout on refresh failure
+- **MUST**: Allow user to continue with current token until `expiresAt`
+- **MUST**: Let user manually sign out if needed
+
+**R8.6 Implementation Location**
+- Implementation: `src/stores/core/auth-core.ts:103-247` (`refreshTokens()` method)
+- Tests: `tests/regression/token-refresh-retry-logic.test.ts`
+- Related: `scheduleTokenRefresh()` calls `refreshTokens()` on scheduled intervals
 
 ## Implementation Priorities
 

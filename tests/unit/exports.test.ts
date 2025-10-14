@@ -136,12 +136,6 @@ describe('Library Exports', () => {
   });
 
   describe('Session Management', () => {
-    it('should export clearSession', async () => {
-      const { clearSession } = await import('../../src/index');
-      expect(clearSession).toBeDefined();
-      expect(typeof clearSession).toBe('function');
-    });
-
     it('should export configureSessionStorage', async () => {
       const { configureSessionStorage } = await import('../../src/index');
       expect(configureSessionStorage).toBeDefined();
@@ -166,12 +160,6 @@ describe('Library Exports', () => {
       expect(typeof getOptimalSessionConfig).toBe('function');
     });
 
-    it('should export getSession', async () => {
-      const { getSession } = await import('../../src/index');
-      expect(getSession).toBeDefined();
-      expect(typeof getSession).toBe('function');
-    });
-
     it('should export getStorageConfig', async () => {
       const { getStorageConfig } = await import('../../src/index');
       expect(getStorageConfig).toBeDefined();
@@ -188,12 +176,6 @@ describe('Library Exports', () => {
       const { isSessionValid } = await import('../../src/index');
       expect(isSessionValid).toBeDefined();
       expect(typeof isSessionValid).toBe('function');
-    });
-
-    it('should export saveSession', async () => {
-      const { saveSession } = await import('../../src/index');
-      expect(saveSession).toBeDefined();
-      expect(typeof saveSession).toBe('function');
     });
 
     it('should export supportsPersistentSessions', async () => {

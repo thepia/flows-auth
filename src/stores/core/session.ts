@@ -9,9 +9,9 @@
  */
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { createStore, type StateCreator } from 'zustand/vanilla';
+import { type StateCreator, createStore } from 'zustand/vanilla';
 import type { SignInData, User } from '../../types';
-import type { DatabaseAdapter } from '../../types/database';
+import type { SessionPersistence } from '../../types/database';
 import {
   generateInitials,
   getSession as getSessionUtil,
@@ -50,11 +50,26 @@ export function createSessionStore(options: StoreOptions) {
         metadata: data.user.preferences,
         accessToken: data.tokens.access_token,
         refreshToken: data.tokens.refresh_token,
+        refreshedAt: data.tokens.refreshedAt,
         expiresAt: data.tokens.expiresAt,
+        authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link',
+        supabaseToken: data.tokens.supabase_token,
+        supabaseExpiresAt: data.tokens.supabase_expires_at
+      };
+
+      // Convert SignInData to UserData format for user profile persistence
+      const userData = {
+        userId: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        avatar: data.user.avatar,
+        emailVerified: data.user.emailVerified,
+        metadata: data.user.preferences,
         authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link'
       };
 
-      await db.saveSession(sessionData);
+      // Save both session (tokens) and user profile
+      await Promise.all([db.saveSession(sessionData), db.saveUser(userData)]);
 
       set({
         lastActivity: Date.now()
@@ -64,7 +79,11 @@ export function createSessionStore(options: StoreOptions) {
     clearSession: async () => {
       if (typeof window === 'undefined') return;
 
+      // Clear session (always) and optionally clear user (if adapter supports it)
       await db.clearSession();
+      if (db.clearUser) {
+        await db.clearUser();
+      }
 
       set({
         lastActivity: null
@@ -81,10 +100,12 @@ export function createSessionStore(options: StoreOptions) {
     updateLastActivity: async () => {
       const now = Date.now();
 
-      // Reload session, update activity, and save back
+      // Update lastActivity in storage by reloading, modifying, and saving
       if (typeof window !== 'undefined') {
         const session = await db.loadSession();
         if (session) {
+          // Note: lastActivity is stored in SignInData format internally
+          // database.ts will set it when saving
           await db.saveSession({ ...session });
         }
       }
@@ -95,7 +116,7 @@ export function createSessionStore(options: StoreOptions) {
     },
 
     configureStorage: (config: Partial<SessionState>) => {
-      // Note: Storage configuration now handled by DatabaseAdapter
+      // Note: Storage configuration now handled by SessionPersistence
       // This method just updates local state for backward compatibility
       set((state: SessionState) => ({
         ...state,
@@ -169,6 +190,8 @@ export function createSessionData(
     access_token: string;
     refresh_token?: string;
     expires_in?: number;
+    supabase_token?: string;
+    supabase_expires_at?: number;
   },
   authMethod: SignInData['authMethod'] = 'passkey'
 ): SignInData {
@@ -177,12 +200,15 @@ export function createSessionData(
     tokens: {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token || '',
+      refreshedAt: Date.now(),
       // HACK: Force 6-minute expiry for testing (auto-refresh happens at 1 minute mark)
       // expiresAt: tokens.expires_in ? Date.now() + 6 * 60 * 1000 : Date.now() + 6 * 60 * 1000
       // Production:
       expiresAt: tokens.expires_in
         ? Date.now() + tokens.expires_in * 1000
-        : Date.now() + DEFAULT_EXPIRES_IN * 1000
+        : Date.now() + DEFAULT_EXPIRES_IN * 1000,
+      supabase_token: tokens.supabase_token,
+      supabase_expires_at: tokens.supabase_expires_at
     },
     authMethod,
     lastActivity: Date.now()

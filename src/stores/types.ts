@@ -11,8 +11,8 @@ import type {
   AuthEventType,
   AuthEvents,
   ButtonConfig,
-  DatabaseAdapter,
   ExplainerConfig,
+  SessionPersistence,
   SignInData,
   SignInEvent,
   SignInState,
@@ -34,6 +34,8 @@ export interface AuthCoreState {
   refresh_token: string | null;
   expiresAt: number | null;
   refreshedAt: number | null; // Timestamp when token was last refreshed (spam protection)
+  supabase_token: string | null; // Supabase JWT for database access with RLS
+  supabase_expires_at: number | null; // Supabase token expiration timestamp
 
   // Capabilities
   passkeysEnabled: boolean;
@@ -50,7 +52,9 @@ export interface AuthCoreActions {
   updateTokens: (tokens: {
     access_token: string;
     refresh_token?: string;
-    expiresAt?: number;
+    expiresAt: number | null;
+    supabase_token?: string;
+    supabase_expires_at?: number;
   }) => Promise<void>;
 
   // State helpers
@@ -237,5 +241,5 @@ export interface StoreOptions {
   devtools?: boolean;
   name?: string;
   api: AuthApiClient;
-  db: DatabaseAdapter;
+  db: SessionPersistence;
 }

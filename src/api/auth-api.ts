@@ -6,6 +6,8 @@
 import type {
   AuthConfig,
   AuthError,
+  CheckUserResponse,
+  EmailCodeSendResponse,
   LogoutRequest,
   MagicLinkRequest,
   PasskeyChallenge,
@@ -16,7 +18,6 @@ import type {
   SignInRequest,
   SignInResponse,
   User,
-  UserCheckData,
   UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
@@ -408,7 +409,7 @@ export class AuthApiClient {
   /**
    * Check if email exists with rate limiting and caching
    */
-  async checkEmail(email: string): Promise<UserCheckData> {
+  async checkEmail(email: string): Promise<CheckUserResponse> {
     // Check cache first
     const cachedResult = globalUserCache.get(email);
     if (cachedResult) {
@@ -436,7 +437,7 @@ export class AuthApiClient {
 
     // Use rate-limited request with Origin header for RPID determination
     // Using GET method with email as query parameter (API server supports this)
-    const response = await this.rateLimitedRequest<UserCheckData>(
+    const response = await this.rateLimitedRequest<CheckUserResponse>(
       `${endpoint}?email=${encodeURIComponent(email)}`,
       {
         method: 'GET',
@@ -453,8 +454,8 @@ export class AuthApiClient {
       timestamp: new Date().toISOString()
     });
 
-    // Return the response directly since it's already in UserCheckData format
-    const result: UserCheckData = response;
+    // Return the response directly since it's already in CheckUserResponse format
+    const result: CheckUserResponse = response;
 
     // Cache the result
     globalUserCache.set(email, result);
@@ -524,6 +525,8 @@ export class AuthApiClient {
 
   /**
    * Register new user
+   *
+   * TODO review tokens being returned or not from server
    */
   async registerUser(userData: {
     email: string;
@@ -556,21 +559,19 @@ export class AuthApiClient {
     if (response.success && response.user) {
       // API returned {success: true, user: {...}} format
       return {
-        step: 'success',
-        user: response.user,
-        access_token: response.access_token,
-        refresh_token: response.refresh_token,
-        expires_in: response.expires_in
-      };
+        ...response,
+        step: 'success'
+      } as SignInResponse;
     } else if (response.step) {
       // API returned legacy SignInResponse format
       return response as SignInResponse;
     } else {
       // API returned error or unexpected format
       return {
+        ...response,
         step: 'error',
         user: undefined
-      };
+      } as SignInResponse;
     }
   }
 
@@ -799,11 +800,7 @@ export class AuthApiClient {
    *
    * Actually used by the store
    */
-  async sendAppEmailCode(email: string): Promise<{
-    success: boolean;
-    message: string;
-    timestamp: number;
-  }> {
+  async sendAppEmailCode(email: string): Promise<EmailCodeSendResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
     if (!effectiveAppCode) {
       throw new Error(
@@ -817,11 +814,7 @@ export class AuthApiClient {
       apiBaseUrl: this.config.apiBaseUrl
     });
 
-    return this.request<{
-      success: boolean;
-      message: string;
-      timestamp: number;
-    }>(`/${effectiveAppCode}/send-email`, {
+    return this.request<EmailCodeSendResponse>(`/${effectiveAppCode}/send-email`, {
       method: 'POST',
       body: JSON.stringify({
         email: email
@@ -848,16 +841,7 @@ export class AuthApiClient {
       apiBaseUrl: this.config.apiBaseUrl
     });
 
-    const response = await this.request<{
-      user?: User;
-      access_token?: string;
-      refresh_token?: string;
-      id_token?: string;
-      expires_in?: number;
-      step?: string;
-      error?: string;
-      message?: string;
-    }>(`/${effectiveAppCode}/verify-email`, {
+    const response = await this.request<SignInResponse>(`/${effectiveAppCode}/verify-email`, {
       method: 'POST',
       body: JSON.stringify({
         email: email,
@@ -901,7 +885,9 @@ export class AuthApiClient {
         user: response.user,
         access_token: response.access_token,
         refresh_token: response.refresh_token,
-        expires_in: response.expires_in || 3600
+        expires_in: response.expires_in || 3600,
+        supabase_token: response.supabase_token,
+        supabase_expires_at: response.supabase_expires_at
       };
     }
 

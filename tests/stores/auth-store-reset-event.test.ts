@@ -14,8 +14,17 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 // Mock telemetry
 vi.mock('../../src/utils/telemetry', () => ({
-  reportError: vi.fn(),
-  initializeTelemetry: vi.fn()
+  initializeTelemetry: vi.fn(),
+  updateErrorReporterConfig: vi.fn(),
+  reportAuthState: vi.fn(),
+  reportWebAuthnError: vi.fn(),
+  reportApiError: vi.fn(),
+  flushErrorReports: vi.fn(),
+  getErrorReportQueueSize: vi.fn(() => 0),
+  // New telemetry convenience functions
+  reportAuthEvent: vi.fn(),
+  reportSessionEvent: vi.fn(),
+  reportRefreshEvent: vi.fn()
 }));
 
 describe('Auth Store RESET Event Handling', () => {

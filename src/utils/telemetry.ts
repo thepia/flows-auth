@@ -1,6 +1,6 @@
 /**
  * Error and State Reporting Utilities
- * Reports errors through the auth store's API client
+ * Reports errors through the auth store's API client and optionally to service worker
  */
 
 import type { AuthApiClient } from '../api/auth-api';
@@ -63,14 +63,48 @@ class Telemetry {
   private config: AuthConfig | null = null;
   private queue: ErrorReportEvent[] = [];
   private retryQueue: { event: ErrorReportEvent; attempts: number }[] = [];
+  private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+  private serviceWorkerInitialized = false;
 
   setApiClient(api: AuthApiClient, config: AuthConfig) {
     this.api = api;
     this.config = config;
     console.log('📊 [Telemetry] Connected to API client');
 
+    // Initialize service worker if logging is enabled
+    if (config.errorReporting?.serviceWorkerLogging?.enabled) {
+      this.initServiceWorker();
+    }
+
     // Flush any queued events
     this.flushQueue();
+  }
+
+  /**
+   * Initialize service worker registration for logging
+   */
+  private async initServiceWorker() {
+    if (
+      this.serviceWorkerInitialized ||
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator)
+    ) {
+      return;
+    }
+
+    this.serviceWorkerInitialized = true;
+
+    try {
+      this.serviceWorkerRegistration = await navigator.serviceWorker.ready;
+      if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
+        console.log('📊 [Telemetry] Service worker ready for logging');
+      }
+    } catch (error) {
+      if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
+        console.warn('📊 [Telemetry] Service worker not available:', error);
+      }
+      this.serviceWorkerRegistration = null;
+    }
   }
 
   async report(event: ErrorReportEvent) {
@@ -81,14 +115,20 @@ class Telemetry {
     }
 
     const errorConfig = this.config.errorReporting;
+
+    // Always send to service worker if enabled
+    if (errorConfig?.serviceWorkerLogging?.enabled) {
+      this.sendToServiceWorker(event);
+    }
+
     if (!errorConfig?.enabled) {
       if (errorConfig?.debug) {
-        console.log('📊 [Telemetry] Event (reporting disabled):', event);
+        console.log('📊 [Telemetry] Event (API reporting disabled):', event);
       }
       return;
     }
 
-    if (errorConfig.debug) {
+    if (errorConfig?.debug) {
       console.log('📊 [Telemetry] Reporting event:', event);
     }
 
@@ -125,6 +165,59 @@ class Telemetry {
 
     if (this.config.errorReporting?.debug) {
       console.log('📊 [Telemetry] Event sent successfully');
+    }
+  }
+
+  /**
+   * Send event to service worker for persistent logging
+   */
+  private sendToServiceWorker(event: ErrorReportEvent) {
+    const swConfig = this.config?.errorReporting?.serviceWorkerLogging;
+    if (!swConfig?.enabled) {
+      return;
+    }
+
+    // Check if this event type should be logged
+    const eventTypes = swConfig.events || ['all'];
+    const shouldLog =
+      eventTypes.includes('all') ||
+      eventTypes.some((type) => {
+        switch (type) {
+          case 'auth':
+            return event.type === 'auth-state-change';
+          case 'session':
+            return (
+              event.type === 'auth-state-change' &&
+              ['login-success', 'login-failure', 'logout'].includes(event.event)
+            );
+          case 'refresh':
+            return event.type === 'auth-state-change' && event.event.includes('refresh');
+          case 'errors':
+            return event.type === 'webauthn-error' || event.type === 'api-error';
+          default:
+            return false;
+        }
+      });
+
+    if (!shouldLog) {
+      return;
+    }
+
+    // Use cached service worker registration for immediate posting
+    if (this.serviceWorkerRegistration?.active) {
+      this.serviceWorkerRegistration.active.postMessage({
+        type: 'LOG_AUTH_EVENT',
+        event: `TELEMETRY_${event.type.toUpperCase()}`,
+        data: event,
+        url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+        tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+      });
+
+      if (swConfig.debug) {
+        console.log('📊 [Telemetry] Sent to service worker:', event);
+      }
+    } else if (swConfig.debug) {
+      console.warn('📊 [Telemetry] Service worker not available for logging');
     }
   }
 
@@ -237,4 +330,50 @@ export function flushTelemetry() {
 
 export function getTelemetryQueueSize() {
   return telemetry.getQueueSize();
+}
+
+/**
+ * Report auth-specific events (refresh, session, etc.) to telemetry and service worker
+ * Uses a flexible event structure that bypasses strict typing for custom events
+ */
+export function reportAuthEvent(
+  event: string,
+  data: Record<string, any>,
+  context?: Record<string, any>
+) {
+  // Create a flexible event that can handle custom event types
+  const flexibleEvent = {
+    type: 'auth-state-change' as const,
+    event: event as any, // Allow custom event types
+    email: data.email,
+    authMethod: data.method || ('unknown' as any),
+    context: {
+      ...data,
+      ...context
+    }
+  };
+
+  telemetry.report(flexibleEvent);
+}
+
+/**
+ * Report session-related events (restore, save, etc.)
+ */
+export function reportSessionEvent(
+  event: string,
+  data: Record<string, any>,
+  context?: Record<string, any>
+) {
+  reportAuthEvent(`session-${event}`, data, context);
+}
+
+/**
+ * Report refresh token events
+ */
+export function reportRefreshEvent(
+  event: string,
+  data: Record<string, any>,
+  context?: Record<string, any>
+) {
+  reportAuthEvent(`refresh-${event}`, { ...data, method: 'token-refresh' }, context);
 }

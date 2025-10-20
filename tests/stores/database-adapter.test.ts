@@ -24,9 +24,17 @@ vi.mock('../../src/api/auth-api', () => ({
 
 // Mock telemetry
 vi.mock('../../src/utils/telemetry', () => ({
-  reportError: vi.fn(),
   initializeTelemetry: vi.fn(),
-  reportAuthState: vi.fn()
+  updateErrorReporterConfig: vi.fn(),
+  reportAuthState: vi.fn(),
+  reportWebAuthnError: vi.fn(),
+  reportApiError: vi.fn(),
+  flushErrorReports: vi.fn(),
+  getErrorReportQueueSize: vi.fn(() => 0),
+  // New telemetry convenience functions
+  reportAuthEvent: vi.fn(),
+  reportSessionEvent: vi.fn(),
+  reportRefreshEvent: vi.fn()
 }));
 
 let mockStorage: Record<string, string> = {};
@@ -961,7 +969,8 @@ describe('Database Adapter Configuration', () => {
         expiresAt: Date.now() + 3600000,
         refreshedAt: Date.now(),
         authMethod: 'passkey',
-        supabaseToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9.abc123',
+        supabaseToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9.abc123',
         supabaseExpiresAt: Date.now() + 3600000
       };
 
@@ -1021,7 +1030,8 @@ describe('Database Adapter Configuration', () => {
     });
 
     it('should convert internal format with Supabase tokens to SessionData on load', async () => {
-      const supabaseToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxvYWQtc3VwYWJhc2UifQ.def456';
+      const supabaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxvYWQtc3VwYWJhc2UifQ.def456';
       const supabaseExpiresAt = Date.now() + 3600000;
 
       // Put internal session data with Supabase tokens into mock storage
@@ -1094,7 +1104,8 @@ describe('Database Adapter Configuration', () => {
     it('should preserve Supabase tokens across save/load cycle', async () => {
       const adapter = createLocalStorageAdapter(mockConfig);
 
-      const supabaseToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXByZXNlcnZlIn0.ghi789';
+      const supabaseToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXByZXNlcnZlIn0.ghi789';
       const supabaseExpiresAt = Date.now() + 3600000;
 
       const originalSession: SessionData = {

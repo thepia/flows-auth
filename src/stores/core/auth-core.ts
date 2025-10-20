@@ -14,6 +14,8 @@ import { AuthApiClient } from '../../api/auth-api';
 import type { User } from '../../types';
 import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types';
 
+import { reportRefreshEvent } from '../../utils/telemetry';
+
 /**
  * Initial state for the auth core store
  */
@@ -107,6 +109,10 @@ export function createAuthCoreStore(options: StoreOptions) {
     refreshTokens: async () => {
       // Prevent concurrent refresh calls - reuse in-flight request
       if (refreshInProgress) {
+        reportRefreshEvent('CONCURRENCY_DETECTED', {
+          message: 'Reusing in-flight refresh request',
+          tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+        });
         return refreshInProgress;
       }
 
@@ -116,6 +122,16 @@ export function createAuthCoreStore(options: StoreOptions) {
         throw new Error('No refresh token available');
       }
 
+      // Log refresh attempt with token info for debugging "already exchanged" errors
+      reportRefreshEvent('START', {
+        refreshTokenPrefix: `${currentState.refresh_token.substring(0, 8)}...`,
+        expiresAt: currentState.expiresAt ? new Date(currentState.expiresAt).toISOString() : 'none',
+        timeSinceLastRefresh: currentState.refreshedAt
+          ? Date.now() - currentState.refreshedAt
+          : 'never',
+        tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+      });
+
       // Create and track the refresh promise
       refreshInProgress = (async () => {
         try {
@@ -124,18 +140,36 @@ export function createAuthCoreStore(options: StoreOptions) {
           });
 
           if (response.access_token) {
+            // Log refresh response for debugging
+            console.log('🔄 Token refresh response received:', {
+              hasAccessToken: !!response.access_token,
+              hasRefreshToken: !!response.refresh_token,
+              refreshTokenValue: response.refresh_token
+                ? `${response.refresh_token.substring(0, 8)}...`
+                : 'none',
+              expiresIn: response.expires_in,
+              hasSupabaseToken: !!response.supabase_token
+            });
+
             // CRITICAL: Use updateTokens() to ensure session is persisted to storage
             // This is essential for auto-refresh path (scheduleTokenRefresh) which calls core.refreshTokens() directly
             // Without this, auto-refresh updates tokens in memory but doesn't save to SessionPersistence
             await get().updateTokens({
               access_token: response.access_token,
-              refresh_token: (response.refresh_token || currentState.refresh_token) ?? undefined,
+              // CRITICAL: Only use new refresh_token if explicitly provided
+              // Don't fall back to old token - that causes "already exchanged" errors
+              refresh_token: response.refresh_token ? response.refresh_token : undefined,
               // Use actual expires_in from server response
               // If missing, explicitly set to null (not undefined) to clear old value
               expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
               supabase_token: response.supabase_token,
               supabase_expires_at: response.supabase_expires_at
             });
+
+            console.log(
+              '✅ Tokens updated successfully, new refresh token saved:',
+              response.refresh_token ? `${response.refresh_token.substring(0, 8)}...` : 'none'
+            );
 
             // Success - reset retry counter
             refreshRetryState.attempts = 0;
@@ -151,9 +185,25 @@ export function createAuthCoreStore(options: StoreOptions) {
             error?.message?.includes('invalid_grant');
 
           if (isAlreadyExchanged) {
-            console.warn(
-              'Refresh token already exchanged - clearing stale refresh token from store AND storage'
-            );
+            reportRefreshEvent('ALREADY_EXCHANGED_ERROR', {
+              errorMessage: error.message,
+              refreshTokenPrefix: currentState.refresh_token
+                ? `${currentState.refresh_token.substring(0, 8)}...`
+                : 'none',
+              lastRefreshTime: currentState.refreshedAt
+                ? new Date(currentState.refreshedAt).toISOString()
+                : 'never',
+              timeSinceLastRefresh: currentState.refreshedAt
+                ? Date.now() - currentState.refreshedAt
+                : 'never',
+              tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown',
+              possibleCauses: [
+                'Multiple browser tabs with same user',
+                'Page reload during refresh',
+                'Session restoration with stale token',
+                'Concurrent refresh from different components'
+              ]
+            });
             // Clear the stale refresh token from both store and database adapter
             set({ refresh_token: null });
 
@@ -271,6 +321,21 @@ export function createAuthCoreStore(options: StoreOptions) {
       supabase_expires_at?: number;
     }) => {
       const now = Date.now();
+      const currentStateBefore = get();
+
+      // Log token update for debugging refresh token rotation
+      reportRefreshEvent('UPDATE_TOKENS', {
+        newRefreshToken: tokens.refresh_token
+          ? `${tokens.refresh_token.substring(0, 8)}...`
+          : 'none',
+        oldRefreshToken: currentStateBefore.refresh_token
+          ? `${currentStateBefore.refresh_token.substring(0, 8)}...`
+          : 'none',
+        refreshTokenChanged: tokens.refresh_token !== currentStateBefore.refresh_token,
+        expiresAt: tokens.expiresAt ? new Date(tokens.expiresAt).toISOString() : 'none',
+        tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+      });
+
       set({
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token ?? get().refresh_token,

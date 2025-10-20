@@ -201,6 +201,14 @@ export interface ErrorReportingConfig {
   debug?: boolean;
   maxRetries?: number;
   retryDelay?: number;
+
+  // Service Worker persistent logging configuration
+  serviceWorkerLogging?: {
+    enabled: boolean;
+    events?: ('auth' | 'session' | 'refresh' | 'errors' | 'all')[];
+    maxLogEntries?: number; // Maximum number of logs to keep (default: 100)
+    debug?: boolean; // Enable debug logging for service worker operations
+  };
 }
 
 // Branding configuration

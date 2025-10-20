@@ -100,6 +100,16 @@ export async function createDefaultAuthConfig(
       debug: isDev,
       maxRetries: 3,
       retryDelay: 1000
+
+      // Service Worker persistent logging (enabled in development)
+      /* Disabled by default for now
+      serviceWorkerLogging: {
+        enabled: isDev,
+        events: ['all'], // Log all events in development
+        maxLogEntries: 100,
+        debug: isDev
+      }
+      */
     } as const,
 
     // Application Context

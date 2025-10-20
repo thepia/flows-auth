@@ -65,7 +65,11 @@ export {
   reportWebAuthnError,
   reportApiError,
   flushTelemetry,
-  getTelemetryQueueSize
+  getTelemetryQueueSize,
+  // Enhanced auth-specific telemetry functions
+  reportAuthEvent,
+  reportSessionEvent,
+  reportRefreshEvent
 } from './utils/telemetry';
 
 export type {

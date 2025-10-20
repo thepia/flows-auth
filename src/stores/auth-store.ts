@@ -40,7 +40,7 @@ import { createUIEventHandlers, createUIStore, signInStateTransitions } from './
 import { AuthApiClient } from '../api/auth-api';
 
 // Telemetry
-import { initializeTelemetry, reportAuthState } from '../utils/telemetry';
+import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry';
 
 /**
  * Composed auth store interface - provides unified API
@@ -122,9 +122,27 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       const isExpired = sessionData.expiresAt <= Date.now();
       const hasRefreshToken = !!sessionData.refreshToken;
 
+      // Log session restoration details for debugging "already exchanged" errors
+      reportSessionEvent('RESTORE', {
+        userId: sessionData.userId,
+        refreshTokenPrefix: sessionData.refreshToken
+          ? `${sessionData.refreshToken.substring(0, 8)}...`
+          : 'none',
+        isExpired,
+        hasRefreshToken,
+        expiresAt: new Date(sessionData.expiresAt).toISOString(),
+        refreshedAt: sessionData.refreshedAt
+          ? new Date(sessionData.refreshedAt).toISOString()
+          : 'never',
+        timeSinceLastRefresh: sessionData.refreshedAt
+          ? Date.now() - sessionData.refreshedAt
+          : 'never',
+        tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+      });
+
       if (!isExpired) {
         // Access token is still valid - restore session normally
-        console.log('🔄 Restoring existing session');
+        reportSessionEvent('RESTORE_VALID', { userId: sessionData.userId });
 
         // Convert SessionData to User format
         const user = {

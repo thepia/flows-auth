@@ -15,7 +15,11 @@ vi.mock('../src/utils/telemetry', () => ({
   reportWebAuthnError: vi.fn(),
   reportApiError: vi.fn(),
   flushErrorReports: vi.fn(),
-  getErrorReportQueueSize: vi.fn(() => 0)
+  getErrorReportQueueSize: vi.fn(() => 0),
+  // New telemetry convenience functions
+  reportAuthEvent: vi.fn(),
+  reportSessionEvent: vi.fn(),
+  reportRefreshEvent: vi.fn()
 }));
 
 // Mock phosphor-svelte icons to prevent ES module import issues

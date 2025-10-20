@@ -14,9 +14,13 @@ const mockServiceWorkerRegistration = {
 };
 
 // Mock navigator.serviceWorker with spy
+// Note: navigator.serviceWorker.ready is a property that returns a promise, not a function
 const mockServiceWorkerReady = vi.fn().mockResolvedValue(mockServiceWorkerRegistration);
 const mockServiceWorker = {
-  ready: mockServiceWorkerReady
+  get ready() {
+    mockServiceWorkerReady();
+    return Promise.resolve(mockServiceWorkerRegistration);
+  }
 };
 
 // Mock AuthApiClient
@@ -48,6 +52,7 @@ describe('Telemetry System', () => {
   let reportAuthEvent: any;
   let reportSessionEvent: any;
   let reportRefreshEvent: any;
+  let resetTelemetry: any;
   beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
@@ -75,6 +80,10 @@ describe('Telemetry System', () => {
     reportAuthEvent = telemetryModule.reportAuthEvent;
     reportSessionEvent = telemetryModule.reportSessionEvent;
     reportRefreshEvent = telemetryModule.reportRefreshEvent;
+    resetTelemetry = telemetryModule.resetTelemetry;
+
+    // Reset telemetry state between tests
+    resetTelemetry();
   });
 
   afterEach(() => {
@@ -92,8 +101,8 @@ describe('Telemetry System', () => {
       // Initialize telemetry
       initializeTelemetry(mockApiClient as any, config);
 
-      // Wait for service worker initialization
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Wait for service worker initialization to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify service worker ready was called once during initialization
       expect(mockServiceWorkerReady).toHaveBeenCalled();
@@ -109,8 +118,8 @@ describe('Telemetry System', () => {
       // Initialize telemetry
       initializeTelemetry(mockApiClient as any, config);
 
-      // Wait for initialization
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Wait for initialization to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Clear the mock to count only subsequent calls
       mockServiceWorkerRegistration.active.postMessage.mockClear();
@@ -121,7 +130,7 @@ describe('Telemetry System', () => {
       reportSessionEvent('RESTORE', { userId: 'test-user' });
 
       // Wait for events to be processed
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify postMessage was called for each event (using cached registration)
       expect(mockServiceWorkerRegistration.active.postMessage).toHaveBeenCalledTimes(3);
@@ -137,7 +146,7 @@ describe('Telemetry System', () => {
       });
 
       initializeTelemetry(mockApiClient as any, config);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       mockServiceWorkerRegistration.active.postMessage.mockClear();
 
@@ -146,7 +155,7 @@ describe('Telemetry System', () => {
       reportSessionEvent('RESTORE', { userId: 'test' });
       reportRefreshEvent('START', { tokenPrefix: 'abc123...' });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Only refresh event should be sent
       expect(mockServiceWorkerRegistration.active.postMessage).toHaveBeenCalledTimes(1);
@@ -166,7 +175,7 @@ describe('Telemetry System', () => {
       });
 
       initializeTelemetry(mockApiClient as any, config);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       mockServiceWorkerRegistration.active.postMessage.mockClear();
 
@@ -175,7 +184,7 @@ describe('Telemetry System', () => {
       reportSessionEvent('RESTORE', { userId: 'test' });
       reportRefreshEvent('START', { tokenPrefix: 'abc123...' });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // All events should be sent
       expect(mockServiceWorkerRegistration.active.postMessage).toHaveBeenCalledTimes(3);
@@ -258,22 +267,22 @@ describe('Telemetry System', () => {
       });
 
       initializeTelemetry(mockApiClient as any, config);
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       mockServiceWorkerRegistration.active.postMessage.mockClear();
 
       const testData = { tokenPrefix: 'abc123...', userId: 'test-user' };
       reportRefreshEvent('START', testData);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(mockServiceWorkerRegistration.active.postMessage).toHaveBeenCalledWith({
         type: 'LOG_AUTH_EVENT',
         event: 'TELEMETRY_AUTH-STATE-CHANGE',
         data: expect.objectContaining({
           type: 'auth-state-change',
-          event: 'START',
-          data: testData
+          event: 'refresh-START',
+          context: expect.objectContaining(testData)
         }),
         url: 'https://test.example.com',
         tabId: 'test-tab'

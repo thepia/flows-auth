@@ -118,13 +118,13 @@ describe('Auth Store reset() Method', () => {
           initials: ''
         },
         authMethod: 'email-code',
-        lastActivity: Date.now(),
         // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
         // lastActivity: number;
 
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          refreshedAt: Date.now(),
           expiresAt: Date.now() + 3600000
         }
       };
@@ -157,10 +157,9 @@ describe('Auth Store reset() Method', () => {
           initials: 'TU'
         },
         authMethod: 'email-code',
-        lastActivity: Date.now(),
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
           refreshedAt: Date.now(),
           expiresAt: Date.now() + 3600000
         }
@@ -318,8 +317,7 @@ describe('Auth Store reset() Method', () => {
             name: 'Test User',
             emailVerified: true
           },
-          expiresAt: Date.now() + 3600000,
-          lastActivity: Date.now()
+          expiresAt: Date.now() + 3600000
         }
       });
 

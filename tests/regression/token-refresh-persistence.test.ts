@@ -380,4 +380,46 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     expect(sessionData.accessToken).toBe(mockRefreshedTokens.access_token);
     expect(sessionData.refreshToken).toBe(mockRefreshedTokens.refresh_token);
   });
+
+  it('should load session from database before refresh to use latest refresh token', async () => {
+    // REGRESSION TEST: Multi-tab scenario where in-memory refresh token is stale
+    // This ensures we always use the most recent refresh token from storage
+
+    // ARRANGE: Set up initial authenticated session
+    authStore.core.getState().updateUser(mockUser);
+    await authStore.core.getState().updateTokens({
+      access_token: mockInitialTokens.access_token,
+      refresh_token: mockInitialTokens.refresh_token,
+      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
+    });
+
+    // Clear spy to track calls during refresh
+    const loadSessionSpy = mockDatabaseAdapter.loadSession;
+    loadSessionSpy.mockClear();
+
+    // Simulate a more recent refresh token in storage (from another tab)
+    const fresherRefreshToken = 'refresh-token-from-other-tab';
+    loadSessionSpy.mockResolvedValueOnce({
+      userId: mockUser.id,
+      email: mockUser.email,
+      name: mockUser.name,
+      emailVerified: mockUser.emailVerified,
+      accessToken: mockInitialTokens.access_token,
+      refreshToken: fresherRefreshToken, // Fresher token from storage
+      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
+      refreshedAt: Date.now(),
+      authMethod: 'email-code' as const
+    });
+
+    // ACT: Call refreshTokens
+    await authStore.refreshTokens();
+
+    // ASSERT: loadSession should have been called to fetch the latest session
+    expect(loadSessionSpy).toHaveBeenCalled();
+
+    // Verify the API was called with the fresher refresh token from storage
+    expect(mockApiClient.refreshToken).toHaveBeenCalledWith({
+      refresh_token: fresherRefreshToken
+    });
+  });
 });

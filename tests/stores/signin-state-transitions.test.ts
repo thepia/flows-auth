@@ -39,14 +39,14 @@ describe('SignIn State Transitions', () => {
           initials: ''
         },
         authMethod: 'email-code',
-        lastActivity: Date.now(),
         // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
         // lastActivity: number;
 
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000
+          expiresAt: Date.now() + 3600000,
+          refreshedAt: Date.now()
         }
       };
 

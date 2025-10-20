@@ -55,13 +55,12 @@ const createTestSession = (): SignInData => ({
     initials: 'TU'
   },
   tokens: {
-    access_token: 'test-access-token',
-    refresh_token: 'test-refresh-token',
+    accessToken: 'test-access-token',
+    refreshToken: 'test-refresh-token',
     refreshedAt: Date.now(),
     expiresAt: Date.now() + 60000
   },
-  authMethod: 'passkey',
-  lastActivity: Date.now()
+  authMethod: 'passkey'
 });
 
 describe('R1: Session Storage Consistency (CRITICAL)', () => {
@@ -80,7 +79,7 @@ describe('R1: Session Storage Consistency (CRITICAL)', () => {
       // Verify session is accessible through sessionManager
       const retrievedSession = getSession();
       expect(retrievedSession).not.toBeNull();
-      expect(retrievedSession?.tokens.access_token).toBe('test-access-token');
+      expect(retrievedSession?.tokens.accessToken).toBe('test-access-token');
     });
 
     it.skip('MUST NOT allow direct storage access outside sessionManager', () => {
@@ -244,8 +243,8 @@ describe('R3: Session Validation (MUST)', () => {
       const expiredSessionNoRefresh: SignInData = {
         ...createTestSession(),
         tokens: {
-          access_token: 'expired-token',
-          refresh_token: '', // No refresh token
+          accessToken: 'expired-token',
+          refreshToken: '', // No refresh token
           refreshedAt: Date.now(),
           expiresAt: Date.now() - 60000 // Expired 1 minute ago
         }
@@ -257,8 +256,8 @@ describe('R3: Session Validation (MUST)', () => {
       const expiredSessionWithRefresh: SignInData = {
         ...createTestSession(),
         tokens: {
-          access_token: 'expired-token',
-          refresh_token: 'valid-refresh-token',
+          accessToken: 'expired-token',
+          refreshToken: 'valid-refresh-token',
           refreshedAt: Date.now(),
           expiresAt: Date.now() - 60000 // Expired 1 minute ago
         }
@@ -271,8 +270,8 @@ describe('R3: Session Validation (MUST)', () => {
       const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
-          access_token: 'expired-token',
-          refresh_token: 'expired-refresh',
+          accessToken: 'expired-token',
+          refreshToken: 'expired-refresh',
           refreshedAt: Date.now(),
           expiresAt: Date.now() - 60000
         }
@@ -281,42 +280,6 @@ describe('R3: Session Validation (MUST)', () => {
       saveSession(expiredSession);
 
       // getSession should clear expired session and return null
-      const retrievedSession = getSession();
-      expect(retrievedSession).toBeNull();
-    });
-  });
-
-  describe('R3.2: Activity Timeout', () => {
-    it('MUST check lastActivity against configurable timeout', () => {
-      configureSessionStorage({
-        type: 'sessionStorage',
-        sessionTimeout: 1000, // 1 second
-        userRole: 'guest'
-      });
-
-      const inactiveSession: SignInData = {
-        ...createTestSession(),
-        lastActivity: Date.now() - 2000 // 2 seconds ago
-      };
-
-      expect(isSessionValid(inactiveSession)).toBe(false);
-    });
-
-    it('MUST clear inactive sessions automatically', () => {
-      configureSessionStorage({
-        type: 'sessionStorage',
-        sessionTimeout: 1000, // 1 second
-        userRole: 'guest'
-      });
-
-      const inactiveSession: SignInData = {
-        ...createTestSession(),
-        lastActivity: Date.now() - 2000
-      };
-
-      saveSession(inactiveSession);
-
-      // getSession should clear inactive session
       const retrievedSession = getSession();
       expect(retrievedSession).toBeNull();
     });
@@ -363,7 +326,7 @@ describe('R4: Legacy Migration (MUST)', () => {
 
       const retrievedSession = getSession();
       expect(retrievedSession).not.toBeNull();
-      expect(retrievedSession?.tokens.access_token).toBe('test-access-token');
+      expect(retrievedSession?.tokens.accessToken).toBe('test-access-token');
     });
 
     it('MUST gracefully handle missing configuration', () => {
@@ -396,6 +359,7 @@ describe('R5: Event System (MUST)', () => {
   });
 
   describe('R5.1: Session Events', () => {
+    // TODO check broadcast event instead
     it('MUST emit sessionUpdate event on session save', () => {
       const eventSpy = vi.fn();
       window.addEventListener('sessionUpdate', eventSpy);
@@ -412,6 +376,7 @@ describe('R5: Event System (MUST)', () => {
       window.removeEventListener('sessionUpdate', eventSpy);
     });
 
+    // TODO check broadcast event instead
     it('MUST emit sessionUpdate event on session clear', () => {
       const eventSpy = vi.fn();
       window.addEventListener('sessionUpdate', eventSpy);

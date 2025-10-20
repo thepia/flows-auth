@@ -163,7 +163,7 @@ export {
 } from './utils/webauthn';
 
 // Version
-export const VERSION = '1.0.8';
+export const VERSION = '1.0.10';
 
 // Default Configuration Utilities (NEW - eliminates app-level duplication)
 export {

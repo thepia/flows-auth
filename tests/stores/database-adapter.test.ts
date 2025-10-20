@@ -11,7 +11,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores';
 import { createLocalStorageAdapter } from '../../src/stores/core/database';
-import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../../src/types';
+import type {
+  AuthConfig,
+  SessionData,
+  SessionPersistence,
+  SignInData,
+  UserData
+} from '../../src/types';
 
 // Mock API client
 vi.mock('../../src/api/auth-api', () => ({
@@ -142,7 +148,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -179,7 +186,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(mockSessionData),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -213,7 +221,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null), // No session
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -253,7 +262,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(expiredSessionData),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -315,7 +325,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -366,7 +377,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -441,8 +453,8 @@ describe('Database Adapter Configuration', () => {
           name: 'Save User'
         },
         tokens: {
-          access_token: 'save-token',
-          refresh_token: 'save-refresh'
+          accessToken: 'save-token',
+          refreshToken: 'save-refresh'
         },
         authMethod: 'magic-link'
       });
@@ -460,13 +472,12 @@ describe('Database Adapter Configuration', () => {
           preferences: { theme: 'dark' }
         },
         tokens: {
-          access_token: 'load-token',
-          refresh_token: 'load-refresh',
+          accessToken: 'load-token',
+          refreshToken: 'load-refresh',
           expiresAt: Date.now() + 3600000,
           refreshedAt: Date.now()
         },
-        authMethod: 'passkey' as const,
-        lastActivity: Date.now()
+        authMethod: 'passkey' as const
       };
 
       mockStorage['thepia_auth_session'] = JSON.stringify(internalSession);
@@ -532,7 +543,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -560,7 +572,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const configWithDb: AuthConfig = {
@@ -617,7 +630,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const configWithDb: AuthConfig = {
@@ -664,7 +678,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const store = createAuthStore({ ...mockConfig, database: mockAdapter });
@@ -712,7 +727,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(mockUserData)
+          getUser: vi.fn().mockResolvedValue(mockUserData),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const adapter = mockAdapter;
@@ -730,7 +746,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const userData = await mockAdapter.getUser('non-existent-user');
@@ -769,7 +786,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
           // No clearUser
         };
 
@@ -789,7 +807,8 @@ describe('Database Adapter Configuration', () => {
           loadSession: vi.fn().mockResolvedValue(null),
           clearSession: vi.fn().mockResolvedValue(undefined),
           saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null)
+          getUser: vi.fn().mockResolvedValue(null),
+          clearUser: vi.fn().mockResolvedValue(undefined)
         };
 
         const store = createAuthStore({ ...mockConfig, database: mockAdapter });
@@ -954,6 +973,50 @@ describe('Database Adapter Configuration', () => {
 
       expect(localStorage.getItem('thepia_last_user')).toBeNull();
     });
+
+    it('should save userId in both thepia_auth_session and thepia_last_user', async () => {
+      const adapter = createLocalStorageAdapter(mockConfig);
+
+      const sessionData: SessionData = {
+        userId: 'user-both-keys',
+        email: 'both@example.com',
+        name: 'Both Keys User',
+        emailVerified: true,
+        accessToken: 'token-both',
+        refreshToken: 'refresh-both',
+        expiresAt: Date.now() + 3600000,
+        refreshedAt: Date.now(),
+        authMethod: 'passkey'
+      };
+
+      const userData: UserData = {
+        userId: 'user-both-keys',
+        email: 'both@example.com',
+        name: 'Both Keys User',
+        emailVerified: true,
+        authMethod: 'passkey',
+        lastLoginAt: new Date().toISOString()
+      };
+
+      // Save both session and user data
+      await adapter.saveSession(sessionData);
+      await adapter.saveUser(userData);
+
+      // Verify userId is in thepia_auth_session (via mockStorage which is mocked via getStorageManager)
+      const sessionStored = mockStorage['thepia_auth_session'];
+      expect(sessionStored).toBeDefined();
+      const sessionParsed = JSON.parse(sessionStored);
+      expect(sessionParsed.user.id).toBe('user-both-keys');
+
+      // Verify userId is in thepia_last_user (via localStorage which is used directly by saveUser)
+      const userStored = localStorage.getItem('thepia_last_user');
+      expect(userStored).toBeDefined();
+      const userParsed = JSON.parse(userStored!);
+      expect(userParsed.userId).toBe('user-both-keys');
+
+      // Verify both have the same userId
+      expect(sessionParsed.user.id).toBe(userParsed.userId);
+    });
   });
 
   describe('Supabase Token Persistence', () => {
@@ -979,7 +1042,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(mockSessionData),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -1025,8 +1089,9 @@ describe('Database Adapter Configuration', () => {
       expect(storedData).toBeDefined();
 
       const parsedData = JSON.parse(storedData);
-      expect(parsedData.tokens.supabase_token).toBe(sessionData.supabaseToken);
-      expect(parsedData.tokens.supabase_expires_at).toBe(sessionData.supabaseExpiresAt);
+      // Storage format uses camelCase (SignInData format)
+      expect(parsedData.tokens.supabaseToken).toBe(sessionData.supabaseToken);
+      expect(parsedData.tokens.supabaseExpiresAt).toBe(sessionData.supabaseExpiresAt);
     });
 
     it('should convert internal format with Supabase tokens to SessionData on load', async () => {
@@ -1034,26 +1099,24 @@ describe('Database Adapter Configuration', () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxvYWQtc3VwYWJhc2UifQ.def456';
       const supabaseExpiresAt = Date.now() + 3600000;
 
-      // Put internal session data with Supabase tokens into mock storage
-      const internalSession = {
+      // Put internal session data with Supabase tokens into mock storage (SignInData format with camelCase)
+      const internalSession: SignInData = {
         user: {
           id: 'user-load-supabase',
           email: 'load-supabase@example.com',
           name: 'Load Supabase User',
           initials: 'LSU',
-          avatar: null,
           preferences: {}
         },
         tokens: {
-          access_token: 'load-token',
-          refresh_token: 'load-refresh',
+          accessToken: 'load-token',
+          refreshToken: 'load-refresh',
           expiresAt: Date.now() + 3600000,
           refreshedAt: Date.now(),
-          supabase_token: supabaseToken,
-          supabase_expires_at: supabaseExpiresAt
+          supabaseToken: supabaseToken,
+          supabaseExpiresAt: supabaseExpiresAt
         },
-        authMethod: 'passkey' as const,
-        lastActivity: Date.now()
+        authMethod: 'passkey' as const
       };
 
       mockStorage['thepia_auth_session'] = JSON.stringify(internalSession);
@@ -1095,10 +1158,11 @@ describe('Database Adapter Configuration', () => {
       const storedData = mockStorage['thepia_auth_session'];
       expect(storedData).toBeDefined();
 
-      const parsedData = JSON.parse(storedData);
-      expect(parsedData.tokens.access_token).toBe('access-only');
-      expect(parsedData.tokens.supabase_token).toBeUndefined();
-      expect(parsedData.tokens.supabase_expires_at).toBeUndefined();
+      const parsedData: SignInData = JSON.parse(storedData);
+      // Storage format uses camelCase (SignInData format)
+      expect(parsedData.tokens.accessToken).toBe('access-only');
+      expect(parsedData.tokens.supabaseToken).toBeUndefined();
+      expect(parsedData.tokens.supabaseExpiresAt).toBeUndefined();
     });
 
     it('should preserve Supabase tokens across save/load cycle', async () => {
@@ -1151,7 +1215,8 @@ describe('Database Adapter Configuration', () => {
           email: 'created@example.com',
           createdAt: createdAt,
           authMethod: 'passkey'
-        })
+        }),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const store = createAuthStore({ ...mockConfig, database: mockAdapter });
@@ -1190,7 +1255,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const store = createAuthStore({ ...mockConfig, database: mockAdapter });
@@ -1244,7 +1310,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const store = createAuthStore({ ...mockConfig, database: mockAdapter });
@@ -1278,7 +1345,8 @@ describe('Database Adapter Configuration', () => {
         loadSession: vi.fn().mockResolvedValue(null),
         clearSession: vi.fn().mockResolvedValue(undefined),
         saveUser: vi.fn().mockResolvedValue(undefined),
-        getUser: vi.fn().mockResolvedValue(null)
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const store = createAuthStore({ ...mockConfig, database: mockAdapter });

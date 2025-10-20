@@ -60,11 +60,6 @@ Session management works correctly, but the **tokens being stored are incorrect*
 - **MUST**: Clear expired sessions automatically
 - **MUST**: Return `null` for expired sessions
 
-**R3.2 Activity Timeout**
-- **MUST**: Check `lastActivity` against configurable timeout
-- **MUST**: Clear inactive sessions automatically
-- **MUST**: Update `lastActivity` on session access
-
 **R3.3 Session Structure Validation**
 - **MUST**: Validate session data structure on retrieval
 - **MUST**: Handle corrupted session data gracefully
@@ -85,7 +80,7 @@ Session management works correctly, but the **tokens being stored are incorrect*
 ### R5: Event System (MUST)
 
 **R5.1 Session Events**
-- **MUST**: Emit `sessionUpdate` event on session save/clear
+- **MUST**: Emit broadcast event on session save/clear
 - **MUST**: Include session data in event detail
 - **MUST**: Support cross-tab synchronization
 

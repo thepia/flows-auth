@@ -184,8 +184,7 @@ flows-auth will **automatically work** with proper user tokens because:
     "refresh_token": "webauthn-verified",
     "expiresAt": 1640995200000
   },
-  "authMethod": "passkey",
-  "lastActivity": 1640995200000
+  "authMethod": "passkey"
 }
 ```
 

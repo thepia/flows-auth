@@ -142,12 +142,12 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
-          expiresAt: Date.now() + 3600000
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000,
+          refreshedAt: Date.now()
         },
-        authMethod: 'email-code',
-        lastActivity: Date.now()
+        authMethod: 'email-code'
       };
 
       authStore.sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
@@ -171,12 +171,12 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
-          expiresAt: Date.now() + 3600000
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000,
+          refreshedAt: Date.now()
         },
-        authMethod: 'email-code',
-        lastActivity: Date.now()
+        authMethod: 'email-code'
       };
 
       authStore.sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
@@ -209,12 +209,12 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
-          expiresAt: Date.now() + 3600000
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000,
+          refreshedAt: Date.now()
         },
-        authMethod: 'email-code',
-        lastActivity: Date.now()
+        authMethod: 'email-code'
       };
 
       authStore.sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData });
@@ -245,12 +245,12 @@ describe('Auth Store PIN Notification', () => {
           initials: 'TU'
         },
         tokens: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
-          expiresAt: Date.now() + 3600000
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: Date.now() + 3600000,
+          refreshedAt: Date.now()
         },
-        authMethod: 'email-code',
-        lastActivity: Date.now()
+        authMethod: 'email-code'
       };
 
       authStore.sendSignInEvent({ type: 'EMAIL_VERIFIED', session: sessionData });

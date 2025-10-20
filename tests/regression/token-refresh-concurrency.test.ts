@@ -26,7 +26,7 @@
  * 3. Rapid sequential refreshes
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/stores/auth-store';
 import type { AuthConfig } from '../../src/types';
 
@@ -198,11 +198,13 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       expiresAt: Date.now() + 60 * 60 * 1000
     });
 
-    // First refresh fails
-    mockRefreshToken.mockRejectedValueOnce(new Error('Network error'));
+    // First refresh fails with a permanent error (400 Bad Request)
+    mockRefreshToken.mockRejectedValueOnce(
+      Object.assign(new Error('invalid_token'), { status: 400 })
+    );
 
-    // Attempt first refresh
-    await expect(authStore.refreshTokens()).rejects.toThrow('Network error');
+    // Attempt first refresh - should reject on permanent failure
+    await expect(authStore.refreshTokens()).rejects.toThrow('invalid_token');
 
     // Lock should be cleared after failure, allowing retry
     mockRefreshToken.mockResolvedValueOnce({

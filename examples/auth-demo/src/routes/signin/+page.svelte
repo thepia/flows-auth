@@ -254,8 +254,7 @@ function handleSignInStateClick(clickedState) {
             access_token: 'demo-token',
             refresh_token: 'demo-refresh',
             user: { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' },
-            expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-            lastActivity: Date.now()
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000
           }
         };
         break;

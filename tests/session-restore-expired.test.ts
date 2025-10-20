@@ -157,13 +157,14 @@ describe('Session Restoration with Expired Token', () => {
     // Create mock with initial session
     mockDatabase = createMockSessionPersistence({ initialSession: expiredSession });
 
-    // Mock failed token refresh response
+    // Mock failed token refresh response with a permanent failure (not "already exchanged")
+    // Use 400 Bad Request with invalid_token to trigger permanent failure
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      status: 401,
+      status: 400,
       json: async () => ({
-        error: 'invalid_grant',
-        message: 'Refresh token has already been exchanged'
+        error: 'invalid_token',
+        message: 'Invalid or malformed token'
       })
     });
 

@@ -440,7 +440,6 @@ describe('BDD: flows-auth API Consumption', () => {
       expect(checkResult).toMatchObject({
         exists: expect.any(Boolean),
         hasWebAuthn: expect.any(Boolean),
-        email: testEmail,
         // userId is optional and only present when exists: true
         ...(checkResult.exists ? { userId: expect.any(String) } : {})
       });

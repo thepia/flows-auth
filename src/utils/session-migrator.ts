@@ -183,15 +183,14 @@ export class SessionMigrator {
   ): Promise<void> {
     // Create migrated session data
     const migratedSession: SignInData = {
-      ...session,
-      lastActivity: Date.now()
+      ...session
     };
 
     // Clear tokens if not preserving them
     if (!preserveTokens) {
       migratedSession.tokens = {
-        access_token: '',
-        refresh_token: '',
+        accessToken: '',
+        refreshToken: '',
         refreshedAt: 0,
         expiresAt: 0
       };

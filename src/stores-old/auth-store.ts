@@ -37,7 +37,6 @@ import type {
 } from '../types';
 import type { Readable } from '../types/svelte';
 import {
-  type SessionData,
   clearSession,
   configureSessionStorage,
   generateInitials,
@@ -46,7 +45,7 @@ import {
   isSessionValid,
   saveSession
 } from '../utils/sessionManager';
-import { initializeErrorReporter, reportApiError, reportAuthState } from '../utils/telemetry';
+import { reportApiError, reportAuthState } from '../utils/telemetry';
 import {
   authenticateWithPasskey,
   createCredential,
@@ -287,8 +286,8 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
     state: isValidSession ? 'authenticated' : 'unauthenticated',
     signInState: isValidSession ? 'signedIn' : 'emailEntry', // signedIn if already authenticated
     user: isValidSession ? convertSessionUserToAuthUser(existingSession.user) : null,
-    access_token: isValidSession ? existingSession.tokens.access_token : null,
-    refresh_token: isValidSession ? existingSession.tokens.refresh_token : null,
+    access_token: isValidSession ? existingSession.tokens.accessToken : null,
+    refresh_token: isValidSession ? existingSession.tokens.refreshToken : null,
     expiresAt: isValidSession ? existingSession.tokens.expiresAt : null,
     passkeysEnabled: determinePasskeysEnabled(),
 
@@ -543,8 +542,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           ? Date.now() + response.expires_in * 1000
           : Date.now() + 24 * 60 * 60 * 1000
       },
-      authMethod,
-      lastActivity: Date.now()
+      authMethod
     };
 
     saveSession(sessionData);
@@ -872,12 +870,11 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
         // Update session with new tokens
         const session = getSession();
         if (session) {
-          session.tokens.access_token = response.access_token;
-          session.tokens.refresh_token = response.refresh_token || session.tokens.refresh_token;
+          session.tokens.accessToken = response.access_token;
+          session.tokens.refreshToken = response.refresh_token || session.tokens.refreshToken;
           session.tokens.expiresAt = response.expires_in
             ? Date.now() + response.expires_in * 1000
             : session.tokens.expiresAt;
-          session.lastActivity = Date.now();
           saveSession(session);
         }
 
@@ -910,7 +907,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
    */
   function getAccessToken(): string | null {
     const session = getSession();
-    return isSessionValid(session) ? session?.tokens.access_token || null : null;
+    return isSessionValid(session) ? session?.tokens.accessToken || null : null;
   }
 
   /**
@@ -2038,8 +2035,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
           },
           expiresAt: response.expires_in
             ? Date.now() + response.expires_in * 1000
-            : Date.now() + 24 * 60 * 60 * 1000, // Default 24h
-          lastActivity: Date.now()
+            : Date.now() + 24 * 60 * 60 * 1000 // Default 24h
         };
         sendSignInEvent({ type: 'PIN_VERIFIED', session: sessionData });
 

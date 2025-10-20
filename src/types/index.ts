@@ -4,7 +4,8 @@
  */
 
 import type { AuthApiClient } from '../api/auth-api';
-import type { SessionPersistence } from './database';
+import type { SessionData, SessionPersistence, TokenData } from './database';
+export type { TokenData } from './database';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 // SignIn state types (keeping only the types, removed the class)
 import type {
@@ -89,21 +90,10 @@ export interface SignInData {
   };
 
   /** Authentication tokens (nested structure matching server API) */
-  tokens: {
-    access_token: string;
-    refresh_token?: string; // Optional - sessions without refresh tokens expire permanently
-    expires_in?: number; // Server provides duration in seconds
-    refreshedAt: number;
-    expiresAt: number; // Absolute timestamp in milliseconds
-    supabase_token?: string; // Supabase JWT for database access with RLS
-    supabase_expires_at?: number; // Supabase token expiration timestamp in milliseconds
-  };
+  tokens: Partial<TokenData>;
 
   /** Authentication method used */
-  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
-
-  /** Client-side session management */
-  lastActivity: number; // Timestamp of last activity (milliseconds) TODO this must be part of SessionData for it to be persisted
+  authMethod?: 'passkey' | 'password' | 'email-code' | 'magic-link'; // Made optional
 }
 
 // Storage configuration

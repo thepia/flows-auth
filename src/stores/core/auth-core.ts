@@ -17,6 +17,19 @@ import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types';
 import { reportRefreshEvent } from '../../utils/telemetry';
 
 /**
+ * GLOBAL token refresh lock - shared across ALL auth store instances
+ *
+ * CRITICAL: This prevents concurrent refresh calls even when:
+ * - Multiple auth store instances exist
+ * - Components re-render and recreate stores
+ * - Auto-refresh and manual refresh happen simultaneously
+ *
+ * WorkOS uses single-use refresh tokens. If two requests use the same token,
+ * the second fails with "Refresh token already exchanged" error.
+ */
+let globalRefreshInProgress: Promise<void> | null = null;
+
+/**
  * Initial state for the auth core store
  */
 const initialState: AuthCoreState = {
@@ -38,9 +51,6 @@ export function createAuthCoreStore(options: StoreOptions) {
   const { config, api, db, devtools: enableDevtools = false, name = 'auth-core' } = options;
 
   // API client already provided in options (for testability)
-
-  // Track in-flight refresh to prevent concurrent calls
-  let refreshInProgress: Promise<void> | null = null;
 
   // Track scheduled refresh timeout so we can cancel it if needed
   const refreshTimeout = { current: null as ReturnType<typeof setTimeout> | null };
@@ -107,13 +117,13 @@ export function createAuthCoreStore(options: StoreOptions) {
     },
 
     refreshTokens: async () => {
-      // Prevent concurrent refresh calls - reuse in-flight request
-      if (refreshInProgress) {
+      // Check GLOBAL refresh lock first (prevents cross-instance races)
+      if (globalRefreshInProgress) {
         reportRefreshEvent('CONCURRENCY_DETECTED', {
-          message: 'Reusing in-flight refresh request',
+          message: 'Reusing in-flight refresh request (GLOBAL lock)',
           tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
         });
-        return refreshInProgress;
+        return globalRefreshInProgress;
       }
 
       const currentState = get();
@@ -132,8 +142,8 @@ export function createAuthCoreStore(options: StoreOptions) {
         tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
       });
 
-      // Create and track the refresh promise
-      refreshInProgress = (async () => {
+      // Create and track the refresh promise in GLOBAL lock
+      globalRefreshInProgress = (async () => {
         try {
           const response = await api.refreshToken({
             refresh_token: currentState.refresh_token as string
@@ -210,15 +220,9 @@ export function createAuthCoreStore(options: StoreOptions) {
             // CRITICAL: Must clear from storage too, otherwise it will retry on next page load
             if (currentState.user) {
               try {
-                // Load current session from database adapter
-                const currentSession = await db.loadSession();
-                if (currentSession) {
-                  // Clear the stale refresh token
-                  currentSession.refreshToken = '';
-                  // Save back to database adapter
-                  await db.saveSession(currentSession);
-                  console.log('✅ Cleared stale refresh token from storage via SessionPersistence');
-                }
+                // Save back to database adapter
+                await db.saveSession({ refreshToken: '' });
+                console.log('✅ Cleared stale refresh token from storage via SessionPersistence');
               } catch (error) {
                 console.error('Failed to clear stale refresh token from storage:', error);
               }
@@ -301,12 +305,12 @@ export function createAuthCoreStore(options: StoreOptions) {
           // User can continue with current token or manually sign out if needed
           throw error;
         } finally {
-          // Clear the lock after completion
-          refreshInProgress = null;
+          // Clear the GLOBAL lock after completion
+          globalRefreshInProgress = null;
         }
       })();
 
-      return refreshInProgress;
+      return globalRefreshInProgress;
     },
 
     updateUser: (user: User) => {
@@ -322,6 +326,23 @@ export function createAuthCoreStore(options: StoreOptions) {
     }) => {
       const now = Date.now();
       const currentStateBefore = get();
+
+      // GUARD: Prevent overwriting newer tokens with stale ones (multi-tab race protection)
+      // This prevents scenarios where Tab A refreshes successfully but Tab B with stale tokens
+      // tries to overwrite the fresh tokens from Tab A
+      if (tokens.expiresAt && currentStateBefore.expiresAt) {
+        if (tokens.expiresAt < currentStateBefore.expiresAt) {
+          console.warn(
+            '[Auth Core] Rejecting token update - incoming tokens expire earlier than current tokens',
+            {
+              currentExpiresAt: new Date(currentStateBefore.expiresAt).toISOString(),
+              incomingExpiresAt: new Date(tokens.expiresAt).toISOString(),
+              tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
+            }
+          );
+          return; // Skip this update - current tokens are fresher
+        }
+      }
 
       // Log token update for debugging refresh token rotation
       reportRefreshEvent('UPDATE_TOKENS', {
@@ -521,13 +542,7 @@ export async function authenticateUser(
   updateUser(user);
 
   // Then update tokens (this will set state to 'authenticated')
-  await updateTokens({
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expiresAt: tokens.expiresAt,
-    supabase_token: tokens.supabase_token,
-    supabase_expires_at: tokens.supabase_expires_at
-  });
+  await updateTokens(tokens);
 }
 
 /**

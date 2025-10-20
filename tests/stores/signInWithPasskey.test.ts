@@ -314,7 +314,7 @@ describe('signInWithPasskey', () => {
 
       expect(savedSession).toBeTruthy();
       expect(savedSession?.user.email).toBe('test@example.com');
-      expect(savedSession?.tokens.access_token).toBe('access-token');
+      expect(savedSession?.tokens.accessToken).toBe('access-token');
     });
   });
 });

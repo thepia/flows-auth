@@ -50,6 +50,7 @@ Both scenarios use:
 - **[API Contracts](./testing/thepia-com-api-contracts/)** - Backend API specifications
 
 #### Development
+- **[AI Development Guide](./development/AI_DEVELOPMENT_GUIDE.md)** - **FOR AI ASSISTANTS** - Comprehensive guide for Claude Code and other AI tools
 - **[Development Setup](./development/README.md)** - Local development environment
 - **[API Server Architecture](./development/api-server-architecture.md)** - Backend structure
 - **[Error Reporting](./development/error-reporting-principles.md)** - Error handling patterns

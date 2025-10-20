@@ -1,10 +1,4 @@
-import type {
-  AuthConfig,
-  SessionData,
-  SessionPersistence,
-  SignInData,
-  UserData
-} from '../../types';
+import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../../types';
 import { isOlderThan } from '../../utils/date-helpers';
 import { configureSessionStorage, getOptimalSessionConfig } from '../../utils/sessionManager';
 import { getStorageManager } from '../../utils/storageManager';
@@ -27,52 +21,103 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
     configureSessionStorage(storageConfig);
   }
 
+  // BroadcastChannel for cross-tab session sync
+  const broadcastChannel =
+    typeof window !== 'undefined' ? new BroadcastChannel('thepia-auth-session') : null;
+
   return {
-    async saveSession(session: SessionData): Promise<void> {
-      if (typeof window === 'undefined') return;
+    async saveSession(partialSession: Partial<SessionData>): Promise<SessionData> {
+      if (typeof window === 'undefined') {
+        // Return session for SSR context (won't be persisted)
+        return partialSession as SessionData;
+      }
 
       try {
         const storage = getStorageManager();
 
-        // Convert SessionData to SignInData format for storage
-        const signInData: SignInData = {
-          user: {
-            id: session.userId,
-            email: session.email,
-            name: session.name || session.email,
-            initials: session.name
-              ? session.name.charAt(0).toUpperCase()
-              : session.email.charAt(0).toUpperCase(),
-            avatar: undefined,
-            preferences: session.metadata
-          },
-          tokens: {
-            access_token: session.accessToken,
-            refresh_token: session.refreshToken,
-            refreshedAt: session.refreshedAt,
-            expiresAt: session.expiresAt,
-            supabase_token: session.supabaseToken,
-            supabase_expires_at: session.supabaseExpiresAt
-          },
-          authMethod: session.authMethod,
-          lastActivity: Date.now()
-        };
+        // CRITICAL: Read existing session BEFORE merging
+        const existingData = storage.getItem(SESSION_KEY);
+        let existingSession: SessionData | null = null;
 
-        // Save directly to configured storage
-        storage.setItem(SESSION_KEY, JSON.stringify(signInData));
-
-        // Emit session update event
-        if (typeof window.dispatchEvent === 'function') {
-          window.dispatchEvent(
-            new CustomEvent('sessionUpdate', {
-              detail: { session: signInData }
-            })
-          );
+        if (existingData) {
+          try {
+            const parsed = JSON.parse(existingData);
+            // Handle both old SignInData format (nested) and new SessionData format (flat)
+            if (parsed.user && parsed.tokens) {
+              // Old format: convert to SessionData
+              existingSession = {
+                userId: parsed.user.id,
+                email: parsed.user.email,
+                name: parsed.user.name,
+                emailVerified: parsed.user.emailVerified,
+                metadata: parsed.user.preferences,
+                accessToken: parsed.tokens.access_token || parsed.tokens.accessToken,
+                refreshToken: parsed.tokens.refresh_token || parsed.tokens.refreshToken,
+                expiresAt: parsed.tokens.expiresAt,
+                refreshedAt: parsed.tokens.refreshedAt,
+                authMethod: parsed.authMethod,
+                supabaseToken: parsed.tokens.supabase_token || parsed.tokens.supabaseToken,
+                supabaseExpiresAt:
+                  parsed.tokens.supabase_expires_at || parsed.tokens.supabaseExpiresAt
+              };
+            } else {
+              // New format: already SessionData
+              existingSession = parsed as SessionData;
+            }
+          } catch (e) {
+            console.warn('Failed to parse existing session:', e);
+          }
         }
 
-        console.log('💾 Session saved to', storage.getConfig().type, 'for user:', session.email);
+        // Merge partial update with existing session
+        const mergedSession: SessionData = existingSession
+          ? { ...existingSession, ...partialSession }
+          : (partialSession as SessionData);
+
+        // Convert SessionData to SignInData format for storage (nested structure with camelCase)
+        const storageFormat = {
+          user: {
+            id: mergedSession.userId,
+            email: mergedSession.email,
+            name: mergedSession.name,
+            emailVerified: mergedSession.emailVerified,
+            preferences: mergedSession.metadata
+          },
+          tokens: {
+            accessToken: mergedSession.accessToken,
+            refreshToken: mergedSession.refreshToken,
+            expiresAt: mergedSession.expiresAt,
+            refreshedAt: mergedSession.refreshedAt,
+            supabaseToken: mergedSession.supabaseToken,
+            supabaseExpiresAt: mergedSession.supabaseExpiresAt
+          },
+          authMethod: mergedSession.authMethod
+        };
+
+        // Save in SignInData format
+        storage.setItem(SESSION_KEY, JSON.stringify(storageFormat));
+
+        // Broadcast session update to other tabs via BroadcastChannel
+        if (broadcastChannel) {
+          broadcastChannel.postMessage({
+            type: 'SESSION_UPDATED',
+            session: mergedSession,
+            timestamp: Date.now()
+          });
+        }
+
+        console.log(
+          '💾 Session saved to',
+          storage.getConfig().type,
+          'for user:',
+          mergedSession.email
+        );
+
+        // Return merged session so caller knows what was actually persisted
+        return mergedSession;
       } catch (error) {
         console.error('Failed to save session:', error);
+        throw error;
       }
     },
 
@@ -84,38 +129,39 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
         const sessionData = storage.getItem(SESSION_KEY);
         if (!sessionData) return null;
 
-        const signInData = JSON.parse(sessionData) as SignInData;
+        const parsed = JSON.parse(sessionData);
 
-        // Check session timeout based on storage configuration
-        const sessionTimeout = storage.getSessionTimeout();
-        if (Date.now() - signInData.lastActivity > sessionTimeout) {
-          console.log('🕐 Session expired due to inactivity');
-          storage.removeItem(SESSION_KEY);
-          return null;
+        // Convert from storage format (SignInData with nested structure) to SessionData (flat)
+        let session: SessionData;
+        if (parsed.user && parsed.tokens) {
+          // Storage format: nested SignInData structure (uses camelCase)
+          session = {
+            userId: parsed.user.id,
+            email: parsed.user.email,
+            name: parsed.user.name,
+            emailVerified: parsed.user.emailVerified,
+            metadata: parsed.user.preferences,
+            accessToken: parsed.tokens.accessToken,
+            refreshToken: parsed.tokens.refreshToken,
+            expiresAt: parsed.tokens.expiresAt,
+            refreshedAt: parsed.tokens.refreshedAt,
+            authMethod: parsed.authMethod,
+            supabaseToken: parsed.tokens.supabaseToken,
+            supabaseExpiresAt: parsed.tokens.supabaseExpiresAt
+          };
+        } else {
+          // Already in SessionData format (shouldn't happen, but handle it)
+          session = parsed as SessionData;
         }
 
         // Check token expiration only if there's no refresh token
-        if (signInData.tokens.expiresAt < Date.now() && !signInData.tokens.refresh_token) {
+        if (session.expiresAt < Date.now() && !session.refreshToken) {
           console.log('🕐 Session expired: no refresh token and access token expired');
           storage.removeItem(SESSION_KEY);
           return null;
         }
 
-        // Convert SignInData to SessionData format
-        return {
-          userId: signInData.user.id,
-          email: signInData.user.email,
-          name: signInData.user.name,
-          emailVerified: true,
-          metadata: signInData.user.preferences,
-          accessToken: signInData.tokens.access_token,
-          refreshToken: signInData.tokens.refresh_token,
-          refreshedAt: signInData.tokens.refreshedAt,
-          expiresAt: signInData.tokens.expiresAt,
-          authMethod: signInData.authMethod,
-          supabaseToken: signInData.tokens.supabase_token,
-          supabaseExpiresAt: signInData.tokens.supabase_expires_at
-        };
+        return session;
       } catch (error) {
         console.error('Failed to load session:', error);
         return null;
@@ -129,13 +175,12 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
         const storage = getStorageManager();
         storage.removeItem(SESSION_KEY);
 
-        // Emit session update event
-        if (typeof window.dispatchEvent === 'function') {
-          window.dispatchEvent(
-            new CustomEvent('sessionUpdate', {
-              detail: { session: null }
-            })
-          );
+        // Broadcast session cleared to other tabs
+        if (broadcastChannel) {
+          broadcastChannel.postMessage({
+            type: 'SESSION_CLEARED',
+            timestamp: Date.now()
+          });
         }
 
         console.log('🗑️ Session cleared from', storage.getConfig().type);

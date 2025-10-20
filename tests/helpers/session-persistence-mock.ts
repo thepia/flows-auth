@@ -21,11 +21,11 @@
  */
 
 import { vi } from 'vitest';
-import type { SessionPersistence, SessionData, UserData } from '../../src/types';
+import type { SessionData, SessionPersistence, UserData } from '../../src/types';
 
 export interface MockSessionPersistence extends SessionPersistence {
   // Expose the vi.Mock types for easy spy assertions
-  saveSession: ReturnType<typeof vi.fn> & ((session: SessionData) => Promise<void>);
+  saveSession: ReturnType<typeof vi.fn> & ((session: Partial<SessionData>) => Promise<SessionData>);
   loadSession: ReturnType<typeof vi.fn> & (() => Promise<SessionData | null>);
   clearSession: ReturnType<typeof vi.fn> & (() => Promise<void>);
   saveUser: ReturnType<typeof vi.fn> & ((user: UserData) => Promise<void>);
@@ -47,15 +47,18 @@ export function createMockSessionPersistence(options?: {
 
   // In-memory storage for stateful mocks
   let storedSession: SessionData | null = initialSession;
-  let storedUsers: Map<string, UserData> = new Map();
+  const storedUsers: Map<string, UserData> = new Map();
 
   if (initialUser) {
     storedUsers.set(initialUser.userId, initialUser);
   }
 
   return {
-    saveSession: vi.fn().mockImplementation(async (session: SessionData) => {
-      storedSession = session;
+    saveSession: vi.fn().mockImplementation(async (session: Partial<SessionData>) => {
+      // Merge with existing session if present
+      const merged = storedSession ? { ...storedSession, ...session } : (session as SessionData);
+      storedSession = merged;
+      return merged;
     }),
 
     loadSession: vi.fn().mockImplementation(async () => {
@@ -100,7 +103,7 @@ export function createMockSessionPersistence(options?: {
  */
 export function createSimpleMockSessionPersistence(): MockSessionPersistence {
   return {
-    saveSession: vi.fn().mockResolvedValue(undefined),
+    saveSession: vi.fn().mockResolvedValue({} as SessionData),
     loadSession: vi.fn().mockResolvedValue(null),
     clearSession: vi.fn().mockResolvedValue(undefined),
     saveUser: vi.fn().mockResolvedValue(undefined),

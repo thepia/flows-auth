@@ -71,9 +71,13 @@ class Telemetry {
     this.config = config;
     console.log('📊 [Telemetry] Connected to API client');
 
-    // Initialize service worker if logging is enabled
+    // Initialize service worker if logging is enabled (fire and forget)
     if (config.errorReporting?.serviceWorkerLogging?.enabled) {
-      this.initServiceWorker();
+      this.initServiceWorker().catch((error) => {
+        if (config.errorReporting?.serviceWorkerLogging?.debug) {
+          console.warn('📊 [Telemetry] Failed to initialize service worker:', error);
+        }
+      });
     }
 
     // Flush any queued events
@@ -269,6 +273,18 @@ class Telemetry {
   getQueueSize() {
     return this.queue.length + this.retryQueue.length;
   }
+
+  /**
+   * Reset telemetry state (for testing)
+   */
+  reset() {
+    this.api = null;
+    this.config = null;
+    this.queue = [];
+    this.retryQueue = [];
+    this.serviceWorkerRegistration = null;
+    this.serviceWorkerInitialized = false;
+  }
 }
 
 // Global telemetry instance
@@ -280,6 +296,13 @@ const telemetry = new Telemetry();
  */
 export function initializeTelemetry(api: AuthApiClient, config: AuthConfig) {
   telemetry.setApiClient(api, config);
+}
+
+/**
+ * Reset telemetry state (for testing)
+ */
+export function resetTelemetry() {
+  telemetry.reset();
 }
 
 export function reportAuthState(event: Omit<AuthStateEvent, 'type'>) {

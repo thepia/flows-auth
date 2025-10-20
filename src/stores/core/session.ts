@@ -41,21 +41,7 @@ export function createSessionStore(options: StoreOptions) {
     saveSession: async (data: SignInData) => {
       if (typeof window === 'undefined') return;
 
-      // Convert SignInData to SessionData format
-      const sessionData = {
-        userId: data.user.id,
-        email: data.user.email,
-        name: data.user.name,
-        emailVerified: true,
-        metadata: data.user.preferences,
-        accessToken: data.tokens.access_token,
-        refreshToken: data.tokens.refresh_token,
-        refreshedAt: data.tokens.refreshedAt,
-        expiresAt: data.tokens.expiresAt,
-        authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link',
-        supabaseToken: data.tokens.supabase_token,
-        supabaseExpiresAt: data.tokens.supabase_expires_at
-      };
+      // TODO Partial<Session> Partial<User>
 
       // Convert SignInData to UserData format for user profile persistence
       const userData = {
@@ -66,6 +52,12 @@ export function createSessionStore(options: StoreOptions) {
         emailVerified: data.user.emailVerified,
         metadata: data.user.preferences,
         authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link'
+      };
+
+      // Convert SignInData to SessionData format for session persistence
+      const sessionData = {
+        ...userData,
+        ...data.tokens
       };
 
       // Save both session (tokens) and user profile
@@ -198,8 +190,8 @@ export function createSessionData(
   return {
     user: convertUserToSessionUser(user),
     tokens: {
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token || '',
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token || '',
       refreshedAt: Date.now(),
       // HACK: Force 6-minute expiry for testing (auto-refresh happens at 1 minute mark)
       // expiresAt: tokens.expires_in ? Date.now() + 6 * 60 * 1000 : Date.now() + 6 * 60 * 1000
@@ -207,11 +199,10 @@ export function createSessionData(
       expiresAt: tokens.expires_in
         ? Date.now() + tokens.expires_in * 1000
         : Date.now() + DEFAULT_EXPIRES_IN * 1000,
-      supabase_token: tokens.supabase_token,
-      supabase_expires_at: tokens.supabase_expires_at
+      supabaseToken: tokens.supabase_token,
+      supabaseExpiresAt: tokens.supabase_expires_at
     },
-    authMethod,
-    lastActivity: Date.now()
+    authMethod
   };
 }
 

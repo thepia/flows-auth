@@ -13,10 +13,11 @@ import type {
   AuthConfig,
   AuthEvents,
   AuthStoreFunctions,
+  SessionData,
   SignInData,
   StorageConfigurationUpdate
 } from '../types';
-import type { AuthEventData, AuthEventHandler, AuthEventType, StoreOptions } from './types';
+import type { AuthEventData, AuthEventType, StoreOptions } from './types';
 
 // Core stores
 import { authenticateUser, createAuthCoreStore } from './core/auth-core';
@@ -288,9 +289,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         // Update core auth state from session data
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
-          access_token: signInData.tokens.access_token,
-          refresh_token: signInData.tokens.refresh_token,
-          expiresAt: signInData.tokens.expiresAt
+          access_token: signInData.tokens.accessToken as string,
+          refresh_token: signInData.tokens.refreshToken,
+          expiresAt: signInData.tokens.expiresAt as number | null,
+          supabase_token: signInData.tokens.supabaseToken,
+          supabase_expires_at: signInData.tokens.supabaseExpiresAt
         });
 
         // Emit success event
@@ -364,14 +367,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const emailAddress = ui.getState().email;
         const signInData = await email.getState().verifyCode(emailAddress, code);
 
-        // Save session directly - already in SignInData format
-        session.getState().saveSession(signInData);
-
-        // Update core auth state from session data
+        // Update core auth state - authenticateUser will save the session via updateTokens()
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
-          access_token: signInData.tokens.access_token,
-          refresh_token: signInData.tokens.refresh_token,
-          expiresAt: signInData.tokens.expiresAt
+          access_token: signInData.tokens.accessToken as string,
+          refresh_token: signInData.tokens.refreshToken,
+          expiresAt: signInData.tokens.expiresAt as number | null,
+          supabase_token: signInData.tokens.supabaseToken,
+          supabase_expires_at: signInData.tokens.supabaseExpiresAt
         });
 
         eventEmitters.signInSuccess({
@@ -412,6 +414,33 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     },
 
     refreshTokens: async () => {
+      // CRITICAL: Load session data from database first to ensure we use the latest refresh token
+      // In multi-tab scenarios, the in-memory refresh token might be stale
+      let sessionDataFromDb: SessionData | null = null;
+      try {
+        sessionDataFromDb = await db.loadSession();
+      } catch (error) {
+        console.warn('Failed to load session from database before refresh:', error);
+      }
+
+      // If we have fresh session data from DB, use its refresh token and related expiry info
+      if (sessionDataFromDb?.refreshToken) {
+        const coreState = core.getState();
+        // Update core store with the latest refresh token from DB before attempting refresh
+        // Use direct state update to avoid triggering side effects like scheduling refresh
+        if (coreState.refresh_token !== sessionDataFromDb.refreshToken) {
+          console.log('📥 Using refresh token from database (more recent than in-memory)');
+          core.setState({
+            refresh_token: sessionDataFromDb.refreshToken,
+            access_token: sessionDataFromDb.accessToken,
+            expiresAt: sessionDataFromDb.expiresAt,
+            refreshedAt: sessionDataFromDb.refreshedAt,
+            supabase_token: sessionDataFromDb.supabaseToken,
+            supabase_expires_at: sessionDataFromDb.supabaseExpiresAt
+          });
+        }
+      }
+
       await core.getState().refreshTokens();
 
       // CRITICAL: Save new refresh token to localStorage to prevent "already exchanged" errors
@@ -433,15 +462,14 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
             preferences: coreState.user.metadata
           },
           tokens: {
-            access_token: coreState.access_token,
-            refresh_token: coreState.refresh_token || '',
+            accessToken: coreState.access_token,
+            refreshToken: coreState.refresh_token || '',
             refreshedAt: Date.now(),
             expiresAt: coreState.expiresAt || Date.now() + 24 * 60 * 60 * 1000,
-            supabase_token: coreState.supabase_token || undefined,
-            supabase_expires_at: coreState.supabase_expires_at || undefined
+            supabaseToken: coreState.supabase_token || undefined,
+            supabaseExpiresAt: coreState.supabase_expires_at || undefined
           },
-          authMethod: existingSessionData?.authMethod || ('passkey' as const),
-          lastActivity: Date.now()
+          authMethod: existingSessionData?.authMethod || ('passkey' as const)
         };
 
         session.getState().saveSession(sessionData);
@@ -751,14 +779,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     },
 
     notifyPinVerified: (signInData: SignInData) => {
-      // SignInData is already in the correct format - save directly
-      session.getState().saveSession(signInData);
-
-      // Update core auth state
+      // Update core auth state - authenticateUser will save the session via updateTokens()
       authenticateUser(core, convertSessionUserToUser(signInData.user), {
-        access_token: signInData.tokens.access_token,
-        refresh_token: signInData.tokens.refresh_token,
-        expiresAt: signInData.tokens.expiresAt
+        access_token: signInData.tokens.accessToken as string,
+        refresh_token: signInData.tokens.refreshToken,
+        expiresAt: signInData.tokens.expiresAt as number | null,
+        supabase_token: signInData.tokens.supabaseToken,
+        supabase_expires_at: signInData.tokens.supabaseExpiresAt
       });
 
       // Update UI state

@@ -48,22 +48,21 @@ describe('Session Conversion Functions', () => {
           preferences: { theme: 'dark' }
         },
         tokens: {
-          access_token: 'access-token-123',
-          refresh_token: 'refresh-token-456',
+          accessToken: 'access-token-123',
+          refreshToken: 'refresh-token-456',
           expiresAt: expect.any(Number)
         },
-        authMethod: 'passkey',
-        lastActivity: expect.any(Number)
+        authMethod: 'passkey'
       });
 
       // Validate nested tokens structure (not flat)
-      expect(result.tokens).toHaveProperty('access_token');
-      expect(result.tokens).toHaveProperty('refresh_token');
+      expect(result.tokens).toHaveProperty('accessToken');
+      expect(result.tokens).toHaveProperty('refreshToken');
       expect(result.tokens).toHaveProperty('expiresAt');
 
       // Validate no flat token fields at root level
-      expect(result).not.toHaveProperty('access_token');
-      expect(result).not.toHaveProperty('refresh_token');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
     });
 
     it('should generate initials from user name', () => {
@@ -130,18 +129,7 @@ describe('Session Conversion Functions', () => {
         'passkey'
       );
 
-      expect(result.tokens.refresh_token).toBe('');
-    });
-
-    it('should set lastActivity to current timestamp', () => {
-      const beforeTime = Date.now();
-
-      const result = createSessionData(mockUser, { access_token: 'token' }, 'passkey');
-
-      const afterTime = Date.now();
-
-      expect(result.lastActivity).toBeGreaterThanOrEqual(beforeTime);
-      expect(result.lastActivity).toBeLessThanOrEqual(afterTime);
+      expect(result.tokens.refreshToken).toBe('');
     });
 
     describe('authMethod parameter', () => {
@@ -247,7 +235,6 @@ describe('Session Conversion Functions', () => {
         expect(signInData.user).toBeDefined();
         expect(signInData.tokens).toBeDefined();
         expect(signInData.authMethod).toBeDefined();
-        expect(signInData.lastActivity).toBeDefined();
       });
 
       it('should have nested tokens structure matching server API', () => {
@@ -263,10 +250,12 @@ describe('Session Conversion Functions', () => {
 
         // Validate nested structure (not flat)
         expect(result.tokens).toEqual({
-          access_token: 'access',
-          refresh_token: 'refresh',
+          accessToken: 'access',
+          refreshToken: 'refresh',
           refreshedAt: expect.any(Number),
-          expiresAt: expect.any(Number)
+          expiresAt: expect.any(Number),
+          supabaseToken: undefined,
+          supabaseExpiresAt: undefined
         });
       });
     });
@@ -552,17 +541,16 @@ describe('Session Conversion Functions', () => {
           initials: 'TU'
         },
         tokens: {
-          access_token: 'access-token-xyz',
-          refresh_token: 'refresh-token-abc',
+          accessToken: 'access-token-xyz',
+          refreshToken: 'refresh-token-abc',
           expiresAt: expect.any(Number)
         },
-        authMethod: 'email-code',
-        lastActivity: expect.any(Number)
+        authMethod: 'email-code'
       });
 
       // Ensure nested tokens structure
-      expect(signInData.tokens.access_token).toBe('access-token-xyz');
-      expect(signInData.tokens.refresh_token).toBe('refresh-token-abc');
+      expect(signInData.tokens.accessToken).toBe('access-token-xyz');
+      expect(signInData.tokens.refreshToken).toBe('refresh-token-abc');
     });
 
     it('should handle passkey authentication response', () => {
@@ -591,7 +579,7 @@ describe('Session Conversion Functions', () => {
       );
 
       expect(signInData.authMethod).toBe('passkey');
-      expect(signInData.tokens.access_token).toBe('passkey-access-token');
+      expect(signInData.tokens.accessToken).toBe('passkey-access-token');
       expect(signInData.tokens.expiresAt).toBeGreaterThan(Date.now());
     });
   });

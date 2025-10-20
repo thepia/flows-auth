@@ -140,35 +140,37 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
     });
 
     it('should restore state from session if valid session exists', async () => {
-      // Set up a valid session in localStorage (using real session manager)
-      const { saveSession } = await import('../../src/utils/sessionManager');
-
-      const sessionData: SignInData = {
-        user: {
-          id: '123',
-          email: 'test@example.com',
-          name: 'Test User',
-          initials: 'TU',
-          avatar: null,
-          preferences: {}
-        },
-        tokens: {
-          access_token: 'access-token',
-          refresh_token: 'refresh-token',
-          expiresAt: Date.now() + 3600000
-        },
-        lastActivity: Date.now(),
-        createdAt: Date.now()
+      // Create a mock database adapter that returns valid SessionData
+      const mockSessionData = {
+        userId: '123',
+        email: 'test@example.com',
+        name: 'Test User',
+        emailVerified: true,
+        metadata: {},
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: Date.now() + 3600000,
+        refreshedAt: Date.now(),
+        authMethod: 'email-code' as const
       };
 
-      // Save session using real session manager
-      saveSession(sessionData);
+      const mockDatabaseAdapter = {
+        saveSession: vi.fn().mockResolvedValue(undefined),
+        loadSession: vi.fn().mockResolvedValue(mockSessionData),
+        clearSession: vi.fn().mockResolvedValue(undefined),
+        saveUser: vi.fn().mockResolvedValue(undefined),
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
+      };
 
-      // Create new composed store that should restore from session
-      const restoredStore = createAuthStore(mockConfig);
+      // Create new composed store with mock database adapter
+      const restoredStore = createAuthStore({
+        ...mockConfig,
+        database: mockDatabaseAdapter
+      });
 
-      // Give state machine time to initialize
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      // Give state machine time to initialize and restore session
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Test core state restoration
       const coreState = restoredStore.core.getState();
@@ -487,7 +489,9 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
 
       // Verify getState() exposes Supabase tokens
       const state = composedStore.getState();
-      expect(state.supabase_token).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc');
+      expect(state.supabase_token).toBe(
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc'
+      );
       expect(state.supabase_expires_at).toBe(supabaseExpiresAt);
 
       // Verify other standard fields are present

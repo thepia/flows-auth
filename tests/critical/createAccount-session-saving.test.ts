@@ -168,8 +168,7 @@ describe('createAccount API Contract', () => {
           refresh_token: 'refresh-token',
           expiresAt: Date.now() + 3600000
         },
-        authMethod: 'passkey',
-        lastActivity: Date.now()
+        authMethod: 'passkey'
       });
 
       vi.mocked(isAuthenticated).mockReturnValue(true);

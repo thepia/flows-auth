@@ -3,6 +3,23 @@
  * Allows flows-auth to integrate with any database system (flows-db, localStorage, etc.)
  */
 
+/**
+ * Token data structure - used in SignInData.tokens
+ * Contains only authentication token fields
+ */
+export interface TokenData {
+  accessToken: string;
+  refreshToken?: string; // Optional - sessions without refresh tokens expire permanently
+  expiresAt: number;
+  refreshedAt: number; // Timestamp when token was last refreshed (prevents spam refreshes)
+  supabaseToken?: string; // Supabase JWT for database access with RLS
+  supabaseExpiresAt?: number; // Supabase token expiration timestamp in milliseconds
+}
+
+/**
+ * Complete session data - flat structure for database storage
+ * Combines user info and token info for atomic persistence
+ */
 export interface SessionData {
   userId: string;
   email: string;
@@ -44,8 +61,9 @@ export interface SessionPersistence {
   /**
    * Save session to database
    * Called automatically when user signs in or tokens refresh
+   * Returns the complete merged session after saving
    */
-  saveSession(session: SessionData): Promise<void>;
+  saveSession(session: Partial<SessionData>): Promise<SessionData>;
 
   /**
    * Load session from database

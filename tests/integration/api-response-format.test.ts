@@ -259,8 +259,8 @@ describe('API Response Format Compatibility - CRITICAL', () => {
           id: mockUser.id
         }),
         tokens: expect.objectContaining({
-          access_token: 'legacy-access-token',
-          refresh_token: 'legacy-refresh-token'
+          accessToken: 'legacy-access-token',
+          refreshToken: 'legacy-refresh-token'
         }),
         authMethod: 'passkey'
       })
@@ -365,7 +365,8 @@ describe('API Response Format Compatibility - CRITICAL', () => {
       refresh_token: 'auth0-refresh-token',
       expires_in: 3600,
       user: mockUser,
-      supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXN1cGFiYXNlLTEyMyJ9.abc123',
+      supabase_token:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXN1cGFiYXNlLTEyMyJ9.abc123',
       supabase_expires_at: Date.now() + 3600000
     };
 
@@ -392,8 +393,8 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const result = await authStore.signInWithPasskey('supabase@example.com');
 
     // Verify SignInData includes Supabase tokens
-    expect(result.tokens.supabase_token).toBe(responseWithSupabase.supabase_token);
-    expect(result.tokens.supabase_expires_at).toBe(responseWithSupabase.supabase_expires_at);
+    expect(result.tokens.supabaseToken).toBe(responseWithSupabase.supabase_token);
+    expect(result.tokens.supabaseExpiresAt).toBe(responseWithSupabase.supabase_expires_at);
 
     // Verify session was saved with Supabase tokens
     expect(mockDatabase.saveSession).toHaveBeenCalled();

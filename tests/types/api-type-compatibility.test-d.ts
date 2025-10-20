@@ -25,8 +25,8 @@ describe('Type Compatibility Tests', () => {
 
   test('SignInData should have nested tokens structure', () => {
     expectTypeOf<SignInData>().toHaveProperty('tokens');
-    expectTypeOf<SignInData['tokens']>().toHaveProperty('access_token');
-    expectTypeOf<SignInData['tokens']>().toHaveProperty('refresh_token');
+    expectTypeOf<SignInData['tokens']>().toHaveProperty('accessToken');
+    expectTypeOf<SignInData['tokens']>().toHaveProperty('refreshToken');
     expectTypeOf<SignInData['tokens']>().toHaveProperty('expiresAt');
   });
 
@@ -52,17 +52,14 @@ describe('Type Compatibility Tests', () => {
     }>();
   });
 
-  test('SignInData should have authMethod field', () => {
+  test('SignInData should have optional authMethod field', () => {
     expectTypeOf<SignInData>().toHaveProperty('authMethod');
     expectTypeOf<SignInData['authMethod']>().toEqualTypeOf<
-      'passkey' | 'password' | 'email-code' | 'magic-link'
+      'passkey' | 'password' | 'email-code' | 'magic-link' | undefined
     >();
   });
 
-  test('SignInData should have lastActivity timestamp', () => {
-    expectTypeOf<SignInData>().toHaveProperty('lastActivity');
-    expectTypeOf<SignInData['lastActivity']>().toEqualTypeOf<number>();
-  });
+  // lastActivity removed - no longer part of SignInData (session timeout removed)
 
   test('User should have required core fields', () => {
     expectTypeOf<User>().toMatchTypeOf<{
@@ -91,10 +88,10 @@ describe('Type Compatibility Tests', () => {
   test('Conversion: SignInResponse.expires_in maps to SignInData.tokens.expiresAt', () => {
     // This documents the transformation pattern
     type ResponseExpiry = SignInResponse['expires_in']; // number | undefined (seconds)
-    type DataExpiry = SignInData['tokens']['expiresAt']; // number (milliseconds timestamp)
+    type DataExpiry = SignInData['tokens']['expiresAt']; // number | undefined (milliseconds timestamp, optional in Partial<TokenData>)
 
     expectTypeOf<ResponseExpiry>().toEqualTypeOf<number | undefined>();
-    expectTypeOf<DataExpiry>().toEqualTypeOf<number>();
+    expectTypeOf<DataExpiry>().toEqualTypeOf<number | undefined>();
 
     // Conversion: expires_in (seconds) → expiresAt (milliseconds timestamp)
     // expiresAt = Date.now() + (expires_in * 1000)
@@ -112,11 +109,14 @@ describe('Type Compatibility Tests', () => {
       expires_in?: number;
     }>();
 
-    // Data uses nested structure
+    // Data uses nested structure with camelCase fields (Partial<TokenData> makes all optional)
     expectTypeOf<DataTokens>().toMatchTypeOf<{
-      access_token: string;
-      refresh_token: string;
-      expiresAt: number;
+      accessToken?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+      refreshedAt?: number;
+      supabaseToken?: string;
+      supabaseExpiresAt?: number;
     }>();
   });
 });

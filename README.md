@@ -856,7 +856,7 @@ pnpm install
 
 ## License
 
-MIT License - see [LICENSE](./LICENSE) file for details.
+Proprietary License - see [LICENSE](./LICENSE) file for details.
 
 ## Support
 

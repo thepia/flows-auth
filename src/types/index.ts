@@ -17,6 +17,15 @@ import type {
 } from './signin-state-machine';
 export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
 export type { SessionPersistence, SessionData, UserData, DatabaseAdapter } from './database';
+export type {
+  ConfirmConsentRequestSchema,
+  ConfirmConsentRequest,
+  ConfirmConsentResponseSchema,
+  ConfirmConsentResponse,
+  GetConsentsResponseSchema,
+  GetConsentsResponse,
+  CompactConsentRecord
+} from './onboarding';
 
 // User types
 export interface User {
@@ -938,3 +947,30 @@ export interface ExplainerConfig {
 
 // Re-export i18n utilities for convenience
 export { m, setI18nMessages } from '../utils/i18n';
+
+// Re-export auth store schema types and validators for runtime validation
+export type {
+  User as AuthStoreUser,
+  Tokens,
+  SignInState as AuthStoreSignInState,
+  AuthStoreState
+} from './auth-store-schema';
+export {
+  UserSchema,
+  TokensSchema,
+  SignInStateSchema,
+  WebAuthnErrorSchema,
+  SignInErrorSchema,
+  AuthCoreStateSchema,
+  SessionStateSchema,
+  UIStateSchema,
+  ErrorStateSchema,
+  PasskeyStateSchema,
+  EmailAuthStateSchema,
+  AuthStoreStateSchema,
+  AuthStoreSetters,
+  AuthStoreReadOnlyFields
+} from './auth-store-schema';
+
+// Re-export onboarding types (consents, preferences, invitations, clients)
+export type * from './onboarding';

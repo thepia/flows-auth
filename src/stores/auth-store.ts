@@ -33,6 +33,7 @@ import {
 
 // Feature stores
 import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
+import { createOnboardingStore } from './onboarding-store';
 
 // UI stores
 import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state';
@@ -55,6 +56,7 @@ export interface ComposedAuthStore extends AuthStoreFunctions {
   passkey: ReturnType<typeof createPasskeyStore>;
   email: ReturnType<typeof createEmailAuthStore>;
   ui: ReturnType<typeof createUIStore>;
+  onboarding: ReturnType<typeof createOnboardingStore>;
 
   // API client access
   api: AuthApiClient;
@@ -97,6 +99,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
   const passkey = createPasskeyStore({ ...storeOptions, name: 'passkey' });
   const email = createEmailAuthStore({ ...storeOptions, name: 'email-auth' });
   const ui = createUIStore({ ...storeOptions, name: 'ui' });
+  const onboarding = createOnboardingStore({ ...storeOptions, name: 'onboarding' });
 
   // Create event emitters for type-safe events
   const eventEmitters = createTypedEventEmitters(events);
@@ -248,6 +251,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       error.getState().clearApiError();
       passkey.getState().reset();
       email.getState().reset();
+      onboarding.getState().reset();
     });
 
     // Listen for errors and update error store
@@ -274,6 +278,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     passkey,
     email,
     ui,
+    onboarding,
     api,
 
     // Core authentication methods (moved from api wrapper)
@@ -882,6 +887,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       passkey.getState().reset();
       email.getState().reset();
       ui.getState().resetUIState();
+      onboarding.getState().reset();
 
       console.log('✅ Auth store destroyed');
     }

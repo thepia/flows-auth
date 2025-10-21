@@ -6,6 +6,7 @@ import { createSessionStore } from './core/session';
 
 // Feature stores
 import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
+import { createOnboardingStore } from './onboarding-store';
 
 // UI stores
 import { createUIStore } from './ui/ui-state';
@@ -23,7 +24,8 @@ export {
   createEventStore,
   createPasskeyStore,
   createEmailAuthStore,
-  createUIStore
+  createUIStore,
+  createOnboardingStore
 };
 
 // Re-export adapters

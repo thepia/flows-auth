@@ -24,6 +24,13 @@ import type {
   WebAuthnRegistrationResponse,
   WebAuthnVerificationResult
 } from '../types';
+import type {
+  ConfirmConsentRequest,
+  ConfirmConsentResponse,
+  GetConsentsResponse,
+  GetOnboardingMetadataResponse,
+  UpdateOnboardingMetadataRequest
+} from '../types/onboarding';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter';
 import { reportApiError } from '../utils/telemetry';
 import { globalUserCache } from '../utils/user-cache';
@@ -937,5 +944,81 @@ export class AuthApiClient {
       method: 'POST',
       body: JSON.stringify(userData)
     });
+  }
+
+  // ============================================================================
+  // Onboarding (Agreements, Consents, Preferences, Invitations)
+  // ============================================================================
+
+  /**
+   * Get onboarding metadata for the current user
+   * Includes agreements, consents, preferences, and invitations
+   * Requires authentication (Bearer token)
+   */
+  async getOnboardingMetadata(): Promise<GetOnboardingMetadataResponse> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/onboarding` : '/onboarding';
+
+    return this.request<GetOnboardingMetadataResponse>(
+      endpoint,
+      {
+        method: 'GET'
+      },
+      true
+    ); // includeAuth = true
+  }
+
+  /**
+   * Update onboarding metadata for the current user
+   * Can update agreements, consents, preferences, or onboarding status
+   * Requires authentication (Bearer token)
+   */
+  async updateOnboardingMetadata(
+    request: UpdateOnboardingMetadataRequest
+  ): Promise<GetOnboardingMetadataResponse> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/onboarding` : '/onboarding';
+
+    return this.request<GetOnboardingMetadataResponse>(
+      endpoint,
+      {
+        method: 'PUT',
+        body: JSON.stringify(request)
+      },
+      true
+    ); // includeAuth = true
+  }
+
+  /**
+   * Get all consents for the current user
+   */
+  async getConsents(): Promise<GetConsentsResponse> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/consents` : '/consents';
+
+    return this.request<GetConsentsResponse>(
+      endpoint,
+      {
+        method: 'GET'
+      },
+      true
+    ); // includeAuth = true
+  }
+
+  /**
+   * Confirm consent for a specific document URL
+   */
+  async confirmConsent(request: ConfirmConsentRequest): Promise<ConfirmConsentResponse> {
+    const effectiveAppCode = this.getEffectiveAppCode();
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/consents` : '/consents';
+
+    return this.request<ConfirmConsentResponse>(
+      endpoint,
+      {
+        method: 'PUT',
+        body: JSON.stringify(request)
+      },
+      true
+    ); // includeAuth = true
   }
 }

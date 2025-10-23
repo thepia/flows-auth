@@ -93,7 +93,10 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         json: async () => ({
           exists: true,
           hasWebAuthn: false,
-          lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+          lastPin: {
+            sentAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+          }
         })
       });
 
@@ -176,7 +179,10 @@ describe('SignInCore Button Texts(no passkeys)', () => {
         json: async () => ({
           exists: true,
           hasWebAuthn: true,
-          lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+          lastPin: {
+            sentAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+          }
         })
       });
 

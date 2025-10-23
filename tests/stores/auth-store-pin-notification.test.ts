@@ -25,7 +25,10 @@ describe('Auth Store PIN Notification', () => {
         exists: true,
         hasWebAuthn: false,
         emailVerified: false,
-        lastPinExpiry: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes from now
+        lastPin: {
+          sentAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes from now
+        }
       }),
       sendAppEmailCode: vi.fn().mockResolvedValue({
         success: true,

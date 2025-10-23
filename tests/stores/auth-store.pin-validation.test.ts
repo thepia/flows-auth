@@ -76,7 +76,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:35:00.000Z' // 5 minutes in the future
+        lastPin: {
+          sentAt: '2025-09-26T13:30:00.000Z',
+          expiresAt: '2025-09-26T13:35:00.000Z' // 5 minutes in the future
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -94,7 +97,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:25:00.000Z' // 5 minutes in the past
+        lastPin: {
+          sentAt: '2025-09-26T13:20:00.000Z',
+          expiresAt: '2025-09-26T13:25:00.000Z' // 5 minutes in the past
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -106,13 +112,13 @@ describe('Auth Store Pin Validation', () => {
       expect(state.pinRemainingMinutes).toBe(0);
     });
 
-    it('should handle missing lastPinExpiry', async () => {
+    it('should handle missing lastPin', async () => {
       const mockResponse = {
         exists: true,
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true
-        // lastPinExpiry is missing
+        // lastPin is missing
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -124,13 +130,13 @@ describe('Auth Store Pin Validation', () => {
       expect(state.pinRemainingMinutes).toBe(0);
     });
 
-    it('should handle null lastPinExpiry', async () => {
+    it('should handle null lastPin', async () => {
       const mockResponse = {
         exists: true,
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: null
+        lastPin: null
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -148,7 +154,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:34:30.000Z' // 4.5 minutes in the future
+        lastPin: {
+          sentAt: '2025-09-26T13:29:30.000Z',
+          expiresAt: '2025-09-26T13:34:30.000Z' // 4.5 minutes in the future
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -166,7 +175,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:30:30.000Z' // 30 seconds in the future
+        lastPin: {
+          sentAt: '2025-09-26T13:30:00.000Z',
+          expiresAt: '2025-09-26T13:30:30.000Z' // 30 seconds in the future
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -184,7 +196,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:30:00.000Z' // Exactly now
+        lastPin: {
+          sentAt: '2025-09-26T13:25:00.000Z',
+          expiresAt: '2025-09-26T13:30:00.000Z' // Exactly now
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -202,7 +217,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: 'invalid-date-string'
+        lastPin: {
+          sentAt: '2025-09-26T13:25:00.000Z',
+          expiresAt: 'invalid-date-string'
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -224,8 +242,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'workos|user_01K4DDYMKSK82XKFYAKBG54AH9',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:36:23.391Z', // ~6 minutes in the future
-        lastPinSentAt: '2025-09-26T13:26:24.136Z',
+        lastPin: {
+          sentAt: '2025-09-26T13:26:24.136Z',
+          expiresAt: '2025-09-26T13:36:23.391Z' // ~6 minutes in the future
+        },
         organization: {
           code: 'demo',
           name: 'WorkOS Demo Environment',
@@ -255,7 +275,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:35:00.000Z' // ISO string, not a number
+        lastPin: {
+          sentAt: '2025-09-26T13:30:00.000Z',
+          expiresAt: '2025-09-26T13:35:00.000Z' // ISO string, not a number
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);
@@ -278,7 +301,10 @@ describe('Auth Store Pin Validation', () => {
         hasPasskey: false,
         userId: 'user_123',
         emailVerified: true,
-        lastPinExpiry: '2025-09-26T13:35:00.000Z'
+        lastPin: {
+          sentAt: '2025-09-26T13:30:00.000Z',
+          expiresAt: '2025-09-26T13:35:00.000Z'
+        }
       };
 
       mockApiClient.checkEmail.mockResolvedValue(mockResponse);

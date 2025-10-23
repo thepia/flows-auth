@@ -374,10 +374,10 @@ export function createEmailAuthStore(options: StoreOptions) {
  * Helper functions for PIN validation (extracted from original auth-store)
  */
 function checkForValidPin(userCheck: any): boolean {
-  if (!userCheck || !userCheck.lastPinExpiry) return false;
+  if (!userCheck || !userCheck.lastPin?.expiresAt) return false;
 
   try {
-    const expiryTime = new Date(userCheck.lastPinExpiry);
+    const expiryTime = new Date(userCheck.lastPin.expiresAt);
     const now = new Date();
     return expiryTime > now;
   } catch (error) {
@@ -387,10 +387,10 @@ function checkForValidPin(userCheck: any): boolean {
 }
 
 function getRemainingPinMinutes(userCheck: any): number {
-  if (!userCheck || !userCheck.lastPinExpiry) return 0;
+  if (!userCheck || !userCheck.lastPin?.expiresAt) return 0;
 
   try {
-    const expiryTime = new Date(userCheck.lastPinExpiry);
+    const expiryTime = new Date(userCheck.lastPin.expiresAt);
     const now = new Date();
     const remainingMs = expiryTime.getTime() - now.getTime();
 

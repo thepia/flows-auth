@@ -33,7 +33,10 @@ describe('Auth Store reset() Method', () => {
         exists: true,
         hasWebAuthn: false,
         emailVerified: true,
-        lastPinExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        lastPin: {
+          sentAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        }
       }),
       sendAppEmailCode: vi.fn().mockResolvedValue({
         success: true,

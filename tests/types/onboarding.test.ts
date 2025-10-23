@@ -199,12 +199,12 @@ describe('Onboarding Types - Zod Validation', () => {
           'invite-1': { status: 'pending' }
         },
         clients: {
-          'demo': {
+          demo: {
             status: 'connected',
             progress: 100,
             steps: [],
-            firstSeen: new Date().toISOString(),
-            lastSeen: new Date().toISOString()
+            first_seen: new Date().toISOString(),
+            last_seen: new Date().toISOString()
           }
         }
       };
@@ -331,7 +331,7 @@ describe('Onboarding Types - Zod Validation', () => {
       it('should return client status if exists', () => {
         const metadata: OnboardingMetadata = {
           clients: {
-            'demo': {
+            demo: {
               status: 'connected',
               progress: 100,
               steps: [],
@@ -355,4 +355,3 @@ describe('Onboarding Types - Zod Validation', () => {
     });
   });
 });
-

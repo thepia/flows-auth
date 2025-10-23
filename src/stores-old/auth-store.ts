@@ -990,7 +990,7 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
       console.log('🔍 Reactive pin check result:', {
         email: email.trim(),
         hasValidPin: checkForValidPin(userData),
-        lastPinExpiry: userData.lastPinExpiry,
+        lastPin: userData.lastPin,
         userExists: userData.exists,
         hasPasskeys: userData.hasWebAuthn
       });
@@ -1009,15 +1009,15 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
   // Pin validation helper
   function checkForValidPin(userCheck: any): boolean {
-    if (!userCheck || !userCheck.lastPinExpiry) return false;
+    if (!userCheck || !userCheck.lastPin?.expiresAt) return false;
 
     try {
-      const expiryTime = new Date(userCheck.lastPinExpiry);
+      const expiryTime = new Date(userCheck.lastPin.expiresAt);
       const now = new Date();
 
       // Debug logging for time zone issues
       console.log('🕐 Pin validation time check:', {
-        lastPinExpiry: userCheck.lastPinExpiry,
+        lastPin: userCheck.lastPin,
         expiryTimeUTC: expiryTime.toISOString(),
         expiryTimeLocal: expiryTime.toString(),
         nowUTC: now.toISOString(),
@@ -1037,10 +1037,10 @@ function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): Complet
 
   // Calculate remaining minutes for valid pin
   function getRemainingPinMinutes(userCheck: any): number {
-    if (!userCheck || !userCheck.lastPinExpiry) return 0;
+    if (!userCheck || !userCheck.lastPin?.expiresAt) return 0;
 
     try {
-      const expiryTime = new Date(userCheck.lastPinExpiry);
+      const expiryTime = new Date(userCheck.lastPin.expiresAt);
       const now = new Date();
       const remainingMs = expiryTime.getTime() - now.getTime();
       // Handle NaN case from invalid dates

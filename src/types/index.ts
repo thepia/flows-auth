@@ -27,16 +27,24 @@ export type {
   CompactConsentRecord
 } from './onboarding';
 
+// Invitation types - single source of truth for both flows-auth and thepia.com
+export type {
+  ActiveInvitation,
+  ClientRegistration,
+  ConsentRecord,
+  ConsentData,
+  UserMetadata
+} from './invitations';
+
 // User types
 export interface User {
   id: string;
   email: string;
   name?: string;
-  picture?: string;
   emailVerified: boolean;
   createdAt: string;
   lastLoginAt?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Authentication states - simplified with email verification support
@@ -228,6 +236,25 @@ export interface SignInRequest {
 }
 
 /**
+ * EmailVerificationResult - Returned by email verification methods
+ *
+ * Used by:
+ * - Auth0 verifyEmailAuth()
+ * - WorkOS verifyEmailAuth()
+ * - Email code verification handlers
+ *
+ * Structure: Properly typed authentication result with user and tokens
+ * - Matches the structure returned by auth providers
+ * - Used internally by email-signin handler before normalization
+ */
+export interface EmailVerificationResult {
+  user: User;
+  access_token: string;
+  refresh_token?: string;
+  id_token?: string;
+}
+
+/**
  * SignInResponse - Returned by authentication endpoints
  *
  * Used by:
@@ -241,6 +268,7 @@ export interface SignInRequest {
  */
 export interface SignInResponse {
   user?: User;
+  orgIds?: string[]; // organisations the user is a member of
   access_token?: string;
   refresh_token?: string;
   expires_in?: number;
@@ -279,8 +307,10 @@ export interface CheckUserResponse {
   emailVerified?: boolean; // From WorkOS user profile
 
   // Pin validation fields (from user metadata)
-  lastPinExpiry?: string | null; // ISO string from user.metadata.lastPinExpiry
-  lastPinSentAt?: string | null; // ISO string from user.metadata.lastPinSentAt
+  lastPin?: {
+    sentAt: string; // ISO string from user.metadata.lastPin.sentAt
+    expiresAt: string; // ISO string from user.metadata.lastPin.expiresAt
+  } | null;
 
   // Invitation system
   invitationTokenHash?: string | null; // For invitation token validation
@@ -342,8 +372,8 @@ export interface EmailCodeSendResponse {
   /** Unix timestamp in milliseconds when code was sent */
   timestamp?: number;
 
-  /** Organization/app context */
-  organization?: {
+  /** app context */
+  config?: {
     code: string;
     name: string;
     provider: 'auth0' | 'workos';
@@ -813,7 +843,7 @@ export interface AuthStoreFunctions {
     userId?: string;
     emailVerified?: boolean;
     invitationTokenHash?: string;
-    lastPinExpiry?: string; // ISO date string from API
+    lastPin?: { sentAt: string; expiresAt: string } | null; // PIN metadata from API
   }>;
   registerUser: (userData: {
     email: string;

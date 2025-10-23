@@ -45,7 +45,7 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
       userId: undefined,
       emailVerified: false,
       invitationTokenHash: undefined,
-      lastPinExpiry: undefined
+      lastPin: undefined
     }),
     // Add sendAppEmailCode method for email code sending
     sendAppEmailCode: vi.fn().mockResolvedValue({
@@ -73,7 +73,7 @@ export function renderWithContext(
       hasPasskey?: boolean; // Accept hasPasskey for convenience
       userId?: string | null;
       emailVerified?: boolean;
-      lastPinExpiry?: string | null;
+      lastPin?: { sentAt: string; expiresAt: string } | null;
     };
   } = {}
 ) {
@@ -109,7 +109,7 @@ export function renderWithStoreProp(
       hasPasskey?: boolean; // Accept hasPasskey for convenience
       userId?: string | null;
       emailVerified?: boolean;
-      lastPinExpiry?: string | null;
+      lastPin?: { sentAt: string; expiresAt: string } | null;
     };
   } = {}
 ) {
@@ -125,7 +125,7 @@ export function renderWithStoreProp(
       userId: mockUserCheck.userId || undefined,
       emailVerified: mockUserCheck.emailVerified || false,
       invitationTokenHash: undefined,
-      lastPinExpiry: mockUserCheck.lastPinExpiry || undefined
+      lastPin: mockUserCheck.lastPin || undefined
     });
   }
 

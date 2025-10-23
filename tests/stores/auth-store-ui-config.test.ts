@@ -55,7 +55,7 @@ describe('AuthStore UI Configuration', () => {
       exists: true,
       hasWebAuthn: false,
       emailVerified: true,
-      lastPinExpiry: null
+      lastPin: null
     });
 
     authStore = makeSvelteCompatible(createAuthStore(mockConfig));

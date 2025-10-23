@@ -83,6 +83,15 @@ export type {
 export type * from './types';
 export type { StorageConfig } from './types';
 
+// Metadata Schema (unified for Auth0 and WorkOS)
+export {
+  UserMetadataSchema,
+  getFieldCount,
+  validateFieldLimit,
+  getFieldsInUse,
+  type UserMetadata
+} from './types/metadata-schema';
+
 // Enhanced auth store interface types
 export type {
   AuthFlowResult,
@@ -163,7 +172,7 @@ export {
 } from './utils/webauthn';
 
 // Version
-export const VERSION = '1.0.10';
+export const VERSION = '1.0.11';
 
 // Default Configuration Utilities (NEW - eliminates app-level duplication)
 export {

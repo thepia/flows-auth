@@ -35,39 +35,45 @@ describe('AuthApiClient - Consent Management', () => {
   });
 
   describe('getConsents', () => {
-    it('should fetch all consents for the current user', async () => {
-      const mockResponse: GetConsentsResponse = {
-        consents: {
-          'https://example.com/privacy': {
-            v: 1,
-            dh: 'abc123def456',
-            ts: 1697500000000
-          },
-          'https://example.com/terms': {
-            v: 2,
-            dh: 'xyz789uvw012',
-            ts: 1697500001000
+    it('should fetch all consents from onboarding metadata', async () => {
+      const mockMetadata = {
+        metadata: {
+          consent: {
+            'https://example.com/privacy': {
+              v: 1,
+              dh: 'abc123def456',
+              ts: 1697500000000
+            },
+            'https://example.com/terms': {
+              v: 2,
+              dh: 'xyz789uvw012',
+              ts: 1697500001000
+            }
           }
         },
-        total: 2
+        lastUpdated: new Date().toISOString()
       };
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockMetadata
       });
 
       const result = await apiClient.getConsents();
 
-      expect(result).toEqual(mockResponse);
       expect(result.total).toBe(2);
       expect(Object.keys(result.consents)).toHaveLength(2);
+      expect(result.consents['https://example.com/privacy']).toEqual({
+        v: 1,
+        dh: 'abc123def456',
+        ts: 1697500000000
+      });
     });
 
-    it('should use app-specific endpoint when appCode is set', async () => {
-      const mockResponse: GetConsentsResponse = {
-        consents: {},
-        total: 0
+    it('should use app-specific metadata endpoint when appCode is set', async () => {
+      const mockResponse = {
+        success: true,
+        metadata: { consent: {} }
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -78,18 +84,19 @@ describe('AuthApiClient - Consent Management', () => {
       await apiClient.getConsents();
 
       const fetchCall = (global.fetch as any).mock.calls[0];
-      expect(fetchCall[0]).toContain('/test-app/consents');
+      expect(fetchCall[0]).toContain('/test-app/metadata');
+      expect(fetchCall[1].method).toBe('GET');
     });
 
-    it('should handle empty consents response', async () => {
-      const mockResponse: GetConsentsResponse = {
-        consents: {},
-        total: 0
+    it('should handle empty consents in metadata', async () => {
+      const mockMetadata = {
+        metadata: { consent: {} },
+        lastUpdated: new Date().toISOString()
       };
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockMetadata
       });
 
       const result = await apiClient.getConsents();
@@ -98,14 +105,17 @@ describe('AuthApiClient - Consent Management', () => {
       expect(Object.keys(result.consents)).toHaveLength(0);
     });
 
-    it('should throw error on API failure', async () => {
+    it('should return empty consents on API failure', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 500,
         json: async () => ({ error: 'Internal Server Error' })
       });
 
-      await expect(apiClient.getConsents()).rejects.toThrow();
+      const result = await apiClient.getConsents();
+
+      expect(result.total).toBe(0);
+      expect(result.consents).toEqual({});
     });
   });
 
@@ -142,7 +152,7 @@ describe('AuthApiClient - Consent Management', () => {
       expect(result.metadata?.consent).toBeDefined();
     });
 
-    it('should use PUT method for confirmConsent', async () => {
+    it('should use PATCH method for confirmConsent', async () => {
       const request: ConfirmConsentRequest = {
         url: 'https://example.com/terms',
         v: 1,
@@ -162,10 +172,10 @@ describe('AuthApiClient - Consent Management', () => {
       await apiClient.confirmConsent(request);
 
       const fetchCall = (global.fetch as any).mock.calls[0];
-      expect(fetchCall[1].method).toBe('PUT');
+      expect(fetchCall[1].method).toBe('PATCH');
     });
 
-    it('should send request body as JSON', async () => {
+    it('should send request body as JSON with patch wrapper', async () => {
       const request: ConfirmConsentRequest = {
         url: 'https://example.com/cookies',
         v: 1,
@@ -186,9 +196,13 @@ describe('AuthApiClient - Consent Management', () => {
 
       const fetchCall = (global.fetch as any).mock.calls[0];
       const body = JSON.parse(fetchCall[1].body);
-      expect(body.url).toBe(request.url);
-      expect(body.v).toBe(request.v);
-      expect(body.dh).toBe(request.dh);
+      expect(body.patch).toBeDefined();
+      expect(body.patch.consent).toBeDefined();
+      expect(body.patch.consent[request.url]).toEqual({
+        v: request.v,
+        dh: request.dh,
+        ts: request.ts
+      });
     });
 
     it('should handle consent confirmation failure', async () => {
@@ -199,40 +213,38 @@ describe('AuthApiClient - Consent Management', () => {
         ts: Date.now()
       };
 
-      const mockResponse: ConfirmConsentResponse = {
-        success: false,
-        error: 'Invalid document version'
-      };
-
       (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Invalid document version' })
       });
 
       const result = await apiClient.confirmConsent(request);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid document version');
+      expect(result.error).toBeDefined();
     });
   });
 
   describe('getOnboardingMetadata', () => {
-    it('should fetch onboarding metadata', async () => {
-      const mockResponse: GetOnboardingMetadataResponse = {
-        metadata: {
-          consent: {
-            'https://example.com/privacy': {
-              v: 1,
-              dh: 'abc123',
-              ts: 1697500000000
-            }
-          },
-          preferences: {
-            theme: 'dark',
-            language: 'en'
+    it('should fetch onboarding metadata from metadata endpoint', async () => {
+      const mockMetadata = {
+        consent: {
+          'https://example.com/privacy': {
+            v: 1,
+            dh: 'abc123',
+            ts: 1697500000000
           }
         },
-        lastUpdated: new Date().toISOString()
+        preferences: {
+          theme: 'dark',
+          language: 'en'
+        }
+      };
+
+      const mockResponse = {
+        success: true,
+        metadata: mockMetadata
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -245,6 +257,25 @@ describe('AuthApiClient - Consent Management', () => {
       expect(result.metadata).toBeDefined();
       expect(result.metadata.consent).toBeDefined();
       expect(result.metadata.preferences).toBeDefined();
+      expect(result.lastUpdated).toBeDefined();
+    });
+
+    it('should use app-specific metadata endpoint when appCode is set', async () => {
+      const mockResponse = {
+        success: true,
+        metadata: {}
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      await apiClient.getOnboardingMetadata();
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[0]).toContain('/test-app/metadata');
+      expect(fetchCall[1].method).toBe('GET');
     });
   });
 
@@ -275,4 +306,3 @@ describe('AuthApiClient - Consent Management', () => {
     });
   });
 });
-

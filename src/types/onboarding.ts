@@ -26,8 +26,8 @@
  *       "status": "connected",
  *       "progress": 100,
  *       "steps": [],
- *       "firstSeen": "2025-10-21T...",
- *       "lastSeen": "2025-10-21T..."
+ *       "first_seen": "2025-10-21T...",
+ *       "last_seen": "2025-10-21T..."
  *     }
  *   }
  * }
@@ -81,8 +81,8 @@ export const ClientRegistrationSchema = z.object({
   status: z.enum(['needs_invite', 'invited', 'connected']).describe('Registration status'),
   progress: z.number().min(0).max(100).optional().describe('Onboarding progress 0-100'),
   steps: z.array(z.string()).optional().describe('Completed onboarding steps'),
-  firstSeen: z.string().datetime({ offset: true }).describe('First connection timestamp'),
-  lastSeen: z.string().datetime({ offset: true }).describe('Last connection timestamp')
+  first_seen: z.string().datetime({ offset: true }).describe('First connection timestamp'),
+  last_seen: z.string().datetime({ offset: true }).describe('Last connection timestamp')
 });
 
 export type ClientRegistration = z.infer<typeof ClientRegistrationSchema>;

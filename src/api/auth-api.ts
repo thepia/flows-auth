@@ -432,7 +432,7 @@ export class AuthApiClient {
     const endpoint = effectiveAppCode ? `/${effectiveAppCode}/check-user` : '/auth/check-user';
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
-    console.log(`[AuthApiClient] Making check-user request:`, {
+    console.log('[AuthApiClient] Making check-user request:', {
       email,
       requestUrl,
       baseUrl: this.baseUrl,
@@ -454,7 +454,7 @@ export class AuthApiClient {
       }
     );
 
-    console.log(`[AuthApiClient] Raw API response:`, {
+    console.log('[AuthApiClient] Raw API response:', {
       email,
       requestUrl,
       response: response,
@@ -957,68 +957,127 @@ export class AuthApiClient {
    */
   async getOnboardingMetadata(): Promise<GetOnboardingMetadataResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/onboarding` : '/onboarding';
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
 
-    return this.request<GetOnboardingMetadataResponse>(
+    const response = await this.request<{ success: boolean; metadata?: Record<string, unknown> }>(
       endpoint,
       {
         method: 'GET'
       },
       true
     ); // includeAuth = true
+
+    return {
+      metadata: response.metadata || {},
+      lastUpdated: new Date().toISOString()
+    };
   }
 
   /**
    * Update onboarding metadata for the current user
-   * Can update agreements, consents, preferences, or onboarding status
+   * Can update consent, preferences, invitations, or clients
+   * Uses the single metadata endpoint for all metadata changes
    * Requires authentication (Bearer token)
    */
   async updateOnboardingMetadata(
     request: UpdateOnboardingMetadataRequest
   ): Promise<GetOnboardingMetadataResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/onboarding` : '/onboarding';
+    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
 
-    return this.request<GetOnboardingMetadataResponse>(
+    // Convert UpdateOnboardingMetadataRequest to metadata patch format
+    const patch: Record<string, unknown> = {};
+    if (request.consent) patch.consent = request.consent;
+    if (request.preferences) patch.preferences = request.preferences;
+    if (request.invitations) patch.invitations = request.invitations;
+    if (request.clients) patch.clients = request.clients;
+
+    const response = await this.request<{ success: boolean; metadata?: Record<string, unknown> }>(
       endpoint,
       {
-        method: 'PUT',
-        body: JSON.stringify(request)
+        method: 'PATCH',
+        body: JSON.stringify({ patch })
       },
       true
     ); // includeAuth = true
+
+    // Convert response back to GetOnboardingMetadataResponse format
+    return {
+      metadata: response.metadata || {},
+      lastUpdated: new Date().toISOString()
+    };
   }
 
   /**
    * Get all consents for the current user
+   * Fetches onboarding metadata and extracts consent records
    */
   async getConsents(): Promise<GetConsentsResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/consents` : '/consents';
+    try {
+      // Fetch the onboarding metadata
+      const metadata = await this.getOnboardingMetadata();
 
-    return this.request<GetConsentsResponse>(
-      endpoint,
-      {
-        method: 'GET'
-      },
-      true
-    ); // includeAuth = true
+      // Extract consent records from metadata
+      const consents = metadata.metadata?.consent || {};
+
+      return {
+        consents,
+        total: Object.keys(consents).length
+      };
+    } catch (error) {
+      console.error('Error fetching consents:', error);
+
+      // Return empty consents on error
+      return {
+        consents: {},
+        total: 0
+      };
+    }
   }
 
   /**
    * Confirm consent for a specific document URL
+   * Uses the metadata PATCH endpoint to atomically update consent records
    */
   async confirmConsent(request: ConfirmConsentRequest): Promise<ConfirmConsentResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/consents` : '/consents';
+    try {
+      // Get the effective app code
+      const effectiveAppCode = this.getEffectiveAppCode();
+      const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
 
-    return this.request<ConfirmConsentResponse>(
-      endpoint,
-      {
-        method: 'PUT',
-        body: JSON.stringify(request)
-      },
-      true
-    ); // includeAuth = true
+      // Create the patch payload for consent
+      const patch = {
+        consent: {
+          [request.url]: {
+            v: request.v,
+            dh: request.dh,
+            ts: request.ts
+          }
+        }
+      };
+
+      // Call the metadata PATCH endpoint
+      const response = await this.request<{ success: boolean; metadata?: Record<string, unknown> }>(
+        endpoint,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ patch })
+        },
+        true
+      ); // includeAuth = true
+
+      return {
+        success: response.success,
+        metadata: response.metadata
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to confirm consent';
+      console.error('Error confirming consent:', error);
+
+      return {
+        success: false,
+        error: message
+      };
+    }
   }
 }

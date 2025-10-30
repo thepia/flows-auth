@@ -322,7 +322,7 @@
   .auth-description {
     font-size: 16px;
     color: var(--color-text-secondary, #6b7280);
-    margin: 0 0 24px 0;
+    margin: 0;
     line-height: 1.5;
   }
 

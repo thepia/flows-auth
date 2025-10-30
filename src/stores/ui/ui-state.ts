@@ -352,6 +352,12 @@ export function createUIStore(options: StoreOptions) {
         return null;
       }
 
+      const params = {
+        companyName: config.branding?.companyName,
+        termsLink: config.privacyPolicyUrl,
+        privacyLink: config.acceptableUseUrl
+      };
+
       // Determine if we should show features list or paragraph
       const shouldShowFeatures =
         explainFeatures !== undefined
@@ -370,11 +376,13 @@ export function createUIStore(options: StoreOptions) {
           });
         }
 
-        features.push({
-          iconName: 'Shield',
-          textKey: 'explainer.features.privacyCompliant',
-          iconWeight: 'duotone' as const
-        });
+        if (config.privacyPolicyUrl) {
+          features.push({
+            iconName: 'Shield',
+            textKey: 'explainer.features.seePolicies',
+            iconWeight: 'duotone' as const
+          });
+        }
 
         if (config.branding?.companyName) {
           features.push({
@@ -389,10 +397,10 @@ export function createUIStore(options: StoreOptions) {
             iconWeight: 'duotone' as const
           });
         }
-
         return {
           type: 'features',
           features,
+          params,
           className: 'explainer-features-list'
         };
       }
@@ -416,6 +424,7 @@ export function createUIStore(options: StoreOptions) {
       return {
         type: 'paragraph',
         textKey,
+        params,
         iconName: 'Lock',
         iconWeight: 'duotone' as const,
         useCompanyName: !!config.branding?.companyName,

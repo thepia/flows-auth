@@ -43,7 +43,6 @@ export interface UserData {
   userId: string; // Changed from 'id' to match SessionData naming convention
   email: string;
   name?: string;
-  avatar?: string; // From User.picture
   emailVerified?: boolean;
   createdAt?: string; // ISO date string
   lastLoginAt?: string; // ISO date string

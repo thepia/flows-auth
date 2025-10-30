@@ -29,7 +29,8 @@ export {
   EmailInput,
   AuthButton,
   AuthStateMessage,
-  SignInCore
+  SignInCore,
+  PolicyViewer
 } from './components/core';
 
 // Icon system

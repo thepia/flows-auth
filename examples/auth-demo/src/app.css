@@ -490,6 +490,15 @@ select {
   box-sizing: border-box;
 }
 
+/* Fix for unused closing animations - these are applied dynamically */
+:global(.policy-viewer-dialog.closing) {
+  animation: slideOut 0.2s ease-in;
+}
+
+:global(.policy-viewer-dialog.closing::backdrop) {
+  animation: fadeOut 0.2s ease-in;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {

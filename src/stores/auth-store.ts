@@ -463,7 +463,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
             initials: coreState.user.name
               ? coreState.user.name.charAt(0).toUpperCase()
               : coreState.user.email.charAt(0).toUpperCase(),
-            avatar: coreState.user.picture,
             preferences: coreState.user.metadata
           },
           tokens: {

@@ -172,6 +172,8 @@ export interface AuthConfig {
   applicationContext?: ApplicationContext; // Optional application context for role hints
   appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
 
+  privacyPolicyUrl?: string; // Public URL with Privacy Policy
+  acceptableUseUrl?: string; // Acceptable Use Policy URL
   invitationToken?: string; // Optional invitation token for account creation permission
 
   // Authentication flow configuration
@@ -370,7 +372,7 @@ export interface EmailCodeSendResponse {
   expiresAt?: string;
 
   /** Unix timestamp in milliseconds when code was sent */
-  timestamp?: number;
+  timestamp: number;
 
   /** app context */
   config?: {
@@ -972,6 +974,7 @@ export interface ExplainerConfig {
   companyName?: string; // Company name to pass to translation function
   // For features type
   features?: ExplainerFeature[];
+  params?: Record<string, unknown>;
   className?: string;
 }
 

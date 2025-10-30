@@ -73,9 +73,9 @@
         <span class="flex-1 text-left">
           {#if config.textKey}
             {#if config.useCompanyName && config.companyName}
-              {messages[config.textKey]({ companyName: config.companyName })}
+              {@html messages[config.textKey]({ companyName: config.companyName })}
             {:else}
-              {messages[config.textKey]()}
+              {@html messages[config.textKey]()}
             {/if}
           {/if}
         </span>
@@ -94,7 +94,7 @@
               />
             </div>
             <span class="feature-text">
-              {messages[feature.textKey]()}
+              {@html messages[feature.textKey](config.params)}
             </span>
           </div>
         {/each}
@@ -134,8 +134,6 @@
 
   /* Features list style (matches SignInForm Info Section) */
   .explainer-features {
-    padding-top: 16px;
-    border-top: 1px solid var(--color-border-light, #e5e7eb);
     display: flex;
     flex-direction: column;
     gap: 8px;

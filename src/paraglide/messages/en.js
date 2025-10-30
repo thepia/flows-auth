@@ -289,6 +289,10 @@ export const explainer_features_userverification1 = /** @type {(inputs: {}) => s
 	return `User verification required`
 };
 
+export const explainer_features_seepolicies1 = /** @type {(inputs: {}) => string} */ () => {
+	return `See our <a onclick='showPolicyPopup()'>Privacy and Acceptable Use Policy</a>`
+};
+
 export const action_retry = /** @type {(inputs: {}) => string} */ () => {
 	return `Try again`
 };

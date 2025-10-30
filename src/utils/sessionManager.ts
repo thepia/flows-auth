@@ -31,7 +31,7 @@ export function getSession(): SignInData | null {
 
     // Check token expiration only if there's no refresh token
     // If we have a refresh token, the session remains valid even if access token expired
-    if (session.tokens.expiresAt < Date.now() && !session.tokens.refreshToken) {
+    if ((session.tokens.expiresAt ?? 0) < Date.now() && !session.tokens.refreshToken) {
       console.log('🕐 Session expired: no refresh token and access token expired');
       clearSession();
       return null;
@@ -108,7 +108,7 @@ export function isSessionValid(session: SignInData | null): boolean {
 
   // Check token expiration only if there's no refresh token
   // If we have a refresh token, the session can be refreshed even if access token expired
-  if (session.tokens.expiresAt < Date.now() && !session.tokens.refreshToken) {
+  if ((session.tokens.expiresAt ?? 0) < Date.now() && !session.tokens.refreshToken) {
     return false;
   }
 

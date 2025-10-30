@@ -289,6 +289,10 @@ export const explainer_features_userverification1 = /** @type {(inputs: {}) => s
 	return `Brugerverifikation påkrævet`
 };
 
+export const explainer_features_seepolicies1 = /** @type {(inputs: {}) => string} */ () => {
+	return `Se vores <a onclick='showPolicyPopup()'>Privatlivspolitik og Brugsbetingelser</a>`
+};
+
 export const action_retry = /** @type {(inputs: {}) => string} */ () => {
 	return `Prøv igen`
 };

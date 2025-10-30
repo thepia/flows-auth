@@ -18,6 +18,7 @@ import CodeInput from './CodeInput.svelte';
 import AuthNewUserInfo from './AuthNewUserInfo.svelte';
 import UserManagement from '../UserManagement.svelte';
 import PinEntryStep from './PinEntryStep.svelte';
+import PolicyViewer from './PolicyViewer.svelte';
 
 // Props
 export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
@@ -35,7 +36,7 @@ $: authConfig = authStore?.getConfig?.();
 
 // Events
 const dispatch = createEventDispatcher<{
-  success: { user: User; method: AuthMethod };
+  success: { user: User|null; method: AuthMethod };
   error: { error: AuthError };
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
@@ -46,6 +47,9 @@ $: console.log('🔍 SignInCore: authStore =', !!authStore, authStore);
 // Component state (minimal - most state now in store)
 let email = initialEmail;
 // emailCode is now in the store, not local state
+
+// PolicyViewer state
+let showPolicyModal = false;
 
 // Get current state from store reactively
 let currentSignInState = 'emailEntry';
@@ -114,7 +118,23 @@ async function initializeComponent() {
 }
 
 // Initialize on mount
-onMount(initializeComponent);
+onMount(() => {
+  initializeComponent();
+
+  // Expose showPolicyPopup globally for onclick handlers in HTML
+  if (typeof window !== 'undefined') {
+    (window as any).showPolicyPopup = () => {
+      showPolicyModal = true;
+    };
+  }
+
+  // Cleanup on unmount
+  return () => {
+    if (typeof window !== 'undefined') {
+      delete (window as any).showPolicyPopup;
+    }
+  };
+});
 
 // Handle email changes and conditional auth
 async function handleEmailChange(event: CustomEvent<{value: string}>) {
@@ -505,6 +525,14 @@ $: if (authStore && email && (currentSignInState === 'emailEntry' || currentSign
     {/if}
   {/if}
 </div>
+
+<!-- PolicyViewer Modal - Opened by global showPolicyPopup() function -->
+<PolicyViewer
+  open={showPolicyModal}
+  store={authStore}
+  on:close={() => showPolicyModal = false}
+  on:consent={(e) => console.log('Policy consent:', e.detail)}
+/>
 {/if}
 
 <style>
@@ -513,7 +541,7 @@ $: if (authStore && email && (currentSignInState === 'emailEntry' || currentSign
   }
 
   .button-section {
-    margin-top: 24px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;

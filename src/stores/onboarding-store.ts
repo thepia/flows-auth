@@ -161,8 +161,12 @@ export function createOnboardingStore(options: StoreOptions) {
 
         updateClientStatus: async (clientId: string, status: Partial<ClientRegistration>) => {
           const current = get().metadata;
-          const existing = current.clients?.[clientId];
-          const updated = {
+          const existing: ClientRegistration = current.clients?.[clientId] ?? {
+            status: 'needs_invite',
+            first_seen: new Date().toISOString(),
+            last_seen: new Date().toISOString()
+          };
+          const updated: UpdateOnboardingMetadataRequest = {
             clients: {
               ...(current.clients || {}),
               [clientId]: {

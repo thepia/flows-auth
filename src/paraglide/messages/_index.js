@@ -1671,6 +1671,29 @@ export { explainer_features_userverification1 as "explainer.features.userVerific
 * @returns {string}
 */
 /* @__NO_SIDE_EFFECTS__ */
+const explainer_features_seepolicies1 = (inputs = {}, options = {}) => {
+	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
+		return /** @type {any} */ (globalThis).__paraglide_ssr.explainer_features_seepolicies1(inputs) 
+	}
+	const locale = options.locale ?? getLocale()
+	trackMessageCall("explainer_features_seepolicies1", locale)
+	if (locale === "en") return en.explainer_features_seepolicies1(inputs)
+	return da.explainer_features_seepolicies1(inputs)
+};
+export { explainer_features_seepolicies1 as "explainer.features.seePolicies" }
+/**
+* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
+*
+* - Changing this function will be over-written by the next build.
+*
+* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
+* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
+* 
+* @param {{}} inputs
+* @param {{ locale?: "en" | "da" }} options
+* @returns {string}
+*/
+/* @__NO_SIDE_EFFECTS__ */
 const action_retry = (inputs = {}, options = {}) => {
 	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
 		return /** @type {any} */ (globalThis).__paraglide_ssr.action_retry(inputs) 

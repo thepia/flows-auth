@@ -84,6 +84,7 @@
   "explainer.features.privacyCompliant": "Privacy-compliant access",
   "explainer.features.employeeVerification": "Employee verification required",
   "explainer.features.userVerification": "User verification required",
+  "explainer.features.seePolicies": "See our <a onclick='showPolicyPopup()'>Privacy and Acceptable Use Policy</a>",
 
   "action.retry": "Try again",
   "action.back": "Back",

@@ -27,6 +27,8 @@ const authConfig = {
   clientId: 'demo',
   domain: 'thepia.net',
   enablePasskeys: false,
+  privacyPolicyUrl: 'https://thepia.com/app/privacy',
+  acceptableUseUrl: 'https://thepia.com/app/acceptable',
   errorReporting: {
     enabled: true,
     // Endpoint will be auto-constructed as: ${apiBaseUrl}/dev/error-reports
@@ -34,7 +36,7 @@ const authConfig = {
   },
   appCode: 'demo',
   branding: {
-    companyName: 'Auth Demo'
+    companyName: 'Acme Corp'
   }
 };
 

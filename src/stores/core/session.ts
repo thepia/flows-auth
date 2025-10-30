@@ -151,7 +151,6 @@ export function convertUserToSessionUser(user: User) {
     email: user.email,
     name: user.name || user.email,
     initials: generateInitials(user.name || user.email),
-    avatar: user.picture,
     preferences: user.metadata
   };
 }
@@ -164,7 +163,6 @@ export function convertSessionUserToUser(sessionUser: SignInData['user']): User 
     id: sessionUser.id,
     email: sessionUser.email,
     name: sessionUser.name,
-    picture: sessionUser.avatar,
     emailVerified: true, // Assume verified if they have a session
     createdAt: new Date().toISOString(), // Fallback value
     metadata: sessionUser.preferences

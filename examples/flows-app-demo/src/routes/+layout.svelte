@@ -16,6 +16,8 @@
     domain: 'dev.thepia.net',
     enablePasskeys: true,
     enableMagicLinks: false,
+    privacyPolicyUrl: 'https://thepia.com/app/privacy',
+    acceptableUseUrl: 'https://thepia.com/app/acceptable',
     errorReporting: {
       enabled: dev, // Only enable in development
       debug: dev

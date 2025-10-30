@@ -83,6 +83,7 @@
   "explainer.features.privacyCompliant": "Privatlivs-kompatibel adgang",
   "explainer.features.employeeVerification": "Medarbejderverifikation påkrævet",
   "explainer.features.userVerification": "Brugerverifikation påkrævet",
+  "explainer.features.seePolicies": "Se vores <a onclick='showPolicyPopup()'>Privatlivspolitik og Brugsbetingelser</a>",
 
   "action.retry": "Prøv igen",
   "action.back": "Tilbage",

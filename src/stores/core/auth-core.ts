@@ -393,7 +393,6 @@ export function createAuthCoreStore(options: StoreOptions) {
             userId: currentState.user.id,
             email: currentState.user.email,
             name: currentState.user.name,
-            avatar: currentState.user.picture,
             emailVerified: currentState.user.emailVerified,
             createdAt: currentState.user.createdAt,
             lastLoginAt: currentState.user.lastLoginAt,

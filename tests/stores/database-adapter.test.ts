@@ -671,41 +671,6 @@ describe('Database Adapter Configuration', () => {
 
         store.destroy();
       });
-
-      it('should preserve avatar field from User.picture', async () => {
-        const mockAdapter: SessionPersistence = {
-          saveSession: vi.fn().mockResolvedValue(undefined),
-          loadSession: vi.fn().mockResolvedValue(null),
-          clearSession: vi.fn().mockResolvedValue(undefined),
-          saveUser: vi.fn().mockResolvedValue(undefined),
-          getUser: vi.fn().mockResolvedValue(null),
-          clearUser: vi.fn().mockResolvedValue(undefined)
-        };
-
-        const store = createAuthStore({ ...mockConfig, database: mockAdapter });
-
-        const mockUser = {
-          id: 'user-789',
-          email: 'avatar@example.com',
-          picture: 'https://cdn.example.com/user-avatar.png',
-          emailVerified: true,
-          createdAt: '2024-01-01T00:00:00Z'
-        };
-
-        store.core.getState().updateUser(mockUser);
-        await store.core.getState().updateTokens({
-          access_token: 'token',
-          refresh_token: 'refresh',
-          expiresAt: Date.now() + 3600000
-        });
-        await new Promise((resolve) => setTimeout(resolve, 50));
-
-        // Verify picture → avatar mapping
-        const saveUserCall = vi.mocked(mockAdapter.saveUser).mock.calls[0][0];
-        expect(saveUserCall.avatar).toBe('https://cdn.example.com/user-avatar.png');
-
-        store.destroy();
-      });
     });
 
     describe('getUser Method', () => {

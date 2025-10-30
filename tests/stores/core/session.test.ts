@@ -397,20 +397,6 @@ describe('Session Conversion Functions', () => {
       expect(() => new Date(result.createdAt)).not.toThrow();
     });
 
-    it('should map avatar to picture', () => {
-      const sessionUser: SignInData['user'] = {
-        id: 'user-123',
-        email: 'test@example.com',
-        name: 'Test User',
-        initials: 'TU',
-        avatar: 'https://avatar.url'
-      };
-
-      const result = convertSessionUserToUser(sessionUser);
-
-      expect(result.picture).toBe('https://avatar.url');
-    });
-
     it('should map preferences to metadata', () => {
       const sessionUser: SignInData['user'] = {
         id: 'user-123',
@@ -435,7 +421,6 @@ describe('Session Conversion Functions', () => {
 
       const result = convertSessionUserToUser(sessionUser);
 
-      expect(result.picture).toBeUndefined();
       expect(result.metadata).toBeUndefined();
     });
   });
@@ -462,7 +447,6 @@ describe('Session Conversion Functions', () => {
       expect(finalUser.id).toBe(originalUser.id);
       expect(finalUser.email).toBe(originalUser.email);
       expect(finalUser.name).toBe(originalUser.name);
-      expect(finalUser.picture).toBe(originalUser.picture);
       expect(finalUser.metadata).toEqual(originalUser.metadata);
 
       // Note: createdAt and emailVerified will differ (fallback values used)
@@ -499,7 +483,6 @@ describe('Session Conversion Functions', () => {
       expect(recoveredUser.id).toBe(user.id);
       expect(recoveredUser.email).toBe(user.email);
       expect(recoveredUser.name).toBe(user.name);
-      expect(recoveredUser.picture).toBe(user.picture);
       expect(recoveredUser.metadata).toEqual(user.metadata);
     });
   });

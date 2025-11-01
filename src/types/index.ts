@@ -7,6 +7,7 @@ import type { AuthApiClient } from '../api/auth-api';
 import type { SessionData, SessionPersistence, TokenData } from './database';
 export type { TokenData } from './database';
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
+import type { UserMetadata } from './metadata-schema';
 // SignIn state types (keeping only the types, removed the class)
 import type {
   SignInContext,
@@ -32,9 +33,11 @@ export type {
   ActiveInvitation,
   ClientRegistration,
   ConsentRecord,
-  ConsentData,
-  UserMetadata
+  ConsentData
 } from './invitations';
+
+// Unified metadata schema - Auth0 app_metadata and WorkOS metadata
+export type { UserMetadata } from './metadata-schema';
 
 // User types
 export interface User {
@@ -235,6 +238,33 @@ export interface SignInRequest {
   email: string;
   method?: AuthMethod;
   redirectUri?: string;
+}
+
+/**
+ * CreateUserData - User data from registration form
+ *
+ * Used by:
+ * - Auth0 createUser()
+ * - WorkOS createUser()
+ * - Registration handlers
+ *
+ * Structure: Flexible user creation data with optional fields
+ * - email: Required email address
+ * - name: Optional full name
+ * - firstName/lastName: Optional name components
+ * - acceptedTerms/acceptedPrivacy: Optional consent flags
+ *
+ * Note: Metadata (clientId, appCode, registrationSource) is passed separately
+ * to createUser() by the handler, not included in CreateUserData
+ */
+export interface CreateUserData {
+  email: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  acceptedTerms?: boolean;
+  acceptedPrivacy?: boolean;
+  metadata?: UserMetadata;
 }
 
 /**

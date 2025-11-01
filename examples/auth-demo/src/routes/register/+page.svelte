@@ -9,9 +9,6 @@ import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
-export let isAuthenticated = false;
-export let user = null;
-
 // Get authStore from context
 const authStoreContext = getContext(AUTH_CONTEXT_KEY);
 

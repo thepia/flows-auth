@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -49,6 +49,11 @@
       "types": "./src/stores/adapters/astro.ts",
       "import": "./src/stores/adapters/astro.ts",
       "default": "./src/stores/adapters/astro.ts"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.ts",
+      "default": "./dist/types/index.ts"
     },
     "./dev": {
       "types": "./dist/dev.d.ts",

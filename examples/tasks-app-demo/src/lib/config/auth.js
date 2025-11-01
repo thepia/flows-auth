@@ -12,7 +12,7 @@ async function getApiBaseUrl() {
   if (!browser) return 'https://api.thepia.com';
 
   // Check if we have env var
-  let apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL;
+  let apiBaseUrl = import.meta.env.API_BASE_URL;
 
   if (!apiBaseUrl) {
     // Try local API server first

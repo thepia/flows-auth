@@ -10,6 +10,7 @@
  */
 
 import { z } from 'zod';
+import { UserMetadataSchema } from './metadata-schema';
 
 // ============================================================================
 // Core Types
@@ -22,14 +23,7 @@ export const UserSchema = z.object({
 	firstName: z.string().optional(),
 	lastName: z.string().optional(),
 	emailVerified: z.boolean().optional(),
-	metadata: z
-		.object({
-			role: z.enum(['employee', 'admin', 'guest']).optional(),
-			clientId: z.string().optional(),
-			organizationId: z.string().optional()
-		})
-		.passthrough()
-		.optional(),
+	metadata: UserMetadataSchema.optional(),
 	createdAt: z.string().optional(),
 	lastLogin: z.string().optional()
 });

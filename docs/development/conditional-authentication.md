@@ -201,7 +201,7 @@ async function startConditionalAuthentication(email: string): Promise<boolean> {
 **Solutions:**
 1. **Verify API server**: Check if `dev.thepia.com:8443` or `api.thepia.com` is responding
 2. **Check CORS**: Ensure API server allows requests from your domain
-3. **Environment variables**: Verify `PUBLIC_API_BASE_URL` is set correctly
+3. **Environment variables**: Verify `API_BASE_URL` is set correctly
 4. **Error reporting endpoint**: flows-auth now defaults to `https://api.thepia.com/dev/error-reports` instead of the broken `http://localhost:3000` default
 
 ### Issue 3: WebAuthn Errors

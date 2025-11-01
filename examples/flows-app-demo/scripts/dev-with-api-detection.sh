@@ -73,16 +73,16 @@ configure_api_environment() {
     local api_url=$1
     local api_type=$2
     
-    export PUBLIC_API_BASE_URL="$api_url"
+    export API_BASE_URL="$api_url"
     
     # Create or update .env.local for the demo app
     local env_file=".env.local"
     echo "# Auto-generated API configuration - $(date)" > "$env_file"
-    echo "PUBLIC_API_BASE_URL=$api_url" >> "$env_file"
+    echo "API_BASE_URL=$api_url" >> "$env_file"
     echo "# API Type: $api_type" >> "$env_file"
     
     echo -e "${GREEN}✅ Environment configured for $api_type${NC}"
-    echo -e "${BLUE}   PUBLIC_API_BASE_URL=$api_url${NC}"
+    echo -e "${BLUE}   API_BASE_URL=$api_url${NC}"
     echo ""
 }
 

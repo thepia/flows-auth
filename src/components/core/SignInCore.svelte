@@ -67,11 +67,22 @@ async function checkUserForEmail(emailValue: string) {
 
   emailCheckTimeout = setTimeout(async () => {
     try {
-      console.log('🔍 Reactive email pin check for:', emailValue.trim());
-      if (!email || !email.trim()) {
+      const trimmedEmail = emailValue.trim();
+      console.log('🔍 Reactive email pin check for:', trimmedEmail);
+
+      if (!trimmedEmail) {
         authStore.setEmail('');
+        return;
       }
-      await authStore.checkUser(emailValue.trim());
+
+      // Validate email format before making API call
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        console.log('⚠️ Invalid email format, skipping check-user API call');
+        return;
+      }
+
+      await authStore.checkUser(trimmedEmail);
 
     } catch (err) {
       console.error('check-user error:', err);

@@ -16,7 +16,7 @@ export async function detectDefaultApiServer(): Promise<string> {
   }
 
   // Check environment variable first
-  let apiBaseUrl = import.meta.env?.PUBLIC_API_BASE_URL;
+  let apiBaseUrl = import.meta.env?.API_BASE_URL;
 
   if (apiBaseUrl) {
     console.log('🔧 Using API base URL from environment:', apiBaseUrl);

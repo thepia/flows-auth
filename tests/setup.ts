@@ -67,7 +67,9 @@ vi.mock('phosphor-svelte', () => {
     SmileyWink: MockIcon,
     Heart: MockIcon,
     Star: MockIcon,
-    Settings: MockIcon
+    Settings: MockIcon,
+    X: MockIcon,
+    Check: MockIcon
   };
 });
 

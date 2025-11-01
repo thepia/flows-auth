@@ -124,7 +124,7 @@ The demo shows real-time state transitions:
 ### API Server Detection
 - Automatically detects local API server at `https://dev.thepia.com:8443`
 - Falls back to production API at `https://api.thepia.com`
-- Configurable via `PUBLIC_API_BASE_URL` environment variable
+- Configurable via `API_BASE_URL` environment variable
 
 ### Domain Configuration
 - Default domain: `dev.thepia.net` (matches SSL certificates)

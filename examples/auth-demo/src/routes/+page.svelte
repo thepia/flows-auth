@@ -8,15 +8,9 @@ import { getLocale } from '../paraglide/runtime.js';
 import { CaretRight, User, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 
-// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)  
-export let isAuthenticated = false;
-export let user = null;
-
+// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 // Get authStore from context (setupAuthContext in layout sets the actual store)
 const authStore = getContext(AUTH_CONTEXT_KEY);
-
-// Optional SvelteKit props
-export let params = {};
 
 // Component state
 let currentUser = null;
@@ -775,10 +769,7 @@ $: dynamicAuthConfig = authConfig ? {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .feature-icon {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-  }
+
 
   /* Phosphor Icons Demo Styles */
   .phosphor-demo-card {

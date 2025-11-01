@@ -89,7 +89,7 @@ The flows-auth library uses the following priority order for determining the API
 
 ```typescript
 // 1. Explicit environment variable (highest priority)
-const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL
+const apiBaseUrl = import.meta.env.API_BASE_URL
 
 // 2. Development script detection
 if (localApiHealthCheck('https://dev.thepia.com:8443')) {
@@ -154,7 +154,7 @@ pnpm run dev:production
    Server: thepia-api-local
 
 ✅ Environment configured for Local Development
-   PUBLIC_API_BASE_URL=https://dev.thepia.com:8443
+   API_BASE_URL=https://dev.thepia.com:8443
 
 🎯 Starting flows-app-demo...
 💡 Press Ctrl+C to stop
@@ -207,7 +207,7 @@ The development scripts automatically configure environment variables:
 
 ```bash
 # Auto-generated in examples/flows-app-demo/.env.local
-PUBLIC_API_BASE_URL=https://dev.thepia.com:8443
+API_BASE_URL=https://dev.thepia.com:8443
 # API Type: Local Development (auto-detected)
 ```
 
@@ -232,9 +232,9 @@ const authConfig = {
   domain: 'thepia.net'
 };
 
-// Environment-based configuration (recommended)
+// Environment-based configuration (the lib will override the apiBaseUrl if API_BASE_URL is defined)
 const authConfig = {
-  apiBaseUrl: import.meta.env.PUBLIC_API_BASE_URL || 'https://api.thepia.com',
+  apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
   enableMagicLinks: false,
   domain: 'thepia.net'

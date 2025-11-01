@@ -1,4 +1,12 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
@@ -31,6 +39,43 @@ function copyDirRecursive(src: string, dest: string) {
       copyFileSync(srcPath, destPath);
     }
   }
+}
+
+// Custom plugin to fix .d.ts imports for Deno compatibility
+function fixDtsImports() {
+  return {
+    name: 'fix-dts-imports',
+    writeBundle() {
+      const distDir = resolve(__dirname, 'dist');
+      const dtsFiles: string[] = [];
+
+      // Find all .d.ts files
+      function findDtsFiles(dir: string) {
+        if (!existsSync(dir)) return;
+        const entries = readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+          if (entry.isDirectory()) {
+            findDtsFiles(fullPath);
+          } else if (entry.name.endsWith('.d.ts')) {
+            dtsFiles.push(fullPath);
+          }
+        }
+      }
+
+      findDtsFiles(distDir);
+
+      // Fix imports in each .d.ts file
+      for (const filePath of dtsFiles) {
+        let content = readFileSync(filePath, 'utf-8');
+        // Add .d.ts extension to relative imports that don't have it
+        content = content.replace(/from ['"](\.[^'"]+?)(?<!\.d\.ts)['"];/g, "from '$1.d.ts';");
+        writeFileSync(filePath, content, 'utf-8');
+      }
+
+      console.log(`✅ Fixed imports in ${dtsFiles.length} .d.ts files for Deno compatibility`);
+    }
+  };
 }
 
 // Custom plugin to copy source files to dist/src for source imports
@@ -78,6 +123,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'tests/**/*']
     }),
+    fixDtsImports(),
     copySourceFiles()
   ],
   build: {

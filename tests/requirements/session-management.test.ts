@@ -57,8 +57,8 @@ const createTestSession = (): SignInData => ({
   tokens: {
     accessToken: 'test-access-token',
     refreshToken: 'test-refresh-token',
-    refreshedAt: Date.now(),
-    expiresAt: Date.now() + 60000
+    refreshedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 60000).toISOString()
   },
   authMethod: 'passkey'
 });
@@ -245,8 +245,8 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           accessToken: 'expired-token',
           refreshToken: '', // No refresh token
-          refreshedAt: Date.now(),
-          expiresAt: Date.now() - 60000 // Expired 1 minute ago
+          refreshedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() - 60000).toISOString() // Expired 1 minute ago
         }
       };
 
@@ -258,8 +258,8 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           accessToken: 'expired-token',
           refreshToken: 'valid-refresh-token',
-          refreshedAt: Date.now(),
-          expiresAt: Date.now() - 60000 // Expired 1 minute ago
+          refreshedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() - 60000).toISOString() // Expired 1 minute ago
         }
       };
 
@@ -272,8 +272,8 @@ describe('R3: Session Validation (MUST)', () => {
         tokens: {
           accessToken: 'expired-token',
           refreshToken: 'expired-refresh',
-          refreshedAt: Date.now(),
-          expiresAt: Date.now() - 60000
+          refreshedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() - 60000).toISOString()
         }
       };
 

@@ -127,8 +127,8 @@ describe('Auth Store reset() Method', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          refreshedAt: Date.now(),
-          expiresAt: Date.now() + 3600000
+          refreshedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         }
       };
       authStore.notifyPinVerified(sessionData);
@@ -163,8 +163,8 @@ describe('Auth Store reset() Method', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          refreshedAt: Date.now(),
-          expiresAt: Date.now() + 3600000
+          refreshedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         }
       };
 
@@ -320,7 +320,7 @@ describe('Auth Store reset() Method', () => {
             name: 'Test User',
             emailVerified: true
           },
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         }
       });
 

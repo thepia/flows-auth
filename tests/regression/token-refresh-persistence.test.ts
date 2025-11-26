@@ -123,8 +123,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // Clear the spy call count from setup
     saveSessionSpy.mockClear();
@@ -158,8 +158,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     saveSessionSpy.mockClear();
 
@@ -201,8 +201,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     saveSessionSpy.mockClear();
 
@@ -221,8 +221,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     saveSessionSpy.mockClear();
 
@@ -244,8 +244,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // Clear the spy call count from setup
     saveSessionSpy.mockClear();
@@ -275,8 +275,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     saveSessionSpy.mockClear();
 
@@ -303,7 +303,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString(),
       supabase_token: initialSupabaseToken,
       supabase_expires_at: initialSupabaseExpiresAt
     });
@@ -331,7 +331,9 @@ describe('REGRESSION: Token Refresh Persistence', () => {
 
     // Verify NEW Supabase tokens from refresh response are saved
     expect(sessionData.supabaseToken).toBe(refreshedSupabaseToken);
-    expect(sessionData.supabaseExpiresAt).toBe(refreshedSupabaseExpiresAt);
+    // supabaseExpiresAt is now an ISO string, compare the millisecond values
+    const savedSupabaseExpiresAtMs = new Date(sessionData.supabaseExpiresAt as string).getTime();
+    expect(Math.abs(savedSupabaseExpiresAtMs - refreshedSupabaseExpiresAt)).toBeLessThan(1000);
 
     // Verify other tokens are also updated
     expect(sessionData.accessToken).toBe(mockRefreshedTokens.access_token);
@@ -351,7 +353,7 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString(),
       supabase_token: initialSupabaseToken,
       supabase_expires_at: initialSupabaseExpiresAt
     });
@@ -390,8 +392,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // Clear spy to track calls during refresh
     const loadSessionSpy = mockDatabaseAdapter.loadSession;
@@ -406,8 +408,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
       emailVerified: mockUser.emailVerified,
       accessToken: mockInitialTokens.access_token,
       refreshToken: fresherRefreshToken, // Fresher token from storage
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000,
-      refreshedAt: Date.now(),
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString(),
+      refreshedAt: new Date().toISOString(),
       authMethod: 'email-code' as const
     });
 

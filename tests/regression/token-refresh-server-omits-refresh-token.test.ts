@@ -126,8 +126,8 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token, // Original refresh token
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // Verify initial state has the refresh token
     const stateBefore = authStore.core.getState();
@@ -164,8 +164,8 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // ACT 1: First refresh (server omits refresh_token)
     await authStore.refreshTokens();
@@ -208,8 +208,8 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // ACT: Perform first refresh
     await authStore.refreshTokens();
@@ -247,8 +247,8 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // ACT 1: First refresh (server omits refresh_token)
     await authStore.refreshTokens();
@@ -294,8 +294,8 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: Date.now() + mockInitialTokens.expires_in * 1000
-    });
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
+    ).toISOString()});
 
     // ACT 1: Refresh tokens (server omits refresh_token)
     await authStore.refreshTokens();
@@ -310,7 +310,7 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     // ACT 2: Simulate page reload by creating new auth store with saved session data
     mockDatabaseAdapter.loadSession.mockResolvedValueOnce({
       ...sessionDataAfterRefresh,
-      expiresAt: Date.now() + 900000 // Still valid
+      expiresAt: new Date(Date.now() + 900000).toISOString() // Still valid
     });
 
     const config: AuthConfig = {

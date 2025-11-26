@@ -45,8 +45,8 @@ describe('SignIn State Transitions', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         }
       };
 

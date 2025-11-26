@@ -52,10 +52,11 @@ describe('Error Handling Regression Tests', () => {
       vi.mocked(authStore.api.checkEmail).mockRejectedValue(technicalError);
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const signInButton = screen.getByRole('button');
+      const signInButton = document.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(signInButton);
+      await fireEvent.click(signInButton as HTMLButtonElement);
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Technical error should NOT be visible
@@ -99,10 +100,11 @@ describe('Error Handling Regression Tests', () => {
         vi.mocked(authStore.api.checkEmail).mockRejectedValue(testCase.error);
 
         const emailInput = screen.getByPlaceholderText('your@email.com');
-        const signInButton = screen.getByRole('button');
+        const signInButton = document.querySelector('button[type="submit"]');
+        expect(signInButton).toBeTruthy();
 
         await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-        await fireEvent.click(signInButton);
+        await fireEvent.click(signInButton as HTMLButtonElement);
 
         await waitFor(() => {
           // ✅ Should show user-friendly message
@@ -131,10 +133,11 @@ describe('Error Handling Regression Tests', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const signInButton = screen.getByRole('button');
+      const signInButton = document.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
 
       await fireEvent.input(emailInput, { target: { value: 'newuser@example.com' } });
-      await fireEvent.click(signInButton);
+      await fireEvent.click(signInButton as HTMLButtonElement);
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should auto-transition to registration
@@ -159,10 +162,11 @@ describe('Error Handling Regression Tests', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const signInButton = screen.getByRole('button');
+      const signInButton = document.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
 
       await fireEvent.input(emailInput, { target: { value: 'existing@example.com' } });
-      await fireEvent.click(signInButton);
+      await fireEvent.click(signInButton as HTMLButtonElement);
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should NOT show "what's wrong" without solution
@@ -192,10 +196,11 @@ describe('Error Handling Regression Tests', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const signInButton = screen.getByRole('button');
+      const signInButton = document.querySelector('button[type="submit"]');
+      expect(signInButton).toBeTruthy();
 
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
-      await fireEvent.click(signInButton);
+      await fireEvent.click(signInButton as HTMLButtonElement);
 
       await waitFor(() => {
         // ✅ REGRESSION TEST: Should use authStore.checkUser() via API client
@@ -239,7 +244,7 @@ describe('Error Handling Regression Tests', () => {
       });
 
       // ✅ REGRESSION TEST: Core UI elements should be present
-      expect(screen.getByRole('button')).toBeTruthy();
+      expect(document.querySelector('button[type="submit"]')).toBeTruthy();
       expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
       expect(screen.getByText(/to Test Company/)).toBeTruthy();
     });

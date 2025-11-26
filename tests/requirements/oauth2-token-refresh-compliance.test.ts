@@ -245,7 +245,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'initial-access-token',
         refresh_token: 'initial-refresh-token',
-        expiresAt: Date.now() + 900000 // 15 minutes
+        expiresAt: new Date(Date.now() + 900000).toISOString() // 15 minutes
       });
     });
 
@@ -270,12 +270,15 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
 
       expect(coreState.expiresAt).toBeDefined();
 
-      // expiresAt should be approximately now + (expires_in * 1000)
-      const expectedMin = nowBefore + (3600 * 1000);
-      const expectedMax = nowAfter + (3600 * 1000);
+      // expiresAt is now an ISO string, parse it to compare
+      const expiresAtMs = new Date(coreState.expiresAt as string).getTime();
 
-      expect(coreState.expiresAt).toBeGreaterThanOrEqual(expectedMin);
-      expect(coreState.expiresAt).toBeLessThanOrEqual(expectedMax);
+      // expiresAt should be approximately now + (expires_in * 1000)
+      const expectedMin = nowBefore + 3600 * 1000;
+      const expectedMax = nowAfter + 3600 * 1000;
+
+      expect(expiresAtMs).toBeGreaterThanOrEqual(expectedMin);
+      expect(expiresAtMs).toBeLessThanOrEqual(expectedMax);
     });
 
     it('should reuse old refresh_token when server does not rotate', async () => {
@@ -331,10 +334,10 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
 
     it('should convert various expires_in formats correctly', async () => {
       const testCases = [
-        { expires_in: 900, expectedMs: 900000 },      // 15 minutes
-        { expires_in: 3600, expectedMs: 3600000 },    // 1 hour
-        { expires_in: 7200, expectedMs: 7200000 },    // 2 hours
-        { expires_in: 86400, expectedMs: 86400000 }   // 24 hours
+        { expires_in: 900, expectedMs: 900000 }, // 15 minutes
+        { expires_in: 3600, expectedMs: 3600000 }, // 1 hour
+        { expires_in: 7200, expectedMs: 7200000 }, // 2 hours
+        { expires_in: 86400, expectedMs: 86400000 } // 24 hours
       ];
 
       for (const testCase of testCases) {
@@ -349,7 +352,9 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
         await authStore.refreshTokens();
 
         const coreState = authStore.core.getState();
-        const actualDuration = coreState.expiresAt! - nowBefore;
+        // expiresAt is now an ISO string, parse it to compare
+        const expiresAtMs = new Date(coreState.expiresAt as string).getTime();
+        const actualDuration = expiresAtMs - nowBefore;
 
         // Allow 100ms tolerance for test execution time
         expect(actualDuration).toBeGreaterThanOrEqual(testCase.expectedMs - 100);

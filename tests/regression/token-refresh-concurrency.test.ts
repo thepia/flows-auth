@@ -68,7 +68,7 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: Date.now() + 60 * 60 * 1000
+      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
     });
 
     // Mock refresh response (no delay to avoid scheduled refresh firing)
@@ -145,7 +145,7 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: Date.now() + 60 * 60 * 1000
+      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
     });
 
     let callCount = 0;
@@ -195,7 +195,7 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: Date.now() + 60 * 60 * 1000
+      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
     });
 
     // First refresh fails with a permanent error (400 Bad Request)
@@ -233,7 +233,7 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'stale-refresh-token',
-      expiresAt: Date.now() + 60 * 60 * 1000
+      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
     });
 
     // Simulate "already exchanged" error from WorkOS

@@ -91,7 +91,7 @@ describe('Token Refresh Security & Edge Cases', () => {
     await authStore.core.getState().updateTokens({
       access_token: 'initial-access-token',
       refresh_token: 'super-secret-refresh-token-abc123xyz',
-      expiresAt: Date.now() + 900000 // 15 minutes
+      expiresAt: new Date(Date.now() + 900000).toISOString() // 15 minutes
     });
 
     // Manually save session to localStorage for tests that expect it
@@ -109,8 +109,8 @@ describe('Token Refresh Security & Edge Cases', () => {
       tokens: {
         accessToken: 'initial-access-token',
         refreshToken: 'super-secret-refresh-token-abc123xyz',
-        expiresAt: Date.now() + 900000,
-        refreshedAt: Date.now()
+        expiresAt: new Date(Date.now() + 900000).toISOString(),
+        refreshedAt: new Date().toISOString()
       },
       authMethod: 'passkey' as const
     };
@@ -508,7 +508,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       await incognitoStore.core.getState().updateTokens({
         access_token: 'memory-only-access',
         refresh_token: 'memory-only-refresh',
-        expiresAt: Date.now() + 900000
+        expiresAt: new Date(Date.now() + 900000).toISOString()
       });
 
       const state = incognitoStore.core.getState();
@@ -546,7 +546,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'expired-access-token',
         refresh_token: 'valid-refresh-token',
-        expiresAt: Date.now() - 10000 // Expired 10 seconds ago
+        expiresAt: new Date(Date.now() - 10000).toISOString() // Expired 10 seconds ago
       });
 
       mockApiClient.refreshToken.mockResolvedValueOnce({

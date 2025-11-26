@@ -99,7 +99,7 @@ describe('AccountCreationForm Integration Tests', () => {
               tokens: {
                 access_token: 'mock-access-token',
                 refresh_token: 'mock-refresh-token',
-                expiresAt: Date.now() + 3600000
+                expiresAt: new Date(Date.now() + 3600000).toISOString()
               },
               user: {
                 id: 'user-123',

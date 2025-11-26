@@ -830,9 +830,9 @@ export interface AuthStore {
   user: User | null;
   access_token: string | null;
   refresh_token: string | null;
-  expiresAt: number | null;
+  expiresAt: string | null; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
   supabase_token: string | null; // Supabase JWT for database access with RLS
-  supabase_expires_at: number | null; // Supabase token expiration timestamp
+  supabase_expires_at: string | null; // ISO 8601 timestamp string - Supabase token expiration
   apiError: ApiError | null; // Centralized API error management
   passkeysEnabled: boolean; // Added: Centralized passkey availability determination
 

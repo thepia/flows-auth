@@ -25,6 +25,9 @@ export type { AuthConfig, User, ApiError, SignInState };
 
 /**
  * Core authentication store state
+ *
+ * All timestamps use ISO 8601 strings for consistency with SessionData and TokenData.
+ * This ensures seamless conversion between store state and database persistence.
  */
 export interface AuthCoreState {
   // Authentication state
@@ -32,10 +35,10 @@ export interface AuthCoreState {
   user: User | null;
   access_token: string | null;
   refresh_token: string | null;
-  expiresAt: number | null;
-  refreshedAt: number | null; // Timestamp when token was last refreshed (spam protection)
+  expiresAt: string | null; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
+  refreshedAt: string | null; // ISO 8601 timestamp string - when token was last refreshed (spam protection)
   supabase_token: string | null; // Supabase JWT for database access with RLS
-  supabase_expires_at: number | null; // Supabase token expiration timestamp
+  supabase_expires_at: string | null; // ISO 8601 timestamp string - Supabase token expiration
 
   // Capabilities
   passkeysEnabled: boolean;
@@ -52,9 +55,9 @@ export interface AuthCoreActions {
   updateTokens: (tokens: {
     access_token: string;
     refresh_token?: string;
-    expiresAt: number | null;
+    expiresAt: string | number | null; // ISO 8601 timestamp string OR numeric milliseconds (for migration)
     supabase_token?: string;
-    supabase_expires_at?: number;
+    supabase_expires_at?: string | number; // ISO 8601 timestamp string OR numeric milliseconds (for migration)
   }) => Promise<void>;
 
   // State helpers

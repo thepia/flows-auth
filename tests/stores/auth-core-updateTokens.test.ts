@@ -42,12 +42,15 @@ describe('auth-core updateTokens', () => {
 
   describe('Basic Token Updates', () => {
     it('should update all provided tokens', async () => {
+      const expiresAtMs = Date.now() + 3600000;
+      const supabaseExpiresAtMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+
       const tokens = {
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(expiresAtMs).toISOString(),
         supabase_token: 'new-supabase-token',
-        supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000
+        supabase_expires_at: new Date(supabaseExpiresAtMs).toISOString()
       };
 
       await authStore.core.getState().updateTokens(tokens);
@@ -55,10 +58,22 @@ describe('auth-core updateTokens', () => {
       const state = authStore.core.getState();
       expect(state.access_token).toBe('new-access-token');
       expect(state.refresh_token).toBe('new-refresh-token');
-      expect(state.expiresAt).toBe(tokens.expiresAt);
+      // expiresAt is stored as ISO string
+      expect(state.expiresAt).toBeDefined();
+      expect(typeof state.expiresAt).toBe('string');
+      // Verify the ISO string represents the correct time (within 1 second)
+      const expiresAtTime = new Date(state.expiresAt as string).getTime();
+      expect(Math.abs(expiresAtTime - expiresAtMs)).toBeLessThan(1000);
+
       expect(state.supabase_token).toBe('new-supabase-token');
-      expect(state.supabase_expires_at).toBe(tokens.supabase_expires_at);
+      // supabase_expires_at is stored as ISO string
+      expect(state.supabase_expires_at).toBeDefined();
+      expect(typeof state.supabase_expires_at).toBe('string');
+      const supabaseExpiresAtTime = new Date(state.supabase_expires_at as string).getTime();
+      expect(Math.abs(supabaseExpiresAtTime - supabaseExpiresAtMs)).toBeLessThan(1000);
+
       expect(state.refreshedAt).toBeDefined();
+      expect(typeof state.refreshedAt).toBe('string');
     });
 
     it('should preserve existing refresh_token when not provided', async () => {
@@ -66,13 +81,13 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'initial-access',
         refresh_token: 'initial-refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
 
       // Update without refresh_token
       await authStore.core.getState().updateTokens({
         access_token: 'updated-access',
-        expiresAt: Date.now() + 7200000
+        expiresAt: new Date(Date.now() + 7200000).toISOString()
       });
 
       const state = authStore.core.getState();
@@ -87,7 +102,7 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'initial-access',
         refresh_token: 'initial-refresh',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'initial-supabase-token',
         supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000
       });
@@ -96,9 +111,9 @@ describe('auth-core updateTokens', () => {
     it('should update supabase_token when explicitly provided', async () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'new-supabase-token',
-        supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000
+        supabase_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       });
 
       const state = authStore.core.getState();
@@ -108,7 +123,7 @@ describe('auth-core updateTokens', () => {
     it('should clear supabase_token when not provided (server omits field)', async () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
         // No supabase_token provided - server omitted the field
       });
 
@@ -119,7 +134,7 @@ describe('auth-core updateTokens', () => {
     it('should set supabase_token to undefined when explicitly provided as undefined', async () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: undefined,
         supabase_expires_at: undefined
       });
@@ -132,20 +147,21 @@ describe('auth-core updateTokens', () => {
     it('should set supabase_token to null when explicitly provided as null', async () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: null as string | null,
-        supabase_expires_at: null as number | null
+        supabase_expires_at: null as string | null
       });
 
       const state = authStore.core.getState();
       expect(state.supabase_token).toBeNull();
-      expect(state.supabase_expires_at).toBeNull();
+      // supabase_expires_at should be undefined when supabase_token is null
+      expect(state.supabase_expires_at).toBeUndefined();
     });
 
     it('should handle mixed updates (some fields provided, others not)', async () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'updated-supabase-token'
         // supabase_expires_at not provided - will be undefined
       });
@@ -163,14 +179,15 @@ describe('auth-core updateTokens', () => {
         refresh_token: '',
         expiresAt: null,
         supabase_token: '',
-        supabase_expires_at: 0
+        supabase_expires_at: new Date(0).toISOString()
       });
 
       const state = authStore.core.getState();
       expect(state.access_token).toBe('');
       expect(state.refresh_token).toBe('');
       expect(state.supabase_token).toBe('');
-      expect(state.supabase_expires_at).toBe(0);
+      // supabase_expires_at should be the epoch ISO string
+      expect(state.supabase_expires_at).toBe(new Date(0).toISOString());
     });
 
     it('should handle null expiresAt correctly', async () => {
@@ -188,12 +205,16 @@ describe('auth-core updateTokens', () => {
 
       await authStore.core.getState().updateTokens({
         access_token: 'test-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
 
       const state = authStore.core.getState();
-      expect(state.refreshedAt).toBeGreaterThanOrEqual(before);
-      expect(state.refreshedAt).toBeLessThanOrEqual(Date.now());
+      expect(state.refreshedAt).toBeDefined();
+      expect(typeof state.refreshedAt).toBe('string');
+      // refreshedAt is now an ISO string, parse it to compare
+      const refreshedAtMs = new Date(state.refreshedAt as string).getTime();
+      expect(refreshedAtMs).toBeGreaterThanOrEqual(before);
+      expect(refreshedAtMs).toBeLessThanOrEqual(Date.now());
     });
 
     it('should set state to authenticated', async () => {
@@ -202,7 +223,7 @@ describe('auth-core updateTokens', () => {
 
       await authStore.core.getState().updateTokens({
         access_token: 'test-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
 
       expect(authStore.core.getState().state).toBe('authenticated');
@@ -215,16 +236,16 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'initial-access',
         refresh_token: 'initial-refresh',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'initial-supabase',
-        supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000
+        supabase_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       });
 
       // Simulate refresh response that only includes OAuth2 tokens (server omits Supabase fields)
       await authStore.core.getState().updateTokens({
         access_token: 'refreshed-access',
         refresh_token: 'refreshed-refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
         // No supabase_token or supabase_expires_at provided - server omitted them
       });
 
@@ -240,7 +261,7 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'initial-access',
         refresh_token: 'initial-refresh',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'initial-supabase',
         supabase_expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000
       });
@@ -250,7 +271,7 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
         refresh_token: 'new-refresh',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: undefined,
         supabase_expires_at: undefined
       });

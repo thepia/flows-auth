@@ -191,8 +191,8 @@ export class SessionMigrator {
       migratedSession.tokens = {
         accessToken: '',
         refreshToken: '',
-        refreshedAt: 0,
-        expiresAt: 0
+        refreshedAt: new Date(0).toISOString(), // ISO 8601 timestamp string (epoch)
+        expiresAt: new Date(0).toISOString() // ISO 8601 timestamp string (epoch)
       };
     }
 

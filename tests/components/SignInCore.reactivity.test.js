@@ -14,7 +14,7 @@ import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-tes
 describe('SignInCore Configuration Reactivity', () => {
   describe('Configuration Change Detection', () => {
     it('should re-render button text when enablePasskeys changes', async () => {
-      const { component, getByRole } = renderWithStoreProp(SignInCore, {
+      const { component, container } = renderWithStoreProp(SignInCore, {
         authConfig: {
           ...TEST_AUTH_CONFIGS.withAppCode,
           enablePasskeys: true,
@@ -23,18 +23,18 @@ describe('SignInCore Configuration Reactivity', () => {
       });
 
       // Initial state: should show passkey button (when WebAuthn is available)
-      const button = getByRole('button', { type: 'submit' });
+      const button = container.querySelector('button[type="submit"]');
       // Note: The actual button text depends on WebAuthn availability in test environment
       expect(button).toBeDefined();
     });
 
     it('should detect config object mutation vs replacement', async () => {
-      const { component, getByRole } = renderWithStoreProp(SignInCore, {
+      const { component, container } = renderWithStoreProp(SignInCore, {
         authConfig: { ...TEST_AUTH_CONFIGS.withAppCode }
       });
 
-      const button = getByRole('button', { type: 'submit' });
-      const initialText = button.textContent;
+      const button = container.querySelector('button[type="submit"]');
+      const initialText = button?.textContent;
 
       // Test basic button functionality
       expect(initialText).toBeDefined();

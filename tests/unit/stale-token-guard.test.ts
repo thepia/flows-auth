@@ -77,7 +77,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'old-token',
       refresh_token: 'old-refresh',
-      expiresAt: now + 10 * 60 * 1000 // Expires in 10 minutes
+      expiresAt: new Date(now + 10 * 60 * 1000).toISOString() // Expires in 10 minutes
     });
 
     const saveCountBefore = mockDb.saveSession.mock.calls.length;
@@ -86,7 +86,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'new-token',
       refresh_token: 'new-refresh',
-      expiresAt: now + 15 * 60 * 1000 // Expires in 15 minutes
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString() // Expires in 15 minutes
     });
 
     // Should have saved the new tokens
@@ -103,7 +103,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'fresh-token',
       refresh_token: 'fresh-refresh',
-      expiresAt: now + 15 * 60 * 1000 // Expires in 15 minutes
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString() // Expires in 15 minutes
     });
 
     const saveCountBefore = mockDb.saveSession.mock.calls.length;
@@ -114,7 +114,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'stale-token',
       refresh_token: 'stale-refresh',
-      expiresAt: now + 10 * 60 * 1000 // Expires in 10 minutes (earlier!)
+      expiresAt: new Date(now + 10 * 60 * 1000).toISOString() // Expires in 10 minutes (earlier!)
     });
 
     // Should NOT have saved or updated tokens
@@ -125,7 +125,7 @@ describe('Stale Token Overwrite Protection', () => {
 
   it('should accept tokens with same expiry time (edge case)', async () => {
     const now = Date.now();
-    const expiryTime = now + 15 * 60 * 1000;
+    const expiryTime = new Date(now + 15 * 60 * 1000).toISOString();
 
     // Set initial state
     authCore.getState().updateUser(mockUser);
@@ -164,7 +164,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'new-token',
       refresh_token: 'new-refresh',
-      expiresAt: Date.now() + 15 * 60 * 1000
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
     });
 
     // Should accept (guard only applies when both have expiry)
@@ -180,7 +180,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'old-token',
       refresh_token: 'old-refresh',
-      expiresAt: now + 15 * 60 * 1000
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString()
     });
 
     const saveCountBefore = mockDb.saveSession.mock.calls.length;
@@ -205,14 +205,14 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'shared-token',
       refresh_token: 'token-v1',
-      expiresAt: now + 5 * 60 * 1000 // Expiring soon
+      expiresAt: new Date(now + 5 * 60 * 1000).toISOString() // Expiring soon
     });
 
     // Tab A successfully refreshes and gets new tokens
     await authCore.getState().updateTokens({
       access_token: 'tab-a-token',
       refresh_token: 'token-v2',
-      expiresAt: now + 15 * 60 * 1000 // Fresh tokens
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString() // Fresh tokens
     });
 
     expect(authCore.getState().access_token).toBe('tab-a-token');
@@ -224,7 +224,7 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'tab-b-token',
       refresh_token: 'token-v1', // Old token!
-      expiresAt: now + 5 * 60 * 1000 // Stale expiry
+      expiresAt: new Date(now + 5 * 60 * 1000).toISOString() // Stale expiry
     });
 
     // Guard should prevent Tab B from overwriting Tab A's fresh tokens
@@ -242,14 +242,14 @@ describe('Stale Token Overwrite Protection', () => {
     await authCore.getState().updateTokens({
       access_token: 'fresh-token',
       refresh_token: 'fresh-refresh',
-      expiresAt: now + 15 * 60 * 1000
+      expiresAt: new Date(now + 15 * 60 * 1000).toISOString()
     });
 
     // Try to update with stale tokens
     await authCore.getState().updateTokens({
       access_token: 'stale-token',
       refresh_token: 'stale-refresh',
-      expiresAt: now + 10 * 60 * 1000
+      expiresAt: new Date(now + 10 * 60 * 1000).toISOString()
     });
 
     // Should have logged warning

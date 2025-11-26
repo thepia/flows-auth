@@ -46,7 +46,7 @@ describe('PinEntryStep Success Flow', () => {
       tokens: {
         access_token: 'test-access-token',
         refresh_token: 'test-refresh-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
     };
@@ -109,7 +109,7 @@ describe('PinEntryStep Success Flow', () => {
       tokens: {
         access_token: 'test-token',
         refresh_token: 'test-refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
     };
@@ -153,7 +153,7 @@ describe('PinEntryStep Success Flow', () => {
       tokens: {
         access_token: 'test-token',
         refresh_token: 'test-refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       }
       // Missing user!
     });
@@ -207,7 +207,7 @@ describe('PinEntryStep Success Flow', () => {
       tokens: {
         access_token: 'eyJhbGci...',
         refresh_token: 'refresh123',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
     };

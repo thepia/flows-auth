@@ -17,6 +17,7 @@ describe('AuthStore getExplainerConfig', () => {
       enablePasskeys: true,
       enableMagicLinks: false,
       appCode: 'test-app',
+      privacyPolicyUrl: 'https://example.com/privacy',
       branding: {
         companyName: 'Test Company'
       }
@@ -117,7 +118,7 @@ describe('AuthStore getExplainerConfig', () => {
 
       // Check for privacy feature
       const privacyFeature = explainerConfig?.features?.find(
-        (f) => f.textKey === 'explainer.features.privacyCompliant'
+        (f) => f.textKey === 'explainer.features.seePolicies'
       );
       expect(privacyFeature).toBeDefined();
       expect(privacyFeature?.iconName).toBe('Shield');

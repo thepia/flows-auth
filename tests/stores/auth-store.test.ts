@@ -149,8 +149,8 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
         metadata: {},
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'email-code' as const
       };
 
@@ -275,9 +275,9 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'token',
         refresh_token: 'refresh-token',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'supabase-test-token',
-        supabase_expires_at: Date.now() + 3600000
+        supabase_expires_at: new Date(Date.now() + 3600000).toISOString()
       };
 
       // Update core authentication state
@@ -303,7 +303,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'test-access-token',
         refresh_token: 'test-refresh-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       };
 
       await composedStore.core.getState().updateTokens(mockTokens);
@@ -326,7 +326,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'token',
         refresh_token: 'refresh-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       };
 
       // Set authenticated state
@@ -478,7 +478,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'auth0-token',
         refresh_token: 'refresh-token',
-        expiresAt: Date.now() + 3600000,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc',
         supabase_expires_at: supabaseExpiresAt
       };
@@ -492,7 +492,11 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       expect(state.supabase_token).toBe(
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.abc'
       );
-      expect(state.supabase_expires_at).toBe(supabaseExpiresAt);
+      // supabase_expires_at is now an ISO string
+      expect(state.supabase_expires_at).toBeDefined();
+      expect(typeof state.supabase_expires_at).toBe('string');
+      const supabaseExpiresAtMs = new Date(state.supabase_expires_at as string).getTime();
+      expect(Math.abs(supabaseExpiresAtMs - supabaseExpiresAt)).toBeLessThan(1000);
 
       // Verify other standard fields are present
       expect(state.access_token).toBe('auth0-token');
@@ -513,7 +517,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       const mockTokens = {
         access_token: 'auth0-only-token',
         refresh_token: 'refresh-only-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
         // No Supabase tokens
       };
 

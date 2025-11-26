@@ -131,6 +131,19 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
 
         const parsed = JSON.parse(sessionData);
 
+        // Helper to migrate old numeric timestamps to ISO strings
+        const migrateTimestamp = (
+          value: string | number | undefined,
+          defaultToNow = false
+        ): string => {
+          if (!value) return defaultToNow ? new Date().toISOString() : new Date(0).toISOString();
+          // If it's already a string, return as-is
+          if (typeof value === 'string') return value;
+          // If it's a number (old format), convert to ISO string
+          if (typeof value === 'number') return new Date(value).toISOString();
+          return defaultToNow ? new Date().toISOString() : new Date(0).toISOString();
+        };
+
         // Convert from storage format (SignInData with nested structure) to SessionData (flat)
         let session: SessionData;
         if (parsed.user && parsed.tokens) {
@@ -143,19 +156,25 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
             metadata: parsed.user.preferences,
             accessToken: parsed.tokens.accessToken,
             refreshToken: parsed.tokens.refreshToken,
-            expiresAt: parsed.tokens.expiresAt,
-            refreshedAt: parsed.tokens.refreshedAt,
+            // Migrate timestamps from old numeric format to ISO strings
+            expiresAt: migrateTimestamp(parsed.tokens.expiresAt, false),
+            refreshedAt: migrateTimestamp(parsed.tokens.refreshedAt, true), // Default to now if missing
             authMethod: parsed.authMethod,
             supabaseToken: parsed.tokens.supabaseToken,
-            supabaseExpiresAt: parsed.tokens.supabaseExpiresAt
+            supabaseExpiresAt: migrateTimestamp(parsed.tokens.supabaseExpiresAt, false)
           };
         } else {
           // Already in SessionData format (shouldn't happen, but handle it)
           session = parsed as SessionData;
+          // Still migrate timestamps in case they're in old format
+          session.expiresAt = migrateTimestamp(session.expiresAt, false);
+          session.refreshedAt = migrateTimestamp(session.refreshedAt, true); // Default to now if missing
+          session.supabaseExpiresAt = migrateTimestamp(session.supabaseExpiresAt, false);
         }
 
         // Check token expiration only if there's no refresh token
-        if (session.expiresAt < Date.now() && !session.refreshToken) {
+        const expiresAtMs = new Date(session.expiresAt).getTime();
+        if (expiresAtMs < Date.now() && !session.refreshToken) {
           console.log('🕐 Session expired: no refresh token and access token expired');
           storage.removeItem(SESSION_KEY);
           return null;

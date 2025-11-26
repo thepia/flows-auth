@@ -297,7 +297,6 @@ updateUserProfile: async (updates: Partial<UserData>) => {
     user: {
       ...get().user,
       name: user.name,
-      avatar: user.avatar,
       emailVerified: user.emailVerified
     }
   });

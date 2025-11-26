@@ -119,7 +119,7 @@ describe('New Modular Auth Store Architecture', () => {
         await authCore.getState().updateTokens({
           access_token: 'token123',
           refresh_token: 'refresh123',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         });
 
         const state = authCore.getState();

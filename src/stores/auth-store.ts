@@ -123,7 +123,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         return;
       }
 
-      const isExpired = sessionData.expiresAt <= Date.now();
+      const expiresAtMs = new Date(sessionData.expiresAt).getTime();
+      const isExpired = expiresAtMs <= Date.now();
       const hasRefreshToken = !!sessionData.refreshToken;
 
       // Log session restoration details for debugging "already exchanged" errors
@@ -139,7 +140,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           ? new Date(sessionData.refreshedAt).toISOString()
           : 'never',
         timeSinceLastRefresh: sessionData.refreshedAt
-          ? Date.now() - sessionData.refreshedAt
+          ? Date.now() - new Date(sessionData.refreshedAt).getTime()
           : 'never',
         tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
       });
@@ -153,7 +154,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           id: sessionData.userId,
           email: sessionData.email,
           name: sessionData.name,
-          picture: undefined,
           emailVerified: sessionData.emailVerified ?? true,
           createdAt: new Date().toISOString(),
           metadata: sessionData.metadata
@@ -162,9 +162,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const tokens = {
           access_token: sessionData.accessToken,
           refresh_token: sessionData.refreshToken,
-          expiresAt: sessionData.expiresAt,
+          expiresAt: sessionData.expiresAt || null, // Already ISO string from SessionData
           supabase_token: sessionData.supabaseToken,
-          supabase_expires_at: sessionData.supabaseExpiresAt
+          supabase_expires_at: sessionData.supabaseExpiresAt // Already ISO string from SessionData
         };
 
         authenticateUser(core, user, tokens);
@@ -179,7 +179,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           id: sessionData.userId,
           email: sessionData.email,
           name: sessionData.name,
-          picture: undefined,
           emailVerified: sessionData.emailVerified ?? true,
           createdAt: new Date().toISOString(),
           metadata: sessionData.metadata
@@ -188,9 +187,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const tokens = {
           access_token: sessionData.accessToken,
           refresh_token: sessionData.refreshToken,
-          expiresAt: sessionData.expiresAt,
+          expiresAt: sessionData.expiresAt || null, // Already ISO string from SessionData
           supabase_token: sessionData.supabaseToken,
-          supabase_expires_at: sessionData.supabaseExpiresAt
+          supabase_expires_at: sessionData.supabaseExpiresAt // Already ISO string from SessionData
         };
 
         authenticateUser(core, user, tokens);
@@ -296,9 +295,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
           access_token: signInData.tokens.accessToken as string,
           refresh_token: signInData.tokens.refreshToken,
-          expiresAt: signInData.tokens.expiresAt as number | null,
+          expiresAt: signInData.tokens.expiresAt || null, // Already ISO string from SignInData
           supabase_token: signInData.tokens.supabaseToken,
-          supabase_expires_at: signInData.tokens.supabaseExpiresAt
+          supabase_expires_at: signInData.tokens.supabaseExpiresAt // Already ISO string from SignInData
         });
 
         // Emit success event
@@ -376,9 +375,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         authenticateUser(core, convertSessionUserToUser(signInData.user), {
           access_token: signInData.tokens.accessToken as string,
           refresh_token: signInData.tokens.refreshToken,
-          expiresAt: signInData.tokens.expiresAt as number | null,
+          expiresAt: signInData.tokens.expiresAt || null, // Already ISO string from SignInData
           supabase_token: signInData.tokens.supabaseToken,
-          supabase_expires_at: signInData.tokens.supabaseExpiresAt
+          supabase_expires_at: signInData.tokens.supabaseExpiresAt // Already ISO string from SignInData
         });
 
         eventEmitters.signInSuccess({
@@ -468,8 +467,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           tokens: {
             accessToken: coreState.access_token,
             refreshToken: coreState.refresh_token || '',
-            refreshedAt: Date.now(),
-            expiresAt: coreState.expiresAt || Date.now() + 24 * 60 * 60 * 1000,
+            refreshedAt: new Date().toISOString(), // ISO 8601 timestamp string
+            expiresAt:
+              coreState.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // ISO 8601 timestamp string
             supabaseToken: coreState.supabase_token || undefined,
             supabaseExpiresAt: coreState.supabase_expires_at || undefined
           },
@@ -559,9 +559,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           authenticateUser(core, response.user, {
             access_token: response.access_token,
             refresh_token: response.refresh_token,
-            expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
+            expiresAt: response.expires_in
+              ? new Date(Date.now() + response.expires_in * 1000).toISOString()
+              : null,
             supabase_token: response.supabase_token,
             supabase_expires_at: response.supabase_expires_at
+              ? new Date(response.supabase_expires_at).toISOString()
+              : undefined
           });
 
           const sessionData = createSessionData(
@@ -787,9 +791,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       authenticateUser(core, convertSessionUserToUser(signInData.user), {
         access_token: signInData.tokens.accessToken as string,
         refresh_token: signInData.tokens.refreshToken,
-        expiresAt: signInData.tokens.expiresAt as number | null,
+        expiresAt: signInData.tokens.expiresAt || null, // Already ISO string from SignInData
         supabase_token: signInData.tokens.supabaseToken,
-        supabase_expires_at: signInData.tokens.supabaseExpiresAt
+        supabase_expires_at: signInData.tokens.supabaseExpiresAt // Already ISO string from SignInData
       });
 
       // Update UI state

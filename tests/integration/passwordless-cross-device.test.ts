@@ -194,7 +194,7 @@ describe('Complete Flow Simulation', () => {
         tokens: {
           access_token: 'at-789',
           refresh_token: 'rt-101112',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         }
       },
 
@@ -204,7 +204,7 @@ describe('Complete Flow Simulation', () => {
         tokens: {
           access_token: 'at-789',
           refresh_token: 'rt-101112',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         },
         user: {
           id: 'user-131415',

@@ -448,8 +448,8 @@ describe('Auth Store Integration Tests', () => {
         emailVerified: mockUser.emailVerified,
         accessToken: 'test-token',
         refreshToken: 'test-refresh',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey' as const
       };
       localStorage.setItem('thepia_auth_session', JSON.stringify(sessionData));
@@ -491,8 +491,8 @@ describe('Auth Store Integration Tests', () => {
         email: 'test@example.com',
         name: 'Test User',
         accessToken: 'test-token',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey' as const
       };
       localStorage.setItem('thepia_auth_session', JSON.stringify(sessionData));

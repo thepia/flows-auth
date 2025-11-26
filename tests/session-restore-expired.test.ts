@@ -46,7 +46,8 @@ describe('Session Restoration with Expired Token', () => {
       emailVerified: true,
       accessToken: 'expired_access_token',
       refreshToken: '', // No refresh token
-      expiresAt: Date.now() - 1000, // Expired 1 second ago
+      expiresAt: new Date(Date.now() - 1000).toISOString(), // Expired 1 second ago
+      refreshedAt: new Date().toISOString(),
       authMethod: 'email-code'
     };
 
@@ -82,7 +83,8 @@ describe('Session Restoration with Expired Token', () => {
       emailVerified: true,
       accessToken: 'expired_access_token',
       refreshToken: 'valid_refresh_token',
-      expiresAt: Date.now() - 1000, // Expired 1 second ago
+      expiresAt: new Date(Date.now() - 1000).toISOString(), // Expired 1 second ago
+      refreshedAt: new Date().toISOString(),
       authMethod: 'email-code'
     };
 
@@ -150,7 +152,8 @@ describe('Session Restoration with Expired Token', () => {
       emailVerified: true,
       accessToken: 'expired_access_token',
       refreshToken: 'invalid_refresh_token',
-      expiresAt: Date.now() - 1000,
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+      refreshedAt: new Date().toISOString(),
       authMethod: 'email-code'
     };
 
@@ -200,7 +203,8 @@ describe('Session Restoration with Expired Token', () => {
       emailVerified: true,
       accessToken: 'valid_access_token',
       refreshToken: 'valid_refresh_token',
-      expiresAt: Date.now() + 3600 * 1000, // Expires in 1 hour
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(), // Expires in 1 hour
+      refreshedAt: new Date().toISOString(),
       authMethod: 'email-code'
     };
 

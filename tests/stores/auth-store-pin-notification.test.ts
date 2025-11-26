@@ -147,8 +147,8 @@ describe('Auth Store PIN Notification', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         },
         authMethod: 'email-code'
       };
@@ -176,8 +176,8 @@ describe('Auth Store PIN Notification', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         },
         authMethod: 'email-code'
       };
@@ -214,8 +214,8 @@ describe('Auth Store PIN Notification', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         },
         authMethod: 'email-code'
       };
@@ -250,8 +250,8 @@ describe('Auth Store PIN Notification', () => {
         tokens: {
           accessToken: 'test-token',
           refreshToken: 'test-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         },
         authMethod: 'email-code'
       };

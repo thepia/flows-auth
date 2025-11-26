@@ -22,7 +22,6 @@ describe('Session Conversion Functions', () => {
       name: 'John Doe',
       emailVerified: true,
       createdAt: '2024-01-01T00:00:00Z',
-      picture: 'https://example.com/avatar.jpg',
       metadata: { theme: 'dark' }
     };
 
@@ -44,13 +43,12 @@ describe('Session Conversion Functions', () => {
           email: 'test@example.com',
           name: 'John Doe',
           initials: expect.any(String),
-          avatar: 'https://example.com/avatar.jpg',
           preferences: { theme: 'dark' }
         },
         tokens: {
           accessToken: 'access-token-123',
           refreshToken: 'refresh-token-456',
-          expiresAt: expect.any(Number)
+          expiresAt: expect.any(String) // ISO string now
         },
         authMethod: 'passkey'
       });
@@ -102,10 +100,11 @@ describe('Session Conversion Functions', () => {
 
       const afterTime = Date.now();
 
-      // expiresAt should be approximately now + 3600000ms (1 hour)
+      // expiresAt is now an ISO string, parse it to compare
+      const expiresAtMs = new Date(result.tokens.expiresAt as string).getTime();
       const expectedExpiry = beforeTime + expires_in * 1000;
-      expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry);
-      expect(result.tokens.expiresAt).toBeLessThanOrEqual(afterTime + expires_in * 1000);
+      expect(expiresAtMs).toBeGreaterThanOrEqual(expectedExpiry);
+      expect(expiresAtMs).toBeLessThanOrEqual(afterTime + expires_in * 1000);
     });
 
     it('should default to 24 hours when expires_in not provided', () => {
@@ -117,9 +116,11 @@ describe('Session Conversion Functions', () => {
         'passkey'
       );
 
+      // expiresAt is now an ISO string, parse it to compare
+      const expiresAtMs = new Date(result.tokens.expiresAt as string).getTime();
       const expectedExpiry = beforeTime + 24 * 60 * 60 * 1000; // 24 hours
-      expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry);
-      expect(result.tokens.expiresAt).toBeLessThanOrEqual(Date.now() + 24 * 60 * 60 * 1000);
+      expect(expiresAtMs).toBeGreaterThanOrEqual(expectedExpiry);
+      expect(expiresAtMs).toBeLessThanOrEqual(Date.now() + 24 * 60 * 60 * 1000);
     });
 
     it('should handle missing refresh_token gracefully', () => {
@@ -177,17 +178,6 @@ describe('Session Conversion Functions', () => {
         expect(result.user.initials).toBeTruthy();
       });
 
-      it('should handle user without picture', () => {
-        const noPictureUser: User = {
-          ...mockUser,
-          picture: undefined
-        };
-
-        const result = createSessionData(noPictureUser, { access_token: 'token' }, 'passkey');
-
-        expect(result.user.avatar).toBeUndefined();
-      });
-
       it('should handle user without metadata', () => {
         const noMetadataUser: User = {
           ...mockUser,
@@ -206,9 +196,11 @@ describe('Session Conversion Functions', () => {
           'passkey'
         );
 
+        // expiresAt is now an ISO string, parse it to compare
+        const expiresAtMs = new Date(result.tokens.expiresAt as string).getTime();
         const expectedExpiry = Date.now() + 1000;
-        expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry - 100);
-        expect(result.tokens.expiresAt).toBeLessThanOrEqual(expectedExpiry + 100);
+        expect(expiresAtMs).toBeGreaterThanOrEqual(expectedExpiry - 100);
+        expect(expiresAtMs).toBeLessThanOrEqual(expectedExpiry + 100);
       });
 
       it('should handle very long expires_in (30 days)', () => {
@@ -219,9 +211,11 @@ describe('Session Conversion Functions', () => {
           'passkey'
         );
 
+        // expiresAt is now an ISO string, parse it to compare
+        const expiresAtMs = new Date(result.tokens.expiresAt as string).getTime();
         const expectedExpiry = Date.now() + expires_in * 1000;
-        expect(result.tokens.expiresAt).toBeGreaterThanOrEqual(expectedExpiry - 1000);
-        expect(result.tokens.expiresAt).toBeLessThanOrEqual(expectedExpiry + 1000);
+        expect(expiresAtMs).toBeGreaterThanOrEqual(expectedExpiry - 1000);
+        expect(expiresAtMs).toBeLessThanOrEqual(expectedExpiry + 1000);
       });
     });
 
@@ -252,8 +246,8 @@ describe('Session Conversion Functions', () => {
         expect(result.tokens).toEqual({
           accessToken: 'access',
           refreshToken: 'refresh',
-          refreshedAt: expect.any(Number),
-          expiresAt: expect.any(Number),
+          refreshedAt: expect.any(String), // ISO string now
+          expiresAt: expect.any(String), // ISO string now
           supabaseToken: undefined,
           supabaseExpiresAt: undefined
         });
@@ -269,7 +263,6 @@ describe('Session Conversion Functions', () => {
         name: 'Jane Doe',
         emailVerified: true,
         createdAt: '2024-01-01T00:00:00Z',
-        picture: 'https://example.com/avatar.jpg',
         metadata: { theme: 'light' }
       };
 
@@ -280,7 +273,6 @@ describe('Session Conversion Functions', () => {
         email: 'test@example.com',
         name: 'Jane Doe',
         initials: 'JD',
-        avatar: 'https://example.com/avatar.jpg',
         preferences: { theme: 'light' }
       });
     });
@@ -313,19 +305,18 @@ describe('Session Conversion Functions', () => {
       expect(result.initials).toBe('AB');
     });
 
-    it('should map picture to avatar', () => {
+    it('should handle missing optional fields', () => {
       const user: User = {
         id: 'user-123',
         email: 'test@example.com',
         name: 'Test User',
         emailVerified: true,
-        createdAt: '2024-01-01T00:00:00Z',
-        picture: 'https://avatar.url'
+        createdAt: '2024-01-01T00:00:00Z'
       };
 
       const result = convertUserToSessionUser(user);
 
-      expect(result.avatar).toBe('https://avatar.url');
+      expect(result.preferences).toBeUndefined();
     });
 
     it('should map metadata to preferences', () => {
@@ -361,7 +352,6 @@ describe('Session Conversion Functions', () => {
         id: 'user-123',
         email: 'test@example.com',
         name: 'John Smith',
-        picture: 'https://example.com/avatar.jpg',
         emailVerified: true,
         createdAt: expect.any(String),
         metadata: { theme: 'dark' }
@@ -433,7 +423,6 @@ describe('Session Conversion Functions', () => {
         name: 'Test User',
         emailVerified: true,
         createdAt: '2024-01-01T00:00:00Z',
-        picture: 'https://example.com/avatar.jpg',
         metadata: { theme: 'dark' }
       };
 
@@ -461,7 +450,6 @@ describe('Session Conversion Functions', () => {
         name: 'Alice Smith',
         emailVerified: true,
         createdAt: '2024-01-01T00:00:00Z',
-        picture: 'https://avatar.url',
         metadata: { preference: 'value' }
       };
 
@@ -526,7 +514,7 @@ describe('Session Conversion Functions', () => {
         tokens: {
           accessToken: 'access-token-xyz',
           refreshToken: 'refresh-token-abc',
-          expiresAt: expect.any(Number)
+          expiresAt: expect.any(String) // ISO string now
         },
         authMethod: 'email-code'
       });
@@ -534,6 +522,10 @@ describe('Session Conversion Functions', () => {
       // Ensure nested tokens structure
       expect(signInData.tokens.accessToken).toBe('access-token-xyz');
       expect(signInData.tokens.refreshToken).toBe('refresh-token-abc');
+
+      // Verify expiresAt is a valid ISO string in the future
+      const expiresAtMs = new Date(signInData.tokens.expiresAt as string).getTime();
+      expect(expiresAtMs).toBeGreaterThan(Date.now());
     });
 
     it('should handle passkey authentication response', () => {
@@ -563,7 +555,10 @@ describe('Session Conversion Functions', () => {
 
       expect(signInData.authMethod).toBe('passkey');
       expect(signInData.tokens.accessToken).toBe('passkey-access-token');
-      expect(signInData.tokens.expiresAt).toBeGreaterThan(Date.now());
+
+      // expiresAt is now an ISO string, parse it to compare
+      const expiresAtMs = new Date(signInData.tokens.expiresAt as string).getTime();
+      expect(expiresAtMs).toBeGreaterThan(Date.now());
     });
   });
 });

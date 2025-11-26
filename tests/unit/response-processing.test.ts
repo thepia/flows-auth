@@ -48,7 +48,7 @@ describe('Response Processing Logic - CRITICAL', () => {
       tokens: {
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token',
-        expiresAt: Date.now() + 3600000 // 1 hour from now
+        expiresAt: new Date(Date.now() + 3600000).toISOString() // 1 hour from now
       },
       user: {
         id: 'user-123',

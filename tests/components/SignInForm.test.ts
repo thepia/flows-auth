@@ -47,10 +47,10 @@ describe('SignInForm Component', () => {
       expect(screen.getByText('Sign in')).toBeTruthy();
       expect(screen.getAllByText(/Test Company/)).toHaveLength(2); // Should appear in description and security message
       expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
-      // Button text varies based on features enabled
-      const button = screen.getByRole('button');
+      // Button text varies based on features enabled - query by type="submit" to target the main action button
+      const button = document.querySelector('button[type="submit"]');
       expect(button).toBeTruthy();
-      expect(button.textContent).toMatch(
+      expect(button?.textContent).toMatch(
         /Sign in with Passkey|Send Magic Link|Continue|Send pin by email/
       );
     });
@@ -194,8 +194,8 @@ describe('SignInForm Component', () => {
         props: {}
       });
 
-      const submitButton = screen.getByRole('button');
-      expect(submitButton.hasAttribute('disabled')).toBe(true);
+      const submitButton = document.querySelector('button[type="submit"]');
+      expect(submitButton?.hasAttribute('disabled')).toBe(true);
     });
 
     it('should enable continue button when email is entered and user check completes', async () => {
@@ -205,17 +205,17 @@ describe('SignInForm Component', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const submitButton = screen.getByRole('button');
+      const submitButton = document.querySelector('button[type="submit"]');
 
       // Initially button should be disabled
-      expect(submitButton.hasAttribute('disabled')).toBe(true);
+      expect(submitButton?.hasAttribute('disabled')).toBe(true);
 
       // Enter email
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
       await tick();
 
       // Button should still be disabled in emailEntry state
-      expect(submitButton.hasAttribute('disabled')).toBe(true);
+      expect(submitButton?.hasAttribute('disabled')).toBe(true);
 
       // Simulate user check completion (this is what the reactive statement does)
       authStore.sendSignInEvent({
@@ -229,7 +229,7 @@ describe('SignInForm Component', () => {
       await tick();
 
       // Now button should be enabled in userChecked state
-      expect(submitButton.hasAttribute('disabled')).toBe(false);
+      expect(submitButton?.hasAttribute('disabled')).toBe(false);
     });
 
     it('should show loading state during submission', async () => {
@@ -239,7 +239,7 @@ describe('SignInForm Component', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const submitButton = screen.getByRole('button');
+      const submitButton = document.querySelector('button[type="submit"]');
 
       // Enter email and complete user check to enable button
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
@@ -254,13 +254,15 @@ describe('SignInForm Component', () => {
       await tick();
 
       // Now button should be enabled and clickable
-      expect(submitButton.hasAttribute('disabled')).toBe(false);
+      expect(submitButton?.hasAttribute('disabled')).toBe(false);
 
-      await fireEvent.click(submitButton);
+      if (submitButton) {
+        await fireEvent.click(submitButton);
+      }
 
       // Check for loading text (the actual text depends on the button configuration)
       expect(screen.getByText('Sending pin...')).toBeTruthy();
-      expect(submitButton.hasAttribute('disabled')).toBe(true);
+      expect(submitButton?.hasAttribute('disabled')).toBe(true);
     });
 
     it('should show error state', async () => {
@@ -332,9 +334,11 @@ describe('SignInForm Component', () => {
 
       component.$on('success', successHandler);
 
-      const continueButton = screen.getByRole('button');
+      const continueButton = document.querySelector('button[type="submit"]');
 
-      await fireEvent.click(continueButton);
+      if (continueButton) {
+        await fireEvent.click(continueButton);
+      }
 
       expect(successHandler).not.toHaveBeenCalled();
     });
@@ -396,7 +400,7 @@ describe('SignInForm Component', () => {
       });
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
-      const continueButton = screen.getByRole('button');
+      const continueButton = document.querySelector('button[type="submit"]');
 
       // Enter email and complete user check to enable button
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
@@ -410,12 +414,14 @@ describe('SignInForm Component', () => {
       });
       await tick();
 
-      await fireEvent.click(continueButton);
+      if (continueButton) {
+        await fireEvent.click(continueButton);
+      }
 
       // Check for loading state - the spinner class might be different
       // Let's check for the loading text instead which is more reliable
       expect(screen.getByText('Sending pin...')).toBeTruthy();
-      expect(continueButton.hasAttribute('disabled')).toBe(true);
+      expect(continueButton?.hasAttribute('disabled')).toBe(true);
     });
   });
 

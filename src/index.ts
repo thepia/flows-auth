@@ -39,6 +39,8 @@ export type { IconProps, IconVariant, IconSize, IconWeight } from './components/
 
 // State Machine
 
+export { isThepiaApp, createNativeAppSessionAdapter } from './stores';
+
 // New Modular Stores (Zustand-based)
 export {
   createAuthStore,
@@ -126,7 +128,6 @@ export {
 } from './utils/invitation-tokens';
 
 export * from './utils/local-storage';
-export * from './utils/service-worker';
 
 // Date Helper Utilities
 export {

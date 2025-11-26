@@ -31,5 +31,13 @@ export {
 // Re-export adapters
 export { toReadable as createSvelteAdapter } from './adapters/svelte';
 
+// Re-export session adapters
+export { createLocalStorageAdapter } from './core/database';
+export {
+  createNativeAppSessionAdapter,
+  cleanupNativeAppBridge,
+  isThepiaApp
+} from './core';
+
 // Re-export types
 export type * from './types';

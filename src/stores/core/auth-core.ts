@@ -137,7 +137,7 @@ export function createAuthCoreStore(options: StoreOptions) {
         refreshTokenPrefix: `${currentState.refresh_token.substring(0, 8)}...`,
         expiresAt: currentState.expiresAt ? new Date(currentState.expiresAt).toISOString() : 'none',
         timeSinceLastRefresh: currentState.refreshedAt
-          ? Date.now() - currentState.refreshedAt
+          ? Date.now() - new Date(currentState.refreshedAt).getTime()
           : 'never',
         tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
       });
@@ -169,11 +169,16 @@ export function createAuthCoreStore(options: StoreOptions) {
               // CRITICAL: Only use new refresh_token if explicitly provided
               // Don't fall back to old token - that causes "already exchanged" errors
               refresh_token: response.refresh_token ? response.refresh_token : undefined,
-              // Use actual expires_in from server response
+              // Convert expires_in (seconds) to ISO string timestamp
               // If missing, explicitly set to null (not undefined) to clear old value
-              expiresAt: response.expires_in ? Date.now() + response.expires_in * 1000 : null,
+              expiresAt: response.expires_in
+                ? new Date(Date.now() + response.expires_in * 1000).toISOString()
+                : null,
               supabase_token: response.supabase_token,
+              // Convert supabase_expires_at (milliseconds) to ISO string
               supabase_expires_at: response.supabase_expires_at
+                ? new Date(response.supabase_expires_at).toISOString()
+                : undefined
             });
 
             console.log(
@@ -200,11 +205,9 @@ export function createAuthCoreStore(options: StoreOptions) {
               refreshTokenPrefix: currentState.refresh_token
                 ? `${currentState.refresh_token.substring(0, 8)}...`
                 : 'none',
-              lastRefreshTime: currentState.refreshedAt
-                ? new Date(currentState.refreshedAt).toISOString()
-                : 'never',
+              lastRefreshTime: currentState.refreshedAt ? currentState.refreshedAt : 'never',
               timeSinceLastRefresh: currentState.refreshedAt
-                ? Date.now() - currentState.refreshedAt
+                ? Date.now() - new Date(currentState.refreshedAt).getTime()
                 : 'never',
               tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown',
               possibleCauses: [
@@ -320,23 +323,37 @@ export function createAuthCoreStore(options: StoreOptions) {
     updateTokens: async (tokens: {
       access_token: string;
       refresh_token?: string;
-      expiresAt: number | null;
+      expiresAt: string | number | null; // ISO 8601 timestamp string OR numeric milliseconds (for migration)
       supabase_token?: string;
-      supabase_expires_at?: number;
+      supabase_expires_at?: string | number; // ISO 8601 timestamp string OR numeric milliseconds (for migration)
     }) => {
       const now = Date.now();
       const currentStateBefore = get();
 
+      // Convert timestamps to ISO strings (handles both ISO strings and numeric milliseconds for migration)
+      const expiresAtIso = tokens.expiresAt
+        ? typeof tokens.expiresAt === 'number'
+          ? new Date(tokens.expiresAt).toISOString()
+          : tokens.expiresAt
+        : null;
+      const supabaseExpiresAtIso = tokens.supabase_expires_at
+        ? typeof tokens.supabase_expires_at === 'number'
+          ? new Date(tokens.supabase_expires_at).toISOString()
+          : tokens.supabase_expires_at
+        : undefined;
+
       // GUARD: Prevent overwriting newer tokens with stale ones (multi-tab race protection)
       // This prevents scenarios where Tab A refreshes successfully but Tab B with stale tokens
       // tries to overwrite the fresh tokens from Tab A
-      if (tokens.expiresAt && currentStateBefore.expiresAt) {
-        if (tokens.expiresAt < currentStateBefore.expiresAt) {
+      if (expiresAtIso && currentStateBefore.expiresAt) {
+        const incomingExpiresAtMs = new Date(expiresAtIso).getTime();
+        const currentExpiresAtMs = new Date(currentStateBefore.expiresAt).getTime();
+        if (incomingExpiresAtMs < currentExpiresAtMs) {
           console.warn(
             '[Auth Core] Rejecting token update - incoming tokens expire earlier than current tokens',
             {
-              currentExpiresAt: new Date(currentStateBefore.expiresAt).toISOString(),
-              incomingExpiresAt: new Date(tokens.expiresAt).toISOString(),
+              currentExpiresAt: currentStateBefore.expiresAt,
+              incomingExpiresAt: expiresAtIso,
               tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
             }
           );
@@ -353,7 +370,7 @@ export function createAuthCoreStore(options: StoreOptions) {
           ? `${currentStateBefore.refresh_token.substring(0, 8)}...`
           : 'none',
         refreshTokenChanged: tokens.refresh_token !== currentStateBefore.refresh_token,
-        expiresAt: tokens.expiresAt ? new Date(tokens.expiresAt).toISOString() : 'none',
+        expiresAt: expiresAtIso || 'none',
         tabId: typeof window !== 'undefined' ? window.name || 'unnamed' : 'unknown'
       });
 
@@ -361,10 +378,10 @@ export function createAuthCoreStore(options: StoreOptions) {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token ?? get().refresh_token,
         // null means no expiry known (graceful degradation when server doesn't provide expires_in)
-        expiresAt: tokens.expiresAt,
-        refreshedAt: now, // Track when tokens were last refreshed
+        expiresAt: expiresAtIso,
+        refreshedAt: new Date(now).toISOString(), // Track when tokens were last refreshed
         supabase_token: tokens.supabase_token,
-        supabase_expires_at: tokens.supabase_expires_at,
+        supabase_expires_at: supabaseExpiresAtIso,
         state: 'authenticated'
       });
 
@@ -381,8 +398,8 @@ export function createAuthCoreStore(options: StoreOptions) {
             metadata: currentState.user.metadata,
             accessToken: currentState.access_token,
             refreshToken: currentState.refresh_token || '',
-            expiresAt: currentState.expiresAt || 0,
-            refreshedAt: Date.now(), // Track when tokens were last refreshed
+            expiresAt: currentState.expiresAt || new Date(now).toISOString(),
+            refreshedAt: new Date(now).toISOString(), // Track when tokens were last refreshed
             authMethod: 'email-code', // TODO: track actual auth method
             supabaseToken: currentState.supabase_token || undefined,
             supabaseExpiresAt: currentState.supabase_expires_at || undefined
@@ -411,10 +428,12 @@ export function createAuthCoreStore(options: StoreOptions) {
     // State helpers
     isAuthenticated: () => {
       const state = get();
+      // expiresAt is now an ISO string, parse it for comparison
+      const expiresAtMs = state.expiresAt ? new Date(state.expiresAt).getTime() : null;
       return (
         state.state === 'authenticated' &&
         !!state.access_token &&
-        (!state.expiresAt || state.expiresAt > Date.now())
+        (!expiresAtMs || expiresAtMs > Date.now())
       );
     },
 
@@ -423,7 +442,9 @@ export function createAuthCoreStore(options: StoreOptions) {
       // Check if we have a valid token
       if (state.state === 'authenticated' && state.access_token) {
         // Check if token is not expired
-        if (!state.expiresAt || state.expiresAt > Date.now()) {
+        // expiresAt is now an ISO string, parse it for comparison
+        const expiresAtMs = state.expiresAt ? new Date(state.expiresAt).getTime() : null;
+        if (!expiresAtMs || expiresAtMs > Date.now()) {
           return state.access_token;
         }
       }
@@ -470,8 +491,9 @@ function scheduleTokenRefresh(
 
   // Additional spam protection: never refresh more frequently than once per minute
   // Check time since last refresh (refreshedAt)
-  const timeSinceLastRefresh = state.refreshedAt
-    ? Date.now() - state.refreshedAt
+  const refreshedAtMs = state.refreshedAt ? new Date(state.refreshedAt).getTime() : null;
+  const timeSinceLastRefresh = refreshedAtMs
+    ? Date.now() - refreshedAtMs
     : Number.POSITIVE_INFINITY;
   if (timeSinceLastRefresh < MINIMUM_REFRESH_INTERVAL_MS) {
     const waitTime = MINIMUM_REFRESH_INTERVAL_MS - timeSinceLastRefresh;
@@ -487,7 +509,8 @@ function scheduleTokenRefresh(
     return;
   }
 
-  const timeUntilExpiry = state.expiresAt - Date.now();
+  const expiresAtMs = new Date(state.expiresAt).getTime();
+  const timeUntilExpiry = expiresAtMs - Date.now();
   const refreshBeforeMs = refreshBeforeSeconds * 1000;
 
   // Calculate when to refresh: (expiry - refreshBefore), but enforce minimum interval
@@ -503,7 +526,7 @@ function scheduleTokenRefresh(
   }
 
   console.log(
-    `🔄 Scheduling token refresh in ${Math.floor(refreshTime / 1000)}s (token expires in ${Math.floor(timeUntilExpiry / 1000)}s, last refreshed ${state.refreshedAt ? `${Math.floor((Date.now() - state.refreshedAt) / 1000)}s ago` : 'never'})`
+    `🔄 Scheduling token refresh in ${Math.floor(refreshTime / 1000)}s (token expires in ${Math.floor(timeUntilExpiry / 1000)}s, last refreshed ${state.refreshedAt ? `${Math.floor((Date.now() - new Date(state.refreshedAt).getTime()) / 1000)}s ago` : 'never'})`
   );
 
   refreshTimeout.current = setTimeout(async () => {
@@ -530,9 +553,9 @@ export async function authenticateUser(
   tokens: {
     access_token: string;
     refresh_token?: string;
-    expiresAt: number | null;
+    expiresAt: string | null; // ISO 8601 timestamp string
     supabase_token?: string;
-    supabase_expires_at?: number;
+    supabase_expires_at?: string; // ISO 8601 timestamp string
   }
 ) {
   const { updateUser, updateTokens } = store.getState();
@@ -552,7 +575,8 @@ export function isTokenExpired(store: ReturnType<typeof createAuthCoreStore>): b
 
   if (!state.expiresAt) return false; // No expiry set
 
-  return Date.now() >= state.expiresAt;
+  const expiresAtMs = new Date(state.expiresAt).getTime();
+  return Date.now() >= expiresAtMs;
 }
 
 /**

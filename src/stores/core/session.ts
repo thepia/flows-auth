@@ -86,7 +86,10 @@ export function createSessionStore(options: StoreOptions) {
       if (typeof window === 'undefined') return false;
 
       const session = await db.loadSession();
-      return session !== null && session.expiresAt > Date.now();
+      if (!session) return false;
+
+      const expiresAtMs = new Date(session.expiresAt).getTime();
+      return expiresAtMs > Date.now();
     },
 
     updateLastActivity: async () => {
@@ -185,20 +188,25 @@ export function createSessionData(
   },
   authMethod: SignInData['authMethod'] = 'passkey'
 ): SignInData {
+  const now = Date.now();
+  const expiresAtMs = tokens.expires_in
+    ? now + tokens.expires_in * 1000
+    : now + DEFAULT_EXPIRES_IN * 1000;
+
   return {
     user: convertUserToSessionUser(user),
     tokens: {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token || '',
-      refreshedAt: Date.now(),
+      refreshedAt: new Date(now).toISOString(),
       // HACK: Force 6-minute expiry for testing (auto-refresh happens at 1 minute mark)
-      // expiresAt: tokens.expires_in ? Date.now() + 6 * 60 * 1000 : Date.now() + 6 * 60 * 1000
+      // expiresAt: new Date(now + 6 * 60 * 1000).toISOString()
       // Production:
-      expiresAt: tokens.expires_in
-        ? Date.now() + tokens.expires_in * 1000
-        : Date.now() + DEFAULT_EXPIRES_IN * 1000,
+      expiresAt: new Date(expiresAtMs).toISOString(),
       supabaseToken: tokens.supabase_token,
       supabaseExpiresAt: tokens.supabase_expires_at
+        ? new Date(tokens.supabase_expires_at).toISOString()
+        : undefined
     },
     authMethod
   };

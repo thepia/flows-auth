@@ -10,29 +10,34 @@
 export interface TokenData {
   accessToken: string;
   refreshToken?: string; // Optional - sessions without refresh tokens expire permanently
-  expiresAt: number;
-  refreshedAt: number; // Timestamp when token was last refreshed (prevents spam refreshes)
+  expiresAt: string; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
+  refreshedAt: string; // ISO 8601 timestamp string - when token was last refreshed (prevents spam refreshes)
   supabaseToken?: string; // Supabase JWT for database access with RLS
-  supabaseExpiresAt?: number; // Supabase token expiration timestamp in milliseconds
+  supabaseExpiresAt?: string; // ISO 8601 timestamp string - Supabase token expiration
 }
 
 /**
  * Complete session data - flat structure for database storage
  * Combines user info and token info for atomic persistence
+ *
+ * All timestamps use ISO 8601 strings for portability across platforms:
+ * - IndexedDB stores strings natively
+ * - Cookies/localStorage serialize strings
+ * - Native apps convert to Date objects for storage
  */
 export interface SessionData {
   userId: string;
   email: string;
   name?: string;
   emailVerified?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown>; // Flexible storage for additional tokens (ID tokens, custom tokens, etc.)
   accessToken: string;
   refreshToken?: string; // Optional - sessions without refresh tokens expire permanently
-  expiresAt: number;
-  refreshedAt: number; // Timestamp when token was last refreshed (prevents spam refreshes)
+  expiresAt: string; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
+  refreshedAt: string; // ISO 8601 timestamp string - when token was last refreshed (prevents spam refreshes)
   authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
   supabaseToken?: string; // Supabase JWT for database access with RLS
-  supabaseExpiresAt?: number; // Supabase token expiration timestamp in milliseconds
+  supabaseExpiresAt?: string; // ISO 8601 timestamp string - Supabase token expiration
 }
 
 /**

@@ -441,7 +441,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
       const initialTokens = {
         access_token: 'initial-access-token',
         refresh_token: 'initial-refresh-token-v1',
-        expiresAt: Date.now() + 60 * 60 * 1000 // 1 hour
+        expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000 // 1 hour
       };
 
       // Update core store with authenticated state

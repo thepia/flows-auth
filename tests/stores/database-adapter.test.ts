@@ -177,7 +177,7 @@ describe('Database Adapter Configuration', () => {
         metadata: { role: 'admin' },
         accessToken: 'access-token-123',
         refreshToken: 'refresh-token-123',
-        expiresAt: Date.now() + 3600000, // 1 hour from now
+        expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
         authMethod: 'passkey'
       };
 
@@ -253,7 +253,7 @@ describe('Database Adapter Configuration', () => {
         metadata: {},
         accessToken: 'expired-token',
         refreshToken: undefined, // No refresh token - session should not be restored
-        expiresAt: Date.now() - 1000, // Expired 1 second ago
+        expiresAt: new Date(Date.now() - 1000).toISOString(), // Expired 1 second ago
         authMethod: 'email-code'
       };
 
@@ -348,7 +348,7 @@ describe('Database Adapter Configuration', () => {
       const mockTokens = {
         access_token: 'new-access-token',
         refresh_token: 'new-refresh-token',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       };
 
       // Update authentication state
@@ -434,8 +434,8 @@ describe('Database Adapter Configuration', () => {
         metadata: { foo: 'bar' },
         accessToken: 'save-token',
         refreshToken: 'save-refresh',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'magic-link'
       };
 
@@ -474,8 +474,8 @@ describe('Database Adapter Configuration', () => {
         tokens: {
           accessToken: 'load-token',
           refreshToken: 'load-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now()
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString()
         },
         authMethod: 'passkey' as const
       };
@@ -519,8 +519,8 @@ describe('Database Adapter Configuration', () => {
         metadata: {},
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        refreshedAt: Date.now(),
-        expiresAt: Date.now() + 3600000,
+        refreshedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
         authMethod: 'passkey'
       };
       await adapter.saveSession(mockSession);
@@ -588,7 +588,6 @@ describe('Database Adapter Configuration', () => {
           id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          picture: 'https://example.com/avatar.jpg',
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z',
           lastLoginAt: '2024-10-15T12:00:00Z',
@@ -598,7 +597,7 @@ describe('Database Adapter Configuration', () => {
         const mockTokens = {
           access_token: 'access-token-123',
           refresh_token: 'refresh-token-123',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         };
 
         store.core.getState().updateUser(mockUser);
@@ -613,7 +612,6 @@ describe('Database Adapter Configuration', () => {
             userId: 'user-123',
             email: 'test@example.com',
             name: 'Test User',
-            avatar: 'https://example.com/avatar.jpg',
             emailVerified: true,
             createdAt: '2024-01-01T00:00:00Z',
             lastLoginAt: '2024-10-15T12:00:00Z',
@@ -647,13 +645,13 @@ describe('Database Adapter Configuration', () => {
           email: 'minimal@example.com',
           emailVerified: false,
           createdAt: '2024-01-01T00:00:00Z'
-          // No name, picture, lastLoginAt, metadata
+          // No name, lastLoginAt, metadata
         };
 
         const mockTokens = {
           access_token: 'token',
           refresh_token: 'refresh',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         };
 
         store.core.getState().updateUser(mockUser);
@@ -782,7 +780,6 @@ describe('Database Adapter Configuration', () => {
           id: 'user-both-123',
           email: 'both@example.com',
           name: 'Both User',
-          picture: 'https://example.com/both.jpg',
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z',
           metadata: { subscription: 'pro' }
@@ -792,7 +789,7 @@ describe('Database Adapter Configuration', () => {
         await store.core.getState().updateTokens({
           access_token: 'access',
           refresh_token: 'refresh',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         });
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -808,7 +805,6 @@ describe('Database Adapter Configuration', () => {
         // Verify user has profile data
         const userCall = vi.mocked(mockAdapter.saveUser).mock.calls[0][0];
         expect(userCall.userId).toBe('user-both-123');
-        expect(userCall.avatar).toBe('https://example.com/both.jpg');
         expect(userCall.metadata).toEqual({ subscription: 'pro' });
 
         store.destroy();
@@ -949,8 +945,8 @@ describe('Database Adapter Configuration', () => {
         emailVerified: true,
         accessToken: 'token-both',
         refreshToken: 'refresh-both',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey'
       };
 
@@ -994,12 +990,12 @@ describe('Database Adapter Configuration', () => {
         metadata: {},
         accessToken: 'access-token-123',
         refreshToken: 'refresh-token-123',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey',
         supabaseToken:
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9.abc123',
-        supabaseExpiresAt: Date.now() + 3600000
+        supabaseExpiresAt: new Date(Date.now() + 3600000).toISOString()
       };
 
       const mockAdapter: SessionPersistence = {
@@ -1040,11 +1036,11 @@ describe('Database Adapter Configuration', () => {
         metadata: { app_code: 'flows' },
         accessToken: 'access-token-local',
         refreshToken: 'refresh-token-local',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey',
         supabaseToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxvY2FsIn0.xyz789',
-        supabaseExpiresAt: Date.now() + 3600000
+        supabaseExpiresAt: new Date(Date.now() + 3600000).toISOString()
       };
 
       await adapter.saveSession(sessionData);
@@ -1062,7 +1058,7 @@ describe('Database Adapter Configuration', () => {
     it('should convert internal format with Supabase tokens to SessionData on load', async () => {
       const supabaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLWxvYWQtc3VwYWJhc2UifQ.def456';
-      const supabaseExpiresAt = Date.now() + 3600000;
+      const supabaseExpiresAt = new Date(Date.now() + 3600000).toISOString();
 
       // Put internal session data with Supabase tokens into mock storage (SignInData format with camelCase)
       const internalSession: SignInData = {
@@ -1076,8 +1072,8 @@ describe('Database Adapter Configuration', () => {
         tokens: {
           accessToken: 'load-token',
           refreshToken: 'load-refresh',
-          expiresAt: Date.now() + 3600000,
-          refreshedAt: Date.now(),
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          refreshedAt: new Date().toISOString(),
           supabaseToken: supabaseToken,
           supabaseExpiresAt: supabaseExpiresAt
         },
@@ -1111,8 +1107,8 @@ describe('Database Adapter Configuration', () => {
         metadata: {},
         accessToken: 'access-only',
         refreshToken: 'refresh-only',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'email-code'
         // No supabaseToken or supabaseExpiresAt
       };
@@ -1135,7 +1131,7 @@ describe('Database Adapter Configuration', () => {
 
       const supabaseToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXByZXNlcnZlIn0.ghi789';
-      const supabaseExpiresAt = Date.now() + 3600000;
+      const supabaseExpiresAt = new Date(Date.now() + 3600000).toISOString();
 
       const originalSession: SessionData = {
         userId: 'user-preserve',
@@ -1145,8 +1141,8 @@ describe('Database Adapter Configuration', () => {
         metadata: { company_id: 'company-123' },
         accessToken: 'access-preserve',
         refreshToken: 'refresh-preserve',
-        expiresAt: Date.now() + 3600000,
-        refreshedAt: Date.now(),
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey',
         supabaseToken: supabaseToken,
         supabaseExpiresAt: supabaseExpiresAt
@@ -1197,7 +1193,7 @@ describe('Database Adapter Configuration', () => {
       await store.core.getState().updateTokens({
         access_token: 'token',
         refresh_token: 'refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -1238,7 +1234,7 @@ describe('Database Adapter Configuration', () => {
       await store.core.getState().updateTokens({
         access_token: 'token',
         refresh_token: 'refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -1293,7 +1289,7 @@ describe('Database Adapter Configuration', () => {
       await store.core.getState().updateTokens({
         access_token: 'token',
         refresh_token: 'refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -1327,7 +1323,7 @@ describe('Database Adapter Configuration', () => {
       await store.core.getState().updateTokens({
         access_token: 'token',
         refresh_token: 'refresh',
-        expiresAt: Date.now() + 3600000
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
 

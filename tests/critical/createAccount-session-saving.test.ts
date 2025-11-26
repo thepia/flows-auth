@@ -14,6 +14,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
 import type { AuthConfig, RegistrationRequest } from '../../src/types';
+import {
+  getAccessToken,
+  getCurrentUser,
+  getSession,
+  isSessionValid as isAuthenticated
+} from '../../src/utils/sessionManager';
 
 // Mock sessionManager (we verify calls but don't control implementation)
 let mockStorage: Record<string, string> = {};
@@ -166,7 +172,7 @@ describe('createAccount API Contract', () => {
         tokens: {
           access_token: 'access-token',
           refresh_token: 'refresh-token',
-          expiresAt: Date.now() + 3600000
+          expiresAt: new Date(Date.now() + 3600000).toISOString()
         },
         authMethod: 'passkey'
       });

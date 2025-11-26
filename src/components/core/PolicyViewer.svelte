@@ -9,6 +9,7 @@
   import { X, Check } from 'phosphor-svelte';
   import type { SvelteAuthStore } from '../../types/svelte';
   import { getAuthStoreFromContext } from '../../utils/auth-context';
+  import { isThepiaApp }from '../../stores/core/native-app-session-adapter';
 
   // Props
   export let open = false;
@@ -39,7 +40,7 @@
       const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
 
       // If we're on dev.thepia.net and URL is thepia.com, replace it
-      if (currentHost === 'dev.thepia.net' && urlObj.hostname === 'thepia.com') {
+      if (currentHost === 'dev.thepia.net' && urlObj.hostname === 'thepia.com' && !isThepiaApp()) {
         urlObj.hostname = 'dev.thepia.com';
       }
 
@@ -178,7 +179,7 @@
           on:click={() => activeTab = 'privacy'}
           aria-selected={activeTab === 'privacy'}
         >
-          Privacy Policy
+          Privacy
           {#if privacyConsent}
             <Check size={16} weight="bold" class="consent-check" />
           {/if}
@@ -188,7 +189,7 @@
           on:click={() => activeTab = 'acceptable'}
           aria-selected={activeTab === 'acceptable'}
         >
-          Acceptable Use Policy
+          Acceptable Use
           {#if acceptableConsent}
             <Check size={16} weight="bold" class="consent-check" />
           {/if}
@@ -365,6 +366,9 @@
     justify-content: center;
     gap: 8px;
     white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .policy-tab:hover {
@@ -487,7 +491,20 @@
     }
 
     .policy-viewer-header {
-      padding: 16px;
+      padding: 12px 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .policy-tabs {
+      flex: 1;
+      min-width: 0;
+      gap: 0;
+    }
+
+    .policy-tab {
+      padding: 12px 12px;
+      font-size: 0.85rem;
     }
 
     .policy-viewer-title {
@@ -496,6 +513,27 @@
 
     .policy-viewer-body {
       padding: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .policy-viewer-header {
+      padding: 8px 12px;
+    }
+
+    .policy-tab {
+      padding: 10px 8px;
+      font-size: 0.75rem;
+    }
+
+    .policy-viewer-close {
+      padding: 6px;
+      flex-shrink: 0;
+    }
+
+    .policy-viewer-close :global(svg) {
+      width: 20px;
+      height: 20px;
     }
   }
 

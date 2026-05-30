@@ -8,20 +8,7 @@ import { createEventDispatcher } from 'svelte';
 import type { User } from '../types';
 import Icon from './icons/Icon.svelte';
 import { ArrowsClockwise } from 'phosphor-svelte';
-import {
-  "user.privacy.dataPolicy" as userPrivacyDataPolicy,
-  "user.privacy.description" as userPrivacyDescription,
-  "user.privacy.termsOfService" as userPrivacyTermsOfService,
-  "user.privacy.title" as userPrivacyTitle,
-  "user.profile.description" as userProfileDescription,
-  "user.profile.editProfile" as userProfileEditProfile,
-  "user.profile.title" as userProfileTitle,
-  "user.security.description" as userSecurityDescription,
-  "user.security.managePasskeys" as userSecurityManagePasskeys,
-  "user.security.title" as userSecurityTitle,
-  "user.signOut" as userSignOut,
-  "user.welcomeBack" as userWelcomeBack
-} from '../paraglide/messages';
+import { m } from '../utils/i18n';
 
 // Props
 export let user: User;
@@ -56,7 +43,7 @@ async function handleRefreshTokens() {
 <div class="user-management">
   <div class="user-profile-header">
     <div class="user-info">
-      <h3>{userWelcomeBack()}</h3>
+      <h3>{m['user.welcomeBack']()}</h3>
       <p class="user-name">{user.name || user.email}</p>
       <p class="user-email">{user.email}</p>
     </div>
@@ -85,9 +72,9 @@ async function handleRefreshTokens() {
         type="button"
         class="sign-out-button"
         on:click={handleSignOut}
-        title={userSignOut()}
+        title={m['user.signOut']()}
       >
-        {userSignOut()}
+        {m['user.signOut']()}
       </button>
     </div>
   </div>
@@ -96,17 +83,17 @@ async function handleRefreshTokens() {
     <!-- Security & Passkeys Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{userSecurityTitle()}</h4>
+        <h4>{m['user.security.title']()}</h4>
         <span class="card-icon">🔐</span>
       </div>
-      <p class="card-description">{userSecurityDescription()}</p>
+      <p class="card-description">{m['user.security.description']()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button primary"
           on:click={() => dispatch('navigate', { section: 'passkeys' })}
         >
-          {userSecurityManagePasskeys()}
+          {m['user.security.managePasskeys']()}
         </button>
       </div>
     </div>
@@ -114,17 +101,17 @@ async function handleRefreshTokens() {
     <!-- Profile Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{userProfileTitle()}</h4>
+        <h4>{m['user.profile.title']()}</h4>
         <span class="card-icon">👤</span>
       </div>
-      <p class="card-description">{userProfileDescription()}</p>
+      <p class="card-description">{m['user.profile.description']()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'profile' })}
         >
-          {userProfileEditProfile()}
+          {m['user.profile.editProfile']()}
         </button>
       </div>
     </div>
@@ -132,24 +119,24 @@ async function handleRefreshTokens() {
     <!-- Privacy & Data Policy -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{userPrivacyTitle()}</h4>
+        <h4>{m['user.privacy.title']()}</h4>
         <span class="card-icon">🛡️</span>
       </div>
-      <p class="card-description">{userPrivacyDescription()}</p>
+      <p class="card-description">{m['user.privacy.description']()}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'privacy' })}
         >
-          {userPrivacyDataPolicy()}
+          {m['user.privacy.dataPolicy']()}
         </button>
         <button
           type="button"
           class="action-button secondary"
           on:click={() => dispatch('navigate', { section: 'terms' })}
         >
-          {userPrivacyTermsOfService()}
+          {m['user.privacy.termsOfService']()}
         </button>
       </div>
     </div>

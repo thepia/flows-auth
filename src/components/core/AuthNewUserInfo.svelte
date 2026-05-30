@@ -5,10 +5,7 @@
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
-import {
-  "auth.fullName" as authFullName,
-  "auth.fullNamePlaceholder" as authFullNamePlaceholder
-} from '../../paraglide/messages';
+import { m } from '../../utils/i18n';
 
 // Props
 export let fullName = '';
@@ -31,14 +28,14 @@ function handleInput(event: Event) {
 <div class="auth-new-user-info">
   <div class="input-group">
     <label for="fullName" class="input-label">
-      {authFullName()}
+      {m['auth.fullName']()}
     </label>
     <input
       id="fullName"
       type="text"
       bind:value={fullName}
       on:input={handleInput}
-      placeholder={authFullNamePlaceholder()}
+      placeholder={m['auth.fullNamePlaceholder']()}
       class="auth-input"
       class:error
       autocomplete="name"

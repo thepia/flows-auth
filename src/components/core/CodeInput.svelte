@@ -7,7 +7,6 @@
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import { m } from '../../utils/i18n';
-import { "code.label" as codeLabel } from '../../paraglide/messages';
 
 // Internal state (non-controlled)
 let value = '';
@@ -208,7 +207,7 @@ function getDisplayText(key: string): string {
   }
 }
 // Use existing translation keys for accessibility
-$: ariaLabel = `${codeLabel()} (${maxlength} digits)`;
+$: ariaLabel = `${m['code.label']()} (${maxlength} digits)`;
 $: helpText = `Enter ${maxlength}-digit verification code`;
 </script>
 

@@ -173,25 +173,27 @@
   <div class="policy-viewer-content" style="--max-width: {maxWidth}">
     <!-- Header with tabs -->
     <header class="policy-viewer-header">
-      <div class="policy-tabs">
+      <div class="policy-tabs" role="tablist">
         <button
           class="policy-tab {activeTab === 'privacy' ? 'active' : ''}"
+          role="tab"
           on:click={() => activeTab = 'privacy'}
           aria-selected={activeTab === 'privacy'}
         >
           Privacy
           {#if privacyConsent}
-            <Check size={16} weight="bold" class="consent-check" />
+            <span class="consent-check"><Check size={16} weight="bold" /></span>
           {/if}
         </button>
         <button
           class="policy-tab {activeTab === 'acceptable' ? 'active' : ''}"
+          role="tab"
           on:click={() => activeTab = 'acceptable'}
           aria-selected={activeTab === 'acceptable'}
         >
           Acceptable Use
           {#if acceptableConsent}
-            <Check size={16} weight="bold" class="consent-check" />
+            <span class="consent-check"><Check size={16} weight="bold" /></span>
           {/if}
         </button>
       </div>
@@ -505,10 +507,6 @@
     .policy-tab {
       padding: 12px 12px;
       font-size: 0.85rem;
-    }
-
-    .policy-viewer-title {
-      font-size: 1.125rem;
     }
 
     .policy-viewer-body {

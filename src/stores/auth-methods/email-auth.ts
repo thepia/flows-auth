@@ -52,7 +52,7 @@ export interface EmailAuthActions {
   resendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
 
   // Magic link methods
-  sendMagicLink: (email: string) => Promise<SignInData | null>;
+  sendMagicLink: (email: string) => Promise<void>;
 
   // User check methods
   checkUser: (email: string) => Promise<{
@@ -268,9 +268,7 @@ export function createEmailAuthStore(options: StoreOptions) {
 
         console.log('✅ Magic link sent successfully');
 
-        // Magic link just sends email, no immediate auth data
-        // Return null - caller should wait for user to click link
-        return null;
+        // Magic link just sends email — auth happens when user clicks the link
       } catch (error) {
         const linkError = error as Error;
 
@@ -284,7 +282,13 @@ export function createEmailAuthStore(options: StoreOptions) {
       }
     },
 
-    checkUser: async (email: string) => {
+    checkUser: async (email: string): Promise<{
+      exists: boolean;
+      hasWebAuthn: boolean;
+      emailVerified: boolean;
+      hasValidPin?: boolean;
+      pinRemainingMinutes?: number;
+    }> => {
       try {
         console.log('🔍 Checking user:', { email });
 

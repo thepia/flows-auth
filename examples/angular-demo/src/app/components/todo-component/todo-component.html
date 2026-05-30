@@ -1,0 +1,13 @@
+<div class="todo-container">
+    <h2>My Todos({{ completed() }} / {{ count() }} completed)</h2>
+    <input type="text" placeholder="Add a new todo..." (keyup.enter)="addTodo($event)" />
+    <ul>
+        <li *ngFor="let todo of todoService.todos()" [class.completed]="todo.completed">
+            <span class="checkmark" *ngIf="todo.completed">✓</span>
+            <span [class.strikethrough]="todo.completed">{{ todo.title }}</span>
+
+            <button (click)="todoService.removeTodo(todo.id)">Remove</button>
+            <button (click)="todoService.toggleTodo(todo.id)">{{ todo.completed ? 'Undo' : 'Done' }}</button>
+        </li>
+    </ul>
+</div>

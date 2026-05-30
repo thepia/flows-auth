@@ -1,3 +1,4 @@
 packages:
   - 'examples/astro-demo'
   - 'examples/auth-demo'
+  - 'examples/angular-demo'

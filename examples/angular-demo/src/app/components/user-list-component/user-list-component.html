@@ -1,0 +1,33 @@
+<div class="user-list-container">
+    <h2>User Search</h2>
+
+    <div *ngIf="error$ | async as error" class="error-message" role="alert">
+        <p>{{ error }}</p>
+    </div>
+    <input type="text"
+        placeholder="Search users..."
+        (keyup)="onSearchChange($event)"            class="search-input"
+        aria-label="Search users" />
+
+    <ng-template #showUsers>
+    <section class="users-list" role="list">
+        <details *ngFor="let user of users$ | async" class="user-item">
+            <summary class="user-summary">
+                <span class="user-name">{{user.name}}</span>
+            </summary>
+            <div class="user-details">
+                <dl>
+                    <dt>Name</dt>
+                    <dd>{{user.name}}</dd>
+                    <dt>ID</dt>
+                    <dd>{{user.id}}</dd>
+                </dl>
+            </div>
+        </details>
+    </section>
+    </ng-template>
+
+    <div class="loading-state" *ngIf="loading$ | async; else showUsers" aria-live="polite">
+        <p role="status">Loading users...</p>
+    </div>
+</div>

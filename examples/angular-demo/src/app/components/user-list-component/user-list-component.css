@@ -1,0 +1,70 @@
+.error-message {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #c33;
+}
+
+.error-message p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.loading-state {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+}
+
+.users-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+}
+
+.user-item {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  padding: 12px;
+}
+
+.user-summary {
+  cursor: pointer;
+  font-weight: 500;
+  padding: 8px;
+}
+
+.user-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.user-details dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+}
+
+.user-details dt {
+  font-weight: 600;
+  color: #333;
+}
+
+.user-details dd {
+  margin: 0;
+  color: #666;
+}

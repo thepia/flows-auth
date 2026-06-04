@@ -3,7 +3,8 @@
   The actual auth logic is handled by SignInCore component
 -->
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy, getContext } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+
   import { WarningCircle as AlertTriangle, CheckCircle, User as UserIcon, Key, Lock, Shield, Certificate as BadgeCheck } from 'phosphor-svelte';
 
   import type { User, AuthError, AuthMethod } from '../types';
@@ -55,36 +56,9 @@
   $: authConfig = authStore?.getConfig?.();
   $: logoConfig = authConfig?.branding;
 
-  // Get custom message bundle from context (if provided by app)
-  const customMessages = getContext('paraglide-messages');
-
-  // Helper function to get display text from Paraglide
   function getDisplayText(key: string, variables?: Record<string, any>): string {
-    // Try custom messages from context first (app-specific merged messages)
-    if (customMessages) {
-      try {
-        const messageFunction = customMessages[key];
-        if (typeof messageFunction === 'function') {
-          return messageFunction(variables);
-        }
-      } catch (error) {
-        console.warn(`Custom message context failed for key "${key}":`, error);
-        // Fall through to default behavior
-      }
-    }
-
-    // Default behavior: use library's Paraglide messages
-    try {
-      const messageFunction = (m as unknown as {[key: string]: (params?: any) => string})[key];
-      if (typeof messageFunction === 'function') {
-        return messageFunction(variables);
-      }
-      // Fallback to key if function doesn't exist
-      return key;
-    } catch (error) {
-      console.warn(`Translation key "${key}" not found in Paraglide messages`);
-      return key;
-    }
+    const fn = (m as unknown as Record<string, (vars?: any) => string>)[key];
+    return typeof fn === 'function' ? fn(variables) : key;
   }
 
   // Popup close functionality

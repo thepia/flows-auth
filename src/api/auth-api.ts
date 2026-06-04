@@ -14,8 +14,6 @@ import type {
   PasskeyCredential,
   PasskeyRequest,
   RefreshTokenRequest,
-  RegistrationResponse,
-  SignInRequest,
   SignInResponse,
   User,
   UserPasskey,
@@ -36,7 +34,7 @@ import { reportApiError } from '../utils/telemetry';
 import { globalUserCache } from '../utils/user-cache';
 
 export class AuthApiClient {
-  private config: AuthConfig;
+  readonly config: AuthConfig;
   private baseUrl: string;
   private effectiveBaseUrl: Promise<string>;
 
@@ -199,6 +197,14 @@ export class AuthApiClient {
 
       // Handle new error format { step: "error", error: { code, message } }
       if (errorData.step === 'error' && errorData.error) {
+        if (typeof errorData.error === 'string') {
+          // Server sent error as a string code (e.g. "token_refresh_failed")
+          return {
+            code: errorData.error,
+            message: errorData.message || errorData.error,
+            details: errorData.details
+          };
+        }
         return {
           code: errorData.error.code || 'unknown_error',
           message: errorData.error.message || 'An unknown error occurred',
@@ -206,10 +212,19 @@ export class AuthApiClient {
         };
       }
 
-      // Handle legacy error format for backward compatibility
+      // Handle server format { error: "string_code", message: "..." }
+      // and legacy format { code: "...", message: "..." }
+      const errorCode =
+        errorData.code ||
+        (typeof errorData.error === 'string' ? errorData.error : undefined) ||
+        'unknown_error';
+      const errorMessage =
+        errorData.message ||
+        (typeof errorData.error === 'string' ? errorData.error : undefined) ||
+        'An unknown error occurred';
       return {
-        code: errorData.code || 'unknown_error',
-        message: errorData.message || errorData.error || 'An unknown error occurred',
+        code: errorCode,
+        message: errorMessage,
         details: errorData.details
       };
     } catch {

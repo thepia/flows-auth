@@ -72,7 +72,7 @@ export interface SessionPersistence {
 
 ### Implementation in Database Adapters
 
-#### IndexedDB (flows-db)
+#### IndexedDB (flows-client)
 ```typescript
 class FlowsDbAdapter implements SessionPersistence {
   async saveSession(partialSession: Partial<SessionData> & { userId: string }): Promise<void> {

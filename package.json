@@ -9,7 +9,7 @@
   "svelte": "./dist/src/index.ts",
   "exports": {
     ".": {
-      "development": {
+      "source": {
         "svelte": "./src/index.ts",
         "types": "./src/index.ts"
       },
@@ -71,8 +71,8 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./style.css": "./dist/style.css",
-    "./dist/style.css": "./dist/style.css",
+    "./style.css": "./dist/flows-auth.css",
+    "./dist/style.css": "./dist/flows-auth.css",
     "./paraglide/runtime.js": "./dist/paraglide/runtime.js",
     "./paraglide/messages.js": "./dist/paraglide/messages.js",
     "./src/paraglide/runtime.js": "./dist/paraglide/runtime.js",
@@ -174,7 +174,7 @@
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^1.0.0"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",

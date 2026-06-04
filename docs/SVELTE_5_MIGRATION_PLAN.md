@@ -196,7 +196,7 @@ export default {
   },
   "devDependencies": {
     "svelte": "^5.0.0",
-    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "svelte-check": "^4.0.0"
   }
 }

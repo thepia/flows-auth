@@ -7,9 +7,9 @@ Comprehensive documentation for iOS/macOS native app integration.
 The native app integration consists of two complementary systems:
 
 1. **Session Persistence** (flows-auth): Secure storage of auth tokens in native Keychain
-2. **State Notifications** (flows-db): Real-time UI state updates to native container
+2. **State Notifications** (flows-client): Real-time UI state updates to native container
 
-**Architecture**: Single unified message handler (`__thepiaResponseHandler`) in flows-db routes all responses from native app. Svelte components trigger state changes by calling `notifyNativeAppState()` from flows-db.
+**Architecture**: Single unified message handler (`__thepiaResponseHandler`) in flows-client routes all responses from native app. Svelte components trigger state changes by calling `notifyNativeAppState()` from flows-client.
 
 ## Native App Detection
 
@@ -49,7 +49,7 @@ Persists auth sessions to native Keychain instead of localStorage.
 ## State Notifications
 
 **Function**: `notifyNativeAppState(payload)`
-**Location**: `@thepia/flows-db` (flows-db/src/lib/flows-client.ts)
+**Location**: `@thepia/flows-client` (flows-client/src/lib/flows-client.ts)
 
 Sends UI state updates to native container via `webapp_state` messages.
 
@@ -74,11 +74,11 @@ Sends UI state updates to native container via `webapp_state` messages.
 - Fire-and-forget (no response expected)
 - Graceful fallback when WebKit unavailable (silently ignored in browser)
 - Type-safe via `WebAppStatePayload` interface
-- Integrated with FlowsDBClient singleton
+- Integrated with FlowsClient singleton
 
 **Usage**:
 ```typescript
-import { notifyNativeAppState } from '@thepia/flows-db';
+import { notifyNativeAppState } from '@thepia/flows-client';
 
 // From Svelte components
 await notifyNativeAppState({ readiness: 'ready' });
@@ -93,9 +93,9 @@ await notifyNativeAppState({
 ## Implementation Status
 
 ### Phase 1: Core Infrastructure ✅ COMPLETE
-- ✅ `notifyNativeAppState()` function in flows-db
+- ✅ `notifyNativeAppState()` function in flows-client
 - ✅ `WebAppStatePayload` type definition
-- ✅ Integrated with FlowsDBClient singleton
+- ✅ Integrated with FlowsClient singleton
 - ✅ Library builds successfully
 
 ### Phase 2: App Integration (Pending)
@@ -114,7 +114,7 @@ await notifyNativeAppState({
 Components should call `notifyNativeAppState()` when state changes:
 
 ```typescript
-import { notifyNativeAppState } from '@thepia/flows-db';
+import { notifyNativeAppState } from '@thepia/flows-client';
 
 // SignInCore.svelte
 onMount(() => await notifyNativeAppState({ readiness: 'loading' }));
@@ -141,7 +141,7 @@ onMount(() => await notifyNativeAppState({ readiness: 'loading' }));
 
 ## Related Documentation
 
-- **Message Protocol**: `../flows-db/docs/APP_MESSAGE_SPEC.md` - Complete message specification
+- **Message Protocol**: `../flows-client/docs/APP_MESSAGE_SPEC.md` - Complete message specification
 - **Session Adapter**: `docs/adapters/native-app-session-adapter.md` - Session persistence details
 - **API Contracts**: `docs/testing/API_CONTRACT_TESTING_POLICY.md` - Testing requirements
 - **Test Coverage**: `docs/testing/coverage-strategy.md` - Testing strategy

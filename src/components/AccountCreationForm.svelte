@@ -112,7 +112,7 @@ const dispatch = createEventDispatcher<{
       // Only emit appAccess after successful registration AND auth store confirms authentication
       if (registrationCompleted && registrationResult && $auth.state === 'authenticated' && $auth.user) {
         console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
-        
+
         dispatch('appAccess', {
           user: registrationResult.user,
           emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,

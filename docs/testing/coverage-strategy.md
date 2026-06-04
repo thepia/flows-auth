@@ -248,7 +248,7 @@ describe('Security', () => {
     "@playwright/test": "^1.40.0",
     "@testing-library/svelte": "^4.0.0",
     "@testing-library/jest-dom": "^6.0.0",
-    "vitest": "^1.0.0",
+    "vitest": "^4.1.0",
     "jsdom": "^23.0.0",
     "happy-dom": "^12.0.0"
   }

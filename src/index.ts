@@ -56,6 +56,7 @@ export type { SvelteAuthStore } from './types/svelte';
 // Auth Context Utilities (Svelte-specific helpers)
 export {
   setupAuthContext,
+  createAuthContext,
   resetGlobalAuthStore,
   assertAuthConfig,
   getAuthStoreFromContext

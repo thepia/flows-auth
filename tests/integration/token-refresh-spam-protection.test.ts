@@ -100,7 +100,7 @@ describe('Token Refresh Spam Protection', () => {
       expect(state.state).toBe('authenticated');
 
       // The refreshedAt should be persisted via the database adapter
-      // (actual persistence is tested in flows-db/tests/service-worker-seed.test.ts)
+      // (actual persistence is tested in flows-client/tests/service-worker-seed.test.ts)
     });
 
     it('should update refreshedAt on subsequent token refreshes', async () => {

@@ -376,8 +376,8 @@ describe('Auth Store Integration Tests', () => {
 
   describe('State Persistence and Recovery', () => {
     it.skip('should persist authentication state across store recreations', async () => {
-      // TODO: This test needs to be rewritten for flows-db storage
-      // Currently tests localStorage but flows-auth uses flows-db by default
+      // TODO: This test needs to be rewritten for flows-client storage
+      // Currently tests localStorage but flows-auth uses flows-client by default
       // Mock successful authentication
       const mockUser = TestUtils.createMockUser({
         email: 'persistent-test@thepia.net'
@@ -408,8 +408,8 @@ describe('Auth Store Integration Tests', () => {
     });
 
     it.skip('should handle corrupted localStorage gracefully', async () => {
-      // TODO: This test needs to be rewritten for flows-db storage
-      // Currently tests localStorage but flows-auth uses flows-db by default
+      // TODO: This test needs to be rewritten for flows-client storage
+      // Currently tests localStorage but flows-auth uses flows-client by default
       // Set invalid data in localStorage
       localStorage.setItem('auth_user', 'invalid-json');
       localStorage.setItem('auth_access_token', 'expired-token');

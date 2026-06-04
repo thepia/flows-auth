@@ -440,7 +440,7 @@ interface AuthBranding {
 
 ### Database Adapter for Session Persistence
 
-flows-auth uses a `SessionPersistence` interface for all session persistence. By default, it uses a localStorage/sessionStorage adapter, but you can provide any custom adapter (flows-db, IndexedDB, Service Worker, etc.).
+flows-auth uses a `SessionPersistence` interface for all session persistence. By default, it uses a localStorage/sessionStorage adapter, but you can provide any custom adapter (flows-client, IndexedDB, Service Worker, etc.).
 
 **Default Behavior:**
 - If no `database` config is provided, sessions are stored in localStorage/sessionStorage (via `createLocalStorageAdapter()`)
@@ -448,16 +448,16 @@ flows-auth uses a `SessionPersistence` interface for all session persistence. By
 - Session restoration happens asynchronously after store creation
 - Store starts as `unauthenticated` and transitions to `authenticated` once session loads
 
-**Example: Using flows-db for Service Worker persistence**
+**Example: Using flows-client for Service Worker persistence**
 
 ```svelte
 <!-- +layout.svelte -->
 <script>
   import { setupAuthContext } from '@thepia/flows-auth';
-  import { getFlowsDB } from '@thepia/flows-db/client';
+  import { getFlowsClient } from '@thepia/flows-client/client';
 
-  // Get flows-db client - provides session property that implements SessionPersistence
-  const flowsDB = getFlowsDB();
+  // Get flows-client client - provides session property that implements SessionPersistence
+  const flowsDB = getFlowsClient();
 
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
@@ -465,7 +465,7 @@ flows-auth uses a `SessionPersistence` interface for all session persistence. By
     domain: 'thepia.net',
     enablePasskeys: true,
     enableMagicLinks: false,
-    // Automatic session persistence via flows-db service worker
+    // Automatic session persistence via flows-client service worker
     database: flowsDB.session
   };
 

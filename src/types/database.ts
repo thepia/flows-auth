@@ -1,6 +1,6 @@
 /**
  * Database Adapter Interface for Session and User Persistence
- * Allows flows-auth to integrate with any database system (flows-db, localStorage, etc.)
+ * Allows flows-auth to integrate with any database system (flows-client, localStorage, etc.)
  */
 
 /**

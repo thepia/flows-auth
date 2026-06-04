@@ -2,7 +2,7 @@
  * Zod schemas for SessionData and UserData
  *
  * Runtime validation for session and user data structures.
- * These schemas validate data received from flows-db (IndexedDB) or native app storage.
+ * These schemas validate data received from flows-client (IndexedDB) or native app storage.
  *
  * All timestamps use ISO 8601 strings for portability across platforms:
  * - IndexedDB stores strings natively

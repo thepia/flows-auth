@@ -25,6 +25,10 @@ import type { SvelteAuthStore } from '../types/svelte';
 import { makeSvelteCompatible } from '../stores/adapters/svelte';
 import { createAuthStore } from '../stores/auth-store';
 
+// Module-level fallback for Svelte 5 HMR: getContext throws lifecycle_outside_component
+// inside HMR branch effects, so getAuthStoreFromContext falls back to this reference.
+let _hmrFallbackStore: SvelteAuthStore | null = null;
+
 /**
  * Reset the global auth store (useful for testing)
  */
@@ -93,14 +97,28 @@ export function assertAuthConfig(config: unknown): asserts config is AuthConfig 
  */
 export function getAuthStoreFromContext(): SvelteAuthStore {
   const store = getContext<SvelteAuthStore>(AUTH_CONTEXT_KEY);
+  if (store) return store;
 
-  if (!store) {
-    throw new Error(
-      'Auth store not found in context. Call setupAuthStore(config) in your root layout component.'
-    );
-  }
+  if (_hmrFallbackStore) return _hmrFallbackStore;
 
-  return store;
+  throw new Error(
+    'Auth store not found in context. Call setupAuthContext(config) in your root layout component.'
+  );
+}
+
+/**
+ * Create an auth store without registering it in Svelte context.
+ *
+ * Call this at the top of +layout.svelte, then call setContext(AUTH_CONTEXT_KEY, store)
+ * immediately after — keeping setContext in the component's own script so Svelte 5
+ * can track it during component initialization (avoids lifecycle_outside_component in HMR).
+ *
+ * @param config - Auth configuration
+ * @returns The created auth store (not yet in context)
+ */
+export function createAuthContext(config: AuthConfig): SvelteAuthStore {
+  assertAuthConfig(config);
+  return makeSvelteCompatible(createAuthStore(config));
 }
 
 /**
@@ -109,16 +127,19 @@ export function getAuthStoreFromContext(): SvelteAuthStore {
  * Creates a new auth store instance scoped to the component tree.
  * This is the preferred pattern per ADR 0004.
  *
+ * Prefer calling createAuthContext() + setContext(AUTH_CONTEXT_KEY, store) directly
+ * in your +layout.svelte — that keeps setContext in the component's own script and
+ * avoids lifecycle_outside_component errors in Svelte 5 HMR.
+ *
  * @param config - Auth configuration
  * @returns The created auth store
  */
 export function setupAuthContext(config: AuthConfig): SvelteAuthStore {
   assertAuthConfig(config);
 
-  // Create a new store instance for this context (Svelte-compatible)
   const authStore = makeSvelteCompatible(createAuthStore(config));
+  _hmrFallbackStore = authStore;
   setContext(AUTH_CONTEXT_KEY, authStore);
 
-  console.log('🔐 Auth context initialized');
   return authStore;
 }

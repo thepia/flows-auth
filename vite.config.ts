@@ -136,6 +136,7 @@ export default defineConfig({
     rollupOptions: {
       external: ['svelte', 'svelte/store', 'd3'],
       output: {
+        assetFileNames: 'flows-auth.[ext]',
         globals: {
           svelte: 'Svelte',
           'svelte/store': 'SvelteStore',

@@ -135,6 +135,7 @@ export function createAuthCoreStore(options: StoreOptions) {
       // Log refresh attempt with token info for debugging "already exchanged" errors
       reportRefreshEvent('START', {
         refreshTokenPrefix: `${currentState.refresh_token.substring(0, 8)}...`,
+        refreshTokenLength: currentState.refresh_token.length,
         expiresAt: currentState.expiresAt ? new Date(currentState.expiresAt).toISOString() : 'none',
         timeSinceLastRefresh: currentState.refreshedAt
           ? Date.now() - new Date(currentState.refreshedAt).getTime()
@@ -241,6 +242,7 @@ export function createAuthCoreStore(options: StoreOptions) {
           // Check if this is a permanent failure (400 Bad Request with specific errors)
           const isPermanentFailure =
             error?.status === 400 ||
+            error?.code === 'token_refresh_failed' || // 5xx from refresh endpoint — token is bad, not the server
             error?.message?.includes('invalid_token') ||
             error?.message?.includes('token_expired') ||
             error?.message?.includes('malformed');
@@ -251,7 +253,7 @@ export function createAuthCoreStore(options: StoreOptions) {
             throw error;
           }
 
-          // Transient failure (network, 500, 503, etc.) - implement retry logic
+          // Transient failure (network, 503, etc.) - implement retry logic
           refreshRetryState.attempts++;
 
           if (refreshRetryState.attempts <= refreshRetryState.maxAttempts) {

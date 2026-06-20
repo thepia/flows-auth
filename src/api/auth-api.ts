@@ -323,7 +323,9 @@ export class AuthApiClient {
       fullRequest: JSON.stringify(request, null, 2)
     });
 
-    return this.request<SignInResponse>('/auth/webauthn/verify', {
+    const appCode = this.getEffectiveAppCode();
+    const endpoint = appCode ? `/${appCode}/webauthn/verify` : '/auth/webauthn/verify';
+    return this.request<SignInResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
         ...request,
@@ -358,7 +360,13 @@ export class AuthApiClient {
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/authenticate', {
+    // Per-app route is /{appCode}/webauthn/challenge; the flat fallback is
+    // /auth/webauthn/challenge (the old '/authenticate' path was never served).
+    const appCode = this.getEffectiveAppCode();
+    const endpoint = appCode
+      ? `/${appCode}/webauthn/challenge`
+      : '/auth/webauthn/challenge';
+    return this.rateLimitedRequest<PasskeyChallenge>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email })
     });
@@ -665,7 +673,11 @@ export class AuthApiClient {
     email: string;
     userId: string;
   }): Promise<WebAuthnRegistrationOptions> {
-    return this.request<WebAuthnRegistrationOptions>('/auth/webauthn/register-options', {
+    const appCode = this.getEffectiveAppCode();
+    const endpoint = appCode
+      ? `/${appCode}/webauthn/register-options`
+      : '/auth/webauthn/register-options';
+    return this.request<WebAuthnRegistrationOptions>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data)
     });
@@ -678,7 +690,11 @@ export class AuthApiClient {
     userId: string;
     registrationResponse: WebAuthnRegistrationResponse;
   }): Promise<WebAuthnVerificationResult> {
-    return this.request<WebAuthnVerificationResult>('/auth/webauthn/register-verify', {
+    const appCode = this.getEffectiveAppCode();
+    const endpoint = appCode
+      ? `/${appCode}/webauthn/register-verify`
+      : '/auth/webauthn/register-verify';
+    return this.request<WebAuthnVerificationResult>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
         ...registrationData,
@@ -804,6 +820,10 @@ export class AuthApiClient {
       email_verified: boolean;
     };
   }> {
+    const appCode = this.getEffectiveAppCode();
+    const base = appCode
+      ? `/${appCode}/passwordless-status`
+      : '/auth/passwordless-status';
     return this.request<{
       status: 'pending' | 'verified' | 'expired';
       user?: {
@@ -811,7 +831,7 @@ export class AuthApiClient {
         email: string;
         email_verified: boolean;
       };
-    }>(`/auth/passwordless-status?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
+    }>(`${base}?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
       method: 'GET'
     });
   }

@@ -11,12 +11,10 @@ import type {
   LogoutRequest,
   MagicLinkRequest,
   PasskeyChallenge,
-  PasskeyCredential,
   PasskeyRequest,
   RefreshTokenRequest,
   SignInResponse,
   User,
-  UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
   WebAuthnRegistrationResponse,
@@ -97,6 +95,24 @@ export class AuthApiClient {
 
     // Default to null for backward compatibility
     return null;
+  }
+
+  /**
+   * Get the configured app code, throwing if none is set.
+   *
+   * The auth API is exclusively per-app (`/{appCode}/*`). There is no `/auth/*`
+   * fallback, so every call site requires an appCode — fail fast and loud if a
+   * consumer forgot to configure one rather than silently hitting a dead path.
+   */
+  private requireAppCode(): string {
+    const appCode = this.getEffectiveAppCode();
+    if (!appCode) {
+      throw new Error(
+        'AuthApiClient requires an appCode: set `appCode` in AuthConfig. ' +
+          'The legacy flat /auth/* API is no longer supported.'
+      );
+    }
+    return appCode;
   }
 
   /**
@@ -323,8 +339,8 @@ export class AuthApiClient {
       fullRequest: JSON.stringify(request, null, 2)
     });
 
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode ? `/${appCode}/webauthn/verify` : '/auth/webauthn/verify';
+    const appCode = this.requireAppCode();
+    const endpoint = `/${appCode}/webauthn/verify`;
     return this.request<SignInResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
@@ -360,12 +376,8 @@ export class AuthApiClient {
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    // Per-app route is /{appCode}/webauthn/challenge; the flat fallback is
-    // /auth/webauthn/challenge (the old '/authenticate' path was never served).
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode
-      ? `/${appCode}/webauthn/challenge`
-      : '/auth/webauthn/challenge';
+    const appCode = this.requireAppCode();
+    const endpoint = `/${appCode}/webauthn/challenge`;
     return this.rateLimitedRequest<PasskeyChallenge>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email })
@@ -377,8 +389,8 @@ export class AuthApiClient {
    * Uses app-specific endpoint if appCode is configured
    */
   async refreshToken(request: RefreshTokenRequest): Promise<SignInResponse> {
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode ? `/${appCode}/refresh` : '/auth/refresh';
+    const appCode = this.requireAppCode();
+    const endpoint = `/${appCode}/refresh`;
 
     return this.request<SignInResponse>(endpoint, {
       method: 'POST',
@@ -390,8 +402,8 @@ export class AuthApiClient {
    * Sign out
    */
   async signOut(request: LogoutRequest): Promise<void> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/signout` : '/auth/signout';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/signout`;
 
     await this.request<void>(
       endpoint,
@@ -407,8 +419,8 @@ export class AuthApiClient {
    * Get user profile
    */
   async getProfile(): Promise<UserProfile> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/profile` : '/auth/profile';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/profile`;
 
     return this.request<UserProfile>(
       endpoint,
@@ -417,16 +429,6 @@ export class AuthApiClient {
       },
       true
     );
-  }
-
-  /**
-   * Verify magic link token
-   */
-  async verifyMagicLink(token: string): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/verify-magic-link', {
-      method: 'POST',
-      body: JSON.stringify({ token })
-    });
   }
 
   /**
@@ -450,9 +452,8 @@ export class AuthApiClient {
     const origin =
       typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
 
-    // Use app-specific endpoint if appCode is configured, otherwise use default
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/check-user` : '/auth/check-user';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/check-user`;
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
     console.log('[AuthApiClient] Making check-user request:', {
@@ -494,66 +495,6 @@ export class AuthApiClient {
   }
 
   /**
-   * Request password reset
-   */
-  async requestPasswordReset(email: string): Promise<void> {
-    await this.request<void>('/auth/password-reset', {
-      method: 'POST',
-      body: JSON.stringify({ email })
-    });
-  }
-
-  /**
-   * Reset password with token
-   */
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    await this.request<void>('/auth/password-reset/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ token, password: newPassword })
-    });
-  }
-
-  /**
-   * Create passkey
-   */
-  async createPasskey(credential: PasskeyCredential): Promise<void> {
-    await this.request<void>(
-      '/auth/passkey/create',
-      {
-        method: 'POST',
-        body: JSON.stringify({ credential })
-      },
-      true
-    );
-  }
-
-  /**
-   * List user's passkeys
-   */
-  async listPasskeys(): Promise<UserPasskey[]> {
-    return this.request<UserPasskey[]>(
-      '/auth/passkeys',
-      {
-        method: 'GET'
-      },
-      true
-    );
-  }
-
-  /**
-   * Delete passkey
-   */
-  async deletePasskey(credentialId: string): Promise<void> {
-    await this.request<void>(
-      `/auth/passkeys/${credentialId}`,
-      {
-        method: 'DELETE'
-      },
-      true
-    );
-  }
-
-  /**
    * Register new user
    *
    * TODO review tokens being returned or not from server
@@ -566,8 +507,8 @@ export class AuthApiClient {
     acceptedPrivacy: boolean;
     invitationToken?: string; // NEW: Optional invitation token for email verification
   }): Promise<SignInResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/create-user` : '/auth/register';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/create-user`;
 
     const response = await this.request<{
       success?: boolean;
@@ -623,8 +564,8 @@ export class AuthApiClient {
     token?: string;
     message?: string;
   }> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/send-email`;
 
     return this.request<{
       success: boolean;
@@ -648,35 +589,14 @@ export class AuthApiClient {
   }
 
   /**
-   * Send magic link for email verification
-   */
-  async sendMagicLinkEmail(email: string): Promise<{
-    success: boolean;
-    message?: string;
-  }> {
-    return this.request<{
-      success: boolean;
-      message?: string;
-    }>('/auth/magic-link', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: email.trim(),
-        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'}/auth/callback`
-      })
-    });
-  }
-
-  /**
    * Get WebAuthn registration options for new passkey
    */
   async getWebAuthnRegistrationOptions(data: {
     email: string;
     userId: string;
   }): Promise<WebAuthnRegistrationOptions> {
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode
-      ? `/${appCode}/webauthn/register-options`
-      : '/auth/webauthn/register-options';
+    const appCode = this.requireAppCode();
+    const endpoint = `/${appCode}/webauthn/register-options`;
     return this.request<WebAuthnRegistrationOptions>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data)
@@ -690,10 +610,8 @@ export class AuthApiClient {
     userId: string;
     registrationResponse: WebAuthnRegistrationResponse;
   }): Promise<WebAuthnVerificationResult> {
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode
-      ? `/${appCode}/webauthn/register-verify`
-      : '/auth/webauthn/register-verify';
+    const appCode = this.requireAppCode();
+    const endpoint = `/${appCode}/webauthn/register-verify`;
     return this.request<WebAuthnVerificationResult>(endpoint, {
       method: 'POST',
       body: JSON.stringify({
@@ -722,10 +640,8 @@ export class AuthApiClient {
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
 
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode
-      ? `/${effectiveAppCode}/send-email`
-      : '/auth/start-passwordless';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/send-email`;
 
     return this.request<{
       success: boolean;
@@ -770,8 +686,8 @@ export class AuthApiClient {
     };
     isNewUser?: boolean;
   }> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    const effectiveAppCode = this.requireAppCode();
+    const endpoint = `/${effectiveAppCode}/send-email`;
 
     console.log('📧 Sending email signin:', {
       email,
@@ -820,10 +736,8 @@ export class AuthApiClient {
       email_verified: boolean;
     };
   }> {
-    const appCode = this.getEffectiveAppCode();
-    const base = appCode
-      ? `/${appCode}/passwordless-status`
-      : '/auth/passwordless-status';
+    const appCode = this.requireAppCode();
+    const base = `/${appCode}/passwordless-status`;
     return this.request<{
       status: 'pending' | 'verified' | 'expired';
       user?: {

@@ -12,6 +12,8 @@ See AGENTS.md for workflow details.
 2. **Library Rebuild Required** - Always `pnpm build` after src/ changes. Restart demo servers.
 3. **GitHub Packages Publishing** - Use global ~/.npmrc, never local .npmrc with $NODE_AUTH_TOKEN.
 4. **NO Mocking in Integration Tests** - See [docs/testing/API_CONTRACT_TESTING_POLICY.md](docs/testing/API_CONTRACT_TESTING_POLICY.md)
+5. **Pinned to Svelte 4** - Do NOT bump `svelte`, `@sveltejs/vite-plugin-svelte` (stay `^3`), `@testing-library/svelte` (`^4`), `svelte-check` (`^3`), `vitest`/`@vitest/*` (≤`^3`, all same major), or `vite` (`^5`) to a Svelte-5-coupled major. Always `pnpm install` after editing package.json (a stale install causes phantom typecheck errors). See the **`maintain-dependencies`** skill before any dependency or formatting change.
+6. **`src/` is browser-only** - No Node in `src/`: use `ReturnType<typeof setTimeout>` (not `NodeJS.Timeout`), `import.meta.env` (not `process.env`), static `import` (not `require`). Tests and `*.config.ts` are the Node side (use the `node:` import protocol).
 
 ## Essential Commands
 

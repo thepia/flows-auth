@@ -1,15 +1,15 @@
 /**
  * Bundle Types Script
- * 
+ *
  * Bundles all type exports from src/types/ into a single dist/types.ts file
  * with explicit .ts extensions for Deno compatibility.
- * 
+ *
  * This allows consumers to import from @thepia/flows-auth/types without
  * extension issues across TypeScript, Deno, and Node environments.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
 const srcTypesDir = resolve(__dirname, '../src/types');
 const distDir = resolve(__dirname, '../dist');
@@ -23,7 +23,7 @@ const indexPath = resolve(srcTypesDir, 'index.ts');
 const indexContent = readFileSync(indexPath, 'utf-8');
 
 // Transform the content to use explicit .ts extensions
-let bundledContent = indexContent
+const bundledContent = indexContent
   // Fix relative imports without .ts extensions
   .replace(/from ['"]\.\/([^'"]+)(?<!\.ts)['"]/g, "from './$1.ts'")
   .replace(/from ['"]\.\.\/([^'"]+)(?<!\.ts)['"]/g, "from '../$1.ts'")
@@ -49,4 +49,3 @@ writeFileSync(outputFile, header + bundledContent, 'utf-8');
 
 console.log('✅ Bundled types to dist/types.ts');
 console.log(`   - Fixed ${(bundledContent.match(/\.ts['"]$/gm) || []).length} import extensions`);
-

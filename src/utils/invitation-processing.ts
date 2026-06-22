@@ -129,8 +129,8 @@ export async function processInvitationToken(
 
           if (enableDebugLogging) {
             console.log('Token hash verification:', {
-              stored: userCheck.invitationTokenHash?.substring(0, 8) + '...',
-              current: currentTokenHash?.substring(0, 8) + '...',
+              stored: `${userCheck.invitationTokenHash?.substring(0, 8)}...`,
+              current: `${currentTokenHash?.substring(0, 8)}...`,
               matches: tokenHashMatches
             });
           }

@@ -136,7 +136,9 @@ export function createEmailAuthStore(options: StoreOptions) {
 
         console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
 
-        let response;
+        let response:
+          | Awaited<ReturnType<typeof api.sendAppEmailCode>>
+          | { success: boolean; message: string; timestamp: number };
         if (getEffectiveAppCode()) {
           response = await api.sendAppEmailCode(email);
         } else {
@@ -282,7 +284,9 @@ export function createEmailAuthStore(options: StoreOptions) {
       }
     },
 
-    checkUser: async (email: string): Promise<{
+    checkUser: async (
+      email: string
+    ): Promise<{
       exists: boolean;
       hasWebAuthn: boolean;
       emailVerified: boolean;

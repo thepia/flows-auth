@@ -223,8 +223,7 @@ class DevScenarioManager {
 
   private applyBranding(branding: DevBranding): void {
     // Apply branding class to document
-    document.body.className =
-      document.body.className.replace(/brand-\w+/g, '') + ` ${branding.className}`;
+    document.body.className = `${document.body.className.replace(/brand-\w+/g, '')} ${branding.className}`;
 
     // Update CSS custom properties
     document.documentElement.style.setProperty('--brand-primary-override', branding.colors.primary);
@@ -242,7 +241,9 @@ class DevScenarioManager {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach((callback) => callback(this.currentScenario));
+    for (const callback of this.listeners) {
+      callback(this.currentScenario);
+    }
   }
 
   // Simulate different authentication states

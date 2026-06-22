@@ -158,9 +158,9 @@ export function createReactiveForm<T extends Record<string, unknown>>(
   // Sync from Zustand to form store
   const unsubscribeZustand = zustandReadable.subscribe((state) => {
     const formData: Partial<T> = {};
-    formFields.forEach((field) => {
+    for (const field of formFields) {
       formData[field] = state[field];
-    });
+    }
     formStore.set(formData);
   });
 
@@ -187,9 +187,9 @@ export function createReactiveForm<T extends Record<string, unknown>>(
     reset: () => {
       const currentState = zustandStore.getState();
       const formData: Partial<T> = {};
-      formFields.forEach((field) => {
+      for (const field of formFields) {
         formData[field] = currentState[field];
-      });
+      }
       formStore.set(formData);
     },
 

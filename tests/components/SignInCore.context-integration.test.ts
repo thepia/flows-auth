@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
-import { makeSvelteCompatible } from '../../src/stores/adapters/svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
+import { makeSvelteCompatible } from '../../src/stores/adapters/svelte';
+import { createAuthStore } from '../../src/stores/auth-store';
 import type { SvelteAuthStore } from '../../src/types';
 
 // Context provider wrapper that mimics auth-demo layout
@@ -36,7 +36,7 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: true,
+      enableMagicLinks: true
     });
 
     authStore = makeSvelteCompatible(zustandStore);
@@ -61,7 +61,7 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
     const { component } = render(SignInCore, {
       props: {
         store: authStore,
-        explainFeatures: false,
+        explainFeatures: false
       }
     });
 
@@ -80,7 +80,7 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
     const newZustandStore = createAuthStore({
       apiBaseUrl: 'https://api2.thepia.com',
       clientId: 'test2',
-      domain: 'test2.com',
+      domain: 'test2.com'
     });
     const newAuthStore = makeSvelteCompatible(newZustandStore);
 

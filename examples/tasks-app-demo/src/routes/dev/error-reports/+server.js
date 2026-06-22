@@ -42,12 +42,12 @@ export async function POST({ request }) {
         break;
 
       default:
-        console.log(`📋 Report Data:`, errorReport);
+        console.log('📋 Report Data:', errorReport);
     }
 
     // Log context if available
     if (errorReport.context && Object.keys(errorReport.context).length > 0) {
-      console.log(`🔍 Context:`, errorReport.context);
+      console.log('🔍 Context:', errorReport.context);
     }
 
     // Log technical details

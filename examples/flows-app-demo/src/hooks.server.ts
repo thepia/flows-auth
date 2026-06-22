@@ -72,15 +72,15 @@ function formatLogForTerminal(log: LogEntry): string {
 
   // Add source prefix for special sources
   if (log.source === 'auth') {
-    output += `🔐 `;
+    output += '🔐 ';
   } else if (log.source === 'state') {
-    output += `📊 `;
+    output += '📊 ';
   } else if (log.source === 'error') {
-    output += `🚨 `;
+    output += '🚨 ';
   } else if (log.source === 'resource') {
-    output += `📦 `;
+    output += '📦 ';
   } else if (log.source === 'security') {
-    output += `🔒 `;
+    output += '🔒 ';
   }
 
   output += log.message;
@@ -88,9 +88,9 @@ function formatLogForTerminal(log: LogEntry): string {
   // Add stack trace for errors
   if (log.stack && log.level === 'error') {
     const stackLines = log.stack.split('\n').slice(1, 4); // First 3 stack frames
-    stackLines.forEach((line) => {
+    for (const line of stackLines) {
       output += `\n${dim}           ${line.trim()}${reset}`;
-    });
+    }
   }
 
   // Add location for errors
@@ -149,10 +149,10 @@ async function handleConsoleUpload(request: Request): Promise<Response> {
     const sessionPrefix = `${data.sessionId.slice(-8)}`;
 
     // Print each log to terminal
-    data.logs.forEach((log) => {
+    for (const log of data.logs) {
       const formattedLog = formatLogForTerminal(log);
       console.log(formattedLog);
-    });
+    }
 
     return new Response('OK', { status: 200 });
   } catch (error) {

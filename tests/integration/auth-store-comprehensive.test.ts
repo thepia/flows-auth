@@ -23,6 +23,7 @@ let testEmail = 'test@thepia.com'; // Real test account that exists in Auth0
 const getTestConfig = (): AuthConfig => {
   return {
     apiBaseUrl: API_BASE,
+    appCode: 'auth',
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
@@ -339,9 +340,10 @@ describe('Auth Store Integration Tests', () => {
 
       // Check if any were rate limited (depends on API configuration)
       const hasRateLimit = results.some(
-        (result) => result.status === 'rejected' &&
-        result.reason instanceof Error &&
-        result.reason.message.includes('rate')
+        (result) =>
+          result.status === 'rejected' &&
+          result.reason instanceof Error &&
+          result.reason.message.includes('rate')
       );
 
       // Rate limiting might not be configured in test environment
@@ -434,91 +436,6 @@ describe('Auth Store Integration Tests', () => {
   describe.skip('CRITICAL: createAccount WebAuthn Flow', () => {
     // TODO: These tests need mock setup (mockFetch, WebAuthn mocks)
     // Contradicts file header "no mocking" - needs architectural decision
-    it('should complete full WebAuthn registration flow', async () => {
-      // Mock successful API responses for the complete flow
-      mockFetch
-        // Step 1: Register user account
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              step: 'success',
-              user: { id: 'user-123', email: 'test@example.com', emailVerified: false },
-              access_token: 'access-token',
-              refresh_token: 'refresh-token'
-            })
-        })
-        // Step 2: Get WebAuthn registration options
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              challenge: 'mock-challenge',
-              rp: { name: 'Test App', id: 'test.com' },
-              user: { id: 'user-123', name: 'test@example.com', displayName: 'Test User' },
-              pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-              timeout: 60000,
-              attestation: 'direct'
-            })
-        })
-        // Step 3: Verify WebAuthn registration
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              success: true,
-              credentialId: 'mock-credential-id'
-            })
-        });
-
-      const registrationData = {
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        acceptedTerms: true,
-        acceptedPrivacy: true
-      };
-
-      // CRITICAL: Test the complete createAccount flow
-      const result = await authStore.createAccount(registrationData);
-
-      // Verify the complete flow was executed
-      expect(mockFetch).toHaveBeenCalledTimes(3);
-
-      // Verify Step 1: User registration
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('/auth/register'),
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('test@example.com')
-        })
-      );
-
-      // Verify Step 2: WebAuthn registration options
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('/auth/webauthn/register/options'),
-        expect.objectContaining({
-          method: 'POST'
-        })
-      );
-
-      // Verify Step 3: WebAuthn registration verification
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        3,
-        expect.stringContaining('/auth/webauthn/register/verify'),
-        expect.objectContaining({
-          method: 'POST'
-        })
-      );
-
-      // Verify successful result
-      expect(result.step).toBe('success');
-      expect(result.user).toBeDefined();
-      expect(result.access_token).toBeDefined();
-    });
-
     it('should handle WebAuthn not supported error', async () => {
       // Mock WebAuthn as not supported
       vi.mocked(isWebAuthnSupported).mockReturnValue(false);

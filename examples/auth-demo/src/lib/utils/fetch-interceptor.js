@@ -34,18 +34,17 @@ class FetchInterceptor {
         // Throw the error or return error response
         if (errorToInject.throwError) {
           throw new Error(errorToInject.message);
-        } else {
-          return new Response(
-            JSON.stringify({
-              error: errorToInject.code || 'api_error',
-              message: errorToInject.message
-            }),
-            {
-              status: errorToInject.status || 500,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
         }
+        return new Response(
+          JSON.stringify({
+            error: errorToInject.code || 'api_error',
+            message: errorToInject.message
+          }),
+          {
+            status: errorToInject.status || 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
       }
 
       // Normal fetch call - no interference when no errors are mapped

@@ -127,18 +127,18 @@ export function generateIconCSSProperties(
     '--icon-size-2xl': '48px',
 
     // Color variables (themeable)
-    '--icon-color-primary': mergedTheme.primary!,
-    '--icon-color-secondary': mergedTheme.secondary!,
-    '--icon-color-accent': mergedTheme.accent!,
-    '--icon-color-success': mergedTheme.success!,
-    '--icon-color-warning': mergedTheme.warning!,
-    '--icon-color-error': mergedTheme.error!,
-    '--icon-color-muted': mergedTheme.muted!,
+    '--icon-color-primary': mergedTheme.primary,
+    '--icon-color-secondary': mergedTheme.secondary,
+    '--icon-color-accent': mergedTheme.accent,
+    '--icon-color-success': mergedTheme.success,
+    '--icon-color-warning': mergedTheme.warning,
+    '--icon-color-error': mergedTheme.error,
+    '--icon-color-muted': mergedTheme.muted,
 
     // Interaction variables (themeable)
-    '--icon-hover-scale': mergedTheme.hoverScale!.toString(),
-    '--icon-active-scale': mergedTheme.activeScale!.toString(),
-    '--icon-transition': mergedTheme.transition!,
+    '--icon-hover-scale': mergedTheme.hoverScale?.toString(),
+    '--icon-active-scale': mergedTheme.activeScale?.toString(),
+    '--icon-transition': mergedTheme.transition,
 
     // Spacing variables (fixed)
     '--icon-gap-sm': '0.25rem',
@@ -156,11 +156,11 @@ export function applyIconTheme(theme: Partial<IconThemeConfig> = {}): void {
   const properties = generateIconCSSProperties(theme);
   const root = document.documentElement;
 
-  Object.entries(properties).forEach(([property, value]) => {
+  for (const [property, value] of Object.entries(properties)) {
     if (value) {
       root.style.setProperty(property, value);
     }
-  });
+  }
 }
 
 /**
@@ -172,9 +172,9 @@ export function removeIconTheme(): void {
   const properties = generateIconCSSProperties();
   const root = document.documentElement;
 
-  Object.keys(properties).forEach((property) => {
+  for (const property of Object.keys(properties)) {
     root.style.removeProperty(property);
-  });
+  }
 }
 
 /**
@@ -213,7 +213,7 @@ export function validateIconAvailability(iconNames: string[]): {
   const available: string[] = [];
   const missing: string[] = [];
 
-  iconNames.forEach((iconName) => {
+  for (const iconName of iconNames) {
     try {
       // This would need to be implemented based on how Lucide icons are imported
       // For now, we'll assume all icons are available
@@ -221,7 +221,7 @@ export function validateIconAvailability(iconNames: string[]): {
     } catch {
       missing.push(iconName);
     }
-  });
+  }
 
   return { available, missing };
 }

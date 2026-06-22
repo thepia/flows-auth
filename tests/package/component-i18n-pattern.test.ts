@@ -59,7 +59,10 @@ describe('Component i18n Pattern', () => {
               STRING_LITERAL_IMPORT_RE.test(line) &&
               (line.includes('paraglide') || line.includes('/messages'))
           );
-        expect(paraglideImports, `Found direct paraglide string-literal imports — use m['key']() instead:\n${paraglideImports.join('\n')}`).toHaveLength(0);
+        expect(
+          paraglideImports,
+          `Found direct paraglide string-literal imports — use m['key']() instead:\n${paraglideImports.join('\n')}`
+        ).toHaveLength(0);
       });
     }
   });
@@ -76,10 +79,7 @@ describe('Component i18n Pattern', () => {
       const distFile = join(DIST_SRC_DIR, rel);
       it(`dist/src/${rel} must match src/${rel}`, () => {
         if (!existsSync(DIST_SRC_DIR)) return; // skip if no build yet
-        expect(
-          existsSync(distFile),
-          `dist/src/${rel} is missing — run pnpm build`
-        ).toBe(true);
+        expect(existsSync(distFile), `dist/src/${rel} is missing — run pnpm build`).toBe(true);
         const srcContent = readFileSync(srcFile, 'utf-8');
         const distContent = readFileSync(distFile, 'utf-8');
         expect(distContent, `dist/src/${rel} is stale — run pnpm build`).toBe(srcContent);

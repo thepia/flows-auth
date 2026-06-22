@@ -48,7 +48,7 @@ export function createEventStore(options: StoreOptions) {
         listeners.set(type, []);
       }
 
-      listeners.get(type)!.push(handler);
+      listeners.get(type)?.push(handler);
 
       set({ listeners });
 
@@ -63,13 +63,13 @@ export function createEventStore(options: StoreOptions) {
       const handlers = state.listeners.get(type) || [];
 
       // Call all handlers for this event type
-      handlers.forEach((handler) => {
+      for (const handler of handlers) {
         try {
           handler(data as AuthEventData);
         } catch (error) {
           console.error(`Error in event handler for ${type}:`, error);
         }
-      });
+      }
     },
 
     off: (type: AuthEventType, handler: AuthEventHandler) => {
@@ -220,7 +220,9 @@ export const eventDebug = {
 
     // Return cleanup function
     return () => {
-      unsubscribes.forEach((unsub) => unsub());
+      for (const unsub of unsubscribes) {
+        unsub();
+      }
     };
   },
 
@@ -253,7 +255,11 @@ export const eventDebug = {
       getCounts: () => Object.fromEntries(counts),
       getCount: (eventType: AuthEventType) => counts.get(eventType) || 0,
       reset: () => counts.clear(),
-      destroy: () => unsubscribes.forEach((unsub) => unsub())
+      destroy: () => {
+        for (const unsub of unsubscribes) {
+          unsub();
+        }
+      }
     };
   }
 };

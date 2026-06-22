@@ -13,6 +13,7 @@ import type { AuthConfig } from '../../src/types';
 // Test configuration
 const testConfig: AuthConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443', // Will fall back to production if local unavailable
+  appCode: 'auth',
   clientId: 'test-flows-auth',
   domain: 'thepia.net',
   enablePasskeys: true,

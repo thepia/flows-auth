@@ -533,17 +533,17 @@ export class AuthApiClient {
         ...response,
         step: 'success'
       } as SignInResponse;
-    } else if (response.step) {
+    }
+    if (response.step) {
       // API returned legacy SignInResponse format
       return response as SignInResponse;
-    } else {
-      // API returned error or unexpected format
-      return {
-        ...response,
-        step: 'error',
-        user: undefined
-      } as SignInResponse;
     }
+    // API returned error or unexpected format
+    return {
+      ...response,
+      step: 'error',
+      user: undefined
+    } as SignInResponse;
   }
 
   /**

@@ -6,6 +6,7 @@
  */
 
 import type { SessionData, SessionPersistence, UserData } from '../../types';
+import { createLocalStorageAdapter } from './database';
 
 /**
  * Message types for WebKit communication
@@ -91,7 +92,7 @@ class NativeAppBridge {
 
       // Send message to native app
       try {
-        window.webkit!.messageHandlers!.thepia!.postMessage(message);
+        window.webkit?.messageHandlers?.thepia?.postMessage(message);
         console.log('📤 WebKit message sent:', type, requestId);
       } catch (error) {
         clearTimeout(timeout);
@@ -238,8 +239,7 @@ export function createNativeAppSessionAdapter(options?: {
   // Fallback to localStorage if enabled and WebKit unavailable
   if (!isAvailable && enableFallback) {
     console.log('📱 Using localStorage fallback for WebKit session adapter');
-    // Import and use localStorage adapter as fallback
-    const { createLocalStorageAdapter } = require('./database');
+    // Use localStorage adapter as fallback
     return createLocalStorageAdapter();
   }
 
@@ -346,7 +346,7 @@ export function cleanupNativeAppBridge(): void {
   }
 
   if (typeof window !== 'undefined') {
-    delete (window as any).__thepiaWebKitResponseHandler;
+    (window as any).__thepiaWebKitResponseHandler = undefined;
   }
 }
 

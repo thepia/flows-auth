@@ -56,6 +56,7 @@ describe('Session Restoration with Expired Token', () => {
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
+      appCode: 'auth',
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
@@ -103,6 +104,7 @@ describe('Session Restoration with Expired Token', () => {
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
+      appCode: 'auth',
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
@@ -173,6 +175,7 @@ describe('Session Restoration with Expired Token', () => {
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
+      appCode: 'auth',
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
@@ -213,6 +216,7 @@ describe('Session Restoration with Expired Token', () => {
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
+      appCode: 'auth',
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,

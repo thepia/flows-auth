@@ -153,13 +153,13 @@ class Telemetry {
     const payload = {
       ...event,
       timestamp: Date.now(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
       url: typeof window !== 'undefined' ? window.location.href : 'unknown'
     };
 
     // Use the API client to send the error report
     const endpoint = '/dev/error-reports';
-    await this.api['request'](endpoint, {
+    await this.api.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(payload),
       headers: {
@@ -267,7 +267,9 @@ class Telemetry {
     const queuedEvents = [...this.queue];
     this.queue = [];
 
-    queuedEvents.forEach((event) => this.report(event));
+    for (const event of queuedEvents) {
+      this.report(event);
+    }
   }
 
   getQueueSize() {

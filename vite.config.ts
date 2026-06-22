@@ -110,7 +110,10 @@ export default defineConfig({
     // Paraglide plugin - automatically compiles translations during build
     paraglideVitePlugin({
       project: './project.inlang',
-      outdir: './src/paraglide'
+      outdir: './src/paraglide',
+      // Emit one module per locale (messages/en.js, messages/da.js) so the
+      // generated output is stable and matches the files committed to git.
+      outputStructure: 'locale-modules'
     }),
     svelte({
       preprocess: sveltePreprocess(),
@@ -150,8 +153,7 @@ export default defineConfig({
 
         // Skip dynamic import warnings for specific modules we know about
         if (
-          warning.message &&
-          warning.message.includes('dynamically imported') &&
+          warning.message?.includes('dynamically imported') &&
           (warning.message.includes('webauthn') ||
             warning.message.includes('sessionManager') ||
             warning.message.includes('invitation-tokens') ||

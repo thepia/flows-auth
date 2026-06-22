@@ -2,8 +2,8 @@
  * Service Worker Integration Tests
  */
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Service Worker Integration', () => {

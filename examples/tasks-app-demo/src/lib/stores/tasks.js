@@ -268,7 +268,7 @@ class TasksManager {
   }
 
   generateUID() {
-    return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 

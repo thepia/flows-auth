@@ -63,7 +63,7 @@ describe('Build Verification', () => {
     expect(indexDts).toContain('export { AuthApiClient }');
     // WebAuthn utilities are exported individually, not as export *
     expect(indexDts).toContain("from './utils/webauthn'");
-    expect(indexDts).toContain("isWebAuthnSupported");
+    expect(indexDts).toContain('isWebAuthnSupported');
   });
 
   it('should not have SSR configuration in build', () => {
@@ -74,7 +74,9 @@ describe('Build Verification', () => {
   });
 
   it('should export component constructors from built code', async () => {
-    const { SignInCore, SignInForm, createAuthStore, makeSvelteCompatible } = await import('../../dist/index.js');
+    const { SignInCore, SignInForm, createAuthStore, makeSvelteCompatible } = await import(
+      '../../dist/index.js'
+    );
 
     // Components should be defined as constructors
     expect(SignInCore).toBeDefined();

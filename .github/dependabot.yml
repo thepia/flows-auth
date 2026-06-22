@@ -1,0 +1,62 @@
+# Dependabot config — ALTERNATIVE to renovate.json. Enable only ONE of the two
+# (running both produces duplicate PRs). See .claude/skills/maintain-dependencies
+# and CLAUDE.md anti-pattern #5 for the rationale behind these constraints.
+#
+# Note vs Renovate: Dependabot cannot auto-merge or require dashboard approval
+# natively. To auto-merge safe patch/minor PRs, add a separate GitHub Action
+# (e.g. dependabot/fetch-metadata + gh pr merge --auto) gated on the CI checks.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 10
+    # Keep the three vitest packages in one PR so they move together.
+    groups:
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+    ignore:
+      # --- Pinned to Svelte 4: block majors that would require Svelte 5 ---
+      - dependency-name: "svelte"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@sveltejs/vite-plugin-svelte"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@testing-library/svelte"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "svelte-check"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite-plugin-dts"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@xyflow/svelte"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/ui"
+        update-types: ["version-update:semver-major"]
+      # --- Deliberate manual migrations ---
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@biomejs/biome"
+        update-types: ["version-update:semver-major"]
+      # --- Coupled to the Node engines floor: bump by hand with the Node version ---
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
+
+  # Keep GitHub Actions versions fresh (checkout, setup-node, etc.)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"

@@ -67,6 +67,9 @@ const getApiUrl = () => {
 // Test environment configuration - following main codebase patterns
 export const TEST_CONFIG: AuthConfig = {
   apiBaseUrl: getApiUrl(),
+  // AuthApiClient is appCode-exclusive (no legacy /auth/* fallback) — every config needs an appCode.
+  // Mocked tests accept any string; real-API integration tests need a server-registered appCode.
+  appCode: process.env.TEST_APP_CODE || 'auth',
   clientId: process.env.TEST_CLIENT_ID || process.env.AUTH0_CLIENT_ID || 'test-flows-auth-client',
   domain: process.env.AUTH0_DOMAIN || 'thepia.eu.auth0.com',
   enablePasskeys: true,

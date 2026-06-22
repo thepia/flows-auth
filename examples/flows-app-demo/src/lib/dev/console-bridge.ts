@@ -58,7 +58,7 @@ class ConsoleBridge {
   private interceptConsole(): void {
     const consoleMethods: Array<keyof Console> = ['log', 'info', 'warn', 'error', 'debug'];
 
-    consoleMethods.forEach((method) => {
+    for (const method of consoleMethods) {
       this.originalConsole[method] = console[method];
 
       (console as any)[method] = (...args: any[]) => {
@@ -68,7 +68,7 @@ class ConsoleBridge {
         // Capture for upload
         this.addLog(method as any, this.formatArgs(args), args, 'console');
       };
-    });
+    }
   }
 
   /**
@@ -134,7 +134,7 @@ class ConsoleBridge {
   private addLog(
     level: LogEntry['level'],
     message: string,
-    args: any[] = [],
+    args: any[],
     source: LogEntry['source'],
     extra: Partial<LogEntry> = {}
   ): void {

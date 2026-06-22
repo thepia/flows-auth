@@ -74,16 +74,6 @@ echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN" >> .np
 pnpm install @thepia/flows-auth
 ```
 
-**Using yarn:**
-
-```bash
-# Configure registry
-yarn config set @thepia:registry https://npm.pkg.github.com
-
-# Install the package (you'll be prompted for authentication)
-yarn add @thepia/flows-auth
-```
-
 > **Note**: You need a GitHub Personal Access Token with `read:packages` scope to install from GitHub Packages. Set the `NODE_AUTH_TOKEN` environment variable or configure it in your `.npmrc` file.
 
 ### Basic Usage

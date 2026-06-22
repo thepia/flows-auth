@@ -17,7 +17,7 @@
     "test:smoke": "playwright test tests/smoke.test.js"
   },
   "dependencies": {
-    "@thepia/branding": "file:/Volumes/Projects/Thepia/branding",
+    "@thepia/branding": "*",
     "@thepia/flows-auth": "workspace:*",
     "@xyflow/svelte": "0.1.30",
     "d3": "^7.9.0",

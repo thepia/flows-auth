@@ -135,49 +135,28 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
     });
   });
 
-  describe('GIVEN a client configured WITHOUT appCode (legacy mode)', () => {
-    describe('WHEN appCode is false or undefined', () => {
-      const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
-        clientId: 'legacy-app',
-        appCode: false,
-        domain: 'example.com',
-        enablePasskeys: true,
-        enableMagicLinks: false
-      });
+  describe('GIVEN a client configured without an appCode', () => {
+    const client = new AuthApiClient({
+      apiBaseUrl: 'https://api.thepia.com',
+      clientId: 'no-appcode',
+      appCode: false,
+      domain: 'example.com',
+      enablePasskeys: true,
+      enableMagicLinks: false
+    });
 
-      it('THEN checkEmail should call legacy /auth/check-user endpoint', async () => {
-        // Clear cache to ensure fresh API call
-        client.clearUserCache();
-
-        // WHEN calling checkEmail
-        await client.checkEmail('test@example.com');
-
-        // THEN it should use the legacy endpoint with GET method and query parameter
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/auth/check-user?email=test%40example.com',
-          expect.objectContaining({
-            method: 'GET'
-          })
-        );
-      });
-
-      it('THEN registerUser should call legacy /auth/register endpoint', async () => {
-        // WHEN calling registerUser
-        await client.registerUser({
+    // AuthApiClient is appCode-exclusive: every call requires an appCode and
+    // fails fast when one is not configured.
+    it('THEN API calls reject because an appCode is required', async () => {
+      client.clearUserCache();
+      await expect(client.checkEmail('test@example.com')).rejects.toThrow(/requires an appCode/);
+      await expect(
+        client.registerUser({
           email: 'test@example.com',
           acceptedTerms: true,
           acceptedPrivacy: true
-        });
-
-        // THEN it should use the legacy endpoint
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/auth/register',
-          expect.objectContaining({
-            method: 'POST'
-          })
-        );
-      });
+        })
+      ).rejects.toThrow(/requires an appCode/);
     });
   });
 

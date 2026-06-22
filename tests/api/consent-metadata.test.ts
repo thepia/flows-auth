@@ -4,22 +4,22 @@
  * Tests for storing and retrieving consent information in user metadata
  */
 
-import { describe, it, expect } from 'vitest';
-import type { CompactConsentRecord, OnboardingMetadata } from '../../src/types/onboarding';
+import { describe, expect, it } from 'vitest';
 import {
   addConsentToMetadata,
   confirmConsentInMetadata,
   extractOnboardingMetadata,
+  filterConsentsByDateRange,
   getAllConsents,
   getConsentForUrl,
+  getConsentStats,
   getConsentedUrls,
   hasConsentForUrl,
-  removeConsentForUrl,
   isValidConsentRecord,
   mergeConsentRecords,
-  filterConsentsByDateRange,
-  getConsentStats
+  removeConsentForUrl
 } from '../../src/api/utils/consent-metadata';
+import type { CompactConsentRecord, OnboardingMetadata } from '../../src/types/onboarding';
 
 describe('Consent Metadata Utilities', () => {
   const testUrl = 'https://example.com/terms';
@@ -177,10 +177,7 @@ describe('Consent Metadata Utilities', () => {
       const url2 = 'https://example.com/privacy';
       const record2: CompactConsentRecord = { v: 2, dh: 'xyz789', ts: 1697500001000 };
 
-      const result = mergeConsentRecords(
-        { [testUrl]: testRecord },
-        { [url2]: record2 }
-      );
+      const result = mergeConsentRecords({ [testUrl]: testRecord }, { [url2]: record2 });
 
       expect(Object.keys(result)).toHaveLength(2);
       expect(result[testUrl]).toEqual(testRecord);
@@ -190,10 +187,7 @@ describe('Consent Metadata Utilities', () => {
     it('should allow later records to override', () => {
       const newRecord: CompactConsentRecord = { v: 2, dh: 'new123', ts: 1697500002000 };
 
-      const result = mergeConsentRecords(
-        { [testUrl]: testRecord },
-        { [testUrl]: newRecord }
-      );
+      const result = mergeConsentRecords({ [testUrl]: testRecord }, { [testUrl]: newRecord });
 
       expect(result[testUrl]).toEqual(newRecord);
     });
@@ -238,4 +232,3 @@ describe('Consent Metadata Utilities', () => {
     });
   });
 });
-

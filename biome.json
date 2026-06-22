@@ -13,6 +13,11 @@
       "build/**",
       "coverage/**",
       ".svelte-kit/**",
+      ".beads/**",
+      "examples/angular-demo/**",
+      "examples/astro-demo/**",
+      "tests/**",
+      "src/paraglide/**",
       "*.d.ts",
       "**/*.svelte"
     ]
@@ -111,6 +116,11 @@
       "bracketSameLine": false,
       "quoteStyle": "single",
       "attributePosition": "auto"
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true
     }
   },
   "overrides": []

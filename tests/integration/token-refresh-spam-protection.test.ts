@@ -27,6 +27,7 @@ const API_BASE = 'https://dev.thepia.com:8443';
 const getTestConfig = (): AuthConfig => {
   return {
     apiBaseUrl: API_BASE,
+    appCode: 'auth',
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-spam-protection-test',
     enablePasskeys: true,

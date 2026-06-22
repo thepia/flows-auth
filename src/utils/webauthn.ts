@@ -306,22 +306,15 @@ function mapWebAuthnError(error: any): AuthError {
  * Convert credential to format expected by server
  */
 export function serializeCredential(credential: PasskeyCredential): any {
+  const assertion = credential.response as AuthenticatorAssertionResponse;
   return {
     id: credential.id,
     rawId: arrayBufferToBase64Url(credential.rawId),
     response: {
       clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
-      authenticatorData: arrayBufferToBase64Url(
-        (credential.response as AuthenticatorAssertionResponse).authenticatorData
-      ),
-      signature: arrayBufferToBase64Url(
-        (credential.response as AuthenticatorAssertionResponse).signature
-      ),
-      userHandle: (credential.response as AuthenticatorAssertionResponse).userHandle
-        ? arrayBufferToBase64Url(
-            (credential.response as AuthenticatorAssertionResponse).userHandle!
-          )
-        : null
+      authenticatorData: arrayBufferToBase64Url(assertion.authenticatorData),
+      signature: arrayBufferToBase64Url(assertion.signature),
+      userHandle: assertion.userHandle ? arrayBufferToBase64Url(assertion.userHandle) : null
     },
     type: credential.type
   };

@@ -362,7 +362,7 @@ export function logError(error: ApiError, additionalContext?: Record<string, any
   console.error('Auth Error:', logData);
 
   // In production, this could send to error reporting service
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     // Send to error reporting service (e.g., Sentry, LogRocket, etc.)
     // errorReportingService.captureError(logData);
   }

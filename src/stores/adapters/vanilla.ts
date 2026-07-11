@@ -174,7 +174,7 @@ export function debounceSubscription<T>(
   callback: (state: T) => void,
   delay: number = 100
 ): (state: T) => void {
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   
   return (state: T) => {
     if (timeoutId) {
@@ -196,7 +196,7 @@ export function throttleSubscription<T>(
   delay: number = 100
 ): (state: T) => void {
   let lastRun = 0;
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   
   return (state: T) => {
     const now = Date.now();

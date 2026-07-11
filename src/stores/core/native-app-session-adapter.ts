@@ -6,6 +6,7 @@
  */
 
 import type { SessionData, SessionPersistence, UserData } from '../../types';
+import { createLocalStorageAdapter } from './database';
 
 /**
  * Message types for WebKit communication
@@ -238,8 +239,7 @@ export function createNativeAppSessionAdapter(options?: {
   // Fallback to localStorage if enabled and WebKit unavailable
   if (!isAvailable && enableFallback) {
     console.log('📱 Using localStorage fallback for WebKit session adapter');
-    // Import and use localStorage adapter as fallback
-    const { createLocalStorageAdapter } = require('./database');
+    // Use statically-imported localStorage adapter as fallback
     return createLocalStorageAdapter();
   }
 

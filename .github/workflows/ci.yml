@@ -9,6 +9,13 @@ on:
 env:
   NODE_VERSION: '22'
   PNPM_VERSION: '11.11.0'
+  # Ephemeral token for reading @thepia/* from GitHub Packages; inherited by
+  # every step, including the nested demo installs.
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   test:
@@ -90,6 +97,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+          registry-url: https://npm.pkg.github.com
+          scope: '@thepia'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

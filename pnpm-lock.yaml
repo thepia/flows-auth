@@ -180,8 +180,8 @@ importers:
   examples/auth-demo:
     dependencies:
       '@thepia/branding':
-        specifier: file:/Volumes/Projects/Thepia/branding
-        version: file:../branding(typescript@5.9.3)
+        specifier: ^1.4.0
+        version: 1.4.0(typescript@5.9.3)
       '@thepia/flows-auth':
         specifier: workspace:*
         version: link:../..
@@ -2376,12 +2376,6 @@ packages:
 
   '@thepia/branding@1.4.0':
     resolution: {integrity: sha512-TPEQiIZ3OX2HRvjV17gMWdFtDLAMtcMkyKCpVbU5zWXjmoVLxhG+5n7TOE7BdsdUJw1qPSqMODw1tmy5PsnC3A==, tarball: https://npm.pkg.github.com/download/@thepia/branding/1.4.0/8e74e92520087d6e2814d5c8c5ed54b9ac12330b}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      typescript: ^5.0.0
-
-  '@thepia/branding@file:../branding':
-    resolution: {directory: ../branding, type: directory}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: ^5.0.0
@@ -8433,14 +8427,6 @@ snapshots:
       svelte: 4.2.20
 
   '@thepia/branding@1.4.0(typescript@5.9.3)':
-    dependencies:
-      chokidar: 3.6.0
-      fast-glob: 3.3.3
-      fs-extra: 11.3.2
-      kleur: 4.1.5
-      typescript: 5.9.3
-
-  '@thepia/branding@file:../branding(typescript@5.9.3)':
     dependencies:
       chokidar: 3.6.0
       fast-glob: 3.3.3

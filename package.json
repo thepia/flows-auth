@@ -169,7 +169,7 @@
     "jsdom": "^23.0.0",
     "sharp": "^0.34.4",
     "svelte": "^4.0.0",
-    "svelte-check": "^3.0.0",
+    "svelte-check": "^4.4.0",
     "svelte-preprocess": "^6.0.3",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
@@ -189,7 +189,7 @@
   },
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "pnpm": ">=11.0.0"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@11.11.0"
 }

@@ -2,3 +2,24 @@ packages:
   - 'examples/astro-demo'
   - 'examples/auth-demo'
   - 'examples/angular-demo'
+
+# Supply-chain hardening (guards against install-script worms, e.g. Shai-Hulud).
+# pnpm 11 is default-deny on lifecycle scripts; only these packages may run
+# install/build scripts. Keep to genuine native-binary builds.
+allowBuilds:
+  '@biomejs/biome': true
+  '@parcel/watcher': true
+  '@tailwindcss/oxide': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  sharp: true
+  # postinstall is only a console reminder — no native build, safe to block
+  svelte-preprocess: false
+
+# Cooldown: don't install a dependency version until it has been public for
+# 1 day, so a freshly-trojanized release is not adopted before it is caught.
+# Our own scoped packages are exempt so consumers get them immediately.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@thepia/*'

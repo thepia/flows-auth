@@ -12,6 +12,9 @@ on:
       - 'src/types/index.ts'
       - 'tests/**'
 
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '11.11.0'
 jobs:
   critical-auth-tests:
     name: 🚨 Critical Authentication Tests
@@ -24,12 +27,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
       with:
-        version: 9.0.0
+        version: ${{ env.PNPM_VERSION }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
 
     - name: Install dependencies
@@ -73,12 +76,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
       with:
-        version: 9.0.0
+        version: ${{ env.PNPM_VERSION }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
 
     - name: Install dependencies
@@ -135,12 +138,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
       with:
-        version: 9.0.0
+        version: ${{ env.PNPM_VERSION }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
 
     - name: Install dependencies
@@ -194,12 +197,12 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
       with:
-        version: 9.0.0
+        version: ${{ env.PNPM_VERSION }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v6
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
 
     - name: Install dependencies

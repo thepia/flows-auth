@@ -7,8 +7,8 @@ on:
     branches: [main, develop]
 
 env:
-  NODE_VERSION: '18'
-  PNPM_VERSION: '9.0.0'
+  NODE_VERSION: '22'
+  PNPM_VERSION: '11.11.0'
 
 jobs:
   test:
@@ -96,11 +96,11 @@ jobs:
       - name: Test flows app demo
         run: |
           cd examples/flows-app-demo
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm run build
 
       - name: Test tasks app demo
         run: |
           cd examples/tasks-app-demo
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm run build

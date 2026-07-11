@@ -62,7 +62,10 @@ jobs:
       #     TEST_API_ENV: public
 
       - name: Generate test coverage
-        run: pnpm run test:coverage
+        # CI-scoped: excludes integration/critical tests that require a live API
+        # (dev.thepia.com:8443) and the paraglide build-artifact check, none of
+        # which are available on a runner. Full `test:coverage` runs locally.
+        run: pnpm run test:coverage:ci
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7

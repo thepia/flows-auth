@@ -117,7 +117,7 @@
     "validate:quick": "pnpm typecheck && pnpm test:smoke",
     "validate:publish": "pnpm build && pnpm test:package",
     "verify-auth-patterns": "pnpm test:critical && echo '✅ Authentication patterns verified'",
-    "protect-auth": "pnpm test:contracts && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
+    "protect-auth": "pnpm test:critical && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
     "example:tasks-app-demo": "cd examples/tasks-app-demo && pnpm dev",
     "example:flows-app-demo": "cd examples/flows-app-demo && pnpm dev",
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",

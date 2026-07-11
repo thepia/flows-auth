@@ -866,7 +866,7 @@ TLS_KEY_FILE=/etc/ssl/private/thepia.com.key
 # .github/workflows/deploy.yml
 - name: Run API Contract Tests
   run: |
-    npm run test:contracts
+    npm run test:critical
     
 - name: Validate API Endpoints
   run: |

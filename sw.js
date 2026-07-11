@@ -277,9 +277,9 @@ async function cacheFirst(request) {
  */
 async function notifyClients(type, payload) {
   const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
+  for (const client of clients) {
     client.postMessage({ type, payload });
-  });
+  }
 }
 
 /**

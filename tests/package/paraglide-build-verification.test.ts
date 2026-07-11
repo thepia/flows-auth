@@ -14,8 +14,8 @@
  * - Package.json exports are correctly configured
  */
 
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 describe('Paraglide Build Verification', () => {

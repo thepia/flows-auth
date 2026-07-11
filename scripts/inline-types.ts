@@ -1,12 +1,12 @@
 /**
  * Inline Types Script
- * 
+ *
  * Creates a fully self-contained types file by inlining all type definitions
  * from src/types/ into a single dist/types.ts file with no external imports.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { extname, resolve } from 'node:path';
 
 const srcTypesDir = resolve(__dirname, '../src/types');
 const distDir = resolve(__dirname, '../dist');
@@ -27,20 +27,22 @@ function extractTypeDefinitions(dir: string, visited = new Set<string>()): strin
     visited.add(filePath);
 
     const content = readFileSync(filePath, 'utf-8');
-    
+
     // Extract only export statements and type definitions
     const lines = content.split('\n');
     for (const line of lines) {
       // Skip imports
       if (line.trim().startsWith('import ')) continue;
       // Keep exports and type definitions
-      if (line.trim().startsWith('export ') || 
-          line.trim().startsWith('interface ') ||
-          line.trim().startsWith('type ') ||
-          line.trim().startsWith('enum ') ||
-          line.trim().startsWith('const ') ||
-          line.trim() === '' ||
-          line.trim().startsWith('//')) {
+      if (
+        line.trim().startsWith('export ') ||
+        line.trim().startsWith('interface ') ||
+        line.trim().startsWith('type ') ||
+        line.trim().startsWith('enum ') ||
+        line.trim().startsWith('const ') ||
+        line.trim() === '' ||
+        line.trim().startsWith('//')
+      ) {
         definitions.push(line);
       }
     }
@@ -68,9 +70,9 @@ const indexContent = readFileSync(indexPath, 'utf-8');
 // Extract all export statements from index
 const exportLines = indexContent
   .split('\n')
-  .filter(line => line.trim().startsWith('export '))
-  .map(line => line.replace(/from ['"][^'"]+['"]/g, '')) // Remove import paths
-  .filter(line => line.trim().length > 0);
+  .filter((line) => line.trim().startsWith('export '))
+  .map((line) => line.replace(/from ['"][^'"]+['"]/g, '')) // Remove import paths
+  .filter((line) => line.trim().length > 0);
 
 const bundledContent = header + exportLines.join('\n');
 
@@ -79,5 +81,4 @@ writeFileSync(resolve(distDir, 'types.d.ts'), bundledContent, 'utf-8');
 
 console.log('✅ Generated self-contained types files');
 console.log(`   - dist/types.ts (${bundledContent.length} bytes)`);
-console.log(`   - dist/types.d.ts`);
-
+console.log('   - dist/types.d.ts');

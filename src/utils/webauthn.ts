@@ -101,19 +101,37 @@ export async function createPasskey(
     return {
       id: credential.id,
       rawId: credential.rawId,
-      response: response as any,
+      response,
       type: credential.type
-    } as PasskeyCredential;
-  } catch (error: any) {
+    } as unknown as PasskeyCredential;
+  } catch (error) {
     throw mapWebAuthnError(error);
   }
+}
+
+/**
+ * Server-sent WebAuthn registration options (JSON form, base64url-encoded buffers)
+ */
+interface WebAuthnRegistrationOptions {
+  challenge: string;
+  rp: PublicKeyCredentialRpEntity;
+  user: { id: string | BufferSource; name: string; displayName: string };
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  timeout?: number;
+  attestation?: AttestationConveyancePreference;
+  excludeCredentials?: Array<{
+    id: string | BufferSource;
+    type: PublicKeyCredentialType;
+    transports?: AuthenticatorTransport[];
+  }>;
 }
 
 /**
  * Create WebAuthn credential from registration options
  * This function handles the WebAuthn registration options format from the API server
  */
-export async function createCredential(registrationOptions: any): Promise<any> {
+export async function createCredential(registrationOptions: WebAuthnRegistrationOptions) {
   if (!isWebAuthnSupported()) {
     throw new Error('WebAuthn is not supported on this device');
   }
@@ -137,7 +155,7 @@ export async function createCredential(registrationOptions: any): Promise<any> {
       authenticatorSelection: registrationOptions.authenticatorSelection,
       timeout: registrationOptions.timeout,
       attestation: registrationOptions.attestation || 'direct',
-      excludeCredentials: registrationOptions.excludeCredentials?.map((cred: any) => ({
+      excludeCredentials: registrationOptions.excludeCredentials?.map((cred) => ({
         ...cred,
         id: typeof cred.id === 'string' ? base64ToArrayBuffer(cred.id) : cred.id
       }))
@@ -163,7 +181,7 @@ export async function createCredential(registrationOptions: any): Promise<any> {
         clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
         attestationObject: arrayBufferToBase64Url(response.attestationObject),
         // Include transports if available
-        transports: (response as any).getTransports?.() || []
+        transports: response.getTransports?.() || []
       },
       type: credential.type,
       clientExtensionResults: credential.getClientExtensionResults()
@@ -171,7 +189,7 @@ export async function createCredential(registrationOptions: any): Promise<any> {
 
     console.log('✅ WebAuthn authentication created and converted for server');
     return credentialForServer;
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ WebAuthn credential creation failed:', error);
     throw mapWebAuthnError(error);
   }
@@ -219,7 +237,7 @@ export async function authenticateWithPasskey(
 
   // Add conditional mediation for email-triggered auth
   if (conditional && (await isConditionalMediationSupported())) {
-    (requestOptions as any).mediation = 'conditional';
+    requestOptions.mediation = 'conditional';
   }
 
   try {
@@ -243,7 +261,7 @@ export async function authenticateWithPasskey(
       },
       type: credential.type
     } as PasskeyCredential;
-  } catch (error: any) {
+  } catch (error) {
     throw mapWebAuthnError(error);
   }
 }
@@ -251,45 +269,47 @@ export async function authenticateWithPasskey(
 /**
  * Map WebAuthn errors to our error format
  */
-function mapWebAuthnError(error: any): AuthError {
-  const message = error.message || error.name || 'Unknown error';
+function mapWebAuthnError(error: unknown): AuthError {
+  const errorObj = error instanceof DOMException || error instanceof Error ? error : undefined;
+  const name = errorObj?.name;
+  const message = errorObj?.message || name || 'Unknown error';
 
-  if (error.name === 'NotSupportedError') {
+  if (name === 'NotSupportedError') {
     return {
       code: 'passkey_not_supported',
       message: 'Passkeys are not supported on this device'
     };
   }
 
-  if (error.name === 'SecurityError') {
+  if (name === 'SecurityError') {
     return {
       code: 'passkey_failed',
       message: 'Security error during passkey operation'
     };
   }
 
-  if (error.name === 'NotAllowedError') {
+  if (name === 'NotAllowedError') {
     return {
       code: 'passkey_failed',
       message: 'Passkey operation was cancelled or failed'
     };
   }
 
-  if (error.name === 'InvalidStateError') {
+  if (name === 'InvalidStateError') {
     return {
       code: 'passkey_failed',
       message: 'A passkey already exists for this account'
     };
   }
 
-  if (error.name === 'ConstraintError') {
+  if (name === 'ConstraintError') {
     return {
       code: 'passkey_failed',
       message: 'Passkey creation constraints were not met'
     };
   }
 
-  if (error.name === 'UnknownError') {
+  if (name === 'UnknownError') {
     return {
       code: 'passkey_failed',
       message: 'An unknown error occurred during passkey operation'
@@ -305,23 +325,17 @@ function mapWebAuthnError(error: any): AuthError {
 /**
  * Convert credential to format expected by server
  */
-export function serializeCredential(credential: PasskeyCredential): any {
+export function serializeCredential(credential: PasskeyCredential) {
+  const assertionResponse = credential.response as AuthenticatorAssertionResponse;
+  const { userHandle } = assertionResponse;
   return {
     id: credential.id,
     rawId: arrayBufferToBase64Url(credential.rawId),
     response: {
-      clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
-      authenticatorData: arrayBufferToBase64Url(
-        (credential.response as AuthenticatorAssertionResponse).authenticatorData
-      ),
-      signature: arrayBufferToBase64Url(
-        (credential.response as AuthenticatorAssertionResponse).signature
-      ),
-      userHandle: (credential.response as AuthenticatorAssertionResponse).userHandle
-        ? arrayBufferToBase64Url(
-            (credential.response as AuthenticatorAssertionResponse).userHandle!
-          )
-        : null
+      clientDataJSON: arrayBufferToBase64Url(assertionResponse.clientDataJSON),
+      authenticatorData: arrayBufferToBase64Url(assertionResponse.authenticatorData),
+      signature: arrayBufferToBase64Url(assertionResponse.signature),
+      userHandle: userHandle ? arrayBufferToBase64Url(userHandle) : null
     },
     type: credential.type
   };

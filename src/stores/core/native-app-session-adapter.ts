@@ -92,7 +92,13 @@ class NativeAppBridge {
 
       // Send message to native app
       try {
-        window.webkit!.messageHandlers!.thepia!.postMessage(message);
+        const thepiaHandler = window.webkit?.messageHandlers?.thepia;
+        if (!thepiaHandler) {
+          throw new Error(
+            'WebKit message handler (window.webkit.messageHandlers.thepia) not available'
+          );
+        }
+        thepiaHandler.postMessage(message);
         console.log('📤 WebKit message sent:', type, requestId);
       } catch (error) {
         clearTimeout(timeout);
@@ -346,7 +352,8 @@ export function cleanupNativeAppBridge(): void {
   }
 
   if (typeof window !== 'undefined') {
-    delete (window as any).__thepiaWebKitResponseHandler;
+    (window as Window & { __thepiaWebKitResponseHandler?: unknown }).__thepiaWebKitResponseHandler =
+      undefined;
   }
 }
 

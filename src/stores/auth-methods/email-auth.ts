@@ -11,7 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import { AuthApiClient } from '../../api/auth-api';
-import type { SignInData, User } from '../../types';
+import type { EmailCodeSendResponse, SignInData, User } from '../../types';
 import { createSessionData } from '../core/session';
 import type { StoreOptions } from '../types';
 
@@ -136,7 +136,10 @@ export function createEmailAuthStore(options: StoreOptions) {
 
         console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
 
-        let response;
+        let response:
+          | EmailCodeSendResponse
+          | { success: boolean; message: string; timestamp: number }
+          | undefined;
         if (getEffectiveAppCode()) {
           response = await api.sendAppEmailCode(email);
         } else {
@@ -282,7 +285,9 @@ export function createEmailAuthStore(options: StoreOptions) {
       }
     },
 
-    checkUser: async (email: string): Promise<{
+    checkUser: async (
+      email: string
+    ): Promise<{
       exists: boolean;
       hasWebAuthn: boolean;
       emailVerified: boolean;

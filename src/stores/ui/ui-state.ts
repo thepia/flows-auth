@@ -541,10 +541,9 @@ export const uiStateSelectors = {
       case 'userChecked':
         if (state.userExists) {
           return true; // Existing user can always proceed
-        } else {
-          // New user needs full name (min 3 chars)
-          return state.fullName.trim().length >= 3;
         }
+        // New user needs full name (min 3 chars)
+        return state.fullName.trim().length >= 3;
 
       case 'pinEntry':
         return true; // PIN validation handled at component level

@@ -150,8 +150,7 @@ export default defineConfig({
 
         // Skip dynamic import warnings for specific modules we know about
         if (
-          warning.message &&
-          warning.message.includes('dynamically imported') &&
+          warning.message?.includes('dynamically imported') &&
           (warning.message.includes('webauthn') ||
             warning.message.includes('sessionManager') ||
             warning.message.includes('invitation-tokens') ||

@@ -4,8 +4,8 @@
  * This test defines the REQUIRED behavior for uncontrolled input component
  */
 
-import { render, screen, fireEvent } from '@testing-library/svelte';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CodeInput from '../../src/components/core/CodeInput.svelte';
 
 describe('CodeInput Accumulation (TDD)', () => {

@@ -168,9 +168,7 @@ describe('Regression: Token Refresh Retry Logic', () => {
     });
 
     // Verify success message
-    expect(consoleLogSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Retrying token refresh')
-    );
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Retrying token refresh'));
 
     // Wait for promise to resolve
     await expect(refreshPromise).resolves.toBeUndefined();

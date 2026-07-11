@@ -7,8 +7,8 @@
 
 import type {
   CompactConsentRecord,
-  OnboardingMetadata,
-  ConfirmConsentRequest
+  ConfirmConsentRequest,
+  OnboardingMetadata
 } from '../../types/onboarding';
 import { OnboardingMetadataSchema } from '../../types/onboarding';
 
@@ -94,10 +94,7 @@ export function getConsentForUrl(
 /**
  * Remove consent for a specific URL
  */
-export function removeConsentForUrl(
-  metadata: OnboardingMetadata,
-  url: string
-): OnboardingMetadata {
+export function removeConsentForUrl(metadata: OnboardingMetadata, url: string): OnboardingMetadata {
   if (!metadata.consent || !(url in metadata.consent)) {
     return metadata;
   }
@@ -143,9 +140,7 @@ export function isValidConsentRecord(record: unknown): record is CompactConsentR
 export function mergeConsentRecords(
   ...records: Record<string, CompactConsentRecord>[]
 ): Record<string, CompactConsentRecord> {
-  return records.reduce((acc, record) => {
-    return { ...acc, ...record };
-  }, {});
+  return Object.assign({}, ...records);
 }
 
 /**
@@ -178,8 +173,7 @@ export function getConsentStats(metadata: OnboardingMetadata) {
   return {
     totalConsents: urls.length,
     urls,
-    oldestConsent: urls.length > 0 ? Math.min(...urls.map(url => consents[url].ts)) : null,
-    newestConsent: urls.length > 0 ? Math.max(...urls.map(url => consents[url].ts)) : null
+    oldestConsent: urls.length > 0 ? Math.min(...urls.map((url) => consents[url].ts)) : null,
+    newestConsent: urls.length > 0 ? Math.max(...urls.map((url) => consents[url].ts)) : null
   };
 }
-

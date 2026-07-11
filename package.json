@@ -79,13 +79,8 @@
     "./src/paraglide/messages.js": "./dist/paraglide/messages.js",
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "CHANGELOG.md"
-  ],
-  
+  "files": ["dist", "src", "README.md", "CHANGELOG.md"],
+
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
@@ -128,15 +123,7 @@
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
     "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
-  "keywords": [
-    "svelte",
-    "authentication",
-    "webauthn",
-    "passkeys",
-    "flows",
-    "oauth",
-    "thepia"
-  ],
+  "keywords": ["svelte", "authentication", "webauthn", "passkeys", "flows", "oauth", "thepia"],
   "author": "Thepia <dev@thepia.com>",
   "license": "UNLICENSED",
   "repository": {

@@ -66,9 +66,9 @@ export function removeStorageItem(key: string): boolean {
  * Clear all auth-related storage
  */
 export function clearAuthStorage(): void {
-  Object.values(STORAGE_KEYS).forEach((key) => {
+  for (const key of Object.values(STORAGE_KEYS)) {
     removeStorageItem(key);
-  });
+  }
 }
 
 /**
@@ -123,7 +123,7 @@ export function getStorageSize(): number {
 
   let total = 0;
   for (const key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
       total += localStorage[key].length + key.length;
     }
   }
@@ -136,7 +136,7 @@ export function getStorageSize(): number {
 export function onStorageChange(
   callback: (key: string, newValue: string | null, oldValue: string | null) => void
 ): () => void {
-  if (!isBrowser()) return () => {};
+  if (!isBrowser()) return () => undefined;
 
   const handler = (event: StorageEvent) => {
     if (event.storageArea === localStorage && event.key) {

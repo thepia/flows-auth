@@ -6,6 +6,13 @@
 import type { AuthApiClient } from '../api/auth-api';
 import type { AuthConfig } from '../types';
 
+export interface SerializedError {
+  name?: string;
+  message?: string;
+  code?: string | number;
+  stack?: string;
+}
+
 export interface AuthStateEvent {
   type: 'auth-state-change';
   event:
@@ -34,17 +41,17 @@ export interface AuthStateEvent {
     | 'registration-failure';
   email?: string;
   userId?: string;
-  authMethod?: 'passkey' | 'password' | 'email' | 'magic-link';
+  authMethod?: 'passkey' | 'password' | 'email' | 'magic-link' | 'unknown';
   duration?: number;
   error?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface WebAuthnErrorEvent {
   type: 'webauthn-error';
   operation: 'authentication' | 'registration';
-  error: any;
-  context?: Record<string, any>;
+  error: SerializedError;
+  context?: Record<string, unknown>;
 }
 
 export interface ApiErrorEvent {
@@ -53,7 +60,7 @@ export interface ApiErrorEvent {
   method: string;
   status: number;
   message: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export type ErrorReportEvent = AuthStateEvent | WebAuthnErrorEvent | ApiErrorEvent;
@@ -159,6 +166,7 @@ class Telemetry {
 
     // Use the API client to send the error report
     const endpoint = '/dev/error-reports';
+    // biome-ignore lint/complexity/useLiteralKeys: intentional access to AuthApiClient's private request() method
     await this.api['request'](endpoint, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -246,7 +254,7 @@ class Telemetry {
 
       try {
         await this.sendEvent(event);
-      } catch (error) {
+      } catch {
         failedRetries.push({ event, attempts: attempts + 1 });
       }
     }
@@ -267,7 +275,9 @@ class Telemetry {
     const queuedEvents = [...this.queue];
     this.queue = [];
 
-    queuedEvents.forEach((event) => this.report(event));
+    for (const event of queuedEvents) {
+      this.report(event);
+    }
   }
 
   getQueueSize() {
@@ -314,8 +324,8 @@ export function reportAuthState(event: Omit<AuthStateEvent, 'type'>) {
 
 export function reportWebAuthnError(
   operation: 'authentication' | 'registration',
-  error: any,
-  context?: Record<string, any>
+  error: SerializedError,
+  context?: Record<string, unknown>
 ) {
   telemetry.report({
     type: 'webauthn-error',
@@ -335,7 +345,7 @@ export function reportApiError(
   method: string,
   status: number,
   message: string,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ) {
   telemetry.report({
     type: 'api-error',
@@ -361,15 +371,15 @@ export function getTelemetryQueueSize() {
  */
 export function reportAuthEvent(
   event: string,
-  data: Record<string, any>,
-  context?: Record<string, any>
+  data: Record<string, unknown>,
+  context?: Record<string, unknown>
 ) {
   // Create a flexible event that can handle custom event types
   const flexibleEvent = {
     type: 'auth-state-change' as const,
-    event: event as any, // Allow custom event types
-    email: data.email,
-    authMethod: data.method || ('unknown' as any),
+    event: event as AuthStateEvent['event'], // Allow custom event types
+    email: data.email as string | undefined,
+    authMethod: (data.method as AuthStateEvent['authMethod']) || 'unknown',
     context: {
       ...data,
       ...context
@@ -384,8 +394,8 @@ export function reportAuthEvent(
  */
 export function reportSessionEvent(
   event: string,
-  data: Record<string, any>,
-  context?: Record<string, any>
+  data: Record<string, unknown>,
+  context?: Record<string, unknown>
 ) {
   reportAuthEvent(`session-${event}`, data, context);
 }
@@ -395,8 +405,8 @@ export function reportSessionEvent(
  */
 export function reportRefreshEvent(
   event: string,
-  data: Record<string, any>,
-  context?: Record<string, any>
+  data: Record<string, unknown>,
+  context?: Record<string, unknown>
 ) {
   reportAuthEvent(`refresh-${event}`, { ...data, method: 'token-refresh' }, context);
 }

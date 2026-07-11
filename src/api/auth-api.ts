@@ -563,7 +563,7 @@ export class AuthApiClient {
 
     const response = await this.request<{
       success?: boolean;
-      user?: any;
+      user?: User;
       message?: string;
       step?: string;
       access_token?: string;
@@ -584,17 +584,17 @@ export class AuthApiClient {
         ...response,
         step: 'success'
       } as SignInResponse;
-    } else if (response.step) {
+    }
+    if (response.step) {
       // API returned legacy SignInResponse format
       return response as SignInResponse;
-    } else {
-      // API returned error or unexpected format
-      return {
-        ...response,
-        step: 'error',
-        user: undefined
-      } as SignInResponse;
     }
+    // API returned error or unexpected format
+    return {
+      ...response,
+      step: 'error',
+      user: undefined
+    } as SignInResponse;
   }
 
   /**

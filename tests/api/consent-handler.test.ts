@@ -4,15 +4,15 @@
  * Tests for server-side consent handling
  */
 
-import { describe, it, expect } from 'vitest';
-import type { ConfirmConsentRequest, OnboardingMetadata } from '../../src/types/onboarding';
+import { describe, expect, it } from 'vitest';
 import {
-  getConsentsHandler,
   confirmConsentHandler,
+  formatConsentResponse,
   getConsentStatsHandler,
-  validateConsentRequest,
-  formatConsentResponse
+  getConsentsHandler,
+  validateConsentRequest
 } from '../../src/api/handlers/consent-handler';
+import type { ConfirmConsentRequest, OnboardingMetadata } from '../../src/types/onboarding';
 
 describe('Consent Handler', () => {
   const testUrl = 'https://example.com/terms';
@@ -179,4 +179,3 @@ describe('Consent Handler', () => {
     });
   });
 });
-

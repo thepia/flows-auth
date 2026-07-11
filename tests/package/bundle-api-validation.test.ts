@@ -18,8 +18,8 @@
  * - Context and auth utilities validation
  */
 
-import { existsSync, readFileSync, statSync } from 'fs';
-import { dirname, join } from 'path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 // Test setup - NO mocking for integration tests

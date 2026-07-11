@@ -339,9 +339,10 @@ describe('Auth Store Integration Tests', () => {
 
       // Check if any were rate limited (depends on API configuration)
       const hasRateLimit = results.some(
-        (result) => result.status === 'rejected' &&
-        result.reason instanceof Error &&
-        result.reason.message.includes('rate')
+        (result) =>
+          result.status === 'rejected' &&
+          result.reason instanceof Error &&
+          result.reason.message.includes('rate')
       );
 
       // Rate limiting might not be configured in test environment

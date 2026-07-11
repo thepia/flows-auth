@@ -386,9 +386,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Mock failed verification
-      authStore.verifyEmailCode = vi.fn().mockRejectedValue(
-        new Error('Invalid code')
-      );
+      authStore.verifyEmailCode = vi.fn().mockRejectedValue(new Error('Invalid code'));
 
       render(PinEntryStep, { props: { authStore } });
 
@@ -446,18 +444,18 @@ describe('PinEntryStep Component', () => {
       });
 
       // Mock slow verification that mimics authStore's loading state management
-      authStore.verifyEmailCode = vi.fn().mockImplementation(
-        () => {
-          authStore.ui.getState().setLoading(true);
-          return new Promise((resolve) => setTimeout(() => {
+      authStore.verifyEmailCode = vi.fn().mockImplementation(() => {
+        authStore.ui.getState().setLoading(true);
+        return new Promise((resolve) =>
+          setTimeout(() => {
             authStore.ui.getState().setLoading(false);
             resolve({
               step: 'success',
               user: { email: 'test@example.com', id: '123' }
             });
-          }, 100));
-        }
-      );
+          }, 100)
+        );
+      });
 
       render(PinEntryStep, { props: { authStore } });
 
@@ -471,9 +469,12 @@ describe('PinEntryStep Component', () => {
       expect(authStore.getState().loading).toBe(true);
 
       // Wait for completion
-      await waitFor(() => {
-        expect(authStore.getState().loading).toBe(false);
-      }, { timeout: 200 });
+      await waitFor(
+        () => {
+          expect(authStore.getState().loading).toBe(false);
+        },
+        { timeout: 200 }
+      );
     });
   });
 

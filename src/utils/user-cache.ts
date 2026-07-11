@@ -111,7 +111,9 @@ export class UserCache {
       }
     }
 
-    expiredKeys.forEach((key) => this.cache.delete(key));
+    for (const key of expiredKeys) {
+      this.cache.delete(key);
+    }
 
     if (expiredKeys.length > 0) {
       console.log(`🧹 Cleaned up ${expiredKeys.length} expired cache entries`);

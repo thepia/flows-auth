@@ -32,7 +32,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     });
 
     // Mock verifyEmailCode early so PinEntryStep captures it
-    const verifyMock = vi.fn().mockResolvedValue({ step: 'success', user: { email: 'test@example.com' } });
+    const verifyMock = vi
+      .fn()
+      .mockResolvedValue({ step: 'success', user: { email: 'test@example.com' } });
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions
@@ -79,7 +81,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     });
 
     // Mock verifyEmailCode early
-    const verifyMock = vi.fn().mockResolvedValue({ step: 'success', user: { email: 'test@example.com' } });
+    const verifyMock = vi
+      .fn()
+      .mockResolvedValue({ step: 'success', user: { email: 'test@example.com' } });
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions

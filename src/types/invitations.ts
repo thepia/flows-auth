@@ -41,7 +41,7 @@ export interface ActiveInvitation {
  * Stores information about which clients a user has registered with
  */
 export interface ClientRegistration {
-  status: "needs_invite" | "invited" | "connected";
+  status: 'needs_invite' | 'invited' | 'connected';
   first_seen: string;
   last_seen: string;
   auto_confirm: boolean;
@@ -85,4 +85,3 @@ export interface UserMetadata {
   consent_collected?: ConsentData;
   [key: string]: unknown; // Allow additional fields for Auth0 compatibility
 }
-

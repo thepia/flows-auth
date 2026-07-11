@@ -364,7 +364,7 @@ export interface CheckUserResponse {
 
 export interface PasskeyRequest {
   email: string; // Changed to email for consistency with other methods
-  credential: PasskeyCredential; // Properly typed WebAuthn credential
+  credential: SerializedPasskeyCredential; // Serialized (base64url) credential sent to server
   challengeId?: string; // Optional challenge ID for verification
 }
 
@@ -508,6 +508,23 @@ export interface PasskeyCredential {
   type: 'public-key';
 }
 
+/**
+ * Serialized (JSON-safe) form of a passkey assertion, as produced by
+ * `serializeCredential()` and sent to the server. All binary fields are
+ * base64url-encoded strings rather than ArrayBuffers.
+ */
+export interface SerializedPasskeyCredential {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    authenticatorData: string;
+    signature: string;
+    userHandle: string | null;
+  };
+  type: 'public-key';
+}
+
 // Passkey management types
 export interface UserPasskey {
   id: string;
@@ -547,6 +564,23 @@ export interface WebAuthnRegistrationResponse {
   rawId: ArrayBuffer;
   response: AuthenticatorAttestationResponse;
   type: 'public-key';
+}
+
+/**
+ * Serialized (JSON-safe) form of a WebAuthn registration, as produced by
+ * `createCredential()` and sent to the server. All binary fields are
+ * base64url-encoded strings rather than ArrayBuffers.
+ */
+export interface SerializedWebAuthnRegistrationResponse {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    attestationObject: string;
+    transports: string[];
+  };
+  type: string;
+  clientExtensionResults: AuthenticationExtensionsClientOutputs;
 }
 
 export interface WebAuthnVerificationResult {

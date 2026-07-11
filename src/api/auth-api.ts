@@ -14,12 +14,12 @@ import type {
   PasskeyCredential,
   PasskeyRequest,
   RefreshTokenRequest,
+  SerializedWebAuthnRegistrationResponse,
   SignInResponse,
   User,
   UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
-  WebAuthnRegistrationResponse,
   WebAuthnVerificationResult
 } from '../types';
 import type {
@@ -676,7 +676,7 @@ export class AuthApiClient {
    */
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
-    registrationResponse: WebAuthnRegistrationResponse;
+    registrationResponse: SerializedWebAuthnRegistrationResponse;
   }): Promise<WebAuthnVerificationResult> {
     return this.request<WebAuthnVerificationResult>('/auth/webauthn/register-verify', {
       method: 'POST',

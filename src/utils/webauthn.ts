@@ -3,7 +3,13 @@
  * Based on thepia.com implementation
  */
 
-import type { AuthError, PasskeyChallenge, PasskeyCredential } from '../types';
+import type {
+  AuthError,
+  PasskeyChallenge,
+  PasskeyCredential,
+  SerializedPasskeyCredential,
+  SerializedWebAuthnRegistrationResponse
+} from '../types';
 
 /**
  * Check if WebAuthn is supported
@@ -131,7 +137,9 @@ interface WebAuthnRegistrationOptions {
  * Create WebAuthn credential from registration options
  * This function handles the WebAuthn registration options format from the API server
  */
-export async function createCredential(registrationOptions: WebAuthnRegistrationOptions) {
+export async function createCredential(
+  registrationOptions: WebAuthnRegistrationOptions
+): Promise<SerializedWebAuthnRegistrationResponse> {
   if (!isWebAuthnSupported()) {
     throw new Error('WebAuthn is not supported on this device');
   }
@@ -325,7 +333,7 @@ function mapWebAuthnError(error: unknown): AuthError {
 /**
  * Convert credential to format expected by server
  */
-export function serializeCredential(credential: PasskeyCredential) {
+export function serializeCredential(credential: PasskeyCredential): SerializedPasskeyCredential {
   const assertionResponse = credential.response as AuthenticatorAssertionResponse;
   const { userHandle } = assertionResponse;
   return {

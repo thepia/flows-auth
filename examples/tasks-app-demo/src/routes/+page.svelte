@@ -1,6 +1,6 @@
 <script lang="ts">
 import { browser } from '$app/environment';
-import { type User, SignInForm } from '@thepia/flows-auth';
+import { type User, SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth';
 import { onMount } from 'svelte';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 import TaskCard from '../lib/components/TaskCard.svelte';
@@ -11,7 +11,9 @@ let activeTab: 'tasks' | 'documents' | 'notifications' = 'tasks';
 let tasks: any[] = [];
 let pendingTasks: any[] = [];
 let unreadNotifications: any[] = [];
-let authStore: any = null;
+// Obtain the auth store from Svelte context during component init.
+// getContext() must run here (not inside onMount/async) per ADR 0004.
+let authStore: any = getAuthStoreFromContext();
 let authConfig: any = null;
 let authError: string | null = null;
 
@@ -41,29 +43,8 @@ async function initializeAuth() {
     console.log('🔄 Starting auth initialization...');
     isLoading = true;
 
-    console.log('📦 Getting global auth store...');
-    
-    // Use the global auth store pattern (not context-based)
-    const { getGlobalAuthStore } = await import('@thepia/flows-auth');
-    
-    // Wait for layout to initialize the global auth store
-    let attempts = 0;
-    while (!authStore && attempts < 20) {
-      try {
-        authStore = getGlobalAuthStore();
-        break; // Success - exit loop
-      } catch (error) {
-        // Auth store not yet initialized, wait and try again
-        await new Promise(resolve => setTimeout(resolve, 50));
-        attempts++;
-      }
-    }
-    
-    if (!authStore) {
-      throw new Error('Auth store not available after waiting');
-    }
-    
-    console.log('🔐 Auth store retrieved using proper pattern');
+    // Auth store was obtained from context at component init (see top of script)
+    console.log('🔐 Auth store obtained from context');
     
     console.log('📡 Setting up auth store subscription...');
     // Subscribe to auth state changes

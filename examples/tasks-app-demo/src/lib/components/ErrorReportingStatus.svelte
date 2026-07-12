@@ -1,5 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
+	import { getAuthStoreFromContext } from '@thepia/flows-auth';
 	import { onMount } from 'svelte';
 
 	console.log('[ErrorReportingStatus] Component script loading...');
@@ -18,8 +19,14 @@
 		syncStatus: null
 	};
 
-	// Auth store debugging
+	// Auth store debugging — obtain from context at init (getContext must run here,
+	// not inside onMount/async). Tolerant: this widget may render outside the provider.
 	let authStore = null;
+	try {
+		authStore = getAuthStoreFromContext();
+	} catch (contextError) {
+		console.warn('[ErrorReportingStatus] Auth store not available in context:', contextError);
+	}
 	let authState = null;
 	let authStateMachine = null;
 
@@ -48,28 +55,19 @@
 				console.warn('Service worker manager not available:', swError);
 			}
 
-			// Get auth store from global singleton (no duplicate creation)
+			// Auth store obtained from context at init; subscribe for debugging
 			try {
-				const { getGlobalAuthStore } = await import('@thepia/flows-auth');
-				
-				try {
-					authStore = getGlobalAuthStore();
-					
-					// Subscribe to auth state changes for debugging
-					authStore.subscribe((state) => {
-						authState = state;
-						console.log('🔍 Auth State Debug:', state);
-					});
+				authStore.subscribe((state) => {
+					authState = state;
+					console.log('🔍 Auth State Debug:', state);
+				});
 
-					// Get auth state machine for debugging
-					authStateMachine = authStore.stateMachine || null;
-					
-					// Log actual config being used
-					const config = authStore.getConfig?.() || {};
-					console.log('🔐 ErrorReportingStatus using auth config from global store:', config);
-				} catch (authError) {
-					console.warn('🔍 Global auth store not yet initialized:', authError);
-				}
+				// Get auth state machine for debugging
+				authStateMachine = authStore.stateMachine || null;
+
+				// Log actual config being used
+				const config = authStore.getConfig?.() || {};
+				console.log('🔐 ErrorReportingStatus using auth config from context:', config);
 			} catch (authError) {
 				console.warn('Auth store debugging not available:', authError);
 			}

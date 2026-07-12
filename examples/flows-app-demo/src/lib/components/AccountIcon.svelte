@@ -3,14 +3,20 @@
   import { browser, dev } from '$app/environment';
   import { createEventDispatcher } from 'svelte';
   import { devScenarioManager } from '$lib/dev/scenarios.js';
-  import { User, createAuthStoreOnce } from '@thepia/flows-auth';
+  import { User, getAuthStoreFromContext } from '@thepia/flows-auth';
   
   // Import console bridge helpers
   let logAuthEvent: ((eventType: string, data: any) => void) | null = null;
   let logStateChange: ((component: string, state: any) => void) | null = null;
   
-  // Get the global auth store (don't create a new one!)
+  // Get the shared auth store from context (created once in +layout; never create one here).
+  // getContext() must run during component init, not inside onMount/async.
   let authStore: any = null;
+  try {
+    authStore = getAuthStoreFromContext();
+  } catch (contextError) {
+    console.warn('⚠️ AccountIcon: auth store not available in context:', contextError);
+  }
   
   if (browser && dev) {
     import('$lib/dev/console-bridge').then(module => {
@@ -31,30 +37,7 @@
   onMount(async () => {
     if (!browser) return;
 
-    // Use the global auth store instead of creating a new one
-    try {
-      const currentScenario = await devScenarioManager.getCurrentScenario();
-      
-      // Try to get existing auth store, or initialize if not available
-      authStore = await createAuthStoreOnce({
-        apiBaseUrl: currentScenario.config.apiBaseUrl,
-        clientId: currentScenario.config.clientId,
-        domain: 'dev.thepia.net',
-        enablePasskeys: currentScenario.config.enablePasskeys,
-        enableMagicLinks: currentScenario.config.enableMagicLinks,
-        branding: {
-          companyName: currentScenario.branding.companyName,
-          logoUrl: '/thepia-logo.svg',
-          showPoweredBy: currentScenario.branding.name !== 'Thepia Default',
-          primaryColor: currentScenario.branding.colors.primary,
-          secondaryColor: currentScenario.branding.colors.accent
-        }
-      });
-      
-      console.log('✅ Global auth store accessed from AccountIcon');
-    } catch (error) {
-      console.error('❌ Failed to access auth store:', error);
-    }
+    // Auth store comes from Svelte context (created once in +layout); nothing to create here.
 
     // Check for existing session in localStorage
     checkAuthState();

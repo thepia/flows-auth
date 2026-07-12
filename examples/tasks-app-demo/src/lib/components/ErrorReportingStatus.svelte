@@ -46,14 +46,11 @@
 			// Force reactivity update
 			config = config;
 
-			// Initialize service worker manager
-			try {
-				const { getServiceWorkerManager } = await import('@thepia/flows-auth');
-				serviceWorkerManager = getServiceWorkerManager();
-				await updateServiceWorkerStatus();
-			} catch (swError) {
-				console.warn('Service worker manager not available:', swError);
-			}
+			// TODO(flows-client): the service-worker manager moved from @thepia/flows-auth
+			// (getServiceWorkerManager was removed) into @thepia/flows-client, which
+			// registers /flows-sw.js itself. Until this demo integrates @thepia/flows-client,
+			// serviceWorkerManager stays null and the SW status panel shows "unsupported".
+			serviceWorkerManager = null;
 
 			// Auth store obtained from context at init; subscribe for debugging
 			try {
@@ -97,8 +94,8 @@
 		if (!browser) return;
 
 		try {
-			const { getErrorReportQueueSize } = await import('@thepia/flows-auth');
-			queueSize = await getErrorReportQueueSize();
+			const { getTelemetryQueueSize } = await import('@thepia/flows-auth');
+			queueSize = await getTelemetryQueueSize();
 		} catch (error) {
 			// Silently fail - error reporter may not be initialized yet
 		}

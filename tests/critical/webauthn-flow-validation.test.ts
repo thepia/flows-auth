@@ -15,7 +15,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('WebAuthn Support Detection', () => {
-    test('STUB: should detect WebAuthn support correctly', async () => {
+    test.todo('STUB: should detect WebAuthn support correctly', async () => {
       // TODO: Test WebAuthn support detection:
       // - Should return true when supported
       // - Should return false when not supported
@@ -23,7 +23,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement WebAuthn support detection test');
     });
 
-    test('STUB: should detect platform authenticator availability', async () => {
+    test.todo('STUB: should detect platform authenticator availability', async () => {
       // TODO: Test platform authenticator detection:
       // - Should return true when available (Touch ID, Face ID, Windows Hello)
       // - Should return false when not available
@@ -31,7 +31,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement platform authenticator detection test');
     });
 
-    test('STUB: should handle browser compatibility issues', async () => {
+    test.todo('STUB: should handle browser compatibility issues', async () => {
       // TODO: Test browser compatibility:
       // - Should work in Chrome/Safari/Firefox
       // - Should handle mobile browsers
@@ -41,7 +41,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Credential Creation Flow', () => {
-    test('STUB: should create WebAuthn credentials with valid options', async () => {
+    test.todo('STUB: should create WebAuthn credentials with valid options', async () => {
       // TODO: Test credential creation:
       // - Should call navigator.credentials.create with correct options
       // - Should handle challenge conversion (base64 to ArrayBuffer)
@@ -49,7 +49,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement credential creation test');
     });
 
-    test('STUB: should handle invalid registration options', async () => {
+    test.todo('STUB: should handle invalid registration options', async () => {
       // TODO: Test invalid options handling:
       // - Invalid challenge format
       // - Missing required fields
@@ -57,7 +57,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement invalid options test');
     });
 
-    test('STUB: should convert API response to WebAuthn options correctly', async () => {
+    test.todo('STUB: should convert API response to WebAuthn options correctly', async () => {
       // TODO: Test options conversion:
       // - Base64 strings to ArrayBuffers
       // - User ID encoding
@@ -66,7 +66,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement options conversion test');
     });
 
-    test('STUB: should handle user cancellation gracefully', async () => {
+    test.todo('STUB: should handle user cancellation gracefully', async () => {
       // TODO: Test user cancellation:
       // - Should catch cancellation error
       // - Should provide user-friendly message
@@ -74,7 +74,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement user cancellation test');
     });
 
-    test('STUB: should handle device-specific errors', async () => {
+    test.todo('STUB: should handle device-specific errors', async () => {
       // TODO: Test device-specific errors:
       // - Touch ID failure
       // - Face ID failure
@@ -85,7 +85,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Credential Verification Flow', () => {
-    test('STUB: should verify WebAuthn credentials correctly', async () => {
+    test.todo('STUB: should verify WebAuthn credentials correctly', async () => {
       // TODO: Test credential verification:
       // - Should send credential to server for verification
       // - Should handle verification response
@@ -93,7 +93,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement credential verification test');
     });
 
-    test('STUB: should handle verification failures', async () => {
+    test.todo('STUB: should handle verification failures', async () => {
       // TODO: Test verification failures:
       // - Invalid credential data
       // - Server verification errors
@@ -101,7 +101,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement verification failure tests');
     });
 
-    test('STUB: should convert credential response for API', async () => {
+    test.todo('STUB: should convert credential response for API', async () => {
       // TODO: Test credential response conversion:
       // - ArrayBuffers to base64 strings
       // - Proper response structure
@@ -111,7 +111,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Authentication Flow (Sign-In)', () => {
-    test('STUB: should authenticate with existing credentials', async () => {
+    test.todo('STUB: should authenticate with existing credentials', async () => {
       // TODO: Test authentication flow:
       // - Should get authentication options
       // - Should prompt for credential
@@ -119,7 +119,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement authentication flow test');
     });
 
-    test('STUB: should handle authentication failures', async () => {
+    test.todo('STUB: should handle authentication failures', async () => {
       // TODO: Test authentication failures:
       // - Wrong credential
       // - User cancellation
@@ -127,7 +127,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement authentication failure tests');
     });
 
-    test('STUB: should handle multiple credentials', async () => {
+    test.todo('STUB: should handle multiple credentials', async () => {
       // TODO: Test multiple credentials:
       // - Should allow user to choose credential
       // - Should handle credential selection
@@ -137,7 +137,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Security Validation', () => {
-    test('STUB: should validate credential security requirements', async () => {
+    test.todo('STUB: should validate credential security requirements', async () => {
       // TODO: Test security requirements:
       // - User verification required
       // - Resident key requirements
@@ -145,7 +145,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement security validation test');
     });
 
-    test('STUB: should prevent credential replay attacks', async () => {
+    test.todo('STUB: should prevent credential replay attacks', async () => {
       // TODO: Test replay attack prevention:
       // - Challenge uniqueness
       // - Credential uniqueness
@@ -153,7 +153,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement replay attack prevention test');
     });
 
-    test('STUB: should validate origin and RP ID', async () => {
+    test.todo('STUB: should validate origin and RP ID', async () => {
       // TODO: Test origin validation:
       // - Correct RP ID
       // - Origin matching
@@ -163,7 +163,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Error Handling and Recovery', () => {
-    test('STUB: should provide user-friendly error messages', async () => {
+    test.todo('STUB: should provide user-friendly error messages', async () => {
       // TODO: Test error messages:
       // - Technical errors translated to user-friendly messages
       // - Actionable error messages
@@ -171,7 +171,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement error message tests');
     });
 
-    test('STUB: should allow retry after errors', async () => {
+    test.todo('STUB: should allow retry after errors', async () => {
       // TODO: Test retry functionality:
       // - Should reset error state
       // - Should allow new attempts
@@ -179,7 +179,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement retry tests');
     });
 
-    test('STUB: should handle network interruptions', async () => {
+    test.todo('STUB: should handle network interruptions', async () => {
       // TODO: Test network interruption handling:
       // - Connection lost during registration
       // - Connection lost during authentication
@@ -189,7 +189,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Cross-Platform Compatibility', () => {
-    test('STUB: should work on iOS devices', async () => {
+    test.todo('STUB: should work on iOS devices', async () => {
       // TODO: Test iOS compatibility:
       // - Touch ID integration
       // - Face ID integration
@@ -197,7 +197,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement iOS compatibility test');
     });
 
-    test('STUB: should work on Android devices', async () => {
+    test.todo('STUB: should work on Android devices', async () => {
       // TODO: Test Android compatibility:
       // - Fingerprint integration
       // - Face unlock integration
@@ -205,7 +205,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement Android compatibility test');
     });
 
-    test('STUB: should work on Windows devices', async () => {
+    test.todo('STUB: should work on Windows devices', async () => {
       // TODO: Test Windows compatibility:
       // - Windows Hello integration
       // - Hardware security keys
@@ -213,7 +213,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement Windows compatibility test');
     });
 
-    test('STUB: should work on macOS devices', async () => {
+    test.todo('STUB: should work on macOS devices', async () => {
       // TODO: Test macOS compatibility:
       // - Touch ID integration
       // - Safari WebAuthn support
@@ -223,7 +223,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
   });
 
   describe('Performance and Reliability', () => {
-    test('STUB: should complete registration within reasonable time', async () => {
+    test.todo('STUB: should complete registration within reasonable time', async () => {
       // TODO: Test performance:
       // - Registration should complete within 30 seconds
       // - Authentication should complete within 10 seconds
@@ -231,7 +231,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement performance tests');
     });
 
-    test('STUB: should handle concurrent operations', async () => {
+    test.todo('STUB: should handle concurrent operations', async () => {
       // TODO: Test concurrent operations:
       // - Multiple registration attempts
       // - Registration and authentication simultaneously
@@ -239,7 +239,7 @@ describe('CRITICAL: WebAuthn Flow Validation', () => {
       test.todo('Implement concurrency tests');
     });
 
-    test('STUB: should be reliable across sessions', async () => {
+    test.todo('STUB: should be reliable across sessions', async () => {
       // TODO: Test session reliability:
       // - Credentials persist across browser sessions
       // - Authentication works after browser restart

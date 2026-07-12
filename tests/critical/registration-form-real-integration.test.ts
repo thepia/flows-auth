@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
-import type { AuthConfig, InvitationTokenData } from '../../src/types';
+import { beforeEach, describe, test } from 'vitest';
+import type { AuthConfig } from '../../src/types';
+// NOTE: All tests below are `test.todo` stubs. The previous static import of
+// RegistrationForm.svelte (a component that no longer exists) has been removed so
+// the file collects; restore the relevant imports when the stubs are implemented.
 
 /**
  * CRITICAL REGISTRATION FORM REAL INTEGRATION TESTS
@@ -27,7 +28,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Component Rendering and Interaction', () => {
-    test('STUB: should render registration form correctly', async () => {
+    test.todo('STUB: should render registration form correctly', async () => {
       // TODO: Test component rendering:
       // - All required fields present
       // - Submit button present
@@ -36,7 +37,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement rendering test');
     });
 
-    test('STUB: should validate form fields before submission', async () => {
+    test.todo('STUB: should validate form fields before submission', async () => {
       // TODO: Test form validation:
       // - Email format validation
       // - Required field validation
@@ -45,7 +46,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement form validation test');
     });
 
-    test('STUB: should handle user input correctly', async () => {
+    test.todo('STUB: should handle user input correctly', async () => {
       // TODO: Test user input handling:
       // - Email input updates
       // - Name field updates
@@ -56,7 +57,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('createAccount Integration', () => {
-    test('STUB: should call createAccount with correct parameters', async () => {
+    test.todo('STUB: should call createAccount with correct parameters', async () => {
       // TODO: Test createAccount integration:
       // - Should call createAccount (not registerUser)
       // - Should pass correct registration data
@@ -64,7 +65,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement createAccount integration test');
     });
 
-    test('STUB: should handle successful registration flow', async () => {
+    test.todo('STUB: should handle successful registration flow', async () => {
       // TODO: Test successful registration:
       // - Should show loading state
       // - Should handle success response
@@ -73,7 +74,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement successful registration test');
     });
 
-    test('STUB: should handle registration failures', async () => {
+    test.todo('STUB: should handle registration failures', async () => {
       // TODO: Test registration failures:
       // - Should show error messages
       // - Should allow retry
@@ -83,7 +84,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Email Verification Flow', () => {
-    test('STUB: should show correct message for standard users', async () => {
+    test.todo('STUB: should show correct message for standard users', async () => {
       // TODO: Test standard user flow:
       // - Should show "verify your email" message
       // - Should not auto-sign-in
@@ -91,7 +92,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement standard user message test');
     });
 
-    test('STUB: should show correct message for invitation users', async () => {
+    test.todo('STUB: should show correct message for invitation users', async () => {
       // TODO: Test invitation user flow:
       // - Should show "email verified" message
       // - Should emit appAccess event for auto-sign-in
@@ -99,7 +100,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement invitation user message test');
     });
 
-    test('STUB: should handle missing emailVerifiedViaInvitation field', async () => {
+    test.todo('STUB: should handle missing emailVerifiedViaInvitation field', async () => {
       // TODO: Test missing field handling:
       // - Should default to standard flow
       // - Should not break component
@@ -109,7 +110,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Event Emission', () => {
-    test('STUB: should emit appAccess event for invitation users', async () => {
+    test.todo('STUB: should emit appAccess event for invitation users', async () => {
       // TODO: Test appAccess event:
       // - Should emit when emailVerifiedViaInvitation is true
       // - Should include correct event data
@@ -117,7 +118,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement appAccess event test');
     });
 
-    test('STUB: should emit success event for standard users', async () => {
+    test.todo('STUB: should emit success event for standard users', async () => {
       // TODO: Test success event:
       // - Should emit when emailVerifiedViaInvitation is false
       // - Should include correct event data
@@ -125,7 +126,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement success event test');
     });
 
-    test('STUB: should emit error events on failures', async () => {
+    test.todo('STUB: should emit error events on failures', async () => {
       // TODO: Test error events:
       // - Should emit on registration failures
       // - Should include error information
@@ -133,7 +134,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement error event test');
     });
 
-    test('STUB: should emit stepChange events', async () => {
+    test.todo('STUB: should emit stepChange events', async () => {
       // TODO: Test stepChange events:
       // - Should emit on step transitions
       // - Should include current step
@@ -143,7 +144,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Invitation Token Integration', () => {
-    test('STUB: should handle invitation token data correctly', async () => {
+    test.todo('STUB: should handle invitation token data correctly', async () => {
       // TODO: Test invitation token handling:
       // - Should pre-fill form with invitation data
       // - Should include invitation token in registration
@@ -151,7 +152,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement invitation token test');
     });
 
-    test('STUB: should validate invitation token data', async () => {
+    test.todo('STUB: should validate invitation token data', async () => {
       // TODO: Test invitation token validation:
       // - Should validate token format
       // - Should handle invalid tokens
@@ -159,7 +160,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement invitation token validation test');
     });
 
-    test('STUB: should handle expired invitation tokens', async () => {
+    test.todo('STUB: should handle expired invitation tokens', async () => {
       // TODO: Test expired token handling:
       // - Should detect expired tokens
       // - Should show appropriate error
@@ -169,7 +170,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('WebAuthn Integration', () => {
-    test('STUB: should handle WebAuthn prompts correctly', async () => {
+    test.todo('STUB: should handle WebAuthn prompts correctly', async () => {
       // TODO: Test WebAuthn integration:
       // - Should show WebAuthn prompt after form submission
       // - Should handle WebAuthn success
@@ -177,7 +178,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement WebAuthn prompt test');
     });
 
-    test('STUB: should handle WebAuthn not supported', async () => {
+    test.todo('STUB: should handle WebAuthn not supported', async () => {
       // TODO: Test WebAuthn not supported:
       // - Should show appropriate error
       // - Should provide fallback options
@@ -185,7 +186,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement WebAuthn not supported test');
     });
 
-    test('STUB: should handle WebAuthn errors gracefully', async () => {
+    test.todo('STUB: should handle WebAuthn errors gracefully', async () => {
       // TODO: Test WebAuthn error handling:
       // - Should show user-friendly errors
       // - Should allow retry
@@ -195,7 +196,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Loading States and UX', () => {
-    test('STUB: should show loading state during registration', async () => {
+    test.todo('STUB: should show loading state during registration', async () => {
       // TODO: Test loading states:
       // - Should show loading spinner
       // - Should disable form during loading
@@ -203,7 +204,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement loading state test');
     });
 
-    test('STUB: should handle long-running operations', async () => {
+    test.todo('STUB: should handle long-running operations', async () => {
       // TODO: Test long operations:
       // - Should show progress for WebAuthn operations
       // - Should handle timeouts gracefully
@@ -211,7 +212,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement long operation test');
     });
 
-    test('STUB: should provide good user experience', async () => {
+    test.todo('STUB: should provide good user experience', async () => {
       // TODO: Test UX elements:
       // - Clear instructions
       // - Helpful error messages
@@ -222,7 +223,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Error Recovery and Retry', () => {
-    test('STUB: should allow retry after failures', async () => {
+    test.todo('STUB: should allow retry after failures', async () => {
       // TODO: Test retry functionality:
       // - Should reset error state
       // - Should allow new registration attempt
@@ -230,7 +231,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement retry test');
     });
 
-    test('STUB: should handle partial failures gracefully', async () => {
+    test.todo('STUB: should handle partial failures gracefully', async () => {
       // TODO: Test partial failure handling:
       // - User created but WebAuthn failed
       // - WebAuthn succeeded but verification failed
@@ -238,7 +239,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement partial failure test');
     });
 
-    test('STUB: should maintain form state during errors', async () => {
+    test.todo('STUB: should maintain form state during errors', async () => {
       // TODO: Test form state preservation:
       // - Should preserve user input on errors
       // - Should not clear form unnecessarily
@@ -248,7 +249,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
   });
 
   describe('Accessibility and Usability', () => {
-    test('STUB: should be accessible to screen readers', async () => {
+    test.todo('STUB: should be accessible to screen readers', async () => {
       // TODO: Test accessibility:
       // - Proper ARIA labels
       // - Screen reader announcements
@@ -256,7 +257,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement accessibility test');
     });
 
-    test('STUB: should work on mobile devices', async () => {
+    test.todo('STUB: should work on mobile devices', async () => {
       // TODO: Test mobile compatibility:
       // - Touch interactions
       // - Mobile WebAuthn
@@ -264,7 +265,7 @@ describe('CRITICAL: RegistrationForm Real Integration', () => {
       test.todo('Implement mobile test');
     });
 
-    test('STUB: should handle different screen sizes', async () => {
+    test.todo('STUB: should handle different screen sizes', async () => {
       // TODO: Test responsive design:
       // - Desktop layout
       // - Tablet layout

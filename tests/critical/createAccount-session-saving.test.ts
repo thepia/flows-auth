@@ -31,7 +31,12 @@ vi.mock('../../src/utils/sessionManager', () => ({
     sessionTimeout: 8 * 60 * 60 * 1000,
     persistentSessions: false,
     userRole: 'guest'
-  })
+  }),
+  // These are driven per-test via vi.mocked(...).mockReturnValue(...)
+  getSession: vi.fn(),
+  isSessionValid: vi.fn(),
+  getCurrentUser: vi.fn(),
+  getAccessToken: vi.fn()
 }));
 
 vi.mock('../../src/utils/storageManager', () => ({

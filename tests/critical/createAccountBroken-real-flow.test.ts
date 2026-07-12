@@ -41,7 +41,12 @@ vi.mock('../../src/utils/webauthn', () => ({
   generatePasskeyName: vi.fn(() => 'Test Device')
 }));
 
-describe('CRITICAL: createAccountBroken Real Flow Tests', () => {
+// SKIPPED: `authStore.createAccountBroken` was removed. It performed a full
+// single-call WebAuthn registration flow (register + credential create + verify,
+// 3 API calls). The current `createAccount` is register-only, so these assertions
+// no longer apply. TODO: rewrite against the current createAccount + separate
+// passkey-registration flow, or delete if covered elsewhere.
+describe.skip('CRITICAL: createAccountBroken Real Flow Tests', () => {
   let authStore: any;
   let authConfig: AuthConfig;
 

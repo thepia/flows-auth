@@ -109,14 +109,8 @@ jobs:
       - name: Build library
         run: pnpm run build
 
-      - name: Test flows app demo
-        run: |
-          cd examples/flows-app-demo
-          pnpm install --frozen-lockfile
-          pnpm run build
-
-      - name: Test tasks app demo
-        run: |
-          cd examples/tasks-app-demo
-          pnpm install --frozen-lockfile
-          pnpm run build
+      # flows-app-demo and tasks-app-demo are workspace members, so the root
+      # install above already installed their deps. Build them through the
+      # workspace filter (no per-example install / frozen-lockfile needed).
+      - name: Build example demos
+        run: pnpm --filter flows-app-demo --filter tasks-app-demo build

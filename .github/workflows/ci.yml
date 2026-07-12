@@ -56,6 +56,12 @@ jobs:
       - name: Run unit tests
         run: pnpm run test:unit
 
+      - name: Run package/bundle validation tests
+        # These read from dist/ (types, tree-shaking, i18n, paraglide output),
+        # so they must run AFTER the build step above. They are excluded from the
+        # coverage run because that job does not build.
+        run: pnpm run test:package
+
       # - name: Run integration tests (CI-safe)
       #   run: pnpm run test:integration:env
       #   env:

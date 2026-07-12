@@ -93,7 +93,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:coverage:ci": "vitest run --coverage --exclude 'tests/{integration/**,critical/**,package/paraglide-build-verification.test.ts}'",
+    "test:coverage:ci": "vitest run --coverage --exclude 'tests/{integration/**,critical/**,package/**}'",
     "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ tests/components/",
     "test:integration": "vitest run tests/integration/",
     "test:critical": "vitest run tests/critical/ tests/contracts/ tests/unit/response-processing.test.ts tests/unit/ui-ux-integration.test.ts",

@@ -66,9 +66,9 @@ export function removeStorageItem(key: string): boolean {
  * Clear all auth-related storage
  */
 export function clearAuthStorage(): void {
-  Object.values(STORAGE_KEYS).forEach((key) => {
+  for (const key of Object.values(STORAGE_KEYS)) {
     removeStorageItem(key);
-  });
+  }
 }
 
 /**
@@ -122,10 +122,11 @@ export function getStorageSize(): number {
   if (!isBrowser()) return 0;
 
   let total = 0;
-  for (const key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length + key.length;
-    }
+  // Object.keys(localStorage) yields only the stored keys (Storage prototype
+  // methods aren't own-enumerable), so no hasOwnProperty/Object.hasOwn check is
+  // needed — keeps us on ES2020 and clear of noPrototypeBuiltins.
+  for (const key of Object.keys(localStorage)) {
+    total += localStorage[key].length + key.length;
   }
   return total;
 }
@@ -136,7 +137,7 @@ export function getStorageSize(): number {
 export function onStorageChange(
   callback: (key: string, newValue: string | null, oldValue: string | null) => void
 ): () => void {
-  if (!isBrowser()) return () => {};
+  if (!isBrowser()) return () => undefined;
 
   const handler = (event: StorageEvent) => {
     if (event.storageArea === localStorage && event.key) {

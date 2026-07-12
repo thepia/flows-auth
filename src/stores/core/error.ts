@@ -111,7 +111,10 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
       const message = errObj.message || errObj.error || String(error);
 
       // Special case: server sends 'network_error' for HTTP 500/502/503 which is actually service unavailable
-      if (serverCode === 'network_error' && (message.includes('500') || message.includes('502') || message.includes('503'))) {
+      if (
+        serverCode === 'network_error' &&
+        (message.includes('500') || message.includes('502') || message.includes('503'))
+      ) {
         return {
           code: 'error.serviceUnavailable',
           message,
@@ -123,14 +126,14 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
 
       // Map server error codes to client error codes (skip unknown_error - it needs message analysis)
       const codeMapping: Record<string, string> = {
-        'invalid_one_time_code': 'error.invalidCode',
-        'invalid_verification_code': 'error.invalidCode',
-        'expired_code': 'error.invalidCode',
-        'verification_failed': 'error.invalidCode',  // Added: from auth-store error wrapping
-        'rate_limit_exceeded': 'error.rateLimited',
-        'too_many_requests': 'error.rateLimited',
-        'network_error': 'error.network',
-        'user_not_found': 'error.userNotFound'
+        invalid_one_time_code: 'error.invalidCode',
+        invalid_verification_code: 'error.invalidCode',
+        expired_code: 'error.invalidCode',
+        verification_failed: 'error.invalidCode', // Added: from auth-store error wrapping
+        rate_limit_exceeded: 'error.rateLimited',
+        too_many_requests: 'error.rateLimited',
+        network_error: 'error.network',
+        user_not_found: 'error.userNotFound'
       };
 
       const mappedCode = codeMapping[serverCode];
@@ -271,7 +274,11 @@ function classifyError(error: unknown, context?: { method?: string; email?: stri
   }
 
   // Invalid input (general)
-  if (lowerMessage.includes('invalid') || lowerMessage.includes('validation') || lowerMessage.includes('400')) {
+  if (
+    lowerMessage.includes('invalid') ||
+    lowerMessage.includes('validation') ||
+    lowerMessage.includes('400')
+  ) {
     return {
       code: 'error.invalidInput',
       message,
@@ -394,7 +401,7 @@ export const errorRecoveryStrategies = {
    * Exponential backoff for retryable errors
    */
   exponentialBackoff: (attempt: number, baseDelay = 1000): number => {
-    return Math.min(baseDelay * Math.pow(2, attempt), 30000); // Max 30 seconds
+    return Math.min(baseDelay * 2 ** attempt, 30000); // Max 30 seconds
   },
 
   /**

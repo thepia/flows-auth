@@ -2,8 +2,8 @@ import {
   copyFileSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   statSync,
   writeFileSync
 } from 'node:fs';
@@ -110,7 +110,19 @@ export default defineConfig({
     // Paraglide plugin - automatically compiles translations during build
     paraglideVitePlugin({
       project: './project.inlang',
-      outdir: './src/paraglide'
+      outdir: './src/paraglide',
+      // src/paraglide is committed to the repo, so don't emit the auto-generated
+      // .gitignore (which ignores '*' and would keep the output untracked).
+      emitGitIgnore: false,
+      // Pin the output layout. paraglideVitePlugin takes CompilerOptions directly,
+      // so outputStructure is a TOP-LEVEL option (there is no `compilerOptions`
+      // wrapper — nesting it is silently ignored). Paraglide 2.4.0 defaults to
+      // "message-modules" (a barrel of per-message files, no per-locale
+      // en.js/da.js), but the committed src/paraglide and the package.json exports
+      // assume "locale-modules" (messages/_index.js with inline functions +
+      // en.js/da.js). Without this pin the layout drifts by environment and breaks
+      // tests/package/paraglide-build-verification.
+      outputStructure: 'locale-modules'
     }),
     svelte({
       preprocess: sveltePreprocess(),
@@ -150,8 +162,7 @@ export default defineConfig({
 
         // Skip dynamic import warnings for specific modules we know about
         if (
-          warning.message &&
-          warning.message.includes('dynamically imported') &&
+          warning.message?.includes('dynamically imported') &&
           (warning.message.includes('webauthn') ||
             warning.message.includes('sessionManager') ||
             warning.message.includes('invitation-tokens') ||

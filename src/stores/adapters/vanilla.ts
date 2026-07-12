@@ -3,8 +3,8 @@
  * Provides framework-agnostic access to auth stores
  */
 
-import { subscribeWithSelector } from 'zustand/middleware';
 import type { StoreApi } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 
 /**
  * Vanilla store subscription helper
@@ -16,14 +16,14 @@ export function createVanillaAdapter<T>(store: StoreApi<T>) {
      * Get current state
      */
     getState: () => store.getState(),
-    
+
     /**
      * Subscribe to store changes
      */
     subscribe: (listener: (state: T, prevState: T) => void) => {
       return store.subscribe(listener);
     },
-    
+
     /**
      * Subscribe to specific property changes
      */
@@ -41,7 +41,7 @@ export function createVanillaAdapter<T>(store: StoreApi<T>) {
         }
       });
     },
-    
+
     /**
      * Subscribe with selector
      */
@@ -56,7 +56,9 @@ export function createVanillaAdapter<T>(store: StoreApi<T>) {
       let prevValue = selector(store.getState());
       return store.subscribe((state) => {
         const currentValue = selector(state);
-        const isEqual = options?.equalityFn ? options.equalityFn(currentValue, prevValue) : currentValue === prevValue;
+        const isEqual = options?.equalityFn
+          ? options.equalityFn(currentValue, prevValue)
+          : currentValue === prevValue;
         if (!isEqual) {
           const oldValue = prevValue;
           prevValue = currentValue;
@@ -64,7 +66,7 @@ export function createVanillaAdapter<T>(store: StoreApi<T>) {
         }
       });
     },
-    
+
     /**
      * Destroy store and cleanup
      */
@@ -78,15 +80,17 @@ export function createVanillaAdapter<T>(store: StoreApi<T>) {
  * Create a simple event emitter for vanilla usage
  */
 export function createEventEmitter() {
-  const listeners = new Map<string, ((data: any) => void)[]>();
-  
+  const listeners = new Map<string, ((data: unknown) => void)[]>();
+
   return {
-    on: (event: string, listener: (data: any) => void) => {
-      if (!listeners.has(event)) {
-        listeners.set(event, []);
+    on: (event: string, listener: (data: unknown) => void) => {
+      let handlers = listeners.get(event);
+      if (!handlers) {
+        handlers = [];
+        listeners.set(event, handlers);
       }
-      listeners.get(event)!.push(listener);
-      
+      handlers.push(listener);
+
       // Return unsubscribe function
       return () => {
         const eventListeners = listeners.get(event);
@@ -98,20 +102,22 @@ export function createEventEmitter() {
         }
       };
     },
-    
-    emit: (event: string, data?: any) => {
+
+    emit: (event: string, data?: unknown) => {
       const eventListeners = listeners.get(event);
       if (eventListeners) {
-        eventListeners.forEach(listener => listener(data));
+        for (const listener of eventListeners) {
+          listener(data);
+        }
       }
     },
-    
-    off: (event: string, listener?: (data: any) => void) => {
+
+    off: (event: string, listener?: (data: unknown) => void) => {
       if (!listener) {
         listeners.delete(event);
         return;
       }
-      
+
       const eventListeners = listeners.get(event);
       if (eventListeners) {
         const index = eventListeners.indexOf(listener);
@@ -120,7 +126,7 @@ export function createEventEmitter() {
         }
       }
     },
-    
+
     removeAllListeners: (event?: string) => {
       if (event) {
         listeners.delete(event);
@@ -134,7 +140,7 @@ export function createEventEmitter() {
 /**
  * Utility to combine multiple store subscriptions
  */
-export function combineStoreSubscriptions<T extends Record<string, any>>(
+export function combineStoreSubscriptions<T extends Record<string, unknown>>(
   stores: { [K in keyof T]: StoreApi<T[K]> }
 ): {
   getState: () => T;
@@ -143,27 +149,29 @@ export function combineStoreSubscriptions<T extends Record<string, any>>(
   const getState = (): T => {
     const state = {} as T;
     for (const [key, store] of Object.entries(stores)) {
-      (state as any)[key] = store.getState();
+      (state as Record<string, unknown>)[key] = store.getState();
     }
     return state;
   };
-  
+
   const subscribe = (listener: (state: T) => void) => {
     const unsubscribes: (() => void)[] = [];
-    
+
     for (const store of Object.values(stores)) {
-      const unsubscribe = (store as StoreApi<any>).subscribe(() => {
+      const unsubscribe = (store as StoreApi<unknown>).subscribe(() => {
         listener(getState());
       });
       unsubscribes.push(unsubscribe);
     }
-    
+
     // Return combined unsubscribe function
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      for (const unsub of unsubscribes) {
+        unsub();
+      }
     };
   };
-  
+
   return { getState, subscribe };
 }
 
@@ -172,15 +180,15 @@ export function combineStoreSubscriptions<T extends Record<string, any>>(
  */
 export function debounceSubscription<T>(
   callback: (state: T) => void,
-  delay: number = 100
+  delay = 100
 ): (state: T) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (state: T) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       callback(state);
       timeoutId = null;
@@ -193,14 +201,14 @@ export function debounceSubscription<T>(
  */
 export function throttleSubscription<T>(
   callback: (state: T) => void,
-  delay: number = 100
+  delay = 100
 ): (state: T) => void {
   let lastRun = 0;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (state: T) => {
     const now = Date.now();
-    
+
     if (now - lastRun >= delay) {
       callback(state);
       lastRun = now;
@@ -208,12 +216,15 @@ export function throttleSubscription<T>(
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      
-      timeoutId = setTimeout(() => {
-        callback(state);
-        lastRun = Date.now();
-        timeoutId = null;
-      }, delay - (now - lastRun));
+
+      timeoutId = setTimeout(
+        () => {
+          callback(state);
+          lastRun = Date.now();
+          timeoutId = null;
+        },
+        delay - (now - lastRun)
+      );
     }
   };
 }

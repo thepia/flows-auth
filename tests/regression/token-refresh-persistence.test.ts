@@ -123,8 +123,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     // Clear the spy call count from setup
     saveSessionSpy.mockClear();
@@ -158,8 +158,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     saveSessionSpy.mockClear();
 
@@ -201,8 +201,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     saveSessionSpy.mockClear();
 
@@ -221,8 +221,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     saveSessionSpy.mockClear();
 
@@ -244,8 +244,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     // Clear the spy call count from setup
     saveSessionSpy.mockClear();
@@ -275,8 +275,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     saveSessionSpy.mockClear();
 
@@ -392,8 +392,8 @@ describe('REGRESSION: Token Refresh Persistence', () => {
     await authStore.core.getState().updateTokens({
       access_token: mockInitialTokens.access_token,
       refresh_token: mockInitialTokens.refresh_token,
-      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000
-    ).toISOString()});
+      expiresAt: new Date(Date.now() + mockInitialTokens.expires_in * 1000).toISOString()
+    });
 
     // Clear spy to track calls during refresh
     const loadSessionSpy = mockDatabaseAdapter.loadSession;

@@ -129,12 +129,12 @@ export async function initializeFlowsErrorReporting() {
   if (!browser) return false;
 
   try {
-    const { initializeErrorReporter } = await import('@thepia/flows-auth');
+    // Telemetry is initialized automatically when the auth store is created
+    // (pass `errorReporting` in the config given to setupAuthContext in +layout.svelte).
+    // This helper now only resolves/logs the effective config.
     const config = await getErrorReportingConfig();
 
-    await initializeErrorReporter(config);
-
-    console.log('[Flows App] Error reporting initialized:', {
+    console.log('[Flows App] Error reporting config resolved (telemetry auto-initialized by auth store):', {
       endpoint: config.endpoint,
       serverType: config.serverType,
       enabled: config.enabled
@@ -189,8 +189,8 @@ export async function flushFlowsErrorReports() {
   if (!browser) return;
 
   try {
-    const { flushErrorReports } = await import('@thepia/flows-auth');
-    await flushErrorReports();
+    const { flushTelemetry } = await import('@thepia/flows-auth');
+    await flushTelemetry();
   } catch (error) {
     console.error('[Flows App] Failed to flush error reports:', error);
   }

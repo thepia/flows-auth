@@ -14,12 +14,12 @@ import type {
   PasskeyCredential,
   PasskeyRequest,
   RefreshTokenRequest,
+  SerializedWebAuthnRegistrationResponse,
   SignInResponse,
   User,
   UserPasskey,
   UserProfile,
   WebAuthnRegistrationOptions,
-  WebAuthnRegistrationResponse,
   WebAuthnVerificationResult
 } from '../types';
 import type {
@@ -563,7 +563,7 @@ export class AuthApiClient {
 
     const response = await this.request<{
       success?: boolean;
-      user?: any;
+      user?: User;
       message?: string;
       step?: string;
       access_token?: string;
@@ -584,17 +584,17 @@ export class AuthApiClient {
         ...response,
         step: 'success'
       } as SignInResponse;
-    } else if (response.step) {
+    }
+    if (response.step) {
       // API returned legacy SignInResponse format
       return response as SignInResponse;
-    } else {
-      // API returned error or unexpected format
-      return {
-        ...response,
-        step: 'error',
-        user: undefined
-      } as SignInResponse;
     }
+    // API returned error or unexpected format
+    return {
+      ...response,
+      step: 'error',
+      user: undefined
+    } as SignInResponse;
   }
 
   /**
@@ -676,7 +676,7 @@ export class AuthApiClient {
    */
   async verifyWebAuthnRegistration(registrationData: {
     userId: string;
-    registrationResponse: WebAuthnRegistrationResponse;
+    registrationResponse: SerializedWebAuthnRegistrationResponse;
   }): Promise<WebAuthnVerificationResult> {
     return this.request<WebAuthnVerificationResult>('/auth/webauthn/register-verify', {
       method: 'POST',

@@ -18,12 +18,10 @@
 
 import { getContext, setContext } from 'svelte';
 import { AUTH_CONTEXT_KEY } from '../constants/context-keys';
-
-import type { AuthConfig } from '../types';
-import type { SvelteAuthStore } from '../types/svelte';
-
 import { makeSvelteCompatible } from '../stores/adapters/svelte';
 import { createAuthStore } from '../stores/auth-store';
+import type { AuthConfig } from '../types';
+import type { SvelteAuthStore } from '../types/svelte';
 
 // Module-level fallback for Svelte 5 HMR: getContext throws lifecycle_outside_component
 // inside HMR branch effects, so getAuthStoreFromContext falls back to this reference.

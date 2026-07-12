@@ -5,7 +5,9 @@
 
 import type { AuthApiClient } from '../api/auth-api';
 import type { SessionData, SessionPersistence, TokenData } from './database';
+
 export type { TokenData } from './database';
+
 import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
 import type { UserMetadata } from './metadata-schema';
 // SignIn state types (keeping only the types, removed the class)
@@ -16,28 +18,27 @@ import type {
   SignInState,
   WebAuthnError
 } from './signin-state-machine';
-export type { SignInEvent, SignInState, SignInContext, SignInError, WebAuthnError };
-export type { SessionPersistence, SessionData, UserData, DatabaseAdapter } from './database';
-export type {
-  ConfirmConsentRequestSchema,
-  ConfirmConsentRequest,
-  ConfirmConsentResponseSchema,
-  ConfirmConsentResponse,
-  GetConsentsResponseSchema,
-  GetConsentsResponse,
-  CompactConsentRecord
-} from './onboarding';
 
+export type { DatabaseAdapter, SessionData, SessionPersistence, UserData } from './database';
 // Invitation types - single source of truth for both flows-auth and thepia.com
 export type {
   ActiveInvitation,
   ClientRegistration,
-  ConsentRecord,
-  ConsentData
+  ConsentData,
+  ConsentRecord
 } from './invitations';
-
 // Unified metadata schema - Auth0 app_metadata and WorkOS metadata
 export type { UserMetadata } from './metadata-schema';
+export type {
+  CompactConsentRecord,
+  ConfirmConsentRequest,
+  ConfirmConsentRequestSchema,
+  ConfirmConsentResponse,
+  ConfirmConsentResponseSchema,
+  GetConsentsResponse,
+  GetConsentsResponseSchema
+} from './onboarding';
+export type { SignInContext, SignInError, SignInEvent, SignInState, WebAuthnError };
 
 // User types
 export interface User {
@@ -364,7 +365,7 @@ export interface CheckUserResponse {
 
 export interface PasskeyRequest {
   email: string; // Changed to email for consistency with other methods
-  credential: PasskeyCredential; // Properly typed WebAuthn credential
+  credential: SerializedPasskeyCredential; // Serialized (base64url) credential sent to server
   challengeId?: string; // Optional challenge ID for verification
 }
 
@@ -508,6 +509,23 @@ export interface PasskeyCredential {
   type: 'public-key';
 }
 
+/**
+ * Serialized (JSON-safe) form of a passkey assertion, as produced by
+ * `serializeCredential()` and sent to the server. All binary fields are
+ * base64url-encoded strings rather than ArrayBuffers.
+ */
+export interface SerializedPasskeyCredential {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    authenticatorData: string;
+    signature: string;
+    userHandle: string | null;
+  };
+  type: 'public-key';
+}
+
 // Passkey management types
 export interface UserPasskey {
   id: string;
@@ -547,6 +565,23 @@ export interface WebAuthnRegistrationResponse {
   rawId: ArrayBuffer;
   response: AuthenticatorAttestationResponse;
   type: 'public-key';
+}
+
+/**
+ * Serialized (JSON-safe) form of a WebAuthn registration, as produced by
+ * `createCredential()` and sent to the server. All binary fields are
+ * base64url-encoded strings rather than ArrayBuffers.
+ */
+export interface SerializedWebAuthnRegistrationResponse {
+  id: string;
+  rawId: string;
+  response: {
+    clientDataJSON: string;
+    attestationObject: string;
+    transports: string[];
+  };
+  type: string;
+  clientExtensionResults: AuthenticationExtensionsClientOutputs;
 }
 
 export interface WebAuthnVerificationResult {
@@ -1014,26 +1049,26 @@ export { m, setI18nMessages } from '../utils/i18n';
 
 // Re-export auth store schema types and validators for runtime validation
 export type {
-  User as AuthStoreUser,
-  Tokens,
+  AuthStoreState,
   SignInState as AuthStoreSignInState,
-  AuthStoreState
+  Tokens,
+  User as AuthStoreUser
 } from './auth-store-schema';
 export {
-  UserSchema,
-  TokensSchema,
-  SignInStateSchema,
-  WebAuthnErrorSchema,
-  SignInErrorSchema,
   AuthCoreStateSchema,
-  SessionStateSchema,
-  UIStateSchema,
+  AuthStoreReadOnlyFields,
+  AuthStoreSetters,
+  AuthStoreStateSchema,
+  EmailAuthStateSchema,
   ErrorStateSchema,
   PasskeyStateSchema,
-  EmailAuthStateSchema,
-  AuthStoreStateSchema,
-  AuthStoreSetters,
-  AuthStoreReadOnlyFields
+  SessionStateSchema,
+  SignInErrorSchema,
+  SignInStateSchema,
+  TokensSchema,
+  UIStateSchema,
+  UserSchema,
+  WebAuthnErrorSchema
 } from './auth-store-schema';
 
 // Re-export onboarding types (consents, preferences, invitations, clients)

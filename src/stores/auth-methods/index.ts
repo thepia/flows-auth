@@ -5,19 +5,18 @@
  */
 
 export {
+  createEmailAuthStore,
+  type EmailAuthActions,
+  type EmailAuthState,
+  type EmailAuthStore,
+  getEmailAuthCapabilities,
+  isEmailOperationInProgress
+} from './email-auth';
+export {
   createPasskeyStore,
-  isPasskeyAvailableForUser,
   getPasskeyReadiness,
-  type PasskeyState,
+  isPasskeyAvailableForUser,
   type PasskeyActions,
+  type PasskeyState,
   type PasskeyStore
 } from './passkey';
-
-export {
-  createEmailAuthStore,
-  getEmailAuthCapabilities,
-  isEmailOperationInProgress,
-  type EmailAuthState,
-  type EmailAuthActions,
-  type EmailAuthStore
-} from './email-auth';

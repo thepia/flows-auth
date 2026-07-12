@@ -3,8 +3,8 @@
  * Converts Zustand stores to Svelte readable stores for reactive usage
  */
 
-import { derived, readable, writable } from 'svelte/store';
 import type { Readable, Unsubscriber, Writable } from 'svelte/store';
+import { derived, readable, writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
 import type { AuthStore } from '../../types';
 import type { SvelteAuthStore } from '../../types/svelte';
@@ -91,7 +91,7 @@ export function createDerivedStores<T>(zustandStore: StoreApi<T>) {
      * Create multiple derived stores at once
      */
     properties: <K extends keyof T>(...properties: K[]) => {
-      const stores: { [P in K]: Readable<T[P]> } = {} as any;
+      const stores = {} as { [P in K]: Readable<T[P]> };
 
       for (const property of properties) {
         stores[property] = derived(baseStore, (state) => state[property]);
@@ -116,9 +116,9 @@ export function combineZustandStores<T extends Record<string, unknown>>(
     const combined = {} as T;
     const keys = Object.keys(stores) as (keyof T)[];
 
-    keys.forEach((key, index) => {
+    for (const [index, key] of keys.entries()) {
       combined[key] = values[index] as T[typeof key];
-    });
+    }
 
     return combined;
   });
@@ -158,9 +158,9 @@ export function createReactiveForm<T extends Record<string, unknown>>(
   // Sync from Zustand to form store
   const unsubscribeZustand = zustandReadable.subscribe((state) => {
     const formData: Partial<T> = {};
-    formFields.forEach((field) => {
+    for (const field of formFields) {
       formData[field] = state[field];
-    });
+    }
     formStore.set(formData);
   });
 
@@ -187,9 +187,9 @@ export function createReactiveForm<T extends Record<string, unknown>>(
     reset: () => {
       const currentState = zustandStore.getState();
       const formData: Partial<T> = {};
-      formFields.forEach((field) => {
+      for (const field of formFields) {
         formData[field] = currentState[field];
-      });
+      }
       formStore.set(formData);
     },
 

@@ -20,17 +20,17 @@
  * }
  */
 export function isOlderThan(isoDate: string, milliseconds: number): boolean {
-	try {
-		const timestamp = new Date(isoDate).getTime();
-		if (Number.isNaN(timestamp)) {
-			console.warn('Invalid ISO date string:', isoDate);
-			return true; // Treat invalid dates as expired
-		}
-		return timestamp < Date.now() - milliseconds;
-	} catch (error) {
-		console.error('Error parsing date:', error);
-		return true; // Treat errors as expired
-	}
+  try {
+    const timestamp = new Date(isoDate).getTime();
+    if (Number.isNaN(timestamp)) {
+      console.warn('Invalid ISO date string:', isoDate);
+      return true; // Treat invalid dates as expired
+    }
+    return timestamp < Date.now() - milliseconds;
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return true; // Treat errors as expired
+  }
 }
 
 /**
@@ -44,17 +44,17 @@ export function isOlderThan(isoDate: string, milliseconds: number): boolean {
  * console.log(`Member for ${Math.floor(days)} days`);
  */
 export function daysSince(isoDate: string): number {
-	try {
-		const timestamp = new Date(isoDate).getTime();
-		if (Number.isNaN(timestamp)) {
-			console.warn('Invalid ISO date string:', isoDate);
-			return Number.POSITIVE_INFINITY; // Treat invalid as very old
-		}
-		return (Date.now() - timestamp) / (24 * 60 * 60 * 1000);
-	} catch (error) {
-		console.error('Error parsing date:', error);
-		return Number.POSITIVE_INFINITY;
-	}
+  try {
+    const timestamp = new Date(isoDate).getTime();
+    if (Number.isNaN(timestamp)) {
+      console.warn('Invalid ISO date string:', isoDate);
+      return Number.POSITIVE_INFINITY; // Treat invalid as very old
+    }
+    return (Date.now() - timestamp) / (24 * 60 * 60 * 1000);
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return Number.POSITIVE_INFINITY;
+  }
 }
 
 /**
@@ -70,17 +70,17 @@ export function daysSince(isoDate: string): number {
  * }
  */
 export function millisecondsSince(isoDate: string): number {
-	try {
-		const timestamp = new Date(isoDate).getTime();
-		if (Number.isNaN(timestamp)) {
-			console.warn('Invalid ISO date string:', isoDate);
-			return Number.POSITIVE_INFINITY;
-		}
-		return Date.now() - timestamp;
-	} catch (error) {
-		console.error('Error parsing date:', error);
-		return Number.POSITIVE_INFINITY;
-	}
+  try {
+    const timestamp = new Date(isoDate).getTime();
+    if (Number.isNaN(timestamp)) {
+      console.warn('Invalid ISO date string:', isoDate);
+      return Number.POSITIVE_INFINITY;
+    }
+    return Date.now() - timestamp;
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return Number.POSITIVE_INFINITY;
+  }
 }
 
 /**
@@ -96,7 +96,7 @@ export function millisecondsSince(isoDate: string): number {
  * }
  */
 export function isWithin(isoDate: string, milliseconds: number): boolean {
-	return !isOlderThan(isoDate, milliseconds);
+  return !isOlderThan(isoDate, milliseconds);
 }
 
 /**
@@ -110,20 +110,20 @@ export function isWithin(isoDate: string, milliseconds: number): boolean {
  * formatDate(user.createdAt) // "October 15, 2024"
  */
 export function formatDate(isoDate: string, locale = 'en-US'): string {
-	try {
-		const date = new Date(isoDate);
-		if (Number.isNaN(date.getTime())) {
-			return 'Invalid date';
-		}
-		return date.toLocaleDateString(locale, {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	} catch (error) {
-		console.error('Error formatting date:', error);
-		return 'Invalid date';
-	}
+  try {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    return date.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
 }
 
 /**
@@ -137,22 +137,22 @@ export function formatDate(isoDate: string, locale = 'en-US'): string {
  * formatDateTime(user.lastLoginAt) // "October 15, 2024, 2:22 PM"
  */
 export function formatDateTime(isoDate: string, locale = 'en-US'): string {
-	try {
-		const date = new Date(isoDate);
-		if (Number.isNaN(date.getTime())) {
-			return 'Invalid date';
-		}
-		return date.toLocaleString(locale, {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
-	} catch (error) {
-		console.error('Error formatting datetime:', error);
-		return 'Invalid date';
-	}
+  try {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    return date.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formatting datetime:', error);
+    return 'Invalid date';
+  }
 }
 
 /**
@@ -164,5 +164,5 @@ export function formatDateTime(isoDate: string, locale = 'en-US'): string {
  * const now = nowISO(); // "2024-10-15T14:22:00.123Z"
  */
 export function nowISO(): string {
-	return new Date().toISOString();
+  return new Date().toISOString();
 }

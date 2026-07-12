@@ -8,8 +8,8 @@ import type {
   ApiError,
   AuthConfig,
   AuthEventData,
-  AuthEventType,
   AuthEvents,
+  AuthEventType,
   ButtonConfig,
   ExplainerConfig,
   SessionPersistence,
@@ -21,7 +21,7 @@ import type {
 } from '../types';
 
 // Re-export core types for convenience
-export type { AuthConfig, User, ApiError, SignInState };
+export type { ApiError, AuthConfig, SignInState, User };
 
 /**
  * Core authentication store state
@@ -121,7 +121,7 @@ export interface ErrorActions {
 export interface ErrorStore extends ErrorState, ErrorActions {}
 
 // Re-export event types from canonical location
-export type { AuthEventType, AuthEventData } from '../types';
+export type { AuthEventData, AuthEventType } from '../types';
 
 // Event handler types for stores
 export type AuthEventHandler<T = AuthEventData> = (data: T) => void;

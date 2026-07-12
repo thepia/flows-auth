@@ -130,17 +130,17 @@ export class ConfigurableStorageManager {
       // SSR fallback - return a no-op adapter
       return {
         getItem: () => null,
-        setItem: () => {},
-        removeItem: () => {},
-        clear: () => {}
+        setItem: () => undefined,
+        removeItem: () => undefined,
+        clear: () => undefined
       };
     }
 
     switch (this.config.type) {
       case 'localStorage':
         return new LocalStorageAdapter();
-      case 'sessionStorage':
       default:
+        // Covers 'sessionStorage' and any unspecified type
         return new SessionStorageAdapter();
     }
   }

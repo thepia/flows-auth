@@ -145,10 +145,9 @@ export async function initializeTasksErrorReporting() {
   if (!browser) return;
 
   try {
-    const { initializeErrorReporter } = await import('@thepia/flows-auth');
+    // Telemetry is initialized automatically when the auth store is created
+    // (pass `errorReporting` in the config given to setupAuthContext in +layout.svelte).
     const config = await getErrorReportingConfig();
-
-    await initializeErrorReporter(config);
 
     if (config.debug) {
       console.log('[Tasks App] Error reporting initialized:', {
@@ -184,8 +183,7 @@ export async function initializeTasksErrorReportingProduction() {
   if (!browser) return;
 
   try {
-    const { initializeErrorReporter } = await import('@thepia/flows-auth');
-
+    // Telemetry is auto-initialized by the auth store; this override only builds/logs config.
     const config = {
       enabled: false, // Production frontend error reporting not implemented yet
       endpoint: null,
@@ -199,9 +197,7 @@ export async function initializeTasksErrorReportingProduction() {
       appVersion: '0.0.1'
     };
 
-    await initializeErrorReporter(config);
-
-    console.log('[Tasks App] Error reporting initialized (production forced):', {
+    console.log('[Tasks App] Error reporting config built (production forced):', {
       endpoint: config.endpoint,
       serverType: config.serverType,
       enabled: config.enabled
@@ -290,8 +286,8 @@ export async function flushTasksErrorReports() {
   if (!browser) return;
 
   try {
-    const { flushErrorReports } = await import('@thepia/flows-auth');
-    await flushErrorReports();
+    const { flushTelemetry } = await import('@thepia/flows-auth');
+    await flushTelemetry();
   } catch (error) {
     console.error('[Tasks App] Failed to flush error reports:', error);
   }

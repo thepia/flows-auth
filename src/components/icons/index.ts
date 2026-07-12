@@ -1,32 +1,30 @@
 // Icon component exports
 export { default as Icon } from './Icon.svelte';
-
-// Type exports
-export type {
-  IconProps,
-  IconVariant,
-  IconSize,
-  SemanticIconRegistry,
-  SemanticIconName,
-  IconCSSProperties,
-  IconThemeConfig
-} from './types.js';
-
 // Registry and utility exports
 export {
-  SEMANTIC_ICON_REGISTRY,
-  getAllSemanticIconNames,
-  getSemanticIconsByCategory,
-  getSemanticIconDescription,
-  isSemanticIcon,
+  applyIconTheme,
   DEFAULT_ICON_THEME,
   generateIconCSSProperties,
-  applyIconTheme,
-  removeIconTheme,
+  generateIconTypeDefinitions,
+  getAllSemanticIconNames,
   getCurrentIconTheme,
-  validateIconAvailability,
-  generateIconTypeDefinitions
+  getSemanticIconDescription,
+  getSemanticIconsByCategory,
+  isSemanticIcon,
+  removeIconTheme,
+  SEMANTIC_ICON_REGISTRY,
+  validateIconAvailability
 } from './IconRegistry.js';
+// Type exports
+export type {
+  IconCSSProperties,
+  IconProps,
+  IconSize,
+  IconThemeConfig,
+  IconVariant,
+  SemanticIconName,
+  SemanticIconRegistry
+} from './types.js';
 
 // Re-export commonly used Phosphor icons for convenience
 // This provides a curated set of icons that match our semantic registry
@@ -35,50 +33,50 @@ export {
 // Conditional exports based on peer dependency availability
 // Users should import icons directly from phosphor-svelte when using the Icon component
 export type {
-  // Authentication & Security
-  Shield,
-  Key,
-  Lock,
-  LockOpen as Unlock,
-  User,
-  UserCheck,
-  Fingerprint,
-  Envelope as Mail,
+  // Communication
+  Bell,
+  Briefcase,
+  // Business & Workflow
+  Buildings as Building,
+  CaretDown as ChevronDown,
+  CaretLeft as ChevronLeft,
   // UI Navigation
   CaretRight as ChevronRight,
-  CaretLeft as ChevronLeft,
-  CaretDown as ChevronDown,
   CaretUp as ChevronUp,
-  List as Menu,
-  X,
-  Gear as Settings,
-  House as Home,
+  ChatCircle as MessageCircle,
   // Status & Feedback
   Check,
   CheckCircle,
-  WarningCircle as AlertCircle,
-  XCircle,
-  Info,
   CircleNotch as Loader,
   Clock,
-  Pulse as Activity,
-  // Business & Workflow
-  Buildings as Building,
-  Users,
-  Briefcase,
-  File,
-  Folder,
-  MagnifyingGlass as Search,
-  Funnel as Filter,
   DownloadSimple as Download,
-  UploadSimple as Upload,
-  // Communication
-  Bell,
-  ChatCircle as MessageCircle,
+  Envelope as Mail,
+  File,
+  Fingerprint,
+  Folder,
+  Funnel as Filter,
+  Gear as Settings,
+  House as Home,
+  Info,
+  Key,
+  Link,
+  List as Menu,
+  Lock,
+  LockOpen as Unlock,
+  MagnifyingGlass as Search,
   Phone,
-  VideoCamera as Video,
+  Pulse as Activity,
   ShareNetwork as Share,
-  Link
+  // Authentication & Security
+  Shield,
+  UploadSimple as Upload,
+  User,
+  UserCheck,
+  Users,
+  VideoCamera as Video,
+  WarningCircle as AlertCircle,
+  X,
+  XCircle
 } from 'phosphor-svelte';
 
 /**

@@ -5,12 +5,14 @@
   import DevSidebar from '$lib/components/DevSidebar.svelte';
   import { devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
   import type { User } from '@thepia/flows-auth';
-  import { getGlobalAuthStore } from '@thepia/flows-auth/global-auth-store';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth';
   import { onMount } from 'svelte';
-  
+
   let currentScenario: DevScenario;
   let currentUser: User | null = null;
-  let authStore: ReturnType<typeof getGlobalAuthStore> | null = null;
+  // Obtain the auth store from Svelte context during component init.
+  // getContext() must run here (not inside onMount/async) per ADR 0004.
+  const authStore = getAuthStoreFromContext();
   let unsubscribeScenario: (() => void) | null = null;
   let unsubscribeAuth: (() => void) | null = null;
   
@@ -25,26 +27,16 @@
       currentScenario = scenario;
     });
     
-    // Get global auth store and subscribe to its state
-    try {
-      authStore = getGlobalAuthStore();
-      console.log('🔐 Auth store retrieved using proper pattern');
-      
-      // Subscribe to auth store changes
-      unsubscribeAuth = authStore.subscribe(($authState) => {
-        console.log('📊 Auth state update:', { state: $authState.state, user: !!$authState.user });
-        
-        if ($authState.state === 'authenticated' && $authState.user) {
-          currentUser = $authState.user;
-        } else {
-          currentUser = null;
-        }
-      });
-    } catch (error) {
-      console.error('❌ Failed to get global auth store:', error);
-      // Fallback to null - user will need to sign in
-      currentUser = null;
-    }
+    // Subscribe to auth store changes (store obtained from context at init)
+    unsubscribeAuth = authStore.subscribe(($authState) => {
+      console.log('📊 Auth state update:', { state: $authState.state, user: !!$authState.user });
+
+      if ($authState.state === 'authenticated' && $authState.user) {
+        currentUser = $authState.user;
+      } else {
+        currentUser = null;
+      }
+    });
     
     console.log('✅ Demo page initialization complete');
     

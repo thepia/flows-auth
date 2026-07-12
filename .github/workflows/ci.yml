@@ -9,6 +9,13 @@ on:
 env:
   NODE_VERSION: '22'
   PNPM_VERSION: '11.11.0'
+  # Ephemeral token for reading @thepia/* from GitHub Packages; inherited by
+  # every step, including the nested demo installs.
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   test:
@@ -29,9 +36,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+          registry-url: https://npm.pkg.github.com
+          scope: '@thepia'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # ephemeral, auto-expires
 
       - name: Lint with Biome
         run: pnpm run check
@@ -45,13 +56,22 @@ jobs:
       - name: Run unit tests
         run: pnpm run test:unit
 
+      - name: Run package/bundle validation tests
+        # These read from dist/ (types, tree-shaking, i18n, paraglide output),
+        # so they must run AFTER the build step above. They are excluded from the
+        # coverage run because that job does not build.
+        run: pnpm run test:package
+
       # - name: Run integration tests (CI-safe)
       #   run: pnpm run test:integration:env
       #   env:
       #     TEST_API_ENV: public
 
       - name: Generate test coverage
-        run: pnpm run test:coverage
+        # CI-scoped: excludes integration/critical tests that require a live API
+        # (dev.thepia.com:8443) and the paraglide build-artifact check, none of
+        # which are available on a runner. Full `test:coverage` runs locally.
+        run: pnpm run test:coverage:ci
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7
@@ -86,6 +106,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+          registry-url: https://npm.pkg.github.com
+          scope: '@thepia'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -93,14 +115,8 @@ jobs:
       - name: Build library
         run: pnpm run build
 
-      - name: Test flows app demo
-        run: |
-          cd examples/flows-app-demo
-          pnpm install --frozen-lockfile
-          pnpm run build
-
-      - name: Test tasks app demo
-        run: |
-          cd examples/tasks-app-demo
-          pnpm install --frozen-lockfile
-          pnpm run build
+      # flows-app-demo and tasks-app-demo are workspace members, so the root
+      # install above already installed their deps. Build them through the
+      # workspace filter (no per-example install / frozen-lockfile needed).
+      - name: Build example demos
+        run: pnpm --filter flows-app-demo --filter tasks-app-demo build

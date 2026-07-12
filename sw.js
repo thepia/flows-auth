@@ -42,12 +42,12 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((cacheNames) => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
+          cacheNames
+            .filter((cacheName) => cacheName !== CACHE_NAME)
+            .map((cacheName) => {
               console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
-            }
-          })
+            })
         );
       })
       .then(() => {
@@ -277,9 +277,9 @@ async function cacheFirst(request) {
  */
 async function notifyClients(type, payload) {
   const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
+  for (const client of clients) {
     client.postMessage({ type, payload });
-  });
+  }
 }
 
 /**

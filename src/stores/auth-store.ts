@@ -8,6 +8,8 @@
  * - Framework-agnostic with adapter support
  */
 
+// API client
+import { AuthApiClient } from '../api/auth-api';
 import type {
   ApplicationContext,
   AuthConfig,
@@ -17,8 +19,10 @@ import type {
   SignInData,
   StorageConfigurationUpdate
 } from '../types';
-import type { AuthEventData, AuthEventType, StoreOptions } from './types';
-
+// Telemetry
+import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry';
+// Feature stores
+import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
 // Core stores
 import { authenticateUser, createAuthCoreStore } from './core/auth-core';
 import { createLocalStorageAdapter } from './core/database';
@@ -30,19 +34,10 @@ import {
   createSessionStore,
   getCurrentSession
 } from './core/session';
-
-// Feature stores
-import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
 import { createOnboardingStore } from './onboarding-store';
-
+import type { AuthEventData, AuthEventType, StoreOptions } from './types';
 // UI stores
 import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state';
-
-// API client
-import { AuthApiClient } from '../api/auth-api';
-
-// Telemetry
-import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry';
 
 /**
  * Composed auth store interface - provides unified API

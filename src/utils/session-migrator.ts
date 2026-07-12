@@ -279,8 +279,8 @@ export function getRoleBasedStorageConfig(userRole: string): StorageConfiguratio
         sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
       };
 
-    case 'guest':
     default:
+      // Covers 'guest' and any unspecified role
       return {
         ...baseConfig,
         type: 'sessionStorage',

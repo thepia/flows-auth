@@ -171,7 +171,6 @@ if (registrationResult.step === 'success') {
 pnpm test:unit                    # Unit tests with mocking
 pnpm test:integration            # Integration tests against live APIs
 pnpm test:critical              # Critical functionality validation
-pnpm test:contracts             # API contract validation
 
 # API server detection for integration tests
 TEST_API_URL=https://dev.thepia.com:8443 pnpm test:integration

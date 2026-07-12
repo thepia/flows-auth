@@ -85,7 +85,7 @@
     "README.md",
     "CHANGELOG.md"
   ],
-  
+
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",
@@ -93,9 +93,10 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:ci": "vitest run --coverage --exclude 'tests/{integration/**,critical/**,package/**}'",
     "test:unit": "vitest run tests/stores/ tests/utils/ tests/api/ tests/components/",
     "test:integration": "vitest run tests/integration/",
-    "test:critical": "vitest run tests/critical/ tests/contracts/",
+    "test:critical": "vitest run tests/critical/ tests/contracts/ tests/unit/response-processing.test.ts tests/unit/ui-ux-integration.test.ts",
     "test:smoke": "vitest run tests/stores/auth-state-machine.test.ts tests/integration/api-environment.test.ts",
     "test:package": "vitest run tests/package",
     "test:paraglide-merge": "vitest run tests/integration/paraglide-multi-directory-merge.test.ts",
@@ -122,7 +123,7 @@
     "validate:quick": "pnpm typecheck && pnpm test:smoke",
     "validate:publish": "pnpm build && pnpm test:package",
     "verify-auth-patterns": "pnpm test:critical && echo '✅ Authentication patterns verified'",
-    "protect-auth": "pnpm test:contracts && pnpm test:auth-patterns && pnpm typecheck && pnpm build",
+    "protect-auth": "pnpm test:critical && pnpm typecheck && pnpm build",
     "example:tasks-app-demo": "cd examples/tasks-app-demo && pnpm dev",
     "example:flows-app-demo": "cd examples/flows-app-demo && pnpm dev",
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
@@ -153,7 +154,7 @@
     "phosphor-svelte": "^2.0.0 || ^3.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.0",
     "@inlang/paraglide-js": "^2.3.2",
     "@sveltejs/vite-plugin-svelte": "^3.1.2",
     "@testing-library/jest-dom": "^6.6.3",

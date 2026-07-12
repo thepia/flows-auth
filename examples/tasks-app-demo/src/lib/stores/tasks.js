@@ -27,32 +27,24 @@ class TasksManager {
   async init() {
     if (!browser || this.isInitialized) return;
 
-    try {
-      // Initialize local storage
-      const { getLocalStorageDB } = await import('@thepia/flows-auth');
-      this.localDB = getLocalStorageDB();
-      await this.localDB.init();
+    // TODO(flows-client): Offline persistence + service worker moved out of
+    // @thepia/flows-auth (getLocalStorageDB / getServiceWorkerManager were removed)
+    // into @thepia/flows-client. Integrate `new FlowsClient(...)` here — it registers
+    // /flows-sw.js and owns the IndexedDB layer. Until then, localDB/serviceWorker stay
+    // null, persistence + background sync are disabled, and tasks live in-memory only.
+    this.localDB = null;
+    this.serviceWorker = null;
 
-      // Initialize service worker
-      const { getServiceWorkerManager } = await import('@thepia/flows-auth');
-      this.serviceWorker = getServiceWorkerManager();
+    // Online/offline listeners are harmless without a DB; keep them wired.
+    this.setupSyncMonitoring();
 
-      // Load tasks from local storage
-      await this.loadTasks();
-
-      // Set up sync status monitoring
-      this.setupSyncMonitoring();
-
-      this.isInitialized = true;
-      console.log('[Tasks] Manager initialized');
-    } catch (error) {
-      console.error('[Tasks] Failed to initialize:', error);
-      const { reportTaskError } = await import('../config/errorReporting.js');
-      await reportTaskError('tasks.init', error, { context: 'TasksManager.init' });
-    }
+    this.isInitialized = true;
+    console.log('[Tasks] Manager initialized (persistence disabled — pending flows-client integration)');
   }
 
   async loadTasks() {
+    // No persistence layer yet (pending flows-client integration) — nothing to load.
+    if (!this.localDB) return;
     try {
       const workflows = await this.localDB.getAllWorkflows();
       const taskList = workflows
@@ -90,21 +82,23 @@ class TasksManager {
     };
 
     try {
-      // Store in local database
-      await this.localDB.storeWorkflow({
-        uid: task.uid,
-        workflowId: 'tasks',
-        timestamp: task.createdAt,
-        version: '1.0.0',
-        syncStatus: 'pending',
-        data: {
-          title: task.title,
-          description: task.description,
-          completed: task.completed
-        }
-      });
+      // Persist when a DB is available (disabled until flows-client is integrated)
+      if (this.localDB) {
+        await this.localDB.storeWorkflow({
+          uid: task.uid,
+          workflowId: 'tasks',
+          timestamp: task.createdAt,
+          version: '1.0.0',
+          syncStatus: 'pending',
+          data: {
+            title: task.title,
+            description: task.description,
+            completed: task.completed
+          }
+        });
+      }
 
-      // Update store
+      // Update in-memory store (works with or without persistence)
       tasks.update((list) => [task, ...list]);
 
       // Request sync
@@ -126,22 +120,20 @@ class TasksManager {
     if (!this.isInitialized) await this.init();
 
     try {
-      const workflow = await this.localDB.getWorkflow(uid);
-      if (!workflow) throw new Error('Task not found');
+      // Persist when a DB is available (disabled until flows-client is integrated)
+      if (this.localDB) {
+        const workflow = await this.localDB.getWorkflow(uid);
+        if (!workflow) throw new Error('Task not found');
 
-      const updatedData = {
-        ...workflow.data,
-        ...updates
-      };
+        await this.localDB.storeWorkflow({
+          ...workflow,
+          data: { ...workflow.data, ...updates },
+          syncStatus: 'pending',
+          lastModified: Date.now()
+        });
+      }
 
-      await this.localDB.storeWorkflow({
-        ...workflow,
-        data: updatedData,
-        syncStatus: 'pending',
-        lastModified: Date.now()
-      });
-
-      // Update store
+      // Update in-memory store (works with or without persistence)
       tasks.update((list) =>
         list.map((task) =>
           task.uid === uid
@@ -172,7 +164,10 @@ class TasksManager {
     if (!this.isInitialized) await this.init();
 
     try {
-      await this.localDB.deleteWorkflow(uid);
+      // Persist when a DB is available (disabled until flows-client is integrated)
+      if (this.localDB) {
+        await this.localDB.deleteWorkflow(uid);
+      }
 
       tasks.update((list) => list.filter((task) => task.uid !== uid));
 
@@ -218,6 +213,8 @@ class TasksManager {
   }
 
   async updateSyncStatus() {
+    // No persistence layer yet (pending flows-client integration) — no sync status.
+    if (!this.localDB) return;
     try {
       const pendingCount = await this.localDB.getPendingUploadCount();
       const metadata = await this.localDB.getSyncMetadata();

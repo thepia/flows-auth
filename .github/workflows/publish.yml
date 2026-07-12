@@ -46,11 +46,20 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
-      - name: Run tests
-        run: pnpm run test
-
+      # Build BEFORE tests: the package/bundle suites read from dist/, and many
+      # unit tests import the built entry (dist/index.js). Running tests first
+      # fails with dist/* ENOENT.
       - name: Build library
         run: pnpm run build
+
+      # CI-safe scope only. `pnpm run test` runs the whole suite, including
+      # tests/integration/** which require the live API (dev.thepia.com:8443)
+      # that isn't reachable on a publish runner. Mirror the proven-green ci.yml
+      # gate: unit tests + post-build package/bundle validation.
+      - name: Run tests
+        run: |
+          pnpm run test:unit
+          pnpm run test:package
 
       - name: Verify build artifacts
         run: |

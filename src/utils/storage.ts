@@ -122,10 +122,11 @@ export function getStorageSize(): number {
   if (!isBrowser()) return 0;
 
   let total = 0;
-  for (const key in localStorage) {
-    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
-      total += localStorage[key].length + key.length;
-    }
+  // Object.keys(localStorage) yields only the stored keys (Storage prototype
+  // methods aren't own-enumerable), so no hasOwnProperty/Object.hasOwn check is
+  // needed — keeps us on ES2020 and clear of noPrototypeBuiltins.
+  for (const key of Object.keys(localStorage)) {
+    total += localStorage[key].length + key.length;
   }
   return total;
 }

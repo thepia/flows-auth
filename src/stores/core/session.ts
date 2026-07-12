@@ -9,7 +9,7 @@
  */
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { type StateCreator, createStore } from 'zustand/vanilla';
+import { createStore, type StateCreator } from 'zustand/vanilla';
 import type { SignInData, User } from '../../types';
 import type { SessionPersistence } from '../../types/database';
 import {

@@ -4,12 +4,12 @@
  */
 
 import { getContext, setContext } from 'svelte';
-import { type Readable, derived, writable } from 'svelte/store';
+import { derived, type Readable, writable } from 'svelte/store';
 import * as m from '../paraglide/messages.js';
-import { type Locale, getLocale, setLocale } from '../paraglide/runtime.js';
+import { getLocale, type Locale, setLocale } from '../paraglide/runtime.js';
 
 // Re-export Paraglide types and utilities
-export { setLocale, getLocale, type Locale } from '../paraglide/runtime.js';
+export { getLocale, type Locale, setLocale } from '../paraglide/runtime.js';
 export { m };
 
 // Type for all available message functions
@@ -103,9 +103,7 @@ const PARAGLIDE_I18N_CONTEXT_KEY = 'flows-auth-paraglide-i18n';
  * Set global Paraglide i18n context for the entire app
  * Call this once at the root of your app
  */
-export function setParaglideI18nContext(config: {
-  language?: Locale;
-}) {
+export function setParaglideI18nContext(config: { language?: Locale }) {
   const i18n = createParaglideI18n(config.language || 'en');
   setContext(PARAGLIDE_I18N_CONTEXT_KEY, i18n);
   return i18n;
@@ -115,9 +113,7 @@ export function setParaglideI18nContext(config: {
  * Get Paraglide i18n from context or create a default instance
  * Components should use this to get i18n configuration
  */
-export function getParaglideI18n(config?: {
-  language?: Locale;
-}) {
+export function getParaglideI18n(config?: { language?: Locale }) {
   // Try to get from context first (app-wide configuration)
   const contextI18n = getContext<ReturnType<typeof createParaglideI18n>>(
     PARAGLIDE_I18N_CONTEXT_KEY

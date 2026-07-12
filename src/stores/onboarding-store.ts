@@ -27,10 +27,10 @@ import type {
   UserPreferences
 } from '../types/onboarding';
 import {
-  OnboardingMetadataSchema,
   getClientStatus,
   getConsentedUrls,
   hasConsentForUrl,
+  OnboardingMetadataSchema,
   parseOnboardingMetadata
 } from '../types/onboarding';
 

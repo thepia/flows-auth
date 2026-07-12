@@ -5,7 +5,7 @@
  * from src/types/ into a single dist/types.ts file with no external imports.
  */
 
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 
 const srcTypesDir = resolve(__dirname, '../src/types');

@@ -79,7 +79,12 @@
     "./src/paraglide/messages.js": "./dist/paraglide/messages.js",
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
 
   "scripts": {
     "build": "vite build",
@@ -124,7 +129,15 @@
     "example:flows-app-demo:local": "cd examples/flows-app-demo && pnpm dev:local",
     "example:flows-app-demo:production": "cd examples/flows-app-demo && pnpm dev:production"
   },
-  "keywords": ["svelte", "authentication", "webauthn", "passkeys", "flows", "oauth", "thepia"],
+  "keywords": [
+    "svelte",
+    "authentication",
+    "webauthn",
+    "passkeys",
+    "flows",
+    "oauth",
+    "thepia"
+  ],
   "author": "Thepia <dev@thepia.com>",
   "license": "UNLICENSED",
   "repository": {
@@ -141,7 +154,7 @@
     "phosphor-svelte": "^2.0.0 || ^3.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.0",
     "@inlang/paraglide-js": "^2.3.2",
     "@sveltejs/vite-plugin-svelte": "^3.1.2",
     "@testing-library/jest-dom": "^6.6.3",

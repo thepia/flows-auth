@@ -4,20 +4,19 @@
  * Exports core authentication stores for tree-shaking
  */
 
+// Re-export types
+export type * from '../types';
 export {
-  createAuthCoreStore,
   authenticateUser,
+  createAuthCoreStore,
   isTokenExpired,
   isUserAuthenticated
 } from './auth-core';
-export { createSessionStore, createSessionData } from './session';
 export { createErrorStore } from './error';
 export { createEventStore, createTypedEventEmitters } from './events';
 export {
-  isThepiaApp,
   cleanupNativeAppBridge,
-  createNativeAppSessionAdapter
+  createNativeAppSessionAdapter,
+  isThepiaApp
 } from './native-app-session-adapter';
-
-// Re-export types
-export type * from '../types';
+export { createSessionData, createSessionStore } from './session';

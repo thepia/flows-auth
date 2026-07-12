@@ -64,7 +64,7 @@ jobs:
 
     - name: Generate test coverage report
       run: |
-        pnpm run test:coverage
+        pnpm run test:coverage:ci
         echo "## 🔒 Authentication Test Coverage" >> $GITHUB_STEP_SUMMARY
         echo "Critical authentication patterns are protected by comprehensive tests." >> $GITHUB_STEP_SUMMARY
 
@@ -125,9 +125,11 @@ jobs:
           exit 1
         fi
 
-        # Verify auth-state-machine uses legacy storage keys (different pattern but consistent)
-        if ! grep -q "auth_access_token" src/stores/auth-state-machine.ts; then
-          echo "❌ CRITICAL: auth-state-machine not using expected storage keys!"
+        # Verify the legacy 'auth_access_token' key is still handled for backward
+        # compatibility. It moved out of the (now-removed) auth-state-machine into the
+        # API client (src/api/auth-api.ts, src/api/sync-api.ts), so search across src/.
+        if ! grep -rq "auth_access_token" src/; then
+          echo "❌ CRITICAL: legacy 'auth_access_token' storage key no longer handled!"
           exit 1
         fi
 

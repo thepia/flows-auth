@@ -1,3 +1,5 @@
+import type { AuthApiClient } from '../api/auth-api';
+import type { ComposedAuthStore } from '../stores/auth-store';
 import type {
   ApplicationContext,
   AuthStore,
@@ -5,8 +7,6 @@ import type {
   SignInResponse,
   StorageConfigurationUpdate
 } from '.';
-import type { AuthApiClient } from '../api/auth-api';
-import type { ComposedAuthStore } from '../stores/auth-store';
 
 // Svelte store types
 export type Unsubscriber = () => void;

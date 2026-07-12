@@ -3,8 +3,8 @@
  * Converts Zustand stores to Svelte readable stores for reactive usage
  */
 
-import { derived, readable, writable } from 'svelte/store';
 import type { Readable, Unsubscriber, Writable } from 'svelte/store';
+import { derived, readable, writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
 import type { AuthStore } from '../../types';
 import type { SvelteAuthStore } from '../../types/svelte';

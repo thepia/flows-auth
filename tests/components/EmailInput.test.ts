@@ -175,12 +175,11 @@ describe('EmailInput Component', () => {
 
   describe('Event Handling', () => {
     it('should dispatch change event on input', async () => {
-      const { component } = render(EmailInput, {
-        props: {}
-      });
-
       const handleChange = vi.fn();
-      component.$on('change', handleChange);
+      render(EmailInput, {
+        props: {},
+        events: { change: handleChange }
+      });
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'test@example.com' } });
@@ -193,14 +192,13 @@ describe('EmailInput Component', () => {
     });
 
     it('should dispatch focus event on focus', async () => {
-      const { component } = render(EmailInput, {
+      const handleFocus = vi.fn();
+      render(EmailInput, {
         props: {
           value: 'test@example.com'
-        }
+        },
+        events: { focus: handleFocus }
       });
-
-      const handleFocus = vi.fn();
-      component.$on('focus', handleFocus);
 
       const input = screen.getByRole('textbox');
       await fireEvent.focus(input);
@@ -213,14 +211,13 @@ describe('EmailInput Component', () => {
     });
 
     it('should dispatch blur event on blur', async () => {
-      const { component } = render(EmailInput, {
+      const handleBlur = vi.fn();
+      render(EmailInput, {
         props: {
           value: 'test@example.com'
-        }
+        },
+        events: { blur: handleBlur }
       });
-
-      const handleBlur = vi.fn();
-      component.$on('blur', handleBlur);
 
       const input = screen.getByRole('textbox');
       await fireEvent.blur(input);
@@ -235,15 +232,14 @@ describe('EmailInput Component', () => {
 
   describe('Conditional Authentication', () => {
     it('should dispatch conditionalAuth for valid email after debounce', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'test@example.com' } });
@@ -261,15 +257,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should not dispatch conditionalAuth for invalid email', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'invalid-email' } });
@@ -279,15 +274,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should not dispatch conditionalAuth when WebAuthn is disabled', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: false,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'test@example.com' } });
@@ -297,16 +291,15 @@ describe('EmailInput Component', () => {
     });
 
     it('should not dispatch conditionalAuth when input is disabled', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           disabled: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'test@example.com' } });
@@ -316,15 +309,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should cancel previous timeout on rapid changes', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
 
@@ -354,15 +346,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should respect custom debounce timing', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 500
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: 'test@example.com' } });
@@ -398,15 +389,14 @@ describe('EmailInput Component', () => {
 
   describe('Email Validation Edge Cases', () => {
     it('should handle empty input gracefully', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '' } });
@@ -416,15 +406,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should handle whitespace-only input', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '   ' } });
@@ -434,15 +423,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should validate complex email addresses', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const validEmails = [
         'user@example.com',
@@ -467,15 +455,14 @@ describe('EmailInput Component', () => {
     });
 
     it('should reject invalid email formats', async () => {
-      const { component } = render(EmailInput, {
+      const handleConditionalAuth = vi.fn();
+      render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
-        }
+        },
+        events: { conditionalAuth: handleConditionalAuth }
       });
-
-      const handleConditionalAuth = vi.fn();
-      component.$on('conditionalAuth', handleConditionalAuth);
 
       const invalidEmails = [
         'invalid',
@@ -531,7 +518,7 @@ describe('EmailInput Component', () => {
 
   describe('Performance', () => {
     it('should cleanup timeout on component destruction', () => {
-      const { component } = render(EmailInput, {
+      const { unmount } = render(EmailInput, {
         props: {
           enableWebAuthn: true,
           debounceMs: 1000
@@ -542,7 +529,7 @@ describe('EmailInput Component', () => {
       fireEvent.input(input, { target: { value: 'test@example.com' } });
 
       // Destroy component before timeout completes
-      component.$destroy();
+      unmount();
 
       // Advance timers - should not cause any issues
       vi.advanceTimersByTime(1000);

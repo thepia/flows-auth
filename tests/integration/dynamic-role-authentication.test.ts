@@ -14,13 +14,17 @@ import type {
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    signIn: vi.fn(),
-    signInWithPasskey: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    refresh_token: vi.fn(),
-    signOut: vi.fn()
-  }))
+  // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      signIn: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      refresh_token: vi.fn(),
+      signOut: vi.fn()
+    };
+  })
 }));
 
 const mockConfig: AuthConfig = {

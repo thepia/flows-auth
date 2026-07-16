@@ -12,19 +12,23 @@ import type { AuthConfig, SignInData, SignInResponse } from '../../src/types';
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    signIn: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    signInWithPasskey: vi.fn(),
-    refresh_token: vi.fn(),
-    signOut: vi.fn(),
-    checkEmail: vi.fn(),
-    sendAppEmailCode: vi.fn(),
-    verifyAppEmailCode: vi.fn(),
-    getPasskeyChallenge: vi.fn(),
-    getWebAuthnRegistrationOptions: vi.fn(),
-    verifyWebAuthnRegistration: vi.fn()
-  }))
+  // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refresh_token: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn(),
+      getPasskeyChallenge: vi.fn(),
+      getWebAuthnRegistrationOptions: vi.fn(),
+      verifyWebAuthnRegistration: vi.fn()
+    };
+  })
 }));
 
 // Mock WebAuthn browser APIs - require real browser interaction

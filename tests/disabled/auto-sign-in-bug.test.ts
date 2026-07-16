@@ -147,13 +147,13 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       const appAccessHandler = vi.fn();
       const successHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: {
+          appAccess: appAccessHandler,
+          success: successHandler
+        }
       });
-
-      // Set up event listeners
-      component.$on('appAccess', appAccessHandler);
-      component.$on('success', successHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -211,11 +211,10 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should NOT show persistent success screen that blocks app access', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -250,11 +249,10 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should handle registration success with unverified email correctly', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -301,11 +299,10 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should transition to authenticated-unconfirmed state after registration', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -347,11 +344,10 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should allow immediate app exploration after registration', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -438,10 +434,9 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       const appAccessHandler = vi.fn();
 
       const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+        props: { config: authConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -484,12 +479,13 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
         events.push({ type: 'success', timestamp: Date.now() });
       });
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: {
+          appAccess: appAccessHandler,
+          success: successHandler
+        }
       });
-
-      component.$on('appAccess', appAccessHandler);
-      component.$on('success', successHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');
@@ -531,12 +527,10 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
     it('should maintain backward compatibility with existing success event handlers', async () => {
       const successHandler = vi.fn();
 
-      const { component } = render(RegistrationForm, {
-        props: { config: authConfig }
+      render(RegistrationForm, {
+        props: { config: authConfig },
+        events: { success: successHandler }
       });
-
-      // Only listen to success event (old pattern)
-      component.$on('success', successHandler);
 
       // Complete registration flow
       const emailInput = screen.getByLabelText('Email address');

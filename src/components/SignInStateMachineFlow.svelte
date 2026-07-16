@@ -1,16 +1,27 @@
 <!--
   SignInStateMachineFlow - Sign-In State Machine using Svelte Flow
 -->
-<script>
+<script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { createEventDispatcher } from 'svelte';
   import { writable } from 'svelte/store';
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
-  export let currentSignInState = 'emailEntry';
-  export let width = 600;
-  export let height = 400;
-  export let onStateClick = null;
+  interface Props {
+    currentSignInState?: string;
+    width?: number;
+    height?: number;
+    onStateClick?: any;
+  }
+
+  let {
+    currentSignInState = 'emailEntry',
+    width = 600,
+    height = 400,
+    onStateClick = null
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -148,13 +159,13 @@
   const edges = writable(flowData.edges);
 
   // Update nodes when currentSignInState changes
-  $: {
+  run(() => {
     const updatedFlowData = createFlowData();
     nodes.set(updatedFlowData.nodes);
     edges.set(updatedFlowData.edges);
-  }
+  });
 
-  $: currentStateClass = `current-signin-state-${currentSignInState}`;
+  let currentStateClass = $derived(`current-signin-state-${currentSignInState}`);
 </script>
 
 <div class="signin-machine-flow" style="width: {width}px; height: {height}px;">

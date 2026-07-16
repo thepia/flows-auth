@@ -7,10 +7,15 @@ import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import { m } from '../../utils/i18n';
 
-// Props
-export let fullName = '';
-export let disabled = false;
-export let error: string | null = null;
+
+  interface Props {
+    // Props
+    fullName?: string;
+    disabled?: boolean;
+    error?: string | null;
+  }
+
+  let { fullName = $bindable(''), disabled = false, error = null }: Props = $props();
 
 // Event dispatcher
 const dispatch = createEventDispatcher<{
@@ -34,7 +39,7 @@ function handleInput(event: Event) {
       id="fullName"
       type="text"
       bind:value={fullName}
-      on:input={handleInput}
+      oninput={handleInput}
       placeholder={m['auth.fullNamePlaceholder']()}
       class="auth-input"
       class:error

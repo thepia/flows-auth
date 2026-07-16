@@ -320,8 +320,11 @@ describe('PinEntryStep Component', () => {
       });
 
       const successHandler = vi.fn();
-      const { component } = render(PinEntryStep, { props: { authStore } });
-      component.$on('success', successHandler);
+      render(PinEntryStep, 
+        { 
+          props: { authStore },
+          events: { success: successHandler } 
+        });
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '123456' } });

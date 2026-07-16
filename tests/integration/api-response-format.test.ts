@@ -55,11 +55,15 @@ vi.mock('../../src/utils/storageManager', () => ({
 }));
 
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    checkEmail: vi.fn(),
-    getPasskeyChallenge: vi.fn(),
-    signInWithPasskey: vi.fn()
-  })),
+  // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      checkEmail: vi.fn(),
+      getPasskeyChallenge: vi.fn(),
+      signInWithPasskey: vi.fn()
+    };
+  }),
   createAuthApiClient: vi.fn().mockReturnValue({
     checkEmail: vi.fn(),
     getPasskeyChallenge: vi.fn(),

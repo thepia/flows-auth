@@ -3,26 +3,40 @@
   Features: different message types, icons, animations, accessibility, Paraglide i18n support
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { m } from '../../utils/i18n';
 
-// Props
-export let type: 'error' | 'success' | 'info' | 'warning' = 'info';
-export let message = '';
-export let tKey = ''; // Translation key for Paraglide i18n
-export let showIcon = true;
-export let dismissible = false;
-export let className = '';
-export let animate = true;
-export let variant: 'default' | 'pin-status' = 'default';
+
+  interface Props {
+    // Props
+    type?: 'error' | 'success' | 'info' | 'warning';
+    message?: string;
+    tKey?: string; // Translation key for Paraglide i18n
+    showIcon?: boolean;
+    dismissible?: boolean;
+    className?: string;
+    animate?: boolean;
+    variant?: 'default' | 'pin-status';
+    children?: import('svelte').Snippet;
+  }
+
+  let {
+    type = 'info',
+    message = '',
+    tKey = '',
+    showIcon = true,
+    dismissible = false,
+    className = '',
+    animate = true,
+    variant = 'default',
+    children
+  }: Props = $props();
 
 // Internal state
-let visible = true;
+let visible = $state(true);
 
-// Computed message - use Paraglide message functions directly
-$: displayMessage = getDisplayMessage();
 
-// Check if we have slot content
-$: hasSlotContent = $$slots.default;
 
 function getDisplayMessage(): string {
   // If explicit message is provided, use it
@@ -57,12 +71,18 @@ function dismiss() {
   }
 }
 
+// Computed message - use Paraglide message functions directly
+let displayMessage = $derived(getDisplayMessage());
+// Check if we have slot content
+let hasSlotContent = $derived(children);
 // Auto-dismiss for success messages
-$: if (type === 'success' && displayMessage) {
-  setTimeout(() => {
-    if (dismissible) dismiss();
-  }, 5000);
-}
+run(() => {
+    if (type === 'success' && displayMessage) {
+    setTimeout(() => {
+      if (dismissible) dismiss();
+    }, 5000);
+  }
+  });
 </script>
 
 {#if visible && (displayMessage || hasSlotContent)}
@@ -81,7 +101,7 @@ $: if (type === 'success' && displayMessage) {
 
       <span class="flex-1 break-words text-left">
         {#if hasSlotContent}
-          <slot />
+          {@render children?.()}
         {:else}
           {displayMessage}
         {/if}
@@ -90,7 +110,7 @@ $: if (type === 'success' && displayMessage) {
       {#if dismissible}
         <button
           class="dismiss-button shrink-0"
-          on:click={dismiss}
+          onclick={dismiss}
           aria-label="Dismiss message"
         >
           ×

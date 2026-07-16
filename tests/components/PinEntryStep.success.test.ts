@@ -56,10 +56,10 @@ describe('PinEntryStep Success Flow', () => {
 
     // Spy on success event
     const successHandler = vi.fn();
-    const { component } = render(PinEntryStep, {
-      props: { authStore }
+    render(PinEntryStep, {
+      props: { authStore },
+      events: { success: successHandler }
     });
-    component.$on('success', successHandler);
 
     const input = screen.getByRole('textbox');
 
@@ -118,10 +118,10 @@ describe('PinEntryStep Success Flow', () => {
     authStore.verifyEmailCode = mockVerify;
 
     const successHandler = vi.fn();
-    const { component } = render(PinEntryStep, {
-      props: { authStore }
+    render(PinEntryStep, {
+      props: { authStore },
+      events: { success: successHandler }
     });
-    component.$on('success', successHandler);
 
     const input = screen.getByRole('textbox');
     await fireEvent.input(input, { target: { value: '123456' } });
@@ -161,10 +161,10 @@ describe('PinEntryStep Success Flow', () => {
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const successHandler = vi.fn();
-    const { component } = render(PinEntryStep, {
-      props: { authStore }
+    render(PinEntryStep, {
+      props: { authStore },
+      events: { success: successHandler }
     });
-    component.$on('success', successHandler);
 
     const input = screen.getByRole('textbox');
     await fireEvent.input(input, { target: { value: '123456' } });
@@ -216,10 +216,10 @@ describe('PinEntryStep Success Flow', () => {
     authStore.verifyEmailCode = mockVerify;
 
     const successHandler = vi.fn();
-    const { component } = render(PinEntryStep, {
-      props: { authStore }
+    render(PinEntryStep, {
+      props: { authStore },
+      events: { success: successHandler}
     });
-    component.$on('success', successHandler);
 
     const input = screen.getByRole('textbox');
     await fireEvent.input(input, { target: { value: '123456' } });

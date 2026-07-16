@@ -3,6 +3,8 @@
   Isolated component for the pinEntry state
 -->
 <script lang="ts">
+  import { preventDefault } from 'svelte/legacy';
+
 import { createEventDispatcher } from 'svelte';
 import type { AuthMethod } from '../../types';
 import type { SvelteAuthStore } from '../../types/svelte';
@@ -10,24 +12,28 @@ import CodeInput from './CodeInput.svelte';
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 
-export let authStore: SvelteAuthStore;
+  interface Props {
+    authStore: SvelteAuthStore;
+  }
+
+  let { authStore }: Props = $props();
 
 const dispatch = createEventDispatcher<{
   success: { user: any; method: AuthMethod };
 }>();
 
 // Reactive store subscription
-$: store = authStore;
-$: authConfig = $authStore?.config;
+let store = $derived(authStore);
+let authConfig = $derived($authStore?.config);
 
 // Button config - only depends on fields needed for pinEntry
-$: buttonConfig = (() => {
+let buttonConfig = $derived((() => {
   const deps = [$authStore?.loading, $authStore?.emailCode];
   return authStore ? authStore.getButtonConfig() : null;
-})();
+})());
 
 // State message (includes API errors) - reactive to signInState and apiError changes
-$: stateMessage = authStore && ($authStore.signInState || $authStore.apiError !== undefined) ? authStore.getStateMessageConfig() : null;
+let stateMessage = $derived(authStore && ($authStore.signInState || $authStore.apiError !== undefined) ? authStore.getStateMessageConfig() : null);
 
 async function handleEmailCodeVerification() {
   console.log('🔐 handleEmailCodeVerification called', { emailCode: $authStore.emailCode });
@@ -57,7 +63,7 @@ async function handleEmailCodeVerification() {
 </script>
 
 <div class="email-code-input">
-  <form on:submit|preventDefault={handleEmailCodeVerification}>
+  <form onsubmit={preventDefault(handleEmailCodeVerification)}>
     <CodeInput
       on:change={(e) => {
         authStore.setEmailCode(e.detail.value);

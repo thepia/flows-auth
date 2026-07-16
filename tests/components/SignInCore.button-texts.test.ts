@@ -65,10 +65,18 @@ describe('SignInCore Button Texts(no passkeys)', () => {
     });
 
     it('should enable emailPin button when valid email is entered', async () => {
+      // `initialEmail` triggers SignInCore's own auto checkUser() call on
+      // mount; without mockUserCheck it resolves via the default mock
+      // (exists: false), which can race with and overwrite the manual
+      // sendSignInEvent below. Keep the mock consistent with the event.
       const { authStore } = renderWithStoreProp(SignInCore, {
         authConfig: baseConfig,
         props: {
           initialEmail: 'test@example.com'
+        },
+        mockUserCheck: {
+          exists: true,
+          hasPasskey: false
         }
       });
 

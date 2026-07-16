@@ -6,13 +6,25 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import type { EmailVerificationPromptProps } from '../types';
 
-  // Props
-  export let email: string;
-  export let featureName = 'this feature';
-  export let onVerify: (() => void) | undefined = undefined;
-  export let onResend: (() => void) | undefined = undefined;
-  export let onDismiss: (() => void) | undefined = undefined;
-  export let className = '';
+  
+  interface Props {
+    // Props
+    email: string;
+    featureName?: string;
+    onVerify?: (() => void) | undefined;
+    onResend?: (() => void) | undefined;
+    onDismiss?: (() => void) | undefined;
+    className?: string;
+  }
+
+  let {
+    email,
+    featureName = 'this feature',
+    onVerify = undefined,
+    onResend = undefined,
+    onDismiss = undefined,
+    className = ''
+  }: Props = $props();
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -22,9 +34,9 @@
   }>();
 
   // Component state
-  let isVisible = false;
-  let isResending = false;
-  let isDismissed = false;
+  let isVisible = $state(false);
+  let isResending = $state(false);
+  let isDismissed = $state(false);
 
   // Show prompt with animation
   onMount(() => {
@@ -94,7 +106,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if !isDismissed}
   <div 
@@ -115,7 +127,7 @@
         <button 
           type="button"
           class="close-button"
-          on:click={handleDismiss}
+          onclick={handleDismiss}
           aria-label="Close verification prompt"
         >
           ×
@@ -148,7 +160,7 @@
         <button 
           type="button"
           class="primary-action"
-          on:click={handleVerify}
+          onclick={handleVerify}
         >
           Check Email
         </button>
@@ -156,7 +168,7 @@
         <button 
           type="button"
           class="secondary-action"
-          on:click={handleResend}
+          onclick={handleResend}
           disabled={isResending}
         >
           {isResending ? 'Email Sent!' : 'Resend Link'}
@@ -165,7 +177,7 @@
         <button 
           type="button"
           class="tertiary-action"
-          on:click={handleDismiss}
+          onclick={handleDismiss}
         >
           Continue with limited access
         </button>

@@ -5,18 +5,31 @@
   Allows authenticated users to accept policies
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { X, Check } from 'phosphor-svelte';
   import type { SvelteAuthStore } from '../../types/svelte';
   import { getAuthStoreFromContext } from '../../utils/auth-context';
   import { isThepiaApp }from '../../stores/core/native-app-session-adapter';
 
-  // Props
-  export let open = false;
-  export let store: SvelteAuthStore | null = null;
-  export let maxWidth = '900px';
-  export let showCloseButton = true;
-  export let urlPostfix = '?headless';
+  
+  interface Props {
+    // Props
+    open?: boolean;
+    store?: SvelteAuthStore | null;
+    maxWidth?: string;
+    showCloseButton?: boolean;
+    urlPostfix?: string;
+  }
+
+  let {
+    open = false,
+    store = null,
+    maxWidth = '900px',
+    showCloseButton = true,
+    urlPostfix = '?headless'
+  }: Props = $props();
 
   // Get auth store from prop or context
   const authStore = store || getAuthStoreFromContext();
@@ -26,11 +39,11 @@
     consent: { url: string; accepted: boolean };
   }>();
 
-  let dialogElement: HTMLDialogElement;
+  let dialogElement: HTMLDialogElement = $state();
   let isClosing = false;
-  let activeTab: 'privacy' | 'acceptable' = 'privacy';
-  let isAccepting = false;
-  let acceptanceError: string | null = null;
+  let activeTab: 'privacy' | 'acceptable' = $state('privacy');
+  let isAccepting = $state(false);
+  let acceptanceError: string | null = $state(null);
 
   // Transform URL to use dev domain if needed and append postfix
   function transformUrl(url: string): string {
@@ -55,27 +68,9 @@
     }
   }
 
-  // Get policy URLs from auth config
-  $: authConfig = authStore?.getConfig?.();
-  $: privacyUrl = transformUrl(authConfig?.privacyPolicyUrl || '');
-  $: acceptableUrl = transformUrl(authConfig?.acceptableUseUrl || '');
 
-  // Check if user is authenticated
-  $: isAuthenticated = $authStore?.state === 'authenticated';
 
-  // Track consent status for both policies
-  $: privacyConsent = $authStore?.user?.metadata?.consent?.[privacyUrl];
-  $: acceptableConsent = $authStore?.user?.metadata?.consent?.[acceptableUrl];
-  $: bothAccepted = !!privacyConsent && !!acceptableConsent;
 
-  $: if (dialogElement) {
-    if (open && !dialogElement.open) {
-      dialogElement.showModal();
-      document.body.style.overflow = 'hidden';
-    } else if (!open && dialogElement.open) {
-      handleClose();
-    }
-  }
 
   function handleClose() {
     if (isClosing) return;
@@ -159,14 +154,34 @@
     document.removeEventListener('keydown', handleEscape);
     document.body.style.overflow = '';
   });
+  // Get policy URLs from auth config
+  let authConfig = $derived(authStore?.getConfig?.());
+  let privacyUrl = $derived(transformUrl(authConfig?.privacyPolicyUrl || ''));
+  let acceptableUrl = $derived(transformUrl(authConfig?.acceptableUseUrl || ''));
+  // Check if user is authenticated
+  let isAuthenticated = $derived($authStore?.state === 'authenticated');
+  // Track consent status for both policies
+  let privacyConsent = $derived($authStore?.user?.metadata?.consent?.[privacyUrl]);
+  let acceptableConsent = $derived($authStore?.user?.metadata?.consent?.[acceptableUrl]);
+  let bothAccepted = $derived(!!privacyConsent && !!acceptableConsent);
+  run(() => {
+    if (dialogElement) {
+      if (open && !dialogElement.open) {
+        dialogElement.showModal();
+        document.body.style.overflow = 'hidden';
+      } else if (!open && dialogElement.open) {
+        handleClose();
+      }
+    }
+  });
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <dialog
   bind:this={dialogElement}
   class="policy-viewer-dialog"
-  on:click={handleBackdropClick}
+  onclick={handleBackdropClick}
   aria-labelledby="policy-title"
   aria-modal="true"
 >
@@ -177,7 +192,7 @@
         <button
           class="policy-tab {activeTab === 'privacy' ? 'active' : ''}"
           role="tab"
-          on:click={() => activeTab = 'privacy'}
+          onclick={() => activeTab = 'privacy'}
           aria-selected={activeTab === 'privacy'}
         >
           Privacy
@@ -188,7 +203,7 @@
         <button
           class="policy-tab {activeTab === 'acceptable' ? 'active' : ''}"
           role="tab"
-          on:click={() => activeTab = 'acceptable'}
+          onclick={() => activeTab = 'acceptable'}
           aria-selected={activeTab === 'acceptable'}
         >
           Acceptable Use
@@ -201,7 +216,7 @@
         <button
           type="button"
           class="policy-viewer-close"
-          on:click={handleClose}
+          onclick={handleClose}
           aria-label="Close policy viewer"
         >
           <X size={24} weight="bold" />
@@ -240,7 +255,7 @@
         {/if}
         <button
           class="accept-button"
-          on:click={handleAcceptPolicies}
+          onclick={handleAcceptPolicies}
           disabled={isAccepting || bothAccepted}
         >
           {#if isAccepting}

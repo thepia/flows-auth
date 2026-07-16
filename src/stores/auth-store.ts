@@ -608,10 +608,46 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         const response = await api.registerUser(userData);
 
         if (response.step === 'success' && response.user) {
-          eventEmitters.registrationSuccess({
-            user: response.user,
-            requiresVerification: true
-          });
+          if (response.access_token) {
+            // Server issued tokens immediately (e.g. email already verified via
+            // invitation) - establish the session now, same as registerUser().
+            authenticateUser(core, response.user, {
+              access_token: response.access_token,
+              refresh_token: response.refresh_token,
+              expiresAt: response.expires_in
+                ? new Date(Date.now() + response.expires_in * 1000).toISOString()
+                : null,
+              supabase_token: response.supabase_token,
+              supabase_expires_at: response.supabase_expires_at
+                ? new Date(response.supabase_expires_at).toISOString()
+                : undefined
+            });
+
+            const sessionData = createSessionData(
+              response.user,
+              {
+                access_token: response.access_token,
+                refresh_token: response.refresh_token,
+                expires_in: response.expires_in,
+                supabase_token: response.supabase_token,
+                supabase_expires_at: response.supabase_expires_at
+              },
+              'email-code'
+            );
+            session.getState().saveSession(sessionData);
+
+            eventEmitters.registrationSuccess({
+              user: response.user,
+              requiresVerification: false
+            });
+          } else {
+            // No tokens yet - user must complete email verification before
+            // a session is established.
+            eventEmitters.registrationSuccess({
+              user: response.user,
+              requiresVerification: true
+            });
+          }
         }
 
         return response;

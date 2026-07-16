@@ -6,8 +6,13 @@
 	// Browser detection without SvelteKit dependency
 	const browser = typeof window !== 'undefined';
 
-	// Props
-	export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
+	
+	interface Props {
+		// Props
+		store?: SvelteAuthStore | null; // Auth store prop (preferred)
+	}
+
+	let { store = null }: Props = $props();
 
 	// Auth store - use prop or fallback to context
 	let authStore = null;
@@ -17,10 +22,10 @@
 		console.warn('ErrorReportingStatus: No auth store available in context');
 	}
 
-	let queueSize = 0;
-	let config = null;
-	let isReporting = false;
-	let showDetails = false;
+	let queueSize = $state(0);
+	let config = $state(null);
+	let isReporting = $state(false);
+	let showDetails = $state(false);
 
 	onMount(() => {
 		if (!browser) return;
@@ -169,19 +174,19 @@
 		return 'active';
 	}
 	
-	$: statusText = (() => {
+	let statusText = $derived((() => {
 		if (!config) return 'Loading...';
 		if (!config.enabled) return 'Disabled';
 		if (queueSize > 0) return `${queueSize} pending`;
 		return 'Active';
-	})();
+	})());
 </script>
 
 <div class="error-reporting-status">
 	<div 
 		class="status-indicator {getStatusColor()}"
-		on:click={() => showDetails = !showDetails}
-		on:keydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
+		onclick={() => showDetails = !showDetails}
+		onkeydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
 		role="button"
 		tabindex="0"
 		title="Error reporting status - Click to expand"
@@ -222,13 +227,13 @@
 			<div class="section-divider">Test Error Reports</div>
 
 			<div class="test-actions">
-				<button on:click={testAuthError} class="test-btn auth">
+				<button onclick={testAuthError} class="test-btn auth">
 					Auth Event
 				</button>
-				<button on:click={testWebAuthnError} class="test-btn webauthn">
+				<button onclick={testWebAuthnError} class="test-btn webauthn">
 					WebAuthn Error
 				</button>
-				<button on:click={testApiError} class="test-btn api">
+				<button onclick={testApiError} class="test-btn api">
 					API Error
 				</button>
 			</div>
@@ -236,7 +241,7 @@
 			{#if queueSize > 0}
 				<div class="actions">
 					<button
-						on:click={flushReports}
+						onclick={flushReports}
 						disabled={isReporting}
 						class="flush-btn"
 					>

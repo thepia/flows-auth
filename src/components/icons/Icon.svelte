@@ -1,15 +1,31 @@
 <script lang="ts">
   import type { ComponentType } from 'svelte';
 
-  // Props
-  export let icon: ComponentType;
-  export let size: number | string = 24;
-  export let color: string = 'currentColor';
-  export let variant: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'muted' = 'primary';
-  export let weight: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone' = 'regular';
-  export let className: string = '';
-  export let interactive: boolean = false;
-  export let ariaLabel: string = '';
+  
+  interface Props {
+    // Props
+    icon: ComponentType;
+    size?: number | string;
+    color?: string;
+    variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'muted';
+    weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+    className?: string;
+    interactive?: boolean;
+    ariaLabel?: string;
+    [key: string]: any
+  }
+
+  let {
+    icon,
+    size = 24,
+    color = 'currentColor',
+    variant = 'primary',
+    weight = 'regular',
+    className = '',
+    interactive = false,
+    ariaLabel = '',
+    ...rest
+  }: Props = $props();
   
   // CSS variable mapping for consistent theming
   const colorMap = {
@@ -33,21 +49,22 @@
   };
   
   // Reactive computed values
-  $: iconColor = color === 'currentColor' ? colorMap[variant] : color;
-  $: iconSize = typeof size === 'string' && size in sizeMap 
+  let iconColor = $derived(color === 'currentColor' ? colorMap[variant] : color);
+  let iconSize = $derived(typeof size === 'string' && size in sizeMap 
     ? sizeMap[size as keyof typeof sizeMap]
-    : typeof size === 'number' ? `${size}px` : size;
+    : typeof size === 'number' ? `${size}px` : size);
   
   // Build CSS classes
-  $: cssClasses = [
+  let cssClasses = $derived([
     'thepia-icon',
     interactive && 'thepia-icon--interactive',
     className
-  ].filter(Boolean).join(' ');
+  ].filter(Boolean).join(' '));
+
+  const SvelteComponent = $derived(icon);
 </script>
 
-<svelte:component
-  this={icon}
+<SvelteComponent
   size={iconSize}
   color={iconColor}
   weight={weight}
@@ -55,7 +72,7 @@
   style="--icon-size: {iconSize}; --icon-color: {iconColor};"
   aria-label={ariaLabel}
   role={ariaLabel ? 'img' : undefined}
-  {...$$restProps}
+  {...rest}
 />
 
 <style>

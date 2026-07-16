@@ -28,7 +28,9 @@ describe('Build Verification', () => {
   it('should have required build artifacts', () => {
     expect(existsSync(join(distPath, 'index.js'))).toBe(true);
     expect(existsSync(join(distPath, 'index.d.ts'))).toBe(true);
-    expect(existsSync(join(distPath, 'style.css'))).toBe(true);
+    // CSS ships as flows-auth.css; package.json's exports map aliases both
+    // "./style.css" and "./dist/style.css" to it for consumers.
+    expect(existsSync(join(distPath, 'flows-auth.css'))).toBe(true);
   });
 
   it('should build as ES modules, not SSR components', () => {
@@ -61,8 +63,10 @@ describe('Build Verification', () => {
     expect(indexDts).toContain('export { default as SignInForm }');
     expect(indexDts).toMatch(/export\s*{\s*[^}]*createAuthStore[^}]*}/);
     expect(indexDts).toContain('export { AuthApiClient }');
-    // WebAuthn utilities are exported individually, not as export *
-    expect(indexDts).toContain("from './utils/webauthn'");
+    // WebAuthn utilities are exported individually, not as export *.
+    // The fixDtsImports build step appends explicit .d.ts extensions to
+    // relative imports for Deno compatibility.
+    expect(indexDts).toContain("from './utils/webauthn.d.ts'");
     expect(indexDts).toContain('isWebAuthnSupported');
   });
 
@@ -118,7 +122,7 @@ describe('Build Verification', () => {
   });
 
   it('should include all necessary CSS', () => {
-    const styleCss = readFileSync(join(distPath, 'style.css'), 'utf-8');
+    const styleCss = readFileSync(join(distPath, 'flows-auth.css'), 'utf-8');
 
     // Should contain component styles
     expect(styleCss).toContain('.auth-form');

@@ -11,14 +11,18 @@ import type { AuthConfig, SignInResponse } from '../../src/types';
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
-    getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
-    signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-    signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-    refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-    signOut: vi.fn().mockResolvedValue({ success: true })
-  }))
+  // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
+      getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
+      signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
+      signOut: vi.fn().mockResolvedValue({ success: true })
+    };
+  })
 }));
 
 // Mock WebAuthn browser APIs - require real browser interaction
@@ -73,7 +77,11 @@ describe('signInWithPasskey', () => {
     };
 
     // Make AuthApiClient constructor return our mock instance
-    (AuthApiClient as any).mockImplementation(() => mockApiClient);
+    // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
+    // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+    (AuthApiClient as any).mockImplementation(function () {
+      return mockApiClient;
+    });
 
     mockWebAuthn = webAuthnModule;
 

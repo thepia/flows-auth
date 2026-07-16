@@ -3,6 +3,8 @@
   Implements the optimal account creation journey: Account Creation → Passkey Setup → App Access
 -->
 <script lang="ts">
+  import { preventDefault } from 'svelte/legacy';
+
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { getAuthStoreFromContext } from '../utils/auth-context';
   import type { SvelteAuthStore } from '../types/svelte';
@@ -17,17 +19,33 @@
     AdditionalField
   } from '../types';
 
-  // Props
-  export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
-  export let showLogo = true;
-  export let compact = false;
-  export let className = '';
-  export let initialEmail = '';
-  export let invitationTokenData: InvitationTokenData | null = null;
-  export let invitationToken: string | null = null; // Original JWT token string
-  export let additionalFields: AdditionalField[] = [];
-  export let readOnlyFields: string[] = [];
-  export let onSwitchToSignIn: (() => void) | undefined = undefined;
+  
+  interface Props {
+    // Props
+    store?: SvelteAuthStore | null; // Auth store prop (preferred)
+    showLogo?: boolean;
+    compact?: boolean;
+    className?: string;
+    initialEmail?: string;
+    invitationTokenData?: InvitationTokenData | null;
+    invitationToken?: string | null; // Original JWT token string
+    additionalFields?: AdditionalField[];
+    readOnlyFields?: string[];
+    onSwitchToSignIn?: (() => void) | undefined;
+  }
+
+  let {
+    store = null,
+    showLogo = true,
+    compact = false,
+    className = '',
+    initialEmail = '',
+    invitationTokenData = null,
+    invitationToken = null,
+    additionalFields = [],
+    readOnlyFields = [],
+    onSwitchToSignIn = undefined
+  }: Props = $props();
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -45,7 +63,7 @@ const dispatch = createEventDispatcher<{
   }
 
   // Get config from store
-  $: config = authStore.getConfig();
+  let config = $derived(authStore.getConfig());
 
   // Track registration completion for auth store subscription
   let registrationCompleted = false;
@@ -55,21 +73,21 @@ const dispatch = createEventDispatcher<{
   let unsubscribeAuthStore: (() => void) | null = null;
 
   // Component state
-  let email = invitationTokenData?.email || initialEmail;
-  let firstName = invitationTokenData?.firstName || '';
-  let lastName = invitationTokenData?.lastName || '';
-  let company = invitationTokenData?.company || '';
-  let phone = invitationTokenData?.phone || '';
-  let jobTitle = invitationTokenData?.jobTitle || '';
-  let loading = false;
-  let error: string | null = null;
-  let supportsWebAuthn = false;
+  let email = $state(invitationTokenData?.email || initialEmail);
+  let firstName = $state(invitationTokenData?.firstName || '');
+  let lastName = $state(invitationTokenData?.lastName || '');
+  let company = $state(invitationTokenData?.company || '');
+  let phone = $state(invitationTokenData?.phone || '');
+  let jobTitle = $state(invitationTokenData?.jobTitle || '');
+  let loading = $state(false);
+  let error: string | null = $state(null);
+  let supportsWebAuthn = $state(false);
   let userExists = false;
   // Note: No success step - flow goes directly to authenticated app after passkey creation
 
   // Terms of Service state
-  let acceptedTerms = false;
-  let acceptedPrivacy = false;
+  let acceptedTerms = $state(false);
+  let acceptedPrivacy = $state(false);
   let marketingConsent = false;
 
   // WebAuthn state
@@ -109,22 +127,33 @@ const dispatch = createEventDispatcher<{
         hasRegistrationResult: !!registrationResult
       });
 
-      // Only emit appAccess after successful registration AND auth store confirms authentication
-      if (registrationCompleted && registrationResult && $auth.state === 'authenticated' && $auth.user) {
-        console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
-
-        dispatch('appAccess', {
-          user: registrationResult.user,
-          emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,
-          autoSignIn: registrationResult.emailVerifiedViaInvitation || false
-        });
-
-        // Reset registration tracking
-        registrationCompleted = false;
-        registrationResult = null;
-      }
+      maybeEmitAppAccess($auth.state, $auth.user);
     });
   });
+
+  // Emits appAccess once registration has completed AND the auth store
+  // confirms authentication. Called both from the store subscription above
+  // (covers state changes arriving after registration completes) and
+  // immediately after createAccount() resolves in handleRegistration
+  // (covers the case where authenticateUser() already transitioned the
+  // store to 'authenticated' synchronously *during* createAccount(), i.e.
+  // before registrationCompleted/registrationResult were set - by which
+  // point the subscription above has already fired and missed it).
+  function maybeEmitAppAccess(state: string, user: User | null) {
+    if (registrationCompleted && registrationResult && state === 'authenticated' && user) {
+      console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
+
+      dispatch('appAccess', {
+        user: registrationResult.user,
+        emailVerifiedViaInvitation: registrationResult.emailVerifiedViaInvitation,
+        autoSignIn: registrationResult.emailVerifiedViaInvitation || false
+      });
+
+      // Reset registration tracking
+      registrationCompleted = false;
+      registrationResult = null;
+    }
+  }
 
   // Clean up subscription on component destroy
   onDestroy(() => {
@@ -212,6 +241,13 @@ const dispatch = createEventDispatcher<{
         };
         registrationCompleted = true;
 
+        // The store may already have transitioned to 'authenticated'
+        // synchronously during createAccount() (e.g. the server returned
+        // tokens immediately) - check now rather than only waiting for a
+        // future subscription emission that may never come.
+        const currentAuthState = authStore.getState();
+        maybeEmitAppAccess(currentAuthState.state, currentAuthState.user);
+
         console.log('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
 
         // Account creation completed - auth store will handle session creation and app transition
@@ -273,7 +309,7 @@ const dispatch = createEventDispatcher<{
           </div>
         {/if}
 
-        <form on:submit|preventDefault={handleSubmit}>
+        <form onsubmit={preventDefault(handleSubmit)}>
           <div class="form-grid">
             <!-- Email Field (full width) -->
             <div class="form-field">
@@ -419,7 +455,7 @@ const dispatch = createEventDispatcher<{
         
         <!-- Form Footer -->
         <div class="form-footer">
-          <p>Already have an account? <button on:click={handleSwitchToSignIn} class="link-button">Sign in instead</button></p>
+          <p>Already have an account? <button onclick={handleSwitchToSignIn} class="link-button">Sign in instead</button></p>
         </div>
       </div>
 

@@ -6,12 +6,23 @@
   import { createEventDispatcher } from 'svelte';
   import type { EmailVerificationBannerProps } from '../types';
 
-  // Props
-  export let email: string;
-  export let onVerify: (() => void) | undefined = undefined;
-  export let onDismiss: (() => void) | undefined = undefined;
-  export let onResend: (() => void) | undefined = undefined;
-  export let className = '';
+  
+  interface Props {
+    // Props
+    email: string;
+    onVerify?: (() => void) | undefined;
+    onDismiss?: (() => void) | undefined;
+    onResend?: (() => void) | undefined;
+    className?: string;
+  }
+
+  let {
+    email,
+    onVerify = undefined,
+    onDismiss = undefined,
+    onResend = undefined,
+    className = ''
+  }: Props = $props();
 
   // Events
   const dispatch = createEventDispatcher<{
@@ -21,8 +32,8 @@
   }>();
 
   // Component state
-  let isDismissed = false;
-  let isResending = false;
+  let isDismissed = $state(false);
+  let isResending = $state(false);
 
   // Handle verify action
   function handleVerify() {
@@ -93,7 +104,7 @@
       <button 
         type="button"
         class="verify-button"
-        on:click={openEmailApp}
+        onclick={openEmailApp}
         aria-label="Open email app"
       >
         Check Email
@@ -102,7 +113,7 @@
       <button 
         type="button"
         class="resend-button"
-        on:click={handleResend}
+        onclick={handleResend}
         disabled={isResending}
         aria-label="Resend verification email"
       >
@@ -113,7 +124,7 @@
     <button 
       type="button"
       class="dismiss-button"
-      on:click={handleDismiss}
+      onclick={handleDismiss}
       aria-label="Dismiss verification banner"
     >
       ×

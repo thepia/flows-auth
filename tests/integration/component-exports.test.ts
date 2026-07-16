@@ -106,11 +106,13 @@ describe('Component Exports', () => {
   it('should have correct component properties and methods', async () => {
     const { SignInForm } = await import('../../src/index');
 
-    // Check if it's a Svelte component constructor
-    expect(SignInForm.prototype).toBeDefined();
-    expect(SignInForm.prototype.$set).toBeDefined();
-    expect(SignInForm.prototype.$on).toBeDefined();
-    expect(SignInForm.prototype.$destroy).toBeDefined();
+    // Svelte 5 components compile to plain functions of shape
+    // `(anchor, props) => Exports`, not classes with $set/$on/$destroy -
+    // those instance methods were removed. Mounting/events/unmounting go
+    // through svelte's mount()/unmount() and the `events` mount option
+    // instead (see the "should create and render" test above, which
+    // already exercises this).
+    expect(typeof SignInForm).toBe('function');
   });
 
   it('should maintain consistent exports between builds', async () => {

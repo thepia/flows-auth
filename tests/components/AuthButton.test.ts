@@ -601,7 +601,7 @@ describe('AuthButton Component', () => {
     it('should dispatch click event with method', async () => {
       const handleClick = vi.fn();
 
-      const { getByRole, component } = render(AuthButton, {
+      const { getByRole } = render(AuthButton, {
         props: {
           buttonConfig: {
             method: 'passkey',
@@ -610,11 +610,9 @@ describe('AuthButton Component', () => {
             supportsWebAuthn: false,
             disabled: false
           }
-        }
+        },
+        events: { click: handleClick }
       });
-
-      // Listen for the custom event using Svelte 4 pattern
-      component.$on('click', handleClick);
 
       const button = getByRole('button');
       await fireEvent.click(button);
@@ -629,7 +627,7 @@ describe('AuthButton Component', () => {
     it('should not dispatch click event when disabled', async () => {
       const handleClick = vi.fn();
 
-      const { getByRole, component } = render(AuthButton, {
+      const { getByRole } = render(AuthButton, {
         props: {
           buttonConfig: {
             method: 'passkey',
@@ -638,11 +636,9 @@ describe('AuthButton Component', () => {
             supportsWebAuthn: false,
             disabled: true
           }
-        }
+        },
+        events: { click: handleClick }
       });
-
-      // Listen for the custom event using Svelte 4 pattern
-      component.$on('click', handleClick);
 
       const button = getByRole('button');
       await fireEvent.click(button);
@@ -653,7 +649,7 @@ describe('AuthButton Component', () => {
     it('should not dispatch click event when loading', async () => {
       const handleClick = vi.fn();
 
-      const { getByRole, component } = render(AuthButton, {
+      const { getByRole } = render(AuthButton, {
         props: {
           buttonConfig: {
             method: 'passkey',
@@ -663,11 +659,9 @@ describe('AuthButton Component', () => {
             disabled: false
           },
           loading: true
-        }
+        },
+        events: { click: handleClick }
       });
-
-      // Listen for the custom event using Svelte 4 pattern
-      component.$on('click', handleClick);
 
       const button = getByRole('button');
       await fireEvent.click(button);

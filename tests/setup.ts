@@ -24,30 +24,15 @@ vi.mock('../src/utils/telemetry', () => ({
 
 // Mock phosphor-svelte icons to prevent ES module import issues
 vi.mock('phosphor-svelte', () => {
-  // Create a proper mock Svelte component
-  const MockIcon = class {
-    constructor() {
-      this.$$ = {
-        fragment: null,
-        ctx: [],
-        callbacks: {},
-        dirty: () => {},
-        bound: {},
-        update: () => {},
-        before_update: [],
-        after_update: [],
-        context: new Map(),
-        on_mount: [],
-        on_destroy: [],
-        skip_bound: false
-      };
-    }
-
-    $destroy() {}
-    $on() {
-      return () => {};
-    }
-    $set() {}
+  // Svelte 5 components (including ones invoked dynamically via
+  // `{@const SvelteComponent = ...} <SvelteComponent />`) are compiled to plain
+  // functions of the shape `(anchor, props) => void` - they are called directly,
+  // never constructed with `new`. A `class`-based mock (the old Svelte 4 legacy
+  // component shape) throws "Class constructor ... cannot be invoked without 'new'"
+  // as soon as any component dynamically renders one of these mocked icons.
+  // This no-op function is a minimal stand-in that satisfies that calling convention.
+  const MockIcon = function MockIcon() {
+    // Intentionally renders nothing - tests only need a safe icon placeholder.
   };
 
   return {

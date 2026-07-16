@@ -5,24 +5,43 @@
   Non-Controlled approach where the value remains internal.
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { createEventDispatcher } from 'svelte';
 import { m } from '../../utils/i18n';
 
 // Internal state (non-controlled)
-let value = '';
+let value = $state('');
 
-// Props
-export let placeholder = '';
-export let disabled = false;
-export let required = true;
-export let error: string | null = null;
-export let label = '';
-export let showLabel = true;
-export let maxlength = 6;
-export let className = '';
-export let autoAdvance = false; // Auto-submit when code is complete
-export let showDigits = false; // Show individual digit boxes instead of single input
-export let autoFocus = false; // Auto-focus the input when component mounts
+
+  interface Props {
+    // Props
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    error?: string | null;
+    label?: string;
+    showLabel?: boolean;
+    maxlength?: number;
+    className?: string;
+    autoAdvance?: boolean; // Auto-submit when code is complete
+    showDigits?: boolean; // Show individual digit boxes instead of single input
+    autoFocus?: boolean; // Auto-focus the input when component mounts
+  }
+
+  let {
+    placeholder = '',
+    disabled = false,
+    required = true,
+    error = null,
+    label = '',
+    showLabel = true,
+    maxlength = 6,
+    className = '',
+    autoAdvance = false,
+    showDigits = false,
+    autoFocus = false
+  }: Props = $props();
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -33,35 +52,16 @@ const dispatch = createEventDispatcher<{
 }>();
 
 // Internal state for individual digits
-let digits: string[] = Array(maxlength).fill('');
-let inputRef: HTMLInputElement;
-let digitRefs: HTMLInputElement[] = [];
-let isUpdatingFromValue = false;
+let digits: string[] = $state(Array(maxlength).fill(''));
+let inputRef: HTMLInputElement = $state();
+let digitRefs: HTMLInputElement[] = $state([]);
+let isUpdatingFromValue = $state(false);
 
-// Initialize digits array when maxlength changes
-$: {
-  if (showDigits && !isUpdatingFromValue) {
-    const newDigits = Array(maxlength).fill('');
-    // Update digits from current value
-    if (value) {
-      const chars = value.split('');
-      for (let i = 0; i < maxlength; i++) {
-        newDigits[i] = chars[i] || '';
-      }
-    }
-    digits = newDigits;
-  }
-}
 
 // Internal state for tracking current input length
-let currentLength = 0;
-let internalValue = '';
+let currentLength = $state(0);
+let internalValue = $state('');
 
-// Sync internal value with value prop for controlled mode
-$: if (value !== internalValue && value !== undefined) {
-  internalValue = value;
-  currentLength = value.length;
-}
 
 // Handle input changes for single input mode
 function handleInput(event: Event) {
@@ -183,14 +183,7 @@ function focusInput() {
   }
 }
 
-// Auto-focus on mount if enabled
-$: if (autoFocus) {
-  setTimeout(focusInput, 0); // Use setTimeout to ensure DOM is ready
-}
 
-// Reactive values for i18n
-$: displayPlaceholder = getDisplayText(placeholder || 'code_placeholder');
-$: displayLabel = getDisplayText(label || 'code_label');
 
 // Helper function to get display text from Paraglide
 function getDisplayText(key: string): string {
@@ -206,9 +199,39 @@ function getDisplayText(key: string): string {
     return key;
   }
 }
+// Initialize digits array when maxlength changes
+run(() => {
+  if (showDigits && !isUpdatingFromValue) {
+    const newDigits = Array(maxlength).fill('');
+    // Update digits from current value
+    if (value) {
+      const chars = value.split('');
+      for (let i = 0; i < maxlength; i++) {
+        newDigits[i] = chars[i] || '';
+      }
+    }
+    digits = newDigits;
+  }
+});
+// Sync internal value with value prop for controlled mode
+run(() => {
+    if (value !== internalValue && value !== undefined) {
+    internalValue = value;
+    currentLength = value.length;
+  }
+  });
+// Auto-focus on mount if enabled
+run(() => {
+    if (autoFocus) {
+    setTimeout(focusInput, 0); // Use setTimeout to ensure DOM is ready
+  }
+  });
+// Reactive values for i18n
+let displayPlaceholder = $derived(getDisplayText(placeholder || 'code_placeholder'));
+let displayLabel = $derived(getDisplayText(label || 'code_label'));
 // Use existing translation keys for accessibility
-$: ariaLabel = `${m['code.label']()} (${maxlength} digits)`;
-$: helpText = `Enter ${maxlength}-digit verification code`;
+let ariaLabel = $derived(`${m['code.label']()} (${maxlength} digits)`);
+let helpText = $derived(`Enter ${maxlength}-digit verification code`);
 </script>
 
 <div class="space-y-2 {className}">
@@ -233,9 +256,9 @@ $: helpText = `Enter ${maxlength}-digit verification code`;
           type="text"
           class="w-12 h-12 text-center text-lg font-mono border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {error ? 'border-red-500' : ''}"
           bind:value={digits[i]}
-          on:input={(e) => handleDigitInput(e, i)}
-          on:keydown={(e) => handleDigitKeyDown(e, i)}
-          on:paste={handlePaste}
+          oninput={(e) => handleDigitInput(e, i)}
+          onkeydown={(e) => handleDigitKeyDown(e, i)}
+          onpaste={handlePaste}
           maxlength="1"
           {disabled}
           {required}
@@ -255,10 +278,10 @@ $: helpText = `Enter ${maxlength}-digit verification code`;
       type="text"
       class="w-full {getInputClasses()}"
       value={value}
-      on:input={handleInput}
-      on:focus={handleFocus}
-      on:blur={handleBlur}
-      on:paste={handlePaste}
+      oninput={handleInput}
+      onfocus={handleFocus}
+      onblur={handleBlur}
+      onpaste={handlePaste}
       placeholder={displayPlaceholder}
       {disabled}
       {required}

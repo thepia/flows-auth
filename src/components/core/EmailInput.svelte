@@ -6,17 +6,33 @@
 import { m } from '../../utils/i18n';
 import { createEventDispatcher } from 'svelte';
 
-// Props
-export let value = '';
-export let placeholder = '';
-export let disabled = false;
-export let required = true;
-export let error: string | null = null;
-export let label = '';
-export let showLabel = true;
-export let enableWebAuthn = true;
-export let debounceMs = 1000;
-export let className = '';
+
+  interface Props {
+    // Props
+    value?: string;
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    error?: string | null;
+    label?: string;
+    showLabel?: boolean;
+    enableWebAuthn?: boolean;
+    debounceMs?: number;
+    className?: string;
+  }
+
+  let {
+    value = $bindable(''),
+    placeholder = '',
+    disabled = false,
+    required = true,
+    error = null,
+    label = '',
+    showLabel = true,
+    enableWebAuthn = true,
+    debounceMs = 1000,
+    className = ''
+  }: Props = $props();
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -75,9 +91,6 @@ function getInputClasses(): string {
   return "input-brand";
 }
 
-// Reactive values for i18n
-$: displayPlaceholder = getDisplayText(placeholder || 'email.placeholder');
-$: displayLabel = getDisplayText(label || 'email.label');
 
 // Helper function to get display text from Paraglide
 function getDisplayText(key: string): string {
@@ -93,6 +106,9 @@ function getDisplayText(key: string): string {
     return key;
   }
 }
+// Reactive values for i18n
+let displayPlaceholder = $derived(getDisplayText(placeholder || 'email.placeholder'));
+let displayLabel = $derived(getDisplayText(label || 'email.label'));
 </script>
 
 <div class="space-y-2 {className}">
@@ -107,9 +123,9 @@ function getDisplayText(key: string): string {
     type="email"
     class="w-full {getInputClasses()}"
     bind:value
-    on:input={handleInput}
-    on:focus={handleFocus}
-    on:blur={handleBlur}
+    oninput={handleInput}
+    onfocus={handleFocus}
+    onblur={handleBlur}
     placeholder={displayPlaceholder}
     {disabled}
     {required}

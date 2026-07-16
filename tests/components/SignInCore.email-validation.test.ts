@@ -408,7 +408,7 @@ describe('SignInCore - Email Validation in Reactive Flow', () => {
 
   describe('Performance and Cleanup', () => {
     it('should cleanup timeout on component unmount', async () => {
-      const { component } = renderWithStoreProp(SignInCore, {
+      const { unmount } = renderWithStoreProp(SignInCore, {
         props: {
           initialEmail: ''
         },
@@ -420,14 +420,15 @@ describe('SignInCore - Email Validation in Reactive Flow', () => {
       await fireEvent.input(emailInput, { target: { value: 'test@example.com' } });
 
       // Unmount before timeout
-      component.$destroy();
+      unmount();
 
       // Advance time
       vi.advanceTimersByTime(400);
 
-      // Should not throw any errors after unmount
-      // Note: This test validates that the timeout is cleaned up properly
-      expect(component).toBeDefined();
+      // Advancing timers past unmount would itself throw if the debounced
+      // callback fired against a destroyed component; confirm unmount also
+      // actually removed it from the DOM.
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
   });
 });

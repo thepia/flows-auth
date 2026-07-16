@@ -1,16 +1,27 @@
 <!--
   SessionStateMachineFlow - Auth State visualization using Svelte Flow
 -->
-<script>
+<script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { writable } from 'svelte/store';
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { createEventDispatcher } from 'svelte';
 
-  export let authState = 'unauthenticated';
-  export let width = 600;
-  export let height = 300;
-  export let onStateClick = null;
+  interface Props {
+    authState?: string;
+    width?: number;
+    height?: number;
+    onStateClick?: any;
+  }
+
+  let {
+    authState = 'unauthenticated',
+    width = 600,
+    height = 300,
+    onStateClick = null
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -152,11 +163,11 @@
   const edges = writable(flowData.edges);
 
   // Update nodes when authState changes
-  $: {
+  run(() => {
     const updatedFlowData = createFlowData();
     nodes.set(updatedFlowData.nodes);
     edges.set(updatedFlowData.edges);
-  }
+  });
 
   function handleNodeClick(event) {
     const nodeId = event.detail.node.id;
@@ -167,7 +178,7 @@
     dispatch('stateClick', { state: nodeId });
   }
 
-  $: currentStateClass = `current-state-${authState}`;
+  let currentStateClass = $derived(`current-state-${authState}`);
 </script>
 
 <div class="auth-state-flow" style="width: {width}px; height: {height}px;">

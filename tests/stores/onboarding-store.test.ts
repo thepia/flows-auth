@@ -46,12 +46,16 @@ vi.mock('../../src/utils/storageManager', () => ({
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    getOnboardingMetadata: vi.fn(),
-    updateOnboardingMetadata: vi.fn(),
-    getConsents: vi.fn(),
-    confirmConsent: vi.fn()
-  }))
+  // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      getOnboardingMetadata: vi.fn(),
+      updateOnboardingMetadata: vi.fn(),
+      getConsents: vi.fn(),
+      confirmConsent: vi.fn()
+    };
+  })
 }));
 
 describe('OnboardingStore - Functional Tests', () => {

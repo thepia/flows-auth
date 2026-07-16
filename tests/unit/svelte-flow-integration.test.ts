@@ -256,14 +256,14 @@ describe('Svelte Flow Integration', () => {
     });
 
     it('should handle rapid state changes without errors', () => {
-      const { component } = render(TestFlow);
-
-      // Simulate rapid updates that could cause race conditions
+      // Svelte 5 removed the legacy `component.$set(...)` instance API
+      // (https://svelte.dev/e/component_api_changed), so rapid re-renders
+      // are exercised via render/unmount cycles instead of $set calls.
       expect(() => {
-        // This would test rapid prop updates in real components
-        component.$set({});
-        component.$set({});
-        component.$set({});
+        for (let i = 0; i < 3; i++) {
+          const { unmount } = render(TestFlow);
+          unmount();
+        }
       }).not.toThrow();
     });
   });

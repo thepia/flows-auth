@@ -9,19 +9,23 @@ import type { AuthConfig } from '../../src/types';
 
 // Mock external dependencies
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    signIn: vi.fn(),
-    signInWithMagicLink: vi.fn(),
-    signInWithPasskey: vi.fn(),
-    refreshToken: vi.fn(),
-    signOut: vi.fn(),
-    checkEmail: vi.fn(),
-    sendAppEmailCode: vi.fn(),
-    verifyAppEmailCode: vi.fn(),
-    getPasskeyChallenge: vi.fn(),
-    getWebAuthnRegistrationOptions: vi.fn(),
-    verifyWebAuthnRegistration: vi.fn()
-  }))
+  // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      signIn: vi.fn(),
+      signInWithMagicLink: vi.fn(),
+      signInWithPasskey: vi.fn(),
+      refreshToken: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: vi.fn(),
+      sendAppEmailCode: vi.fn(),
+      verifyAppEmailCode: vi.fn(),
+      getPasskeyChallenge: vi.fn(),
+      getWebAuthnRegistrationOptions: vi.fn(),
+      verifyWebAuthnRegistration: vi.fn()
+    };
+  })
 }));
 
 describe('auth-core updateTokens', () => {

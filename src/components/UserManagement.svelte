@@ -10,17 +10,22 @@ import Icon from './icons/Icon.svelte';
 import { ArrowsClockwise } from 'phosphor-svelte';
 import { m } from '../utils/i18n';
 
-// Props
-export let user: User;
-export let onSignOut: () => void;
-export let onRefreshTokens: (() => Promise<void>) | undefined = undefined;
+
+  interface Props {
+    // Props
+    user: User;
+    onSignOut: () => void;
+    onRefreshTokens?: (() => Promise<void>) | undefined;
+  }
+
+  let { user, onSignOut, onRefreshTokens = undefined }: Props = $props();
 
 // Events
 const dispatch = createEventDispatcher<{
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
 
-let refreshing = false;
+let refreshing = $state(false);
 
 function handleSignOut() {
   onSignOut();
@@ -53,7 +58,7 @@ async function handleRefreshTokens() {
         <button
           type="button"
           class="refresh-button"
-          on:click={handleRefreshTokens}
+          onclick={handleRefreshTokens}
           disabled={refreshing}
           title="Refresh tokens"
           aria-label="Refresh tokens"
@@ -71,7 +76,7 @@ async function handleRefreshTokens() {
       <button
         type="button"
         class="sign-out-button"
-        on:click={handleSignOut}
+        onclick={handleSignOut}
         title={m['user.signOut']()}
       >
         {m['user.signOut']()}
@@ -91,7 +96,7 @@ async function handleRefreshTokens() {
         <button
           type="button"
           class="action-button primary"
-          on:click={() => dispatch('navigate', { section: 'passkeys' })}
+          onclick={() => dispatch('navigate', { section: 'passkeys' })}
         >
           {m['user.security.managePasskeys']()}
         </button>
@@ -109,7 +114,7 @@ async function handleRefreshTokens() {
         <button
           type="button"
           class="action-button secondary"
-          on:click={() => dispatch('navigate', { section: 'profile' })}
+          onclick={() => dispatch('navigate', { section: 'profile' })}
         >
           {m['user.profile.editProfile']()}
         </button>
@@ -127,14 +132,14 @@ async function handleRefreshTokens() {
         <button
           type="button"
           class="action-button secondary"
-          on:click={() => dispatch('navigate', { section: 'privacy' })}
+          onclick={() => dispatch('navigate', { section: 'privacy' })}
         >
           {m['user.privacy.dataPolicy']()}
         </button>
         <button
           type="button"
           class="action-button secondary"
-          on:click={() => dispatch('navigate', { section: 'terms' })}
+          onclick={() => dispatch('navigate', { section: 'terms' })}
         >
           {m['user.privacy.termsOfService']()}
         </button>

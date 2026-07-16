@@ -4,6 +4,8 @@
   Handles auth state machine integration
 -->
 <script lang="ts">
+  import { run, preventDefault } from 'svelte/legacy';
+
 import { createEventDispatcher, onMount } from 'svelte';
 import type { SvelteAuthStore } from '../../types/svelte';
 import type { AuthError, AuthMethod, User } from '../../types';
@@ -20,11 +22,21 @@ import UserManagement from '../UserManagement.svelte';
 import PinEntryStep from './PinEntryStep.svelte';
 import PolicyViewer from './PolicyViewer.svelte';
 
-// Props
-export let store: SvelteAuthStore | null = null; // Auth store prop (preferred)
-export let initialEmail = '';
-export let className = '';
-export let explainFeatures = false; // Whether to show features list in explainer
+
+  interface Props {
+    // Props
+    store?: SvelteAuthStore | null; // Auth store prop (preferred)
+    initialEmail?: string;
+    className?: string;
+    explainFeatures?: boolean; // Whether to show features list in explainer
+  }
+
+  let {
+    store = null,
+    initialEmail = '',
+    className = '',
+    explainFeatures = false
+  }: Props = $props();
 
 // NOTE: Legacy 'texts' prop has been removed. Use i18n translations instead.
 
@@ -32,7 +44,7 @@ export let explainFeatures = false; // Whether to show features list in explaine
 // If store prop is provided, use it. Otherwise get from context (throws if missing).
 const authStore = store || getAuthStoreFromContext();
 
-$: authConfig = authStore?.getConfig?.();
+let authConfig = $derived(authStore?.getConfig?.());
 
 // Events
 const dispatch = createEventDispatcher<{
@@ -42,20 +54,24 @@ const dispatch = createEventDispatcher<{
 }>();
 
 // Debug logging to see what's happening
-$: console.log('🔍 SignInCore: authStore =', !!authStore, authStore);
+run(() => {
+    console.log('🔍 SignInCore: authStore =', !!authStore, authStore);
+  });
 
 // Component state (minimal - most state now in store)
-let email = initialEmail;
+let email = $state(initialEmail);
 // emailCode is now in the store, not local state
 
 // PolicyViewer state
-let showPolicyModal = false;
+let showPolicyModal = $state(false);
 
 // Get current state from store reactively
-let currentSignInState = 'emailEntry';
-$: if (authStore) {
-  currentSignInState = $authStore.signInState;
-}
+let currentSignInState = $state('emailEntry');
+run(() => {
+    if (authStore) {
+    currentSignInState = $authStore.signInState;
+  }
+  });
 
 // Debounced function to check email for existing pins (reactive statement compatible)
 let emailCheckTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -399,7 +415,7 @@ async function handleEmailCodeAuth() {
 
 // Determine authentication method and button configuration (with null guards)
 // Only depend on specific fields that affect button config, not the entire store
-$: buttonConfig = (() => {
+let buttonConfig = $derived((() => {
   // List dependencies explicitly to avoid reading the entire store
   const deps = [
     $authStore?.signInState,
@@ -411,26 +427,28 @@ $: buttonConfig = (() => {
     $authStore?.hasPasskeys
   ];
   return authStore?.getButtonConfig?.() ?? null;
-})();
+})());
 
 // State message configuration (centralized in AuthStore)
 // CRITICAL: Depend on $authStore to trigger recalculation when ANY store state changes
-$: stateMessage = $authStore ? authStore.getStateMessageConfig?.() ?? null : null;
+let stateMessage = $derived($authStore ? authStore.getStateMessageConfig?.() ?? null : null);
 
 // Explainer configuration (centralized in AuthStore)
-$: explainerConfig = authStore?.getExplainerConfig?.(explainFeatures) ?? null;
+let explainerConfig = $derived(authStore?.getExplainerConfig?.(explainFeatures) ?? null);
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
-$: if (authStore && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
-  checkUserForEmail(email);
-}
+run(() => {
+    if (authStore && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
+    checkUserForEmail(email);
+  }
+  });
 </script>
 
 {#if authStore}
 <div class="sign-in-core {className}">
   {#if currentSignInState === 'emailEntry' || currentSignInState === 'userChecked'}
     <!-- Combined Auth Step - Email entry with intelligent routing -->
-    <form on:submit|preventDefault={handleSignIn}>
+    <form onsubmit={preventDefault(handleSignIn)}>
       <EmailInput
         value={email}
         label="email.label"
@@ -453,7 +471,7 @@ $: if (authStore && email && (currentSignInState === 'emailEntry' || currentSign
           <button
             type="button"
             class="pin-direct-link"
-            on:click={() => authStore.notifyPinSent()}
+            onclick={() => authStore.notifyPinSent()}
             disabled={$authStore.loading}
           >
             {m["status.pinDirectAction"]()}

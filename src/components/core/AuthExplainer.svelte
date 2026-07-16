@@ -23,9 +23,14 @@
   import { m } from '../../utils/i18n';
   import Icon from '../icons/Icon.svelte';
 
-  // Props
-  export let config: ExplainerConfig | null = null;
-  export let apiError: ApiError | null = null;
+  
+  interface Props {
+    // Props
+    config?: ExplainerConfig | null;
+    apiError?: ApiError | null;
+  }
+
+  let { config = null, apiError = null }: Props = $props();
 
   // Type the m object for dynamic access
   const messages = m as Record<string, (params?: any) => string>;
@@ -61,9 +66,9 @@
       <!-- Single paragraph with optional icon -->
       <div class="explainer-paragraph">
         {#if config.iconName}
+          {@const SvelteComponent = getIconComponent(config.iconName)}
           <div class="flex items-center justify-center shrink-0 mt-px">
-            <svelte:component
-              this={getIconComponent(config.iconName)}
+            <SvelteComponent
               size={16}
               weight={getIconWeight(config.iconWeight)}
               color="currentColor"
@@ -84,10 +89,10 @@
       <!-- Feature list with icons -->
       <div class="explainer-features">
         {#each config.features as feature}
+          {@const SvelteComponent_1 = getIconComponent(feature.iconName)}
           <div class="flex items-center gap-2">
             <div class="feature-icon">
-              <svelte:component
-                this={getIconComponent(feature.iconName)}
+              <SvelteComponent_1
                 size={20}
                 weight={getIconWeight(feature.iconWeight)}
                 color="currentColor"

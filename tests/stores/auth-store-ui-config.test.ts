@@ -10,16 +10,20 @@ const mockSignInWithMagicLink = vi.fn();
 const mockSignInWithPasskey = vi.fn();
 
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    signIn: vi.fn(),
-    signInWithMagicLink: mockSignInWithMagicLink,
-    signInWithPasskey: mockSignInWithPasskey,
-    refresh_token: vi.fn(),
-    signOut: vi.fn(),
-    checkEmail: mockCheckEmail,
-    sendAppEmailCode: mockSendAppEmailCode,
-    verifyAppEmailCode: mockVerifyAppEmailCode
-  }))
+  // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      signIn: vi.fn(),
+      signInWithMagicLink: mockSignInWithMagicLink,
+      signInWithPasskey: mockSignInWithPasskey,
+      refresh_token: vi.fn(),
+      signOut: vi.fn(),
+      checkEmail: mockCheckEmail,
+      sendAppEmailCode: mockSendAppEmailCode,
+      verifyAppEmailCode: mockVerifyAppEmailCode
+    };
+  })
 }));
 
 // Mock WebAuthn browser APIs

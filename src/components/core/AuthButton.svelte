@@ -3,56 +3,60 @@
   Features: loading states, different auth methods, customizable appearance, i18n support
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { createEventDispatcher } from 'svelte';
 import type { SingleButtonConfig } from '../../types';
 import { m } from '../../utils/i18n';
 import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
-// Props
-export let type: 'submit' | 'button' = 'submit';
-export let loading = false;
-export let variant: 'primary' | 'secondary' | 'ghost' = 'primary';
-export let size: 'sm' | 'md' | 'lg' = 'md';
-export let fullWidth = true;
-export let className = '';
 
-// Method-specific text and icons (legacy - use buttonConfig instead)
-export let supportsWebAuthn = false;
 
-// AppCode awareness for pin vs magic link (legacy)
-export let isAppCodeBased = false;
 
-// NEW: Button configuration object (preferred approach)
-export let buttonConfig: SingleButtonConfig;
+
+
+
+
+  interface Props {
+    // Props
+    type?: 'submit' | 'button';
+    loading?: boolean;
+    variant?: 'primary' | 'secondary' | 'ghost';
+    size?: 'sm' | 'md' | 'lg';
+    fullWidth?: boolean;
+    className?: string;
+    // Method-specific text and icons (legacy - use buttonConfig instead)
+    supportsWebAuthn?: boolean;
+    // AppCode awareness for pin vs magic link (legacy)
+    isAppCodeBased?: boolean;
+    // NEW: Button configuration object (preferred approach)
+    buttonConfig: SingleButtonConfig;
+  }
+
+  let {
+    type = 'submit',
+    loading = false,
+    variant = 'primary',
+    size = 'md',
+    fullWidth = true,
+    className = '',
+    supportsWebAuthn = false,
+    isAppCodeBased = false,
+    buttonConfig
+  }: Props = $props();
 
 // Events
 const dispatch = createEventDispatcher<{
   click: { method: string };
 }>();
 
-// Apple device detection for biometric text
-$: isAppleDevice = detectAppleDevice();
 
 // Declare reactive variables with default values
-let effectiveSupportsWebAuthn: boolean = false;
-let effectiveDisabled: boolean = false;
-let displayText: string = '';
+let effectiveSupportsWebAuthn: boolean = $state(false);
+let effectiveDisabled: boolean = $state(false);
+let displayText: string = $state('');
 
-// Resolve effective values from buttonConfig or legacy props
-$: {
-  effectiveSupportsWebAuthn = buttonConfig ? buttonConfig.supportsWebAuthn : supportsWebAuthn;
-}
-$: {
-  effectiveDisabled = buttonConfig?.disabled || false;
-}
 
-// Dynamic content based on method and state - explicitly depend on effective values
-$: {
-  // Reference all dependencies to make this reactive
-  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased;
-  displayText = getDisplayText();
-}
-$: displayIconComponent = getDisplayIconComponent();
 
 function getDisplayText(): string {
   // Use Paraglide message functions directly - no legacy i18n
@@ -158,8 +162,24 @@ function handleClick(event: MouseEvent) {
   // Don't preventDefault - the form's on:submit handler will catch it
 }
 
+// Apple device detection for biometric text
+let isAppleDevice = $derived(detectAppleDevice());
+// Resolve effective values from buttonConfig or legacy props
+run(() => {
+  effectiveSupportsWebAuthn = buttonConfig ? buttonConfig.supportsWebAuthn : supportsWebAuthn;
+});
+run(() => {
+  effectiveDisabled = buttonConfig?.disabled || false;
+});
+// Dynamic content based on method and state - explicitly depend on effective values
+run(() => {
+  // Reference all dependencies to make this reactive
+  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased;
+  displayText = getDisplayText();
+});
+let displayIconComponent = $derived(getDisplayIconComponent());
 // Reactive disabled state for template
-$: isDisabled = effectiveDisabled || loading;
+let isDisabled = $derived(effectiveDisabled || loading);
 </script>
 
 <button
@@ -175,7 +195,7 @@ $: isDisabled = effectiveDisabled || loading;
          {isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
          {className}"
   disabled={isDisabled}
-  on:click={handleClick}
+  onclick={handleClick}
   aria-label={displayText}
   aria-describedby={loading ? 'button-loading-text' : null}
 >
@@ -184,7 +204,8 @@ $: isDisabled = effectiveDisabled || loading;
     <span id="button-loading-text" class="sr-only">Signing in...</span>
   {:else if displayIconComponent}
     {#if displayIconComponent}
-      <svelte:component this={displayIconComponent} size={16} weight="bold" aria-hidden="true" />
+      {@const SvelteComponent = displayIconComponent}
+      <SvelteComponent size={16} weight="bold" aria-hidden="true" />
     {/if}
   {/if}
   

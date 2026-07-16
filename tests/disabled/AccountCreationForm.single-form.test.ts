@@ -262,11 +262,10 @@ describe('AccountCreationForm - Single Form Design', () => {
     it('should emit success event on successful registration', async () => {
       const successHandler = vi.fn();
 
-      const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+      render(AccountCreationForm, {
+        props: { config: defaultConfig },
+        events: { success: successHandler }
       });
-
-      component.$on('success', successHandler);
 
       // Complete registration
       await fireEvent.input(screen.getByLabelText(/Email Address/), {
@@ -296,11 +295,10 @@ describe('AccountCreationForm - Single Form Design', () => {
     it('should emit appAccess event only after auth store confirms authentication', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+      render(AccountCreationForm, {
+        props: { config: defaultConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration
       await fireEvent.input(screen.getByLabelText(/Email Address/), {
@@ -359,11 +357,10 @@ describe('AccountCreationForm - Single Form Design', () => {
     it('should not emit appAccess if auth store state is not authenticated', async () => {
       const appAccessHandler = vi.fn();
 
-      const { component } = render(AccountCreationForm, {
-        props: { config: defaultConfig }
+      render(AccountCreationForm, {
+        props: { config: defaultConfig },
+        events: { appAccess: appAccessHandler }
       });
-
-      component.$on('appAccess', appAccessHandler);
 
       // Complete registration successfully
       await fireEvent.input(screen.getByLabelText(/Email Address/), {

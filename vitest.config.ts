@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import sveltePreprocess from 'svelte-preprocess';
 import { defineConfig } from 'vitest/config';
 
@@ -8,7 +9,8 @@ export default defineConfig({
     svelte({
       preprocess: sveltePreprocess(),
       hot: !process.env.VITEST
-    })
+    }),
+    svelteTesting()
   ],
   optimizeDeps: {
     include: ['phosphor-svelte']

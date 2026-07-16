@@ -103,6 +103,7 @@ export function renderWithStoreProp(
   Component: any,
   options: {
     props?: Record<string, any>;
+    events?: Record<string, (event: any) => void>;
     authConfig?: Partial<AuthConfig>;
     mockUserCheck?: {
       exists: boolean;
@@ -113,7 +114,7 @@ export function renderWithStoreProp(
     };
   } = {}
 ) {
-  const { props = {}, authConfig = {}, mockUserCheck } = options;
+  const { props = {}, events = {}, authConfig = {}, mockUserCheck } = options;
 
   const authStore = createTestAuthStore(authConfig);
 
@@ -137,7 +138,8 @@ export function renderWithStoreProp(
       props: {
         ...props,
         store: authStore
-      }
+      },
+      events,
     }),
     authStore
   };

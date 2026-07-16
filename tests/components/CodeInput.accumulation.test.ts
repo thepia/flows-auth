@@ -16,10 +16,10 @@ describe('CodeInput Accumulation (TDD)', () => {
   describe('Uncontrolled Component Behavior', () => {
     it('should accumulate digits but only dispatch when complete', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -44,10 +44,10 @@ describe('CodeInput Accumulation (TDD)', () => {
 
     it('should NOT reset when parent ignores value prop updates', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -66,10 +66,10 @@ describe('CodeInput Accumulation (TDD)', () => {
 
     it('should filter non-numeric while accumulating', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -92,13 +92,14 @@ describe('CodeInput Accumulation (TDD)', () => {
   describe('SignInCore Integration Pattern', () => {
     it('should only dispatch once when complete (validation-only)', async () => {
       const emailCodeValues: string[] = [];
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
-      });
-
-      // Parent just collects values, doesn't update the input
-      component.$on('change', (e: CustomEvent) => {
-        emailCodeValues.push(e.detail.value);
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { 
+          // Parent just collects values, doesn't update the input
+          change: (e: CustomEvent) => {
+            emailCodeValues.push(e.detail.value);
+          }
+        }
       });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
@@ -120,13 +121,13 @@ describe('CodeInput Accumulation (TDD)', () => {
 
     it('should work with button validation - store empty until valid', async () => {
       let emailCode = '';
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
-      });
-
-      // Parent updates its store
-      component.$on('change', (e: CustomEvent) => {
-        emailCode = e.detail.value;
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: {
+          'change': (e: CustomEvent) => {
+            emailCode = e.detail.value;
+          }
+        }
       });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
@@ -150,8 +151,10 @@ describe('CodeInput Accumulation (TDD)', () => {
         emailCode = e.detail.value;
       });
 
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler} 
+      });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -168,13 +171,16 @@ describe('CodeInput Accumulation (TDD)', () => {
 
     it('should not reset input when store updates from change event', async () => {
       let storeValue = '';
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-
-      component.$on('change', (e: CustomEvent) => {
-        // Simulate store update
-        storeValue = e.detail.value;
-        // In the old broken design, this would trigger re-render with value prop
-        // which would reset the input, causing cursor loss
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: {
+          'change': (e: CustomEvent) => {
+            // Simulate store update
+            storeValue = e.detail.value;
+            // In the old broken design, this would trigger re-render with value prop
+            // which would reset the input, causing cursor loss
+          }
+        } 
       });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
@@ -196,10 +202,10 @@ describe('CodeInput Accumulation (TDD)', () => {
   describe('Edge Cases', () => {
     it('should handle backspace/deletion without dispatching', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -215,10 +221,10 @@ describe('CodeInput Accumulation (TDD)', () => {
 
     it('should handle paste then continue typing', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 
@@ -240,9 +246,9 @@ describe('CodeInput Accumulation (TDD)', () => {
     it('should respect maxlength during accumulation', async () => {
       const changeHandler = vi.fn();
       const { component } = render(CodeInput, {
-        props: { maxlength: 6 }
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
 

@@ -13,29 +13,53 @@
   import SignInCore from './core/SignInCore.svelte';
   import { m } from '../utils/i18n';
 
-  // Auth store prop (preferred)
-  export let store: SvelteAuthStore | null = null;
+  
 
-  // Presentational props only
-  export let showLogo = true;
-  export let compact = false;
-  export let className = '';
-  export let initialEmail = '';
+  
 
-  // Size and display variants
-  export let size: 'small' | 'medium' | 'large' | 'full' = 'medium';
-  export let variant: 'inline' | 'popup' = 'inline';
-  export let popupPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right';
+  
 
-  // Popup modal controls
-  export let showCloseButton = true;
-  export let closeOnEscape = true;
+  
 
-  // Text keys
-  export let titleKey = 'signIn.title';
-  export let subtitleBrandedKey = 'signIn.subtitle';
-  export let subtitleKey = 'signIn.subtitleGeneric';
-  export let explainFeatures = false; // Whether to show features list in explainer
+  
+  interface Props {
+    // Auth store prop (preferred)
+    store?: SvelteAuthStore | null;
+    // Presentational props only
+    showLogo?: boolean;
+    compact?: boolean;
+    className?: string;
+    initialEmail?: string;
+    // Size and display variants
+    size?: 'small' | 'medium' | 'large' | 'full';
+    variant?: 'inline' | 'popup';
+    popupPosition?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+    // Popup modal controls
+    showCloseButton?: boolean;
+    closeOnEscape?: boolean;
+    // Text keys
+    titleKey?: string;
+    subtitleBrandedKey?: string;
+    subtitleKey?: string;
+    explainFeatures?: boolean; // Whether to show features list in explainer
+  }
+
+  let {
+    store = null,
+    showLogo = true,
+    compact = false,
+    className = '',
+    initialEmail = '',
+    size = 'medium',
+    variant = 'inline',
+    popupPosition = 'top-right',
+    showCloseButton = true,
+    closeOnEscape = true,
+    titleKey = 'signIn.title',
+    subtitleBrandedKey = 'signIn.subtitle',
+    subtitleKey = 'signIn.subtitleGeneric',
+    explainFeatures = false
+  }: Props = $props();
 
 
   // Events
@@ -53,8 +77,8 @@
     throw new Error('SignInForm requires store prop or auth store in context');
   }
 
-  $: authConfig = authStore?.getConfig?.();
-  $: logoConfig = authConfig?.branding;
+  let authConfig = $derived(authStore?.getConfig?.());
+  let logoConfig = $derived(authConfig?.branding);
 
   function getDisplayText(key: string, variables?: Record<string, any>): string {
     const fn = (m as unknown as Record<string, (vars?: any) => string>)[key];
@@ -96,14 +120,14 @@
   });
 
   // Dynamic class names based on props
-  $: authFormClasses = [
+  let authFormClasses = $derived([
     'auth-form',
     `auth-form--${size}`,
     `auth-form--${variant}`,
     variant === 'popup' ? `pos-${popupPosition}` : '',
     compact ? 'auth-form--compact' : '',
     className
-  ].filter(Boolean).join(' ');
+  ].filter(Boolean).join(' '));
 </script>
 
 <div class={authFormClasses}>
@@ -112,7 +136,7 @@
   {#if variant === 'popup' && showCloseButton}
     <button
       class="popup-close"
-      on:click={handleClose}
+      onclick={handleClose}
       aria-label="Close sign-in dialog"
     >
       ✕

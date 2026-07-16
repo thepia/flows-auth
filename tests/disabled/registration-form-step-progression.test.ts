@@ -89,13 +89,13 @@ describe('RegistrationForm Step Progression Debug', () => {
         additionalFields: ['company', 'phone', 'jobTitle'],
         invitationTokenData,
         initialEmail: 'test@example.com'
+      },
+      events: {
+        stepChange: (event) => {
+          stepChangeEvents.push(event.detail);
+          console.log('Step changed to:', event.detail.step);
+        }
       }
-    });
-
-    // Listen for step change events
-    component.$on('stepChange', (event) => {
-      stepChangeEvents.push(event.detail);
-      console.log('Step changed to:', event.detail.step);
     });
 
     // Step 1: Email entry

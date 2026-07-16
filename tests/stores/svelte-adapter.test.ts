@@ -15,33 +15,37 @@ import type { AuthConfig } from '../../src/types';
 
 // Mock external dependencies
 vi.mock('../../src/api/auth-api', () => ({
-  AuthApiClient: vi.fn().mockImplementation(() => ({
-    checkEmail: vi.fn().mockResolvedValue({
-      exists: true,
-      hasWebAuthn: false,
-      hasValidPin: false,
-      pinRemainingMinutes: 0
-    }),
-    sendAppEmailCode: vi.fn().mockResolvedValue({
-      success: true,
-      message: 'Code sent'
-    }),
-    verifyAppEmailCode: vi.fn().mockResolvedValue({
-      step: 'success',
-      user: {
-        id: '123',
-        email: 'test@example.com',
-        name: 'Test User',
-        emailVerified: true,
-        createdAt: '2023-01-01'
-      },
-      access_token: 'access-token',
-      refresh_token: 'refresh-token',
-      expires_in: 3600,
-      supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.mock',
-      supabase_expires_at: Date.now() + 3600000
-    })
-  }))
+  // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
+  // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
+  AuthApiClient: vi.fn().mockImplementation(function () {
+    return {
+      checkEmail: vi.fn().mockResolvedValue({
+        exists: true,
+        hasWebAuthn: false,
+        hasValidPin: false,
+        pinRemainingMinutes: 0
+      }),
+      sendAppEmailCode: vi.fn().mockResolvedValue({
+        success: true,
+        message: 'Code sent'
+      }),
+      verifyAppEmailCode: vi.fn().mockResolvedValue({
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: true,
+          createdAt: '2023-01-01'
+        },
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600,
+        supabase_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.mock',
+        supabase_expires_at: Date.now() + 3600000
+      })
+    };
+  })
 }));
 
 vi.mock('../../src/utils/webauthn', () => ({

@@ -26,10 +26,9 @@ describe('CodeInput Component', () => {
       const { component } = render(CodeInput, {
         props: {
           maxlength: 6
-        }
+        },
+        events: { change: changeHandler}
       });
-
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '1' } });
@@ -40,9 +39,10 @@ describe('CodeInput Component', () => {
 
     it('should dispatch change event ONLY when exactly 6 digits entered', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler} 
+      });
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '123456' } });
@@ -57,9 +57,10 @@ describe('CodeInput Component', () => {
 
     it('should only dispatch once when valid code is entered', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler} 
+      });
 
       const input = screen.getByRole('textbox');
 
@@ -81,8 +82,10 @@ describe('CodeInput Component', () => {
   describe('Numeric Input Filtering', () => {
     it('should filter out non-numeric characters and dispatch when valid', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler} 
+      });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
       await fireEvent.input(input, { target: { value: 'abc123def' } });
@@ -102,8 +105,10 @@ describe('CodeInput Component', () => {
 
     it('should allow only digits 0-9 and dispatch when complete', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler}
+      });
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '1!2@3#4$5%6^' } });
@@ -118,8 +123,10 @@ describe('CodeInput Component', () => {
 
     it('should filter special characters and not dispatch if empty', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-      component.$on('change', changeHandler);
+      render(CodeInput, { 
+        props: { maxlength: 6 },
+        events: { change: changeHandler} 
+      });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
       await fireEvent.input(input, { target: { value: '~`!@#$%^&*()_+-=[]{}|;:\'",.<>?/' } });
@@ -133,13 +140,13 @@ describe('CodeInput Component', () => {
   describe('MaxLength Constraint', () => {
     it('should respect maxlength prop', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           maxlength: 6
-        }
+        },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
       expect(input.maxLength).toBe(6);
@@ -162,13 +169,13 @@ describe('CodeInput Component', () => {
   describe('Paste Handling', () => {
     it('should handle paste events with numeric filtering', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           maxlength: 6
-        }
+        },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox');
 
@@ -188,13 +195,13 @@ describe('CodeInput Component', () => {
 
     it('should truncate pasted text to maxlength', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           maxlength: 6
-        }
+        },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox');
 
@@ -221,13 +228,13 @@ describe('CodeInput Component', () => {
 
     it('should not dispatch change events when disabled', async () => {
       const changeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           disabled: true
-        }
+        },
+        events: { change: changeHandler}
       });
-      component.$on('change', changeHandler);
 
       const input = screen.getByRole('textbox');
 
@@ -261,14 +268,14 @@ describe('CodeInput Component', () => {
   describe('Complete Event', () => {
     it('should dispatch complete event when code reaches maxlength with autoAdvance', async () => {
       const completeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           maxlength: 6,
           autoAdvance: true
-        }
+        },
+        events: { complete: completeHandler }
       });
-      component.$on('complete', completeHandler);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '123456' } });
@@ -282,14 +289,14 @@ describe('CodeInput Component', () => {
 
     it('should not dispatch complete event without autoAdvance', async () => {
       const completeHandler = vi.fn();
-      const { component } = render(CodeInput, {
+      render(CodeInput, {
         props: {
           value: '',
           maxlength: 6,
           autoAdvance: false
-        }
+        },
+        events: { complete: completeHandler }
       });
-      component.$on('complete', completeHandler);
 
       const input = screen.getByRole('textbox');
       await fireEvent.input(input, { target: { value: '123456' } });
@@ -301,8 +308,7 @@ describe('CodeInput Component', () => {
   describe('Focus and Blur Events', () => {
     it('should dispatch focus event when input gains focus', async () => {
       const focusHandler = vi.fn();
-      const { component } = render(CodeInput);
-      component.$on('focus', focusHandler);
+      render(CodeInput, { events: { focus: focusHandler } });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
       // Type a value first (since component is non-controlled)
@@ -318,8 +324,7 @@ describe('CodeInput Component', () => {
 
     it('should dispatch blur event when input loses focus', async () => {
       const blurHandler = vi.fn();
-      const { component } = render(CodeInput);
-      component.$on('blur', blurHandler);
+      render(CodeInput, { events: { blur: blurHandler } });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;
       // Type a value first (since component is non-controlled)
@@ -356,10 +361,11 @@ describe('CodeInput Component', () => {
   describe('Integration with SignInCore Pattern', () => {
     it('should work with on:change={(e) => setEmailCode(e.detail.value)} pattern', async () => {
       const setEmailCode = vi.fn();
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-
-      // Simulate SignInCore's event handler
-      component.$on('change', (e: CustomEvent) => setEmailCode(e.detail.value));
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        // Simulate SignInCore's event handler
+        events: { change: (e: CustomEvent) => setEmailCode(e.detail.value) }
+      });
 
       const input = screen.getByRole('textbox');
 
@@ -375,10 +381,13 @@ describe('CodeInput Component', () => {
 
     it('should only notify parent when validation passes', async () => {
       let emailCode = '';
-      const { component } = render(CodeInput, { props: { maxlength: 6 } });
-
-      component.$on('change', (e: CustomEvent) => {
-        emailCode = e.detail.value;
+      render(CodeInput, {
+        props: { maxlength: 6 },
+        events: {
+          change: (e: CustomEvent) => {
+            emailCode = e.detail.value;
+          }
+        }
       });
 
       const input = screen.getByRole('textbox') as HTMLInputElement;

@@ -2,31 +2,37 @@
   Simple test of Svelte Flow to verify it's working
 -->
 <script>
+  import { writable } from 'svelte/store';
   import { SvelteFlow, SvelteFlowProvider, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
   // Simple test data
-  let nodes = [
+  // @xyflow/svelte 0.1.x's <SvelteFlow> expects `nodes`/`edges` to be
+  // writable stores (it calls `userNodesStore.set(...)` internally via
+  // syncNodeStores/syncEdgeStores). Passing plain arrays - or omitting the
+  // props entirely - leaves them undefined and throws
+  // "Cannot read properties of undefined (reading 'set')" on mount.
+  const nodes = writable([
     { id: '1', type: 'default', position: { x: 100, y: 100 }, data: { label: 'Node 1' } },
     { id: '2', type: 'default', position: { x: 300, y: 100 }, data: { label: 'Node 2' } }
-  ];
+  ]);
 
-  let edges = [
+  const edges = writable([
     { id: 'e1-2', source: '1', target: '2', type: 'default' }
-  ];
+  ]);
 </script>
 
 <div style="width: 400px; height: 300px; border: 1px solid #ccc;">
   <h4>Svelte Flow Test</h4>
   <div style="width: 100%; height: 250px;">
-    <SvelteFlowProvider 
-      initialNodes={nodes}
-      initialEdges={edges}
+    <SvelteFlowProvider
       initialWidth={400}
       initialHeight={250}
       fitView={true}
     >
-      <SvelteFlow 
+      <SvelteFlow
+        {nodes}
+        {edges}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}

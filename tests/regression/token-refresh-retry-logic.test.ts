@@ -24,8 +24,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 describe('Regression: Token Refresh Retry Logic', () => {
   let authStore: ReturnType<typeof createAuthStore>;

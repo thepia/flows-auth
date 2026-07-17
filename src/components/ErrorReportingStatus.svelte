@@ -27,68 +27,99 @@
 	let isReporting = $state(false);
 	let showDetails = $state(false);
 
+	// Live auth store state for the "Auth Store Debug" section. Using an
+	// explicit $state + subscribe (rather than Svelte's `$authStore` store
+	// sigil) keeps this in the same all-runes idiom as the rest of the file,
+	// and TS can actually narrow a plain $state variable inside `{#if}` —
+	// narrowing doesn't carry from `authStore` over to a separate `$authStore`
+	// auto-subscription reference.
+	let liveAuthState = $state(null);
+	$effect(() => {
+		if (!authStore) {
+			liveAuthState = null;
+			return;
+		}
+		return authStore.subscribe((state) => {
+			liveAuthState = state;
+		});
+	});
+
 	onMount(() => {
 		if (!browser) return;
 
-		try {
-			// Get config from auth store if available
-			if (authStore) {
-				const authConfig = authStore.getConfig?.();
-				const apiClient = authStore.api;
+		// Config resolution needs to await the API client's actual effective
+		// URL (which may differ from the static configured URL when local dev
+		// server auto-detection kicks in), so it runs as an async IIFE rather
+		// than making onMount's callback itself async (which would break the
+		// synchronous cleanup-function return below).
+		(async () => {
+			try {
+				// Get config from auth store if available
+				if (authStore) {
+					const authConfig = authStore.getConfig?.();
+					const apiClient = authStore.api;
 
-				// Determine server type from API client
-				let serverType = 'Unknown';
-				let apiUrl = authConfig?.apiBaseUrl || 'Not configured';
+					// Determine server type from API client
+					let serverType = 'Unknown';
+					let apiUrl = authConfig?.apiBaseUrl || 'Not configured';
 
-				if (apiClient) {
-					// API client exists - it will detect local vs production
-					if (apiUrl.includes('dev.thepia.com') || apiUrl.includes('localhost')) {
-						serverType = 'Local Development Server';
-					} else if (apiUrl.includes('api.thepia.com')) {
-						serverType = 'Production API (auto-detects local)';
+					if (apiClient) {
+						// Resolve the actually-effective URL (may be a local dev
+						// server even though the static config says production)
+						try {
+							apiUrl = await apiClient.getEffectiveBaseUrl();
+						} catch {
+							// Fall back to the static configured URL already set above
+						}
+
+						if (apiUrl.includes('dev.thepia.com') || apiUrl.includes('localhost')) {
+							serverType = 'Local Development Server';
+						} else if (apiUrl.includes('api.thepia.com')) {
+							serverType = 'Production API';
+						} else {
+							serverType = 'Custom API Server';
+						}
 					} else {
-						serverType = 'Custom API Server';
+						serverType = 'No API Client';
 					}
-				} else {
-					serverType = 'No API Client';
-				}
 
+					config = {
+						enabled: authConfig?.errorReporting?.enabled ?? true,
+						serverType,
+						environment: authConfig?.errorReporting?.debug ? 'development' : 'production',
+						endpoint: authConfig?.errorReporting?.endpoint ||
+						          (apiUrl && apiUrl !== 'Not configured' ? '/dev/error-reports' : null),
+						debug: authConfig?.errorReporting?.debug ?? true,
+						apiBaseUrl: apiUrl
+					};
+				} else {
+					// Fallback config if no auth store
+					config = {
+						enabled: true,
+						serverType: 'Standalone (No Auth Store)',
+						environment: 'development',
+						endpoint: null,
+						debug: true
+					};
+				}
+			} catch (error) {
+				console.error('Failed to initialize error reporting status:', error);
+
+				// Set fallback config so component shows something
 				config = {
-					enabled: authConfig?.errorReporting?.enabled ?? true,
-					serverType,
-					environment: authConfig?.errorReporting?.debug ? 'development' : 'production',
-					endpoint: authConfig?.errorReporting?.endpoint ||
-					          (authConfig?.apiBaseUrl ? `${authConfig.apiBaseUrl}/dev/error-reports` : null),
-					debug: authConfig?.errorReporting?.debug ?? true,
-					apiBaseUrl: apiUrl
-				};
-			} else {
-				// Fallback config if no auth store
-				config = {
-					enabled: true,
-					serverType: 'Standalone (No Auth Store)',
-					environment: 'development',
-					endpoint: null,
-					debug: true
+					enabled: false,
+					serverType: 'Error loading config',
+					environment: 'unknown',
+					endpoint: null
 				};
 			}
+		})();
 
-			// Check status periodically
-			updateQueueStatus();
-			const interval = setInterval(updateQueueStatus, 5000);
+		// Check status periodically
+		updateQueueStatus();
+		const interval = setInterval(updateQueueStatus, 5000);
 
-			return () => clearInterval(interval);
-		} catch (error) {
-			console.error('Failed to initialize error reporting status:', error);
-
-			// Set fallback config so component shows something
-			config = {
-				enabled: false,
-				serverType: 'Error loading config',
-				environment: 'unknown',
-				endpoint: null
-			};
-		}
+		return () => clearInterval(interval);
 	});
 
 	function updateQueueStatus() {
@@ -224,6 +255,67 @@
 				<span class="detail-value">{config.debug ? 'On' : 'Off'}</span>
 			</div>
 
+			{#if authStore}
+				<div class="section-divider">Auth Store Debug</div>
+
+				{#if liveAuthState}
+					<div class="detail-row">
+						<span class="detail-label">Auth State:</span>
+						<span class="detail-value auth-state" class:success={liveAuthState.state === 'authenticated'} class:error={liveAuthState.state === 'error'}>
+							{liveAuthState.state}
+						</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">Sign-In State:</span>
+						<span class="detail-value auth-state">{liveAuthState.signInState}</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">Domain:</span>
+						<span class="detail-value">{authStore.getConfig?.()?.domain || 'Not available'}</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">App Code:</span>
+						<span class="detail-value">{authStore.getConfig?.()?.appCode || 'Not available'}</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">User:</span>
+						<span class="detail-value" class:success={liveAuthState.user} class:error={!liveAuthState.user}>
+							{liveAuthState.user ? liveAuthState.user.email : 'None'}
+						</span>
+					</div>
+
+					<div class="detail-row">
+						<span class="detail-label">Loading:</span>
+						<span class="detail-value" class:warning={liveAuthState.loading}>{liveAuthState.loading ? 'Yes' : 'No'}</span>
+					</div>
+
+					{#if liveAuthState.apiError}
+						<div class="detail-row">
+							<span class="detail-label">API Error:</span>
+							<span class="detail-value error">{liveAuthState.apiError.message}</span>
+						</div>
+					{/if}
+
+					{#if liveAuthState.user}
+						<div class="detail-row">
+							<span class="detail-label">Email Verified:</span>
+							<span class="detail-value" class:success={liveAuthState.user.emailVerified} class:warning={!liveAuthState.user.emailVerified}>
+								{liveAuthState.user.emailVerified ? 'Yes' : 'No'}
+							</span>
+						</div>
+					{/if}
+				{:else}
+					<div class="detail-row">
+						<span class="detail-label">Auth Store:</span>
+						<span class="detail-value error">Not initialized</span>
+					</div>
+				{/if}
+			{/if}
+
 			<div class="section-divider">Test Error Reports</div>
 
 			<div class="test-actions">
@@ -336,6 +428,28 @@
 	.detail-value.endpoint {
 		font-size: 0.7rem;
 		font-family: monospace;
+	}
+
+	.detail-value.success {
+		color: #28a745;
+		font-weight: 500;
+	}
+
+	.detail-value.error {
+		color: #dc3545;
+		font-weight: 500;
+	}
+
+	.detail-value.warning {
+		color: #ffc107;
+		font-weight: 500;
+	}
+
+	.detail-value.auth-state {
+		font-family: monospace;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
 	}
 
 	.section-divider {

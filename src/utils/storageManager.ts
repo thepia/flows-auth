@@ -6,7 +6,7 @@
  * long-running employee sessions.
  */
 
-import type { StorageConfig } from '../types';
+import type { StorageConfig } from '../types/index.js';
 
 export interface StorageAdapter {
   getItem(key: string): string | null;

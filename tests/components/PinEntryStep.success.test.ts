@@ -6,8 +6,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PinEntryStep from '../../src/components/core/PinEntryStep.svelte';
-import type { SignInData } from '../../src/types';
-import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup';
+import type { SignInData } from '../../src/types/index.js';
+import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
 vi.mock('../../src/utils/webauthn', () => ({

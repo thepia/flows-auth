@@ -4,8 +4,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 // Mock external dependencies
 vi.mock('../../src/api/auth-api', () => ({

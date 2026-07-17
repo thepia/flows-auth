@@ -4,14 +4,20 @@ import { fileURLToPath } from 'node:url';
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-import svelte from '@astrojs/svelte';
+import svelte, { vitePreprocess } from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte()],
+  integrations: [
+    svelte({
+      // @sveltejs/vite-plugin-svelte no longer strips <script lang="ts"> by
+      // default in v7 — must opt in explicitly or TS syntax leaks to the bundler
+      preprocess: vitePreprocess({ script: true })
+    })
+  ],
 
   // Astro server config
   server: {

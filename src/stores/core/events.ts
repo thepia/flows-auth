@@ -10,7 +10,7 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import type { AuthEvents } from '../../types';
+import type { AuthEvents } from '../../types/index.js';
 import type {
   AuthEventData,
   AuthEventHandler,
@@ -18,7 +18,7 @@ import type {
   EventState,
   EventStore,
   StoreOptions
-} from '../types';
+} from '../types.js';
 
 /**
  * Initial state for the event store

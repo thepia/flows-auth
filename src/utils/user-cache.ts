@@ -3,7 +3,7 @@
  * Reduces API calls by caching user check data
  */
 
-import type { CheckUserResponse } from '../types';
+import type { CheckUserResponse } from '../types/index.js';
 
 interface CacheEntry extends CheckUserResponse {
   timestamp: number; // Required for cache expiry

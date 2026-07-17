@@ -10,10 +10,10 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api';
-import type { EmailCodeSendResponse, SignInData, User } from '../../types';
-import { createSessionData } from '../core/session';
-import type { StoreOptions } from '../types';
+import { AuthApiClient } from '../../api/auth-api.js';
+import type { SignInData, User } from '../../types/index.js';
+import { createSessionData } from '../core/session.js';
+import type { StoreOptions } from '../types.js';
 
 /**
  * Email auth store state
@@ -103,20 +103,6 @@ const initialState: EmailAuthState = {
 export function createEmailAuthStore(options: StoreOptions) {
   const { config, devtools: enableDevtools = false, name = 'email-auth', api } = options;
 
-  // Helper function to get effective app code
-  const getEffectiveAppCode = (): string | undefined => {
-    if (config.appCode === false || config.appCode === null || config.appCode === undefined) {
-      return undefined;
-    }
-    if (typeof config.appCode === 'string') {
-      return config.appCode;
-    }
-    if (config.appCode === true) {
-      return 'app';
-    }
-    return undefined;
-  };
-
   const storeImpl = (
     set: (
       partial: Partial<EmailAuthStore> | ((state: EmailAuthStore) => Partial<EmailAuthStore>)
@@ -134,22 +120,9 @@ export function createEmailAuthStore(options: StoreOptions) {
           lastSentEmail: email
         });
 
-        console.log('📧 Sending email code:', { email, appCode: getEffectiveAppCode() });
+        console.log('📧 Sending email code:', { email, appCode: config.appCode });
 
-        let response:
-          | EmailCodeSendResponse
-          | { success: boolean; message: string; timestamp: number }
-          | undefined;
-        if (getEffectiveAppCode()) {
-          response = await api.sendAppEmailCode(email);
-        } else {
-          const magicResponse = await api.signInWithMagicLink({ email });
-          response = {
-            success: magicResponse.step === 'magic-link' || !!magicResponse.magicLinkSent,
-            message: 'Magic link sent to your email',
-            timestamp: Date.now()
-          };
-        }
+        const response = await api.sendAppEmailCode(email);
 
         if (response?.success) {
           set({
@@ -185,13 +158,6 @@ export function createEmailAuthStore(options: StoreOptions) {
         });
 
         console.log('🔍 Verifying email code:', { email, hasCode: !!code });
-
-        if (!getEffectiveAppCode()) {
-          set({ isVerifyingCode: false });
-          throw new Error(
-            'Email code verification is only available with organization configuration. This email uses magic link authentication instead.'
-          );
-        }
 
         const response = await api.verifyAppEmailCode(email, code);
 
@@ -294,41 +260,31 @@ export function createEmailAuthStore(options: StoreOptions) {
       hasValidPin?: boolean;
       pinRemainingMinutes?: number;
     }> => {
-      try {
-        console.log('🔍 Checking user:', { email });
+      console.log('🔍 Checking user:', { email });
 
-        const result = await api.checkEmail(email);
+      // api.checkEmail() only resolves for genuine "user checked" responses
+      // (including exists: false for a not-found user) and throws for real
+      // failures (network errors, 4xx/5xx) - let those propagate so callers
+      // can distinguish "no account" from "couldn't check the account".
+      const result = await api.checkEmail(email);
 
-        if (!result) {
-          console.error('❌ Error checking user: No result from API');
-          throw new Error('Failed to check user - no response from API');
-        }
+      const hasValidPin = checkForValidPin(result);
+      const pinRemainingMinutes = getRemainingPinMinutes(result);
 
-        const hasValidPin = checkForValidPin(result);
-        const pinRemainingMinutes = getRemainingPinMinutes(result);
+      console.log('✅ User check completed:', {
+        exists: result.exists,
+        hasWebAuthn: result.hasWebAuthn,
+        hasValidPin,
+        pinRemainingMinutes
+      });
 
-        console.log('✅ User check completed:', {
-          exists: result.exists,
-          hasWebAuthn: result.hasWebAuthn,
-          hasValidPin,
-          pinRemainingMinutes
-        });
-
-        return {
-          exists: result.exists,
-          hasWebAuthn: result.hasWebAuthn || false,
-          emailVerified: result.emailVerified || false,
-          hasValidPin,
-          pinRemainingMinutes
-        };
-      } catch (error) {
-        console.error('❌ Error checking user:', error);
-        return {
-          exists: false,
-          hasWebAuthn: false,
-          emailVerified: false
-        };
-      }
+      return {
+        exists: result.exists,
+        hasWebAuthn: result.hasWebAuthn || false,
+        emailVerified: result.emailVerified || false,
+        hasValidPin,
+        pinRemainingMinutes
+      };
     },
 
     setCodeSent: (sent: boolean) => {

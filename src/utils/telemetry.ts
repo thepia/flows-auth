@@ -3,8 +3,8 @@
  * Reports errors through the auth store's API client and optionally to service worker
  */
 
-import type { AuthApiClient } from '../api/auth-api';
-import type { AuthConfig } from '../types';
+import type { AuthApiClient } from '../api/auth-api.js';
+import type { AuthConfig } from '../types/index.js';
 
 export interface SerializedError {
   name?: string;

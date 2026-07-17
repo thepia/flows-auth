@@ -12,8 +12,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
 
 describe('Token Refresh Security & Edge Cases', () => {
   let authStore: ReturnType<typeof createAuthStore>;

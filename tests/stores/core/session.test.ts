@@ -11,8 +11,8 @@ import {
   convertSessionUserToUser,
   convertUserToSessionUser,
   createSessionData
-} from '../../../src/stores/core/session';
-import type { SignInData, User } from '../../../src/types';
+} from '../../../src/stores/core/session.js';
+import type { SignInData, User } from '../../../src/types/index.js';
 
 describe('Session Conversion Functions', () => {
   describe('createSessionData', () => {

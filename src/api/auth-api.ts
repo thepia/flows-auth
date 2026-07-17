@@ -21,17 +21,17 @@ import type {
   UserProfile,
   WebAuthnRegistrationOptions,
   WebAuthnVerificationResult
-} from '../types';
+} from '../types/index.js';
 import type {
   ConfirmConsentRequest,
   ConfirmConsentResponse,
   GetConsentsResponse,
   GetOnboardingMetadataResponse,
   UpdateOnboardingMetadataRequest
-} from '../types/onboarding';
-import { globalClientRateLimiter } from '../utils/client-rate-limiter';
-import { reportApiError } from '../utils/telemetry';
-import { globalUserCache } from '../utils/user-cache';
+} from '../types/onboarding.js';
+import { globalClientRateLimiter } from '../utils/client-rate-limiter.js';
+import { reportApiError } from '../utils/telemetry.js';
+import { globalUserCache } from '../utils/user-cache.js';
 
 export class AuthApiClient {
   readonly config: AuthConfig;
@@ -58,7 +58,7 @@ export class AuthApiClient {
     if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
       try {
         // Try to use the detection utility if available
-        const { detectApiServer } = await import('../utils/api-detection');
+        const { detectApiServer } = await import('../utils/api-detection.js');
         const apiServer = await detectApiServer();
         console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
         return apiServer.url.replace(/\/$/, '');
@@ -73,30 +73,23 @@ export class AuthApiClient {
   }
 
   /**
-   * Get the effective app code - uses 'app' as default when appCode support is enabled
+   * Get the effective base URL actually used for API requests.
+   *
+   * This may differ from `config.apiBaseUrl` when local dev server
+   * auto-detection kicks in (see `detectEffectiveBaseUrl()`). UI code
+   * that wants to display "what server am I actually talking to" should
+   * call this instead of reading `config.apiBaseUrl` directly.
    */
-  private getEffectiveAppCode(): string | null {
-    // If appCode is explicitly set to false/null/undefined, use legacy endpoints
-    if (
-      this.config.appCode === false ||
-      this.config.appCode === null ||
-      this.config.appCode === undefined
-    ) {
-      return null;
-    }
+  async getEffectiveBaseUrl(): Promise<string> {
+    return this.effectiveBaseUrl;
+  }
 
-    // If appCode is explicitly set to a string, use that
-    if (typeof this.config.appCode === 'string') {
-      return this.config.appCode;
-    }
-
-    // If appCode is set to true, use default 'app' appCode
-    if (this.config.appCode === true) {
-      return 'app';
-    }
-
-    // Default to null for backward compatibility
-    return null;
+  /**
+   * Get the effective app code. appCode is required on AuthConfig, but
+   * defaults to 'app' if a caller bypasses the type (e.g. plain JS).
+   */
+  private getEffectiveAppCode(): string {
+    return this.config.appCode || 'app';
   }
 
   /**
@@ -358,7 +351,7 @@ export class AuthApiClient {
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
-    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/authenticate', {
+    return this.rateLimitedRequest<PasskeyChallenge>('/auth/webauthn/challenge', {
       method: 'POST',
       body: JSON.stringify({ email })
     });
@@ -369,8 +362,7 @@ export class AuthApiClient {
    * Uses app-specific endpoint if appCode is configured
    */
   async refreshToken(request: RefreshTokenRequest): Promise<SignInResponse> {
-    const appCode = this.getEffectiveAppCode();
-    const endpoint = appCode ? `/${appCode}/refresh` : '/auth/refresh';
+    const endpoint = `/${this.getEffectiveAppCode()}/refresh`;
 
     return this.request<SignInResponse>(endpoint, {
       method: 'POST',
@@ -382,8 +374,7 @@ export class AuthApiClient {
    * Sign out
    */
   async signOut(request: LogoutRequest): Promise<void> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/signout` : '/auth/signout';
+    const endpoint = `/${this.getEffectiveAppCode()}/signout`;
 
     await this.request<void>(
       endpoint,
@@ -399,8 +390,7 @@ export class AuthApiClient {
    * Get user profile
    */
   async getProfile(): Promise<UserProfile> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/profile` : '/auth/profile';
+    const endpoint = `/${this.getEffectiveAppCode()}/profile`;
 
     return this.request<UserProfile>(
       endpoint,
@@ -442,9 +432,7 @@ export class AuthApiClient {
     const origin =
       typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net';
 
-    // Use app-specific endpoint if appCode is configured, otherwise use default
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/check-user` : '/auth/check-user';
+    const endpoint = `/${this.getEffectiveAppCode()}/check-user`;
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
     console.log('[AuthApiClient] Making check-user request:', {
@@ -558,8 +546,7 @@ export class AuthApiClient {
     acceptedPrivacy: boolean;
     invitationToken?: string; // NEW: Optional invitation token for email verification
   }): Promise<SignInResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/create-user` : '/auth/register';
+    const endpoint = `/${this.getEffectiveAppCode()}/create-user`;
 
     const response = await this.request<{
       success?: boolean;
@@ -615,8 +602,7 @@ export class AuthApiClient {
     token?: string;
     message?: string;
   }> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    const endpoint = `/${this.getEffectiveAppCode()}/send-email`;
 
     return this.request<{
       success: boolean;
@@ -641,6 +627,8 @@ export class AuthApiClient {
 
   /**
    * Send magic link for email verification
+   * 
+   * TODO use /app endpoint or remove
    */
   async sendMagicLinkEmail(email: string): Promise<{
     success: boolean;
@@ -706,10 +694,7 @@ export class AuthApiClient {
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
 
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode
-      ? `/${effectiveAppCode}/send-email`
-      : '/auth/start-passwordless';
+    const endpoint = `/${this.getEffectiveAppCode()}/send-email`;
 
     return this.request<{
       success: boolean;
@@ -755,7 +740,7 @@ export class AuthApiClient {
     isNewUser?: boolean;
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/send-email` : '/auth/register';
+    const endpoint = `/${effectiveAppCode}/send-email`;
 
     console.log('📧 Sending email signin:', {
       email,
@@ -791,7 +776,10 @@ export class AuthApiClient {
   }
 
   /**
-   * Check passwordless authentication status by checking Auth0 user state
+   * Check passwordless authentication status
+   * Uses the app-scoped endpoint when an appCode is configured, since that
+   * checks the app's actual provider (Auth0 or WorkOS) - the unscoped
+   * /auth/passwordless-status endpoint only ever checks Auth0.
    */
   async checkPasswordlessStatus(
     email: string,
@@ -804,6 +792,8 @@ export class AuthApiClient {
       email_verified: boolean;
     };
   }> {
+    const endpoint = `/${this.getEffectiveAppCode()}/passwordless-status`;
+
     return this.request<{
       status: 'pending' | 'verified' | 'expired';
       user?: {
@@ -811,7 +801,7 @@ export class AuthApiClient {
         email: string;
         email_verified: boolean;
       };
-    }>(`/auth/passwordless-status?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
+    }>(`${endpoint}?email=${encodeURIComponent(email)}&timestamp=${timestamp}`, {
       method: 'GET'
     });
   }
@@ -824,11 +814,6 @@ export class AuthApiClient {
    */
   async sendAppEmailCode(email: string): Promise<EmailCodeSendResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    if (!effectiveAppCode) {
-      throw new Error(
-        'App code is required for app-based email authentication. Set appCode in config.'
-      );
-    }
 
     console.log('📧 Sending app email code:', {
       email,
@@ -850,11 +835,6 @@ export class AuthApiClient {
    */
   async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    if (!effectiveAppCode) {
-      throw new Error(
-        'App code is required for app-based email authentication. Set appCode in config.'
-      );
-    }
 
     console.log('🔍 Verifying app email code:', {
       email,
@@ -940,9 +920,6 @@ export class AuthApiClient {
     message?: string;
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
-    if (!effectiveAppCode) {
-      throw new Error('App code is required for app-based user creation. Set appCode in config.');
-    }
 
     console.log('👤 Creating app user:', {
       email: userData.email,
@@ -971,8 +948,7 @@ export class AuthApiClient {
    * Requires authentication (Bearer token)
    */
   async getOnboardingMetadata(): Promise<GetOnboardingMetadataResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
+    const endpoint = `/${this.getEffectiveAppCode()}/metadata`;
 
     const response = await this.request<{ success: boolean; metadata?: Record<string, unknown> }>(
       endpoint,
@@ -997,8 +973,7 @@ export class AuthApiClient {
   async updateOnboardingMetadata(
     request: UpdateOnboardingMetadataRequest
   ): Promise<GetOnboardingMetadataResponse> {
-    const effectiveAppCode = this.getEffectiveAppCode();
-    const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
+    const endpoint = `/${this.getEffectiveAppCode()}/metadata`;
 
     // Convert UpdateOnboardingMetadataRequest to metadata patch format
     const patch: Record<string, unknown> = {};
@@ -1056,9 +1031,7 @@ export class AuthApiClient {
    */
   async confirmConsent(request: ConfirmConsentRequest): Promise<ConfirmConsentResponse> {
     try {
-      // Get the effective app code
-      const effectiveAppCode = this.getEffectiveAppCode();
-      const endpoint = effectiveAppCode ? `/${effectiveAppCode}/metadata` : '/metadata';
+      const endpoint = `/${this.getEffectiveAppCode()}/metadata`;
 
       // Create the patch payload for consent
       const patch = {

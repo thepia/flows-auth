@@ -7,12 +7,12 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import { createEmailAuthStore } from '../../src/stores/auth-methods/email-auth';
-import { createPasskeyStore } from '../../src/stores/auth-methods/passkey';
-import { createAuthCoreStore } from '../../src/stores/core/auth-core';
-import { createUIStore, signInStateTransitions } from '../../src/stores/ui/ui-state';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore } from '../../src/stores/index.js';
+import { createEmailAuthStore } from '../../src/stores/auth-methods/email-auth.js';
+import { createPasskeyStore } from '../../src/stores/auth-methods/passkey.js';
+import { createAuthCoreStore } from '../../src/stores/core/auth-core.js';
+import { createUIStore, signInStateTransitions } from '../../src/stores/ui/ui-state.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 // Mock external dependencies
 vi.mock('../../src/api/auth-api', () => ({

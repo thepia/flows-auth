@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
 import type { AuthConfig } from '../../src/types/index.js';
 
 // Mock the API client for testing

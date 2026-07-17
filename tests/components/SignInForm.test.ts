@@ -14,8 +14,8 @@ import { fireEvent, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
-import type { AuthConfig } from '../../src/types';
-import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
+import type { AuthConfig } from '../../src/types/index.js';
+import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',

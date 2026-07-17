@@ -1,9 +1,21 @@
 /**
  * Automatic Flow Detection Integration Tests
  *
- * Purpose: Test the thepia.com-style automatic user detection and flow switching
- * Context: Tests the new SignInForm automatic flow detection feature
- * Safe to remove: No - critical for preventing UX regressions
+ * Purpose: verify determineAuthMethod()'s routing in SignInCore picks the
+ * right auth method (passkey / passkey-with-fallback / email-code /
+ * magic-link / new-user registration) for each user-state + config
+ * combination, entirely behind the single sign-in button - there is no
+ * separate "continue" step or method-choice screen (see webauthn-flow.test.ts
+ * for WebAuthn-ceremony-specific edge cases; this file focuses on the
+ * decision matrix, not the ceremony itself).
+ *
+ * Note: The original version of this file assumed a Terms-of-Service
+ * checkbox step inside SignInForm/SignInCore for new-user registration.
+ * That flow has since moved to AccountCreationForm.svelte - SignInCore's
+ * new-user path only collects a full name and calls createAccount()
+ * directly (acceptedTerms/acceptedPrivacy are not collected here at all) -
+ * so those assertions were dropped rather than faked against a UI that
+ * doesn't exist in this component.
  *
  * Do NOT introduce mocking of the API client
  * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
@@ -12,36 +24,69 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
-import type { AuthConfig } from '../../src/types';
-import { APIMocker, TEST_ACCOUNTS, TEST_CONFIG, TestUtils, WebAuthnMocker } from '../test-setup';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
+import { globalUserCache } from '../../src/utils/user-cache.js';
 
-// Test configuration with API fallback
-const getTestConfig = (): AuthConfig => {
-  const isLocalServerRunning = process.env.CI_API_SERVER_RUNNING === 'true';
-  const apiBaseUrl = isLocalServerRunning
-    ? 'https://dev.thepia.com:8443'
-    : 'https://api.thepia.com';
-
-  return {
-    ...TEST_CONFIG,
-    apiBaseUrl,
-    clientId: 'flows-auth-flow-detection-test'
-  };
+const mockNavigatorCredentials = {
+  create: vi.fn(),
+  get: vi.fn()
 };
 
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+function createTestStore(overrides: Partial<AuthConfig> = {}) {
+  const config: AuthConfig = {
+    apiBaseUrl: 'https://api.test.com',
+    clientId: 'test-client',
+    domain: 'test.com',
+    enablePasskeys: true,
+    enableMagicLinks: false,
+    ...overrides
+  };
+  return makeSvelteCompatible(createAuthStore(config));
+}
+
+// SignInCore auto-triggers a debounced checkUser() when the email input
+// changes, which leaves the submit button disabled until it resolves. Wait
+// for it to become enabled before reading button config/clicking, rather
+// than racing that effect.
+async function typeEmailAndWait(email: string) {
+  const emailInput = screen.getByPlaceholderText(/email/i);
+  await fireEvent.input(emailInput, { target: { value: email } });
+
+  await waitFor(() => {
+    const button = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+  });
+}
+
+function getSubmitButton() {
+  return document.querySelector('button[type="submit"]') as HTMLButtonElement;
+}
+
 describe('Automatic Flow Detection', () => {
-  let testConfig: AuthConfig;
-
   beforeEach(() => {
-    testConfig = getTestConfig();
-    localStorage.clear();
     vi.clearAllMocks();
+    mockNavigatorCredentials.create.mockReset();
+    mockNavigatorCredentials.get.mockReset();
+    // checkEmail() caches by email across the whole process - without this,
+    // a stale cached result from an earlier test/file can silently bypass
+    // this test's mockFetch entirely.
+    globalUserCache.clearAll();
 
-    // Mock WebAuthn availability
-    Object.defineProperty(window, 'PublicKeyCredential', {
-      value: {
-        isUserVerifyingPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
-        isConditionalMediationAvailable: vi.fn().mockResolvedValue(true)
+    Object.defineProperty(navigator, 'credentials', {
+      value: mockNavigatorCredentials,
+      writable: true,
+      configurable: true
+    });
+
+    // determinePasskeysEnabled() checks window.PublicKeyCredential at store
+    // creation time, so this must be in place before createTestStore() runs.
+    Object.defineProperty(global, 'PublicKeyCredential', {
+      value: class {
+        static isUserVerifyingPlatformAuthenticatorAvailable = vi.fn().mockResolvedValue(true);
       },
       writable: true,
       configurable: true
@@ -49,339 +94,213 @@ describe('Automatic Flow Detection', () => {
   });
 
   afterEach(() => {
-    TestUtils.cleanup();
+    vi.restoreAllMocks();
   });
 
-  describe('User Detection Flow', () => {
-    it('should automatically detect existing user and show sign-in options', async () => {
-      const existingEmail = TEST_ACCOUNTS.existingWithPasskey.email;
-
-      // Mock API response for existing user
-      APIMocker.mockEmailCheck(existingEmail, {
-        exists: true,
-        hasPasskey: true
-      });
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+  describe('Existing user routing', () => {
+    it('should route to passkey sign-in as the primary action when the user has a passkey', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/auth/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
+          });
         }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // Find email input and enter existing user email
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      expect(emailInput).toBeTruthy();
+      const authStore = createTestStore({ enablePasskeys: true });
+      render(SignInForm, { props: { store: authStore } });
 
-      await fireEvent.input(emailInput, { target: { value: existingEmail } });
+      await typeEmailAndWait('existing-with-passkey@test.com');
 
-      // Find and click continue button
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      expect(continueButton).toBeTruthy();
-
-      await fireEvent.click(continueButton);
-
-      // Should show passkey authentication option
-      await waitFor(
-        () => {
-          const passkeyButton = screen.queryByText(/passkey|touch id|face id/i);
-          expect(passkeyButton).toBeTruthy();
-        },
-        { timeout: 5000 }
-      );
+      expect(getSubmitButton().textContent).toContain('Sign in with Passkey');
     });
 
-    it('should automatically detect new user and show registration flow', async () => {
-      const newEmail = TEST_ACCOUNTS.newUser.email;
-
-      // Mock API response for new user
-      APIMocker.mockEmailCheck(newEmail, {
-        exists: false,
-        hasPasskey: false
-      });
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+    it('should offer magic link as the secondary option when passkey-with-fallback applies', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/auth/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
+          });
         }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // Find email input and enter new user email
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: newEmail } });
+      const authStore = createTestStore({ enablePasskeys: true, enableMagicLinks: true });
+      render(SignInForm, { props: { store: authStore } });
 
-      // Find and click continue button
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
+      await typeEmailAndWait('existing-with-passkey@test.com');
 
-      // Should show registration flow (Terms of Service)
-      await waitFor(
-        () => {
-          const termsText = screen.queryByText(/terms.*service|privacy.*policy/i);
-          expect(termsText).toBeTruthy();
-        },
-        { timeout: 5000 }
-      );
+      const buttons = screen.getAllByRole('button');
+      const buttonTexts = buttons.map((b) => b.textContent);
+      expect(buttonTexts.some((t) => t?.includes('Sign in with Passkey'))).toBe(true);
+      expect(buttonTexts.some((t) => t?.includes('Send Magic Link'))).toBe(true);
     });
 
-    it('should handle API errors during user detection gracefully', async () => {
-      const testEmail = 'test-error@thepia.net';
-
-      // Mock API error
-      APIMocker.mockNetworkError();
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+    it('should send a magic link automatically for an existing user without a passkey (email-only)', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/auth/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, hasWebAuthn: false, userId: 'user-456' })
+          });
         }
-      });
-
-      // Find email input and enter email
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: testEmail } });
-
-      // Find and click continue button
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
-
-      // Should show error message
-      await waitFor(
-        () => {
-          const errorMessage = screen.queryByText(/error|failed|try again/i);
-          expect(errorMessage).toBeTruthy();
-        },
-        { timeout: 5000 }
-      );
-    });
-  });
-
-  describe('Registration Flow Steps', () => {
-    it('should complete registration flow from terms to passkey setup', async () => {
-      const newEmail = `test-registration-flow-${Date.now()}@thepia.net`;
-
-      // Mock API responses
-      APIMocker.mockEmailCheck(newEmail, {
-        exists: false,
-        hasPasskey: false
-      });
-
-      WebAuthnMocker.mockSuccess('new-registration-credential');
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+        if (url.includes('/auth/start-passwordless')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ success: true, message: 'Check your email' })
+          });
         }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // Step 1: Enter email and trigger registration flow
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: newEmail } });
+      // No appCode configured, so a passkey-less existing user with
+      // magic links enabled routes to 'email-only' -> signInWithMagicLink().
+      const authStore = createTestStore({ enablePasskeys: true, enableMagicLinks: true });
+      render(SignInForm, { props: { store: authStore } });
 
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
+      await typeEmailAndWait('existing-no-passkey@test.com');
+      await fireEvent.click(getSubmitButton());
 
-      // Step 2: Accept terms of service
       await waitFor(() => {
-        const termsCheckbox = screen.queryByLabelText(/terms.*service/i);
-        expect(termsCheckbox).toBeTruthy();
+        expect(authStore.getState().signInState).toBe('pinEntry');
       });
-
-      const termsCheckbox = screen.getByLabelText(/terms.*service/i);
-      const privacyCheckbox = screen.getByLabelText(/privacy.*policy/i);
-
-      await fireEvent.click(termsCheckbox);
-      await fireEvent.click(privacyCheckbox);
-
-      const acceptButton = screen.getByRole('button', { name: /accept|continue/i });
-      await fireEvent.click(acceptButton);
-
-      // Step 3: Should show passkey registration
-      await waitFor(() => {
-        const passkeyRegisterButton = screen.queryByText(/register.*passkey|create.*account/i);
-        expect(passkeyRegisterButton).toBeTruthy();
-      });
+      expect(screen.getByText('Check your email')).toBeInTheDocument();
     });
 
-    it('should validate terms acceptance before proceeding', async () => {
-      const newEmail = `test-terms-validation-${Date.now()}@thepia.net`;
-
-      APIMocker.mockEmailCheck(newEmail, {
-        exists: false,
-        hasPasskey: false
-      });
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+    it('should send an email code for an existing user via the app-scoped endpoint (email-code)', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/demo/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, hasWebAuthn: false, userId: 'user-789' })
+          });
         }
+        if (url.includes('/demo/send-email')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ success: true, message: 'Email code sent' })
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // Enter email and get to terms step
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: newEmail } });
+      // appCode configured (no passkey, no magic links) routes to 'email-code'.
+      // Uses its own email (not shared with other tests) since a stale
+      // debounced checkUser() from a prior test's unmounted store can still
+      // fire and poison the shared globalUserCache entry for a reused email.
+      const authStore = createTestStore({ enablePasskeys: false, appCode: 'demo' });
+      render(SignInForm, { props: { store: authStore } });
 
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
+      await typeEmailAndWait('existing-appcode-user@test.com');
+      await fireEvent.click(getSubmitButton());
 
-      // Try to proceed without accepting terms
       await waitFor(() => {
-        const acceptButton = screen.queryByRole('button', { name: /accept|continue/i });
-        expect(acceptButton).toBeTruthy();
+        expect(authStore.getState().signInState).toBe('pinEntry');
       });
-
-      const acceptButton = screen.getByRole('button', { name: /accept|continue/i });
-
-      // Button should be disabled without terms acceptance
-      expect(acceptButton).toHaveProperty('disabled', true);
+      expect(screen.getByText('Check your email')).toBeInTheDocument();
     });
   });
 
-  describe('Sign-In Flow Options', () => {
-    it('should show passkey option for users with passkeys', async () => {
-      const existingEmail = TEST_ACCOUNTS.existingWithPasskey.email;
-
-      APIMocker.mockEmailCheck(existingEmail, {
-        exists: true,
-        hasPasskey: true
-      });
-
-      APIMocker.mockPasskeyChallenge(existingEmail);
-      WebAuthnMocker.mockSuccess('existing-credential');
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+  describe('New user registration', () => {
+    it('should collect a full name and create the account for an unrecognized email', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/demo/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: false, hasWebAuthn: false })
+          });
         }
-      });
-
-      // Enter existing user email
-      const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: existingEmail } });
-
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
-
-      // Should show passkey authentication
-      await waitFor(() => {
-        const passkeyButton = screen.queryByText(/passkey|touch id|face id/i);
-        expect(passkeyButton).toBeTruthy();
-      });
-    });
-
-    it('should show magic link option for users without passkeys', async () => {
-      const existingEmail = TEST_ACCOUNTS.existingWithoutPasskey.email;
-
-      APIMocker.mockEmailCheck(existingEmail, {
-        exists: true,
-        hasPasskey: false
-      });
-
-      APIMocker.mockMagicLinkSent(existingEmail);
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+        if (url.includes('/demo/create-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                step: 'success',
+                user: { id: 'new-user-1', email: 'new-user@test.com', name: 'New User' }
+                // No access_token - verification required, matching real progressive registration
+              })
+          });
         }
+        if (url.includes('/demo/send-email')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ success: true, message: 'Email code sent' })
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // Enter existing user email without passkey
+      const authStore = createTestStore({ enablePasskeys: false, appCode: 'demo' });
+      render(SignInForm, { props: { store: authStore } });
+
+      // For a new/unrecognized user the submit button stays disabled until a
+      // full name is also entered, so this can't use typeEmailAndWait() (which
+      // waits for the button itself to enable, which never happens on email alone).
       const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: existingEmail } });
+      await fireEvent.input(emailInput, { target: { value: 'new-user@test.com' } });
 
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
+      const fullNameInput = await waitFor(() => screen.getByPlaceholderText(/full name/i));
+      await fireEvent.input(fullNameInput, { target: { value: 'New User' } });
 
-      // Should show magic link option
       await waitFor(() => {
-        const magicLinkButton = screen.queryByText(/magic link|send.*link/i);
-        expect(magicLinkButton).toBeTruthy();
+        expect(getSubmitButton().disabled).toBe(false);
+      });
+      await fireEvent.click(getSubmitButton());
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/demo/create-user'),
+          expect.any(Object)
+        );
+      });
+      await waitFor(() => {
+        expect(authStore.getState().signInState).toBe('pinEntry');
       });
     });
   });
 
-  describe('Form State Management', () => {
-    it('should maintain email value across flow transitions', async () => {
-      const testEmail = 'test-state-persistence@thepia.net';
+  describe('Error handling', () => {
+    it('should surface an API error via store state when check-user fails', async () => {
+      mockFetch.mockRejectedValue(new Error('Network error'));
 
-      APIMocker.mockEmailCheck(testEmail, {
-        exists: false,
-        hasPasskey: false
-      });
+      const authStore = createTestStore();
+      render(SignInForm, { props: { store: authStore } });
 
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
-        }
-      });
-
-      // Enter email
       const emailInput = screen.getByPlaceholderText(/email/i);
-      await fireEvent.input(emailInput, { target: { value: testEmail } });
+      await fireEvent.input(emailInput, { target: { value: 'test-error@test.com' } });
 
-      // Proceed to registration flow
-      const continueButton = screen.getByRole('button', { name: /sign in|continue/i });
-      await fireEvent.click(continueButton);
-
-      // Go back to email step
       await waitFor(() => {
-        const backButton = screen.queryByText(/back|previous/i);
-        if (backButton) {
-          fireEvent.click(backButton);
-        }
-      });
-
-      // Email should still be there
-      await waitFor(() => {
-        const emailInputAfterBack = screen.queryByDisplayValue(testEmail);
-        expect(emailInputAfterBack).toBeTruthy();
+        expect(authStore.getState().apiError).not.toBeNull();
       });
     });
+  });
 
-    it('should handle rapid email changes without race conditions', async () => {
-      const emails = ['test1@thepia.net', 'test2@thepia.net', 'test3@thepia.net'];
-
-      // Mock different responses for different emails
-      emails.forEach((email, index) => {
-        APIMocker.mockEmailCheck(email, {
-          exists: index % 2 === 0, // Alternate between existing and new users
-          hasPasskey: index % 2 === 0
-        });
-      });
-
-      const { container } = render(SignInForm, {
-        props: {
-          config: testConfig,
-          showLogo: false,
-          compact: false
+  describe('Form state management', () => {
+    it('should reflect only the final email after rapid changes, with no stale overwrite', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/auth/check-user')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ exists: true, hasWebAuthn: false })
+          });
         }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      const emailInput = screen.getByPlaceholderText(/email/i);
+      const authStore = createTestStore();
+      render(SignInForm, { props: { store: authStore } });
 
-      // Rapidly change emails
+      const emailInput = screen.getByPlaceholderText(/email/i) as HTMLInputElement;
+      const emails = ['test1@test.com', 'test2@test.com', 'test3@test.com'];
+
       for (const email of emails) {
         await fireEvent.input(emailInput, { target: { value: email } });
-        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
       }
 
-      // Should handle the final email correctly
-      const finalEmail = emails[emails.length - 1];
-      expect(emailInput).toHaveProperty('value', finalEmail);
+      expect(emailInput.value).toBe(emails[emails.length - 1]);
     });
   });
 });

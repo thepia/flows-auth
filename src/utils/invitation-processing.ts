@@ -3,12 +3,12 @@
  * Handles invitation token validation and user status checking
  */
 
-import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens';
+import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens.js';
 import {
   decodeInvitationToken,
   hashInvitationToken,
   validateInvitationToken
-} from './invitation-tokens';
+} from './invitation-tokens.js';
 
 /**
  * Result of invitation token processing

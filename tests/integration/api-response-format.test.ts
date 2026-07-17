@@ -5,8 +5,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { AuthConfig, User } from '../../src/types';
-import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock';
+import type { AuthConfig, User } from '../../src/types/index.js';
+import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock.js';
 
 // Set up global mocks before any imports
 vi.mock('../../src/utils/webauthn', () => ({
@@ -72,7 +72,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Import after mocks are set up
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore } from '../../src/stores/index.js';
 
 /**
  * CRITICAL INTEGRATION TEST: API Response Format Compatibility
@@ -287,7 +287,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
         email: mockUser.email,
         accessToken: 'legacy-access-token',
         refreshToken: 'legacy-refresh-token',
-        expiresAt: expect.any(Number),
+        expiresAt: expect.any(String),
         authMethod: 'passkey'
       })
     );
@@ -396,15 +396,20 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     // Execute signInWithPasskey
     const result = await authStore.signInWithPasskey('supabase@example.com');
 
-    // Verify SignInData includes Supabase tokens
+    // Verify SignInData includes Supabase tokens. The store normalizes
+    // supabase_expires_at (a raw ms timestamp from the API) to an ISO
+    // string, consistent with how expiresAt is handled everywhere else.
+    const expectedSupabaseExpiresAt = new Date(
+      responseWithSupabase.supabase_expires_at
+    ).toISOString();
     expect(result.tokens.supabaseToken).toBe(responseWithSupabase.supabase_token);
-    expect(result.tokens.supabaseExpiresAt).toBe(responseWithSupabase.supabase_expires_at);
+    expect(result.tokens.supabaseExpiresAt).toBe(expectedSupabaseExpiresAt);
 
     // Verify session was saved with Supabase tokens
     expect(mockDatabase.saveSession).toHaveBeenCalled();
     const savedSession = mockDatabase.saveSession.mock.calls[0][0];
     expect(savedSession.supabaseToken).toBe(responseWithSupabase.supabase_token);
-    expect(savedSession.supabaseExpiresAt).toBe(responseWithSupabase.supabase_expires_at);
+    expect(savedSession.supabaseExpiresAt).toBe(expectedSupabaseExpiresAt);
 
     // Verify store state includes standard tokens
     const storeState = authStore.getState();

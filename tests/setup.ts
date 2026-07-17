@@ -54,7 +54,9 @@ vi.mock('phosphor-svelte', () => {
     Star: MockIcon,
     Settings: MockIcon,
     X: MockIcon,
-    Check: MockIcon
+    Check: MockIcon,
+    ArrowsClockwise: MockIcon,
+    Pulse: MockIcon
   };
 });
 

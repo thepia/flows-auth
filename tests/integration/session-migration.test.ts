@@ -8,8 +8,8 @@ import type {
   SessionMigrationResult,
   SignInData,
   StorageConfigurationUpdate
-} from '../../src/types';
-import { ConfigurableStorageManager } from '../../src/utils/storageManager';
+} from '../../src/types/index.js';
+import { ConfigurableStorageManager } from '../../src/utils/storageManager.js';
 
 // Mock browser storage APIs
 const mockSessionStorage = {

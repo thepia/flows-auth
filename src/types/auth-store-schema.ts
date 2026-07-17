@@ -10,7 +10,7 @@
  */
 
 import { z } from 'zod';
-import { UserMetadataSchema } from './metadata-schema';
+import { UserMetadataSchema } from './metadata-schema.js';
 
 // ============================================================================
 // Core Types

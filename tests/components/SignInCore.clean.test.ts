@@ -15,12 +15,12 @@ import { setContext } from 'svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
+import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys.js';
 import {
   TEST_AUTH_CONFIGS,
   createTestAuthStore,
   renderWithStoreProp
-} from '../helpers/component-test-setup';
+} from '../helpers/component-test-setup.js';
 
 // Mock dependencies
 vi.mock('../../../utils/webauthn', () => ({

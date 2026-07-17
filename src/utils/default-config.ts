@@ -5,7 +5,7 @@
  * to eliminate duplication across apps using flows-auth
  */
 
-import type { AuthConfig } from '../types';
+import type { AuthConfig } from '../types/index.js';
 
 /**
  * Default API detection with standard fallback pattern
@@ -84,6 +84,7 @@ export async function createDefaultAuthConfig(
     // Authentication Methods
     enablePasskeys: true,
     enableMagicLinks: true,
+    appCode: 'app',
 
     // Default Branding
     branding: {
@@ -159,7 +160,7 @@ export async function quickAuthSetup(
     clientId?: string;
     domain?: string;
     enableErrorReporting?: boolean;
-    appCode?: string | boolean;
+    appCode?: string;
   } = {}
 ) {
   // Get the API base URL first

@@ -3,13 +3,13 @@
  * Based on thepia.com React implementation
  */
 
-import type { AuthApiClient } from '../api/auth-api';
-import type { SessionData, SessionPersistence, TokenData } from './database';
+import type { AuthApiClient } from '../api/auth-api.js';
+import type { SessionData, SessionPersistence, TokenData } from './database.js';
 
-export type { TokenData } from './database';
+export type { TokenData } from './database.js';
 
-import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth';
-import type { UserMetadata } from './metadata-schema';
+import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth.js';
+import type { UserMetadata } from './metadata-schema.js';
 // SignIn state types (keeping only the types, removed the class)
 import type {
   SignInContext,
@@ -17,18 +17,18 @@ import type {
   SignInEvent,
   SignInState,
   WebAuthnError
-} from './signin-state-machine';
+} from './signin-state-machine.js';
 
-export type { DatabaseAdapter, SessionData, SessionPersistence, UserData } from './database';
+export type { DatabaseAdapter, SessionData, SessionPersistence, UserData } from './database.js';
 // Invitation types - single source of truth for both flows-auth and thepia.com
 export type {
   ActiveInvitation,
   ClientRegistration,
   ConsentData,
   ConsentRecord
-} from './invitations';
+} from './invitations.js';
 // Unified metadata schema - Auth0 app_metadata and WorkOS metadata
-export type { UserMetadata } from './metadata-schema';
+export type { UserMetadata } from './metadata-schema.js';
 export type {
   CompactConsentRecord,
   ConfirmConsentRequest,
@@ -37,7 +37,7 @@ export type {
   ConfirmConsentResponseSchema,
   GetConsentsResponse,
   GetConsentsResponseSchema
-} from './onboarding';
+} from './onboarding.js';
 export type { SignInContext, SignInError, SignInEvent, SignInState, WebAuthnError };
 
 // User types
@@ -67,6 +67,7 @@ export type SignInStep =
   | 'passkey'
   | 'magic-link'
   | 'email-code'
+  | 'email-sent'
   | 'loading'
   | 'success'
   | 'error';
@@ -174,7 +175,7 @@ export interface AuthConfig {
   auth0?: Auth0Config;
   storage?: StorageConfig; // Optional storage configuration
   applicationContext?: ApplicationContext; // Optional application context for role hints
-  appCode?: string | boolean; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
+  appCode: string; // App code for app-specific endpoints (use 'app' for new integrations, true for default 'app', false/null for legacy endpoints)
 
   privacyPolicyUrl?: string; // Public URL with Privacy Policy
   acceptableUseUrl?: string; // Acceptable Use Policy URL
@@ -595,8 +596,26 @@ export interface WebAuthnVerificationResult {
 }
 
 // Error types
+
+// Codes flows-auth itself attaches to a raw AuthError before it has been
+// classified (see classifyError() / ApiError.code below for the classified,
+// translation-key form). The server can also send its own codes verbatim
+// (see thepia.com/docs/auth/error-codes-catalog.md) - those aren't enumerable
+// here, so this stays open rather than pretending to be an exhaustive union.
+export type KnownAuthErrorCode =
+  | 'passkey_failed'
+  | 'passkey_not_supported'
+  | 'magic_link_failed'
+  | 'email_failed'
+  | 'check_user_failed'
+  | 'registration_failed'
+  | 'verification_failed'
+  | 'rate_limit_exceeded'
+  | 'network_error'
+  | 'unknown_error';
+
 export interface AuthError {
-  code: string;
+  code: KnownAuthErrorCode | (string & {});
   message: string;
   details?: any;
   timestamp?: string;
@@ -1045,7 +1064,7 @@ export interface ExplainerConfig {
 }
 
 // Re-export i18n utilities for convenience
-export { m, setI18nMessages } from '../utils/i18n';
+export { m, setI18nMessages } from '../utils/i18n.js';
 
 // Re-export auth store schema types and validators for runtime validation
 export type {
@@ -1053,7 +1072,7 @@ export type {
   SignInState as AuthStoreSignInState,
   Tokens,
   User as AuthStoreUser
-} from './auth-store-schema';
+} from './auth-store-schema.js';
 export {
   AuthCoreStateSchema,
   AuthStoreReadOnlyFields,
@@ -1069,7 +1088,7 @@ export {
   UIStateSchema,
   UserSchema,
   WebAuthnErrorSchema
-} from './auth-store-schema';
+} from './auth-store-schema.js';
 
 // Re-export onboarding types (consents, preferences, invitations, clients)
-export type * from './onboarding';
+export type * from './onboarding.js';

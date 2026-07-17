@@ -12,9 +12,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import { AuthApiClient } from '../../src/api/auth-api.js';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
 
 describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
   let apiClient: AuthApiClient;
@@ -424,7 +424,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
         domain: 'test.com',
         appCode: 'test-app'
       }
-    } as Partial<AuthApiClient> as AuthApiClient;
+    } as unknown as AuthApiClient;
 
     const authStore = createAuthStore(mockConfig, mockApiClient);
 
@@ -441,7 +441,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
       const initialTokens = {
         access_token: 'initial-access-token',
         refresh_token: 'initial-refresh-token-v1',
-        expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000 // 1 hour
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
       };
 
       // Update core store with authenticated state

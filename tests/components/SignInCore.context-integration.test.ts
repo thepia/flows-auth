@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
-import { makeSvelteCompatible } from '../../src/stores/adapters/svelte';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { SvelteAuthStore } from '../../src/types';
+import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys.js';
+import { makeSvelteCompatible } from '../../src/stores/adapters/svelte.js';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { SvelteAuthStore } from '../../src/types/index.js';
 
 // Context provider wrapper that mimics auth-demo layout
 import { setContext } from 'svelte';

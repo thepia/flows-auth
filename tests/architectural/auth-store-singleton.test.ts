@@ -8,7 +8,7 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithStoreProp } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 describe('Auth Store Singleton Architecture', () => {
   it('SignInCore should accept authStore prop and use provided store', () => {

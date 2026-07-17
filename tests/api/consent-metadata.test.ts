@@ -18,8 +18,8 @@ import {
   isValidConsentRecord,
   mergeConsentRecords,
   removeConsentForUrl
-} from '../../src/api/utils/consent-metadata';
-import type { CompactConsentRecord, OnboardingMetadata } from '../../src/types/onboarding';
+} from '../../src/api/utils/consent-metadata.js';
+import type { CompactConsentRecord, OnboardingMetadata } from '../../src/types/onboarding.js';
 
 describe('Consent Metadata Utilities', () => {
   const testUrl = 'https://example.com/terms';

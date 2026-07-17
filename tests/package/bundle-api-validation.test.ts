@@ -375,7 +375,7 @@ describe('Bundle API Validation (Integration)', () => {
 
     it('should export Flow components from /dev (source import)', async () => {
       // Import from source since /dev points to dist/src/dev.ts
-      const devExports = await import('../../src/dev.ts');
+      const devExports = await import('../../src/dev.js');
 
       expect(devExports.SessionStateMachineFlow).toBeDefined();
       expect(devExports.SignInStateMachineFlow).toBeDefined();

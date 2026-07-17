@@ -4,7 +4,7 @@
  * Handles sign-in form UI flow and authentication process
  */
 
-import type { SignInData } from './index';
+import type { SignInData } from './index.js';
 
 export type SignInState =
   | 'emailEntry' // User entering/editing email (includes lookup spinner)

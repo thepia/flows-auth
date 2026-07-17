@@ -12,8 +12,8 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, SignInData } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, SignInData } from '../../src/types/index.js';
 import {
   clearSession,
   configureSessionStorage,
@@ -22,7 +22,7 @@ import {
   getStorageConfig,
   isSessionValid,
   saveSession
-} from '../../src/utils/sessionManager';
+} from '../../src/utils/sessionManager.js';
 
 // Mock browser storage APIs
 const createMockStorage = () => ({

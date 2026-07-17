@@ -18,9 +18,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
-import { TestUtils } from '../test-setup';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
+import { TestUtils } from '../test-setup.js';
 
 const API_BASE = 'https://dev.thepia.com:8443';
 
@@ -84,7 +84,7 @@ describe('Token Refresh Spam Protection', () => {
     it('should persist refreshedAt to database via session save', async () => {
       // Mock a successful authentication that would trigger session save
       const mockUser = TestUtils.createMockUser({
-        email: 'refresh-test@thepia.net'
+        email: 'refresh-test@thepia.net' // TODO @ TEST_CONFIG.domain
       });
 
       // Simulate authentication by updating tokens with user

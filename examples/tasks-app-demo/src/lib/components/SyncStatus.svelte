@@ -1,9 +1,11 @@
 <script>
+	import { stopPropagation } from 'svelte/legacy';
+
 	import { onMount } from 'svelte';
 	import { syncStatus, requestSync } from '../stores/tasks.js';
 	
-	let currentStatus = {};
-	let showDetails = false;
+	let currentStatus = $state({});
+	let showDetails = $state(false);
 	
 	onMount(() => {
 		// Subscribe to sync status updates
@@ -62,8 +64,8 @@
 	<div 
 		class="status-main" 
 		class:clickable={!currentStatus.syncing} 
-		on:click={() => showDetails = !showDetails}
-		on:keydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
+		onclick={() => showDetails = !showDetails}
+		onkeydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
 		role="button"
 		tabindex="0"
 	>
@@ -78,7 +80,7 @@
 			{#if currentStatus.isOnline && !currentStatus.syncing}
 				<button 
 					class="sync-btn"
-					on:click|stopPropagation={handleManualSync}
+					onclick={stopPropagation(handleManualSync)}
 					title="Sync now"
 				>
 					🔄
@@ -87,7 +89,7 @@
 			
 			<button 
 				class="details-btn"
-				on:click|stopPropagation={() => showDetails = !showDetails}
+				onclick={stopPropagation(() => showDetails = !showDetails)}
 				title={showDetails ? 'Hide details' : 'Show details'}
 			>
 				{showDetails ? '▼' : '▶'}

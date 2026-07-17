@@ -1,31 +1,31 @@
 // Core stores
 
 // Feature stores
-import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
-import { createAuthCoreStore } from './core/auth-core';
-import { createErrorStore } from './core/error';
-import { createEventStore } from './core/events';
-import { createSessionStore } from './core/session';
-import { createOnboardingStore } from './onboarding-store';
+import { createEmailAuthStore, createPasskeyStore } from './auth-methods/index.js';
+import { createAuthCoreStore } from './core/auth-core.js';
+import { createErrorStore } from './core/error.js';
+import { createEventStore } from './core/events.js';
+import { createSessionStore } from './core/session.js';
+import { createOnboardingStore } from './onboarding-store.js';
 
 // UI stores
-import { createUIStore } from './ui/ui-state';
+import { createUIStore } from './ui/ui-state.js';
 
 // Re-export adapters
-export { makeSvelteCompatible, toReadable as createSvelteAdapter } from './adapters/svelte';
+export { makeSvelteCompatible, toReadable as createSvelteAdapter } from './adapters/svelte.js';
 
-export type { ComposedAuthStore } from './auth-store';
-export { createAuthStore } from './auth-store';
+export type { ComposedAuthStore } from './auth-store.js';
+export { createAuthStore } from './auth-store.js';
 export {
   cleanupNativeAppBridge,
   createNativeAppSessionAdapter,
   isThepiaApp
-} from './core';
+} from './core/index.js';
 
 // Re-export session adapters
-export { createLocalStorageAdapter } from './core/database';
+export { createLocalStorageAdapter } from './core/database.js';
 // Re-export types
-export type * from './types';
+export type * from './types.js';
 // Re-export individual store creators for advanced usage
 export {
   createAuthCoreStore,

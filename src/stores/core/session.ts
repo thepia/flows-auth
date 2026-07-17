@@ -10,14 +10,14 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore, type StateCreator } from 'zustand/vanilla';
-import type { SignInData, User } from '../../types';
-import type { SessionPersistence } from '../../types/database';
+import type { SignInData, User } from '../../types/index.js';
+import type { SessionPersistence } from '../../types/database.js';
 import {
   generateInitials,
   getSession as getSessionUtil,
   isSessionValid as isSessionValidUtil
-} from '../../utils/sessionManager';
-import type { SessionActions, SessionState, SessionStore, StoreOptions } from '../types';
+} from '../../utils/sessionManager.js';
+import type { SessionActions, SessionState, SessionStore, StoreOptions } from '../types.js';
 
 /**
  * Initial state for the session store

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "vite dev",
     "dev:auto": "./scripts/dev-with-api-detection.sh",
@@ -35,7 +36,7 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "@thepia/branding": "^1.4.0",
+    "@thepia/branding": "latest",
     "@thepia/flows-auth": "workspace:*"
   }
 }

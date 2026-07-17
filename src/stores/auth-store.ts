@@ -9,7 +9,7 @@
  */
 
 // API client
-import { AuthApiClient } from '../api/auth-api';
+import { AuthApiClient } from '../api/auth-api.js';
 import type {
   ApplicationContext,
   AuthConfig,
@@ -18,26 +18,26 @@ import type {
   SessionData,
   SignInData,
   StorageConfigurationUpdate
-} from '../types';
+} from '../types/index.js';
 // Telemetry
-import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry';
+import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry.js';
 // Feature stores
-import { createEmailAuthStore, createPasskeyStore } from './auth-methods';
+import { createEmailAuthStore, createPasskeyStore } from './auth-methods/index.js';
 // Core stores
-import { authenticateUser, createAuthCoreStore } from './core/auth-core';
-import { createLocalStorageAdapter } from './core/database';
-import { createErrorStore } from './core/error';
-import { createEventStore, createTypedEventEmitters } from './core/events';
+import { authenticateUser, createAuthCoreStore } from './core/auth-core.js';
+import { createLocalStorageAdapter } from './core/database.js';
+import { createErrorStore } from './core/error.js';
+import { createEventStore, createTypedEventEmitters } from './core/events.js';
 import {
   convertSessionUserToUser,
   createSessionData,
   createSessionStore,
   getCurrentSession
-} from './core/session';
-import { createOnboardingStore } from './onboarding-store';
-import type { AuthEventData, AuthEventType, StoreOptions } from './types';
+} from './core/session.js';
+import { createOnboardingStore } from './onboarding-store.js';
+import type { AuthEventData, AuthEventType, StoreOptions } from './types.js';
 // UI stores
-import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state';
+import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state.js';
 
 /**
  * Composed auth store interface - provides unified API
@@ -164,6 +164,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         authenticateUser(core, user, tokens);
         signInStateTransitions.authenticationSuccess(ui);
+        // A restored, authenticated session inherently means the user exists.
+        ui.getState().setUserExists(true);
+        if (sessionData.authMethod === 'passkey') {
+          ui.getState().setHasPasskeys(true);
+        }
         session.getState().updateLastActivity();
       } else if (hasRefreshToken) {
         // Access token expired but we have a refresh token - restore and refresh
@@ -189,6 +194,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         authenticateUser(core, user, tokens);
         signInStateTransitions.authenticationSuccess(ui);
+        // A restored, authenticated session inherently means the user exists.
+        ui.getState().setUserExists(true);
+        if (sessionData.authMethod === 'passkey') {
+          ui.getState().setHasPasskeys(true);
+        }
         session.getState().updateLastActivity();
 
         // Immediately trigger token refresh
@@ -483,17 +493,30 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     // User management
     checkUser: async (emailAddress: string) => {
-      const result = await email.getState().checkUser(emailAddress);
+      try {
+        const result = await email.getState().checkUser(emailAddress);
 
-      ui.getState().userChecked({
-        email: emailAddress,
-        exists: result.exists,
-        hasPasskey: result.hasWebAuthn,
-        hasValidPin: result.hasValidPin || false,
-        pinRemainingMinutes: result.pinRemainingMinutes || 0
-      });
+        ui.getState().userChecked({
+          email: emailAddress,
+          exists: result.exists,
+          hasPasskey: result.hasWebAuthn,
+          hasValidPin: result.hasValidPin || false,
+          pinRemainingMinutes: result.pinRemainingMinutes || 0
+        });
 
-      return result;
+        return result;
+      } catch (err) {
+        // The code here is mostly informational: classifyError() (in
+        // stores/core/error.ts) only recognizes a fixed set of snake_case
+        // server-style codes and otherwise re-derives an error.* code from
+        // err.message content, so whatever we pass as `code` is generally
+        // overridden anyway.
+        eventEmitters.signInError({
+          error: { code: 'check_user_failed', message: (err as Error).message },
+          method: 'email-code'
+        });
+        throw err;
+      }
     },
 
     checkUserWithInvitation: async (emailAddress: string, invitationOptions) => {
@@ -576,6 +599,9 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           );
           session.getState().saveSession(sessionData);
 
+          ui.getState().setUserExists(true);
+          ui.getState().setHasPasskeys(true);
+
           eventEmitters.registrationSuccess({
             user: response.user,
             requiresVerification: false
@@ -636,13 +662,22 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
             );
             session.getState().saveSession(sessionData);
 
+            // Account record now exists server-side (and the session is
+            // established) - reflect that in UI state.
+            ui.getState().setUserExists(true);
+
             eventEmitters.registrationSuccess({
               user: response.user,
               requiresVerification: false
             });
           } else {
             // No tokens yet - user must complete email verification before
-            // a session is established.
+            // a session is established. The account record already exists
+            // server-side at this point (checkUser()'s "exists" check would
+            // now return true), even though the user hasn't verified their
+            // email/PIN yet - reflect that in UI state.
+            ui.getState().setUserExists(true);
+
             eventEmitters.registrationSuccess({
               user: response.user,
               requiresVerification: true
@@ -795,7 +830,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         };
 
         // Import storage manager for dynamic configuration
-        const { configureSessionStorage } = await import('../utils/sessionManager');
+        const { configureSessionStorage } = await import('../utils/sessionManager.js');
         configureSessionStorage(newStorageConfig);
 
         console.log('✅ Storage configuration updated successfully');

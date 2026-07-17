@@ -1,7 +1,11 @@
-<script>
-export let task;
-export let onMarkComplete = null;
-export let onViewDetails = null;
+<script lang="ts">
+	interface Props {
+		task: any;
+		onMarkComplete?: any;
+		onViewDetails?: any;
+	}
+
+	let { task, onMarkComplete = null, onViewDetails = null }: Props = $props();
 
 // Get priority color
 function getPriorityColor(priority) {
@@ -96,13 +100,13 @@ const isOverdue =
 	
 	<div class="task-actions">
 		{#if onViewDetails}
-			<button class="btn btn-secondary" on:click={() => onViewDetails(task)}>
+			<button class="btn btn-secondary" onclick={() => onViewDetails(task)}>
 				📖 View Details
 			</button>
 		{/if}
 		
 		{#if canMarkComplete && onMarkComplete}
-			<button class="btn btn-primary" on:click={() => onMarkComplete(task)}>
+			<button class="btn btn-primary" onclick={() => onMarkComplete(task)}>
 				✅ Mark Complete
 			</button>
 		{/if}

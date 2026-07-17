@@ -1,7 +1,7 @@
-import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../../types';
-import { isOlderThan } from '../../utils/date-helpers';
-import { configureSessionStorage, getOptimalSessionConfig } from '../../utils/sessionManager';
-import { getStorageManager } from '../../utils/storageManager';
+import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../../types/index.js';
+import { isOlderThan } from '../../utils/date-helpers.js';
+import { configureSessionStorage, getOptimalSessionConfig } from '../../utils/sessionManager.js';
+import { getStorageManager } from '../../utils/storageManager.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const LAST_USER_KEY = 'thepia_last_user';

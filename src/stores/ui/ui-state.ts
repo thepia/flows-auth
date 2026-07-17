@@ -17,8 +17,8 @@ import type {
   ExplainerConfig,
   SignInState,
   StateMessageConfig
-} from '../../types';
-import type { StoreOptions, UIActions, UIState, UIStore } from '../types';
+} from '../../types/index.js';
+import type { StoreOptions, UIActions, UIState, UIStore } from '../types.js';
 
 /**
  * Initial state for the UI store
@@ -128,7 +128,7 @@ export function createUIStore(options: StoreOptions) {
     },
 
     // Event-based actions for state machine
-    userChecked: (userData: {
+    userChecked: (userData: { // TODO formal type
       email: string;
       exists: boolean;
       hasPasskey: boolean;
@@ -169,6 +169,7 @@ export function createUIStore(options: StoreOptions) {
       }));
     },
 
+    // TODO formal method type
     authSuccess: (method: 'passkey' | 'email-code' | 'magic-link') => {
       set((state) => ({
         ...state,

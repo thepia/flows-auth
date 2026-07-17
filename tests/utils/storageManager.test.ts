@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { StorageConfig } from '../../src/types';
+import type { StorageConfig } from '../../src/types/index.js';
 import {
   ConfigurableStorageManager,
   getOptimalStorageConfig
-} from '../../src/utils/storageManager';
+} from '../../src/utils/storageManager.js';
 
 describe('ConfigurableStorageManager', () => {
   let mockLocalStorage: any;

@@ -2,7 +2,7 @@
  * Working Tests for Auth Library Core Functionality
  */
 import { describe, expect, it } from 'vitest';
-import { createDefaultConfig } from '../src/index';
+import { createDefaultConfig } from '../../src/index.js';
 
 describe('Auth Library Core', () => {
   describe('Configuration', () => {
@@ -50,13 +50,13 @@ describe('Auth Library Core', () => {
 
   describe('Library Structure', () => {
     it('should export version', async () => {
-      const { VERSION } = await import('../src/index');
+      const { VERSION } = await import('../../src/index.js');
       expect(VERSION).toBe('1.0.0');
     });
 
     it('should export main components', async () => {
       // Dynamic import to avoid SSR issues in tests
-      const lib = await import('../src/index');
+      const lib = await import('../../src/index.js');
 
       expect(lib.SignInForm).toBeDefined();
       expect(lib.createAuthStore).toBeDefined();
@@ -65,7 +65,7 @@ describe('Auth Library Core', () => {
     });
 
     it('should export utilities', async () => {
-      const lib = await import('../src/index');
+      const lib = await import('../../src/index.js');
 
       expect(lib.isWebAuthnSupported).toBeDefined();
       expect(lib.generatePasskeyName).toBeDefined();

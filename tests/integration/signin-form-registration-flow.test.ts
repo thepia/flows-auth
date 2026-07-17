@@ -9,8 +9,8 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
+import { AuthApiClient } from '../../src/api/auth-api.js';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;

@@ -11,9 +11,9 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
-import { TEST_ACCOUNTS, TestUtils, WebAuthnMocker } from '../test-setup';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
+import { TEST_ACCOUNTS, TestUtils, WebAuthnMocker } from '../test-setup.js';
 
 // Following thepia.com pattern - real API server detection
 const API_BASE = 'https://dev.thepia.com:8443';
@@ -152,7 +152,7 @@ describe('Auth Store Integration Tests', () => {
 
       expect(data).toHaveProperty('challenge');
       expect(data).toHaveProperty('rpId');
-      expect(data.rpId).toBe('dev.thepia.net');
+      expect(data.rpId).toBe('dev.thepia.com');
       console.log(`✅ WebAuthn challenge generated for ${testEmail}`);
     });
 
@@ -252,18 +252,16 @@ describe('Auth Store Integration Tests', () => {
       WebAuthnMocker.mockSuccess('existing-credential-id');
 
       try {
+        // signInWithPasskey() resolves with a full SignInData (success) or
+        // throws - there's no partial/intermediate resolved state, so unlike
+        // the raw SignInResponse API shape, there's no `step` to branch on.
         const result = await authStore.signInWithPasskey(existingEmail);
 
-        if (result.step === 'success') {
-          expect(result.user).toBeDefined();
-          expect(result.user?.email).toBe(existingEmail);
+        expect(result.user).toBeDefined();
+        expect(result.user.email).toBe(existingEmail);
 
-          const state = authStore.getState();
-          expect(state.state).toBe('authenticated');
-        } else {
-          // May require additional verification
-          expect(['webauthn_required', 'challenge_required']).toContain(result.step);
-        }
+        const state = authStore.getState();
+        expect(state.state).toBe('authenticated');
       } catch (error: any) {
         // WebAuthn might fail in test environment
         console.log('Passkey test failed (expected in test env):', error.message);
@@ -280,12 +278,18 @@ describe('Auth Store Integration Tests', () => {
       const existingEmail = TEST_ACCOUNTS.existingWithoutPasskey.email;
 
       try {
+        // signInWithMagicLink() always resolves null - the magic link itself
+        // completes sign-in later when the user clicks it, not this call.
+        // Success here is signaled by the signInState transition, not a
+        // returned step/magicLinkSent field (those belong to the raw
+        // SignInResponse API shape, not this store method's return value).
         const result = await authStore.signInWithMagicLink(existingEmail);
 
-        expect(result.step).toBe('magic_link_sent');
-        expect(result.magicLinkSent).toBe(true);
+        expect(result).toBeNull();
 
         const state = authStore.getState();
+        expect(state.signInState).toBe('pinEntry');
+        expect(state.emailCodeSent).toBe(true);
         expect(state.state).toBe('unauthenticated'); // Still waiting for magic link click
       } catch (error: any) {
         // Magic link might not be configured in test environment

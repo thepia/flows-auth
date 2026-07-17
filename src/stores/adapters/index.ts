@@ -5,7 +5,7 @@
  */
 
 // Re-export types
-export type * from '../types';
-export { createAstroAuthStore, getAstroApiUrl } from './astro';
-export { toReadable as createSvelteAdapter } from './svelte';
-export { createVanillaAdapter } from './vanilla';
+export type * from '../types.js';
+export { createAstroAuthStore, getAstroApiUrl } from './astro.js';
+export { toReadable as createSvelteAdapter } from './svelte.js';
+export { createVanillaAdapter } from './vanilla.js';

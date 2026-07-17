@@ -4,7 +4,7 @@
  */
 
 import { vi } from 'vitest';
-import type { AuthConfig } from '../src/types';
+import type { AuthConfig } from '../src/types/index.js';
 
 /**
  * API Server Selection Strategy for Testing

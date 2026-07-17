@@ -2,7 +2,7 @@
  * Enhanced authentication types for invitation flows and common utilities
  */
 
-import type { InvitationTokenData } from '../utils/invitation-tokens';
+import type { InvitationTokenData } from '../utils/invitation-tokens.js';
 
 export interface EnhancedUserCheck {
   exists: boolean;

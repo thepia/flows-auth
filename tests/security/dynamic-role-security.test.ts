@@ -4,8 +4,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types/index.js';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({

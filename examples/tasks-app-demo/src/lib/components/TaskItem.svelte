@@ -1,13 +1,13 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	
-	export let task;
+	let { task } = $props();
 	
 	const dispatch = createEventDispatcher();
 	
-	let isEditing = false;
-	let editTitle = '';
-	let editDescription = '';
+	let isEditing = $state(false);
+	let editTitle = $state('');
+	let editDescription = $state('');
 	
 	function startEdit() {
 		isEditing = true;
@@ -79,7 +79,7 @@
 				<input 
 					type="checkbox" 
 					checked={task.completed}
-					on:change={handleToggle}
+					onchange={handleToggle}
 				/>
 				<span class="checkmark"></span>
 			</label>
@@ -89,13 +89,13 @@
 					<input 
 						type="text"
 						bind:value={editTitle}
-						on:keydown={handleKeydown}
+						onkeydown={handleKeydown}
 						placeholder="Task title"
 						class="edit-title"
 					/>
 					<textarea 
 						bind:value={editDescription}
-						on:keydown={handleKeydown}
+						onkeydown={handleKeydown}
 						placeholder="Description (optional)"
 						class="edit-description"
 						rows="2"
@@ -104,8 +104,8 @@
 			{:else}
 				<div 
 					class="task-text" 
-					on:dblclick={startEdit}
-					on:keydown={(e) => e.key === 'Enter' && startEdit()}
+					ondblclick={startEdit}
+					onkeydown={(e) => e.key === 'Enter' && startEdit()}
 					role="button"
 					tabindex="0"
 				>
@@ -133,17 +133,17 @@
 			
 			<div class="task-actions">
 				{#if isEditing}
-					<button class="action-btn save" on:click={saveEdit} title="Save">
+					<button class="action-btn save" onclick={saveEdit} title="Save">
 						💾
 					</button>
-					<button class="action-btn cancel" on:click={cancelEdit} title="Cancel">
+					<button class="action-btn cancel" onclick={cancelEdit} title="Cancel">
 						❌
 					</button>
 				{:else}
-					<button class="action-btn edit" on:click={startEdit} title="Edit">
+					<button class="action-btn edit" onclick={startEdit} title="Edit">
 						✏️
 					</button>
-					<button class="action-btn delete" on:click={handleDelete} title="Delete">
+					<button class="action-btn delete" onclick={handleDelete} title="Delete">
 						🗑️
 					</button>
 				{/if}

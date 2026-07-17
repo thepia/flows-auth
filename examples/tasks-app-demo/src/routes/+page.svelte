@@ -1,27 +1,67 @@
 <script lang="ts">
-import { browser } from '$app/environment';
-import { type User, SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth';
-import { onMount } from 'svelte';
+import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
+import type { User } from '@thepia/flows-auth/types';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 import TaskCard from '../lib/components/TaskCard.svelte';
 
-let currentUser: User | null = null;
-let isLoading = false;
-let activeTab: 'tasks' | 'documents' | 'notifications' = 'tasks';
-let tasks: any[] = [];
-let pendingTasks: any[] = [];
-let unreadNotifications: any[] = [];
+let activeTab: 'tasks' | 'documents' | 'notifications' = $state('tasks');
+let tasks: any[] = $state([]);
+let pendingTasks: any[] = $state([]);
+let unreadNotifications: any[] = $state([]);
 // Obtain the auth store from Svelte context during component init.
 // getContext() must run here (not inside onMount/async) per ADR 0004.
-let authStore: any = getAuthStoreFromContext();
-let authConfig: any = null;
-let authError: string | null = null;
+let authStore: SvelteAuthStore = getAuthStoreFromContext();
+let authError: string | null = $state(null);
 
 // Authentication UI state
-let showAuthForm = true; // Always show the auth form when not authenticated
-let isUnconfirmed = false;
-let showVerificationBanner = false;
-let showVerificationPrompt = false;
+let showAuthForm = $state(true); // Always show the auth form when not authenticated
+let showVerificationPrompt = $state(false);
+
+// Auth state, derived directly from Svelte's store auto-subscription
+// ($authStore) instead of a hand-rolled authStore.subscribe(...) that
+// copied fields into local $state. The combined state's real field is
+// `loading` (see AuthStore in flows-auth/src/types/index.ts), not
+// `isLoading` — the previous manual copy read the wrong field name and
+// always produced `undefined`.
+let currentUser: User | null = $derived($authStore.user);
+let isLoading = $derived($authStore.loading);
+// User is "unconfirmed" if they have an account but haven't verified email yet.
+let isUnconfirmed = $derived(!!currentUser && !currentUser.emailVerified);
+
+// showVerificationBanner is kept as its own $state (rather than derived
+// from isUnconfirmed) because it has real UI-only behavior: the user can
+// dismiss it via handleVerificationBannerDismiss(). The previous code
+// re-forced `showVerificationBanner = isUnconfirmed` inside the manual
+// subscribe callback on every single store notification (which fires on
+// ANY of the store's 7 sub-stores changing), which had the side effect of
+// un-dismissing the banner in response to unrelated store activity.
+//
+// Behavior change: the banner now only re-appears when isUnconfirmed
+// transitions from false -> true (i.e. it "re-arms"), so a user's
+// dismissal actually sticks until that happens, instead of being
+// overwritten on the next unrelated auth-store notification.
+let showVerificationBanner = $state(false);
+let previousIsUnconfirmed = false;
+$effect(() => {
+  if (isUnconfirmed && !previousIsUnconfirmed) {
+    showVerificationBanner = true;
+  }
+  previousIsUnconfirmed = isUnconfirmed;
+});
+
+// Loading/clearing task data is a side effect (calling loadData() or
+// resetting three state vars), not a pure computation, so it belongs in
+// an $effect rather than a $derived.
+$effect(() => {
+  if (currentUser) {
+    loadData();
+  } else {
+    tasks = [];
+    pendingTasks = [];
+    unreadNotifications = [];
+  }
+});
 
 // Test error reporting function - TEMPORARILY DISABLED FOR DEBUGGING
 async function testErrorReporting() {
@@ -32,56 +72,6 @@ async function testErrorReporting() {
   // } catch (error) {
   //   console.error('Failed to test error reporting:', error);
   // }
-}
-
-// Determine API base URL at runtime
-// Initialize auth by using the global store pattern
-async function initializeAuth() {
-  if (!browser) return;
-
-  try {
-    console.log('🔄 Starting auth initialization...');
-    isLoading = true;
-
-    // Auth store was obtained from context at component init (see top of script)
-    console.log('🔐 Auth store obtained from context');
-    
-    console.log('📡 Setting up auth store subscription...');
-    // Subscribe to auth state changes
-    authStore.subscribe((state) => {
-      currentUser = state.user;
-      isLoading = state.isLoading;
-
-      // Check if user is unconfirmed (has account but email not verified)
-      isUnconfirmed = currentUser && !currentUser.emailVerified;
-      showVerificationBanner = isUnconfirmed;
-
-      if (currentUser) {
-        loadData();
-      } else {
-        tasks = [];
-        pendingTasks = [];
-        unreadNotifications = [];
-      }
-
-      console.log('🔄 Auth state changed:', {
-        state: state.state,
-        user: state.user,
-        isUnconfirmed,
-        emailVerified: currentUser?.emailVerified,
-      });
-    });
-    console.log('✅ Auth store subscription setup complete');
-    
-    console.log('✅ Auth initialization complete');
-    
-  } catch (error) {
-    console.error('❌ Failed to initialize authentication:', error);
-    console.error('❌ Error details:', error.stack);
-    isLoading = false;
-    // Set a basic error state instead of crashing
-    authError = 'Failed to initialize authentication system';
-  }
 }
 
 // Authentication event handlers
@@ -149,20 +139,6 @@ function handleViewDetails(task) {
   // TODO: Open task detail modal/page
 }
 
-onMount(async () => {
-  if (!browser) return;
-  console.log('🔄 Tasks app mounted - starting initialization');
-
-  try {
-    // Initialize real authentication
-    console.log('🔄 About to call initializeAuth...');
-    await initializeAuth();
-    console.log('✅ Auth initialization completed');
-  } catch (error) {
-    console.error('❌ Failed to initialize app:', error);
-    // Don't let the error crash the component
-  }
-});
 </script>
 
 <svelte:head>
@@ -191,12 +167,15 @@ onMount(async () => {
 				</div>
 			{/if}
 
-			{#if authStore && authConfig && showAuthForm}
+			{#if authStore && showAuthForm}
 				<!-- Granular Authentication Form using SignInForm -->
+				<!-- SignInForm derives its own config from the store internally
+				     (SignInForm.svelte: `authConfig = $derived(authStore?.getConfig?.())`),
+				     so no separate config prop is needed or accepted. Its prop is
+				     named `store`, not `authStore`. -->
 				<div class="auth-form-container">
 					<SignInForm
-						config={authConfig}
-						{authStore}
+						store={authStore}
 						showLogo={false}
 						compact={false}
 						on:success={handleAuthSuccess}
@@ -213,7 +192,7 @@ onMount(async () => {
 
 			<!-- Test error reporting button for debugging -->
 			<div class="debug-section">
-				<button on:click={testErrorReporting} class="test-button">
+				<button onclick={testErrorReporting} class="test-button">
 					🧪 Test Error Reporting
 				</button>
 			</div>
@@ -241,12 +220,12 @@ onMount(async () => {
 					</div>
 
 					{#if isUnconfirmed}
-						<button class="verify-email-button" on:click={handleShowVerificationPrompt}>
+						<button class="verify-email-button" onclick={handleShowVerificationPrompt}>
 							🔓 Verify Email
 						</button>
 					{/if}
 
-					<button on:click={handleSignOut} class="sign-out-button">
+					<button onclick={handleSignOut} class="sign-out-button">
 						Sign Out
 					</button>
 				</div>
@@ -257,21 +236,21 @@ onMount(async () => {
 				<button 
 					class="nav-tab" 
 					class:active={activeTab === 'tasks'}
-					on:click={() => activeTab = 'tasks'}
+					onclick={() => activeTab = 'tasks'}
 				>
 					📋 Tasks ({pendingTasks.length})
 				</button>
 				<button 
 					class="nav-tab" 
 					class:active={activeTab === 'documents'}
-					on:click={() => activeTab = 'documents'}
+					onclick={() => activeTab = 'documents'}
 				>
 					📄 Documents
 				</button>
 				<button 
 					class="nav-tab" 
 					class:active={activeTab === 'notifications'}
-					on:click={() => activeTab = 'notifications'}
+					onclick={() => activeTab = 'notifications'}
 				>
 					🔔 Notifications ({unreadNotifications.length})
 				</button>
@@ -288,7 +267,7 @@ onMount(async () => {
 					
 					{#if pendingTasks.length > 0}
 						<div class="tasks-grid">
-							{#each pendingTasks as task}
+							{#each pendingTasks as task (task.id)}
 								<TaskCard 
 									{task} 
 									onMarkComplete={handleMarkComplete}
@@ -354,7 +333,7 @@ onMount(async () => {
 	<!-- TODO: Re-enable when EmailVerificationPrompt import is fixed -->
 	<div class="verification-prompt">
 		<p>Verify your email ({currentUser?.email || ''}) to access advanced task features</p>
-		<button on:click={handleVerificationPromptDismiss}>Dismiss</button>
+		<button onclick={handleVerificationPromptDismiss}>Dismiss</button>
 	</div>
 {/if}
 

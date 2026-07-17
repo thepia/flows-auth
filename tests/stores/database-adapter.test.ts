@@ -9,15 +9,15 @@
  * 5. Separation of session tokens and user profile data
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import { createLocalStorageAdapter } from '../../src/stores/core/database';
+import { createAuthStore } from '../../src/stores/index.js';
+import { createLocalStorageAdapter } from '../../src/stores/core/database.js';
 import type {
   AuthConfig,
   SessionData,
   SessionPersistence,
   SignInData,
   UserData
-} from '../../src/types';
+} from '../../src/types/index.js';
 
 // Mock API client
 vi.mock('../../src/api/auth-api', () => ({
@@ -112,7 +112,7 @@ describe('Database Adapter Configuration', () => {
 
     it('should configure session storage using optimal defaults', async () => {
       const { configureSessionStorage, getOptimalSessionConfig } = await import(
-        '../../src/utils/sessionManager'
+        '../../src/utils/sessionManager.js'
       );
 
       createAuthStore(mockConfig);
@@ -123,7 +123,7 @@ describe('Database Adapter Configuration', () => {
     });
 
     it('should use custom storage config if provided in AuthConfig', async () => {
-      const { configureSessionStorage } = await import('../../src/utils/sessionManager');
+      const { configureSessionStorage } = await import('../../src/utils/sessionManager.js');
 
       const configWithStorage: AuthConfig = {
         ...mockConfig,
@@ -909,7 +909,7 @@ describe('Database Adapter Configuration', () => {
     });
 
     it('should return null if user is expired (>30 days)', async () => {
-      const { isOlderThan } = await import('../../src/utils/date-helpers');
+      const { isOlderThan } = await import('../../src/utils/date-helpers.js');
 
       // Mock isOlderThan to return true (expired)
       vi.mocked(isOlderThan).mockReturnValueOnce(true);

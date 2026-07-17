@@ -8,11 +8,11 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 // Import shared test configuration
-import { TEST_CONFIG } from '../test-setup';
+import { TEST_CONFIG } from '../test-setup.js';
 
 // Local test config override for consistency
 const LOCAL_TEST_CONFIG = {
@@ -340,14 +340,18 @@ describe('Auth Store Integration Tests', () => {
   });
 
   describe('Magic Link Integration', () => {
+    // Magic-link sign-in is fire-and-forget by design (see auth-store.ts
+    // signInWithMagicLink): real auth can't happen until the user clicks the
+    // link emailed to them, in a separate browser context. It always
+    // resolves to null rather than a result object - there is no
+    // {step, magicLinkSent} contract to check anymore.
     it('should send magic link for existing user', async () => {
       try {
         const result = await authStore.signInWithMagicLink(
           TEST_ACCOUNTS.existingWithoutPasskey.email
         );
 
-        expect(result.step).toBe('magic_link_sent');
-        expect(result.magicLinkSent).toBe(true);
+        expect(result).toBeNull();
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -365,8 +369,7 @@ describe('Auth Store Integration Tests', () => {
       try {
         const result = await authStore.signInWithMagicLink(TEST_ACCOUNTS.newUser.email);
 
-        expect(result.step).toBe('magic_link_sent');
-        expect(result.magicLinkSent).toBe(true);
+        expect(result).toBeNull();
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -377,22 +380,9 @@ describe('Auth Store Integration Tests', () => {
       }
     });
 
-    it('should validate magic link response structure', async () => {
+    it('should transition sign-in state after sending the link', async () => {
       try {
-        const result = await authStore.signInWithMagicLink(
-          TEST_ACCOUNTS.existingWithoutPasskey.email
-        );
-
-        // Ensure API contract compliance
-        expect(result).toHaveProperty('step');
-        expect(result).toHaveProperty('magicLinkSent');
-        expect(result.step).toBe('magic_link_sent');
-        expect(result.magicLinkSent).toBe(true);
-
-        if (result.message) {
-          expect(typeof result.message).toBe('string');
-          expect(result.message.length).toBeGreaterThan(0);
-        }
+        await authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -401,6 +391,10 @@ describe('Auth Store Integration Tests', () => {
         }
         throw error;
       }
+
+      // signInStateTransitions.emailCodeSent(ui) fires after a successful send
+      const state = get(authStore);
+      expect(state.signInState).toBe('pinEntry');
     });
 
     it('should handle rate limiting gracefully', async () => {
@@ -415,15 +409,14 @@ describe('Auth Store Integration Tests', () => {
 
       const results = await Promise.allSettled(promises);
 
-      // All requests should either succeed or be properly rate limited
+      // All requests should either succeed (resolving to null) or be
+      // properly rate limited (rejected with a defined error)
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
-          // Rate limiting should return proper error structure
           expect(result.reason).toBeDefined();
           console.log(`Request ${index} rate limited (expected behavior)`);
         } else {
-          // Successful requests should have proper structure
-          expect(result.value.step).toBe('magic_link_sent');
+          expect(result.value).toBeNull();
         }
       });
     });

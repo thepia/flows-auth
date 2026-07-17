@@ -9,7 +9,7 @@ import type {
   PasskeyCredential,
   SerializedPasskeyCredential,
   SerializedWebAuthnRegistrationResponse
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Check if WebAuthn is supported

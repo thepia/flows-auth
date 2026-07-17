@@ -14,7 +14,7 @@ import {
   getFieldCount,
   getFieldsInUse,
   validateFieldLimit
-} from '../../src/types/metadata-schema';
+} from '../../src/types/metadata-schema.js';
 
 describe('Unified Metadata Schema', () => {
   describe('Schema Validation', () => {

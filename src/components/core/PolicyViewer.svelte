@@ -151,8 +151,14 @@
   });
 
   onDestroy(() => {
-    document.removeEventListener('keydown', handleEscape);
-    document.body.style.overflow = '';
+    // onMount is a no-op during SSR, but onDestroy is not — it still runs
+    // as part of finalizing a server render (this component is always
+    // mounted by SignInCore, just hidden behind `open`, so every SSR pass
+    // hits this). Guard against the missing `document` global on the server.
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    }
   });
   // Get policy URLs from auth config
   let authConfig = $derived(authStore?.getConfig?.());

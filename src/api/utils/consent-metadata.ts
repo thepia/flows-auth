@@ -9,8 +9,8 @@ import type {
   CompactConsentRecord,
   ConfirmConsentRequest,
   OnboardingMetadata
-} from '../../types/onboarding';
-import { OnboardingMetadataSchema } from '../../types/onboarding';
+} from '../../types/onboarding.js';
+import { OnboardingMetadataSchema } from '../../types/onboarding.js';
 
 /**
  * Extract onboarding metadata from user metadata

@@ -6,7 +6,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
+import { AuthApiClient } from '../../src/api/auth-api.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -125,81 +125,6 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
         await client.checkEmail('test@example.com');
 
         // THEN it should use the app-specific endpoint with GET method and query parameter
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/app/check-user?email=test%40example.com',
-          expect.objectContaining({
-            method: 'GET'
-          })
-        );
-      });
-    });
-  });
-
-  describe('GIVEN a client configured WITHOUT appCode (legacy mode)', () => {
-    describe('WHEN appCode is false or undefined', () => {
-      const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
-        clientId: 'legacy-app',
-        appCode: false,
-        domain: 'example.com',
-        enablePasskeys: true,
-        enableMagicLinks: false
-      });
-
-      it('THEN checkEmail should call legacy /auth/check-user endpoint', async () => {
-        // Clear cache to ensure fresh API call
-        client.clearUserCache();
-
-        // WHEN calling checkEmail
-        await client.checkEmail('test@example.com');
-
-        // THEN it should use the legacy endpoint with GET method and query parameter
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/auth/check-user?email=test%40example.com',
-          expect.objectContaining({
-            method: 'GET'
-          })
-        );
-      });
-
-      it('THEN registerUser should call legacy /auth/register endpoint', async () => {
-        // WHEN calling registerUser
-        await client.registerUser({
-          email: 'test@example.com',
-          acceptedTerms: true,
-          acceptedPrivacy: true
-        });
-
-        // THEN it should use the legacy endpoint
-        expect(mockFetch).toHaveBeenCalledWith(
-          'https://api.thepia.com/auth/register',
-          expect.objectContaining({
-            method: 'POST'
-          })
-        );
-      });
-    });
-  });
-
-  describe('GIVEN a client configured with boolean appCode', () => {
-    describe('WHEN appCode is true (default to "app")', () => {
-      const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
-        clientId: 'some-app',
-        appCode: true,
-        domain: 'example.com',
-        enablePasskeys: true,
-        enableMagicLinks: false
-      });
-
-      it('THEN endpoints should default to /app/ prefix', async () => {
-        // Clear cache to ensure fresh API call
-        client.clearUserCache();
-
-        // WHEN calling checkEmail
-        await client.checkEmail('test@example.com');
-
-        // THEN it should use the default app endpoint with GET method and query parameter
         expect(mockFetch).toHaveBeenCalledWith(
           'https://api.thepia.com/app/check-user?email=test%40example.com',
           expect.objectContaining({

@@ -13,9 +13,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import { AuthApiClient } from '../../src/api/auth-api.js';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
 
 describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
   let mockFetch: ReturnType<typeof vi.fn>;

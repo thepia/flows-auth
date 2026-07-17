@@ -293,10 +293,6 @@ async function handleSignIn() {
     console.log('🔐 Determined auth method:', authMethod);
 
     switch (authMethod) {
-      case 'passkey-only':
-        await handlePasskeyAuth();
-        break;
-      
       case 'passkey-with-fallback':
         try {
           await handlePasskeyAuth();
@@ -306,7 +302,7 @@ async function handleSignIn() {
           await handleEmailCodeAuth();
         }
         break;
-      
+
       case 'email-code':
         // Check if user has a valid pin first
         if ($authStore.hasValidPin) {
@@ -318,14 +314,6 @@ async function handleSignIn() {
           await handleEmailCodeAuth();
         }
         break;
-
-      case 'email-only':
-        await handleMagicLinkAuth();
-        break;
-
-      default:
-        // Error will be shown via AuthStore apiError
-        authStore.setLoading(false);
     }
 
   } catch (err: any) {
@@ -335,29 +323,18 @@ async function handleSignIn() {
   }
 }
 
-// Determine the best authentication method based on config and user state
-function determineAuthMethod(userCheck: any): 'passkey-only' | 'passkey-with-fallback' | 'email-code' | 'email-only' | 'none' {
+// Determine the best authentication method based on config and user state.
+// appCode is always configured (defaults to 'app'), so email-code is always
+// available - there's no longer a "no auth method available" or "passkey
+// with no fallback" case to handle.
+function determineAuthMethod(userCheck: any): 'passkey-with-fallback' | 'email-code' {
   const hasPasskeys = userCheck.hasWebAuthn;
 
-  // If user has passkeys and we support them
   if (hasPasskeys && $authStore.passkeysEnabled) {
-    // Use passkey with fallback to email if other email methods are enabled
-    const hasEmailFallback = authConfig.appCode || authConfig.enableMagicLinks;
-    return hasEmailFallback ? 'passkey-with-fallback' : 'passkey-only';
+    return 'passkey-with-fallback';
   }
 
-  // If app-based email authentication is available
-  if (authConfig.appCode) {
-    return 'email-code';
-  }
-
-  // If user doesn't have passkeys but we have magic links enabled
-  if (authConfig.enableMagicLinks) {
-    return 'email-only';
-  }
-
-  // No authentication methods available
-  return 'none';
+  return 'email-code';
 }
 
 // Handle passkey authentication
@@ -381,12 +358,11 @@ async function handlePasskeyAuth() {
 // Handle magic link authentication
 async function handleMagicLinkAuth() {
   try {
-    const result = await authStore.signInWithMagicLink(email);
-
-      authStore.setLoading(false);
-    if (result.step === 'magic-link' || result.magicLinkSent) {
-      // setLocalStep('magicLinkSent');
-    }
+    // signInWithMagicLink() always resolves to null - the auth store
+    // transitions to 'pinEntry' internally (via notifyPinSent-equivalent
+    // signInStateTransitions.emailCodeSent) once the link is sent.
+    await authStore.signInWithMagicLink(email);
+    authStore.setLoading(false);
   } catch (err: any) {
     // Error handling is now managed by AuthStore
     throw err;

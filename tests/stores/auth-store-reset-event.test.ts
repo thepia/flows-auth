@@ -2,8 +2,8 @@
  * Test RESET event handling in auth store state machine
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({

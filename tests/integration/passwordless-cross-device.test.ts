@@ -4,7 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
+import { AuthApiClient } from '../../src/api/auth-api.js';
 
 // Test configuration
 const TEST_CONFIG = {
@@ -27,8 +27,12 @@ describe('Cross-Device Passwordless Authentication', () => {
 
   beforeAll(() => {
     apiClient = new AuthApiClient(TEST_CONFIG);
-    // Use unique test email to avoid conflicts
-    testEmail = `test+${Date.now()}@thepia.net`;
+    // Use unique test email to avoid conflicts - domain must match a pattern
+    // isTestEmail() on the server recognizes (@test., @testclient., @e2e.,
+    // @example.com), otherwise the app-scoped send-email endpoint refuses to
+    // auto-create the user (autoCreate is off for this app) and 404s with
+    // "User not found" instead.
+    testEmail = `test+${Date.now()}@${TEST_CONFIG.domain}`;
 
     console.log('🧪 Testing against:', TEST_CONFIG.apiBaseUrl);
     console.log('📧 Test email:', testEmail);

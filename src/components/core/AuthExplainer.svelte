@@ -103,21 +103,20 @@
             </span>
           </div>
         {/each}
+      </div>
+    {/if}
 
-      {#if apiError}
-        <div class="flex items-center gap-2">
-          <Icon weight="duotone" size={20} ariaLabel="Error icon" variant="error" color="error" icon={Pulse} />
-          <span class="feature-text">
-            {m[apiError.code]()}
-          <!-- {#if apiError.retryable}
-            <button type="button" class="retry-button" on:click={() => store.retryLastFailedRequest()}>
-              Try Again
-            </button>
-          {/if} -->
-          </span>
-        </div>
-      {/if}
-
+    {#if apiError}
+      <div class="flex items-center gap-2">
+        <Icon weight="duotone" size={20} ariaLabel="Error icon" variant="error" color="error" icon={Pulse} />
+        <span class="feature-text">
+          {m[apiError.code]()}
+        <!-- {#if apiError.retryable}
+          <button type="button" class="retry-button" on:click={() => store.retryLastFailedRequest()}>
+            Try Again
+          </button>
+        {/if} -->
+        </span>
       </div>
     {/if}
   </div>

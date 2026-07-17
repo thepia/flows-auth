@@ -11,12 +11,12 @@
  * - Role-based storage strategy
  */
 
-import type { SignInData, StorageConfig, UserData } from '../types';
+import type { SignInData, StorageConfig, UserData } from '../types/index.js';
 import {
   getOptimalStorageConfig,
   getStorageManager,
   initializeStorageManager
-} from './storageManager';
+} from './storageManager.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const EMAIL_PREFILL_KEY = 'thepia_email_prefill';

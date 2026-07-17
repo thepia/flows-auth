@@ -10,18 +10,18 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api';
-import type { SignInData, User } from '../../types';
-import { reportWebAuthnError } from '../../utils/telemetry';
+import { AuthApiClient } from '../../api/auth-api.js';
+import type { SignInData, User } from '../../types/index.js';
+import { reportWebAuthnError } from '../../utils/telemetry.js';
 import {
   authenticateWithPasskey,
   isConditionalMediationSupported,
   isPlatformAuthenticatorAvailable,
   isWebAuthnSupported,
   serializeCredential
-} from '../../utils/webauthn';
-import { createSessionData } from '../core/session';
-import type { StoreOptions } from '../types';
+} from '../../utils/webauthn.js';
+import { createSessionData } from '../core/session.js';
+import type { StoreOptions } from '../types.js';
 
 /**
  * Passkey store state
@@ -232,7 +232,7 @@ export function createPasskeyStore(options: StoreOptions) {
         });
 
         // Create WebAuthn credential using browser API
-        const webauthnUtils = await import('../../utils/webauthn');
+        const webauthnUtils = await import('../../utils/webauthn.js');
         const credential = await webauthnUtils.createCredential(registrationOptions);
 
         // Verify WebAuthn registration with server

@@ -7,9 +7,9 @@ import { screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../../src/types';
-import * as webauthnUtils from '../../src/utils/webauthn';
-import { renderWithStoreProp } from '../helpers/component-test-setup';
+import type { AuthConfig } from '../../src/types/index.js';
+import * as webauthnUtils from '../../src/utils/webauthn.js';
+import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({

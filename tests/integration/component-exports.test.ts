@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithStoreProp } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 describe('Component Exports', () => {
   beforeEach(() => {
@@ -32,19 +32,19 @@ describe('Component Exports', () => {
   });
 
   it('should import SignInForm as named export', async () => {
-    const { SignInForm } = await import('../../src/index');
+    const { SignInForm } = await import('../../src/index.js');
     expect(SignInForm).toBeDefined();
     expect(typeof SignInForm).toBe('function');
   });
 
   it('should import createAuthStore as named export', async () => {
-    const { createAuthStore } = await import('../../src/index');
+    const { createAuthStore } = await import('../../src/index.js');
     expect(createAuthStore).toBeDefined();
     expect(typeof createAuthStore).toBe('function');
   });
 
   it('should import AuthApiClient as named export', async () => {
-    const { AuthApiClient } = await import('../../src/index');
+    const { AuthApiClient } = await import('../../src/index.js');
     expect(AuthApiClient).toBeDefined();
     expect(typeof AuthApiClient).toBe('function');
   });
@@ -55,7 +55,7 @@ describe('Component Exports', () => {
       isPlatformAuthenticatorAvailable,
       authenticateWithPasskey,
       createPasskey
-    } = await import('../../src/index');
+    } = await import('../../src/index.js');
 
     expect(isWebAuthnSupported).toBeDefined();
     expect(isPlatformAuthenticatorAvailable).toBeDefined();
@@ -64,7 +64,7 @@ describe('Component Exports', () => {
   });
 
   it('should create and render SignInForm component without errors', async () => {
-    const { SignInForm } = await import('../../src/index');
+    const { SignInForm } = await import('../../src/index.js');
 
     expect(() => {
       renderWithStoreProp(SignInForm, {
@@ -78,7 +78,7 @@ describe('Component Exports', () => {
   });
 
   it('should create auth store without errors', async () => {
-    const { createAuthStore, createDefaultConfig } = await import('../../src/index');
+    const { createAuthStore, createDefaultConfig } = await import('../../src/index.js');
 
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
@@ -91,7 +91,7 @@ describe('Component Exports', () => {
   });
 
   it('should create API client without errors', async () => {
-    const { AuthApiClient, createDefaultConfig } = await import('../../src/index');
+    const { AuthApiClient, createDefaultConfig } = await import('../../src/index.js');
 
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
@@ -104,7 +104,7 @@ describe('Component Exports', () => {
   });
 
   it('should have correct component properties and methods', async () => {
-    const { SignInForm } = await import('../../src/index');
+    const { SignInForm } = await import('../../src/index.js');
 
     // Svelte 5 components compile to plain functions of shape
     // `(anchor, props) => Exports`, not classes with $set/$on/$destroy -
@@ -116,7 +116,7 @@ describe('Component Exports', () => {
   });
 
   it('should maintain consistent exports between builds', async () => {
-    const authLib = await import('../../src/index');
+    const authLib = await import('../../src/index.js');
 
     // Check all expected exports are present
     const expectedExports = [
@@ -140,7 +140,7 @@ describe('Component Exports', () => {
   });
 
   it('should handle component instantiation in different environments', async () => {
-    const { SignInForm } = await import('../../src/index');
+    const { SignInForm } = await import('../../src/index.js');
 
     const baseAuthConfig = {
       apiBaseUrl: 'https://test.com',

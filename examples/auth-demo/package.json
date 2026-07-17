@@ -4,8 +4,9 @@
   "description": "Comprehensive authentication demo showcasing flows-auth state machine and branded components",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
-    "dev": "vite dev --host dev.thepia.net --port 5177",
+    "dev": "vite dev --host dev.thepia.net --port 5187",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

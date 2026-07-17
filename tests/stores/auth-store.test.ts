@@ -6,8 +6,8 @@
  * with the new Zustand-based modular architecture.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig, SignInData, SignInResponse } from '../../src/types';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig, SignInData, SignInResponse } from '../../src/types/index.js';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
@@ -187,6 +187,13 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Test UI state after restoration
       const uiState = restoredStore.ui.getState();
       expect(uiState.signInState).toBe('signedIn');
+
+      // Reproduces: UserStatusIsland shows "User Exists: unknown" after a page
+      // reload with an already-authenticated session, because session restore
+      // never calls checkUser() (the only thing that normally sets these
+      // fields) — same root gap as the post-registration userExists bug.
+      // A restored, authenticated session inherently means the user exists.
+      expect(uiState.userExists).toBe(true);
 
       // Cleanup
       restoredStore.destroy();

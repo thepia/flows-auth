@@ -12,14 +12,14 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, RegistrationRequest } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, RegistrationRequest } from '../../src/types/index.js';
 import {
   getAccessToken,
   getCurrentUser,
   getSession,
   isSessionValid as isAuthenticated
-} from '../../src/utils/sessionManager';
+} from '../../src/utils/sessionManager.js';
 
 // Mock sessionManager (we verify calls but don't control implementation)
 let mockStorage: Record<string, string> = {};

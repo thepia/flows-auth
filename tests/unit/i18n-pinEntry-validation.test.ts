@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { m } from '../../src/utils/i18n';
+import { m } from '../../src/utils/i18n.js';
 
 describe('i18n Translation System - pinEntry State', () => {
   it('should provide correct translations for pinEntry button texts', () => {

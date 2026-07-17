@@ -9,7 +9,7 @@
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore } from '../../src/stores/index.js';
 
 // Mock fetch to avoid real API calls
 const mockFetch = vi.fn();
@@ -225,7 +225,7 @@ describe('Integration Regression Tests (Safe)', () => {
 
     it('should have all expected exports available', async () => {
       // ✅ REGRESSION TEST: Main exports should be available
-      const exports = await import('../../src/index');
+      const exports = await import('../../src/index.js');
 
       expect(exports.SignInForm).toBeDefined();
       expect(exports.createAuthStore).toBeDefined();

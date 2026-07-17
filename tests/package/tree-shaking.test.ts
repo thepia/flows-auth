@@ -69,8 +69,8 @@ describe('Tree-Shaking Support (Built Package)', () => {
     expect(fullStore.api.sendEmailSignin).toBeDefined(); // Includes email auth too
 
     // Selective import (would be smaller in real bundling scenario)
-    const { createPasskeyStore } = await import('../../src/stores/auth-methods/index.ts');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.ts');
+    const { createPasskeyStore } = await import('../../src/stores/auth-methods/index.js');
+    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
 
     // Create minimal setup with only needed stores
     const coreStore = createAuthCoreStore({
@@ -104,8 +104,8 @@ describe('Tree-Shaking Support (Built Package)', () => {
 
   it('should support framework-specific imports without cross-contamination', async () => {
     // Simulates importing only Svelte adapter without React dependencies
-    const { createSvelteAdapter } = await import('../../src/stores/adapters/index.ts');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.ts');
+    const { createSvelteAdapter } = await import('../../src/stores/adapters/index.js');
+    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
 
     expect(typeof createSvelteAdapter).toBe('function');
     expect(typeof createAuthCoreStore).toBe('function');

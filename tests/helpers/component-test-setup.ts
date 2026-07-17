@@ -9,10 +9,10 @@ import { render } from '@testing-library/svelte';
 import { getContext } from 'svelte';
 import { writable } from 'svelte/store';
 import { vi } from 'vitest';
-import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
-import type { SvelteAuthStore } from '../../src/types/svelte';
+import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys.js';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
+import type { SvelteAuthStore } from '../../src/types/svelte.js';
 
 /**
  * Creates a real auth store with test configuration and optional mock API client

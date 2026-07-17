@@ -4,20 +4,20 @@
 	import TaskItem from './TaskItem.svelte';
 	import AddTaskForm from './AddTaskForm.svelte';
 	
-	let taskList = [];
-	let currentSyncStatus = {};
+	let taskList = $state([]);
+	let currentSyncStatus = $state({});
 	let showCompleted = false;
-	let filter = 'all'; // 'all', 'active', 'completed'
+	let filter = $state('all'); // 'all', 'active', 'completed'
 	
 	// Reactive filtering
-	$: filteredTasks = taskList.filter(task => {
+	let filteredTasks = $derived(taskList.filter(task => {
 		if (filter === 'active') return !task.completed;
 		if (filter === 'completed') return task.completed;
 		return true;
-	});
+	}));
 	
-	$: activeTasks = taskList.filter(task => !task.completed);
-	$: completedTasks = taskList.filter(task => task.completed);
+	let activeTasks = $derived(taskList.filter(task => !task.completed));
+	let completedTasks = $derived(taskList.filter(task => task.completed));
 
 	onMount(async () => {
 		await initTasks();
@@ -88,21 +88,21 @@
 		<button 
 			class="filter-btn" 
 			class:active={filter === 'all'}
-			on:click={() => filter = 'all'}
+			onclick={() => filter = 'all'}
 		>
 			All ({taskList.length})
 		</button>
 		<button 
 			class="filter-btn" 
 			class:active={filter === 'active'}
-			on:click={() => filter = 'active'}
+			onclick={() => filter = 'active'}
 		>
 			Active ({activeTasks.length})
 		</button>
 		<button 
 			class="filter-btn" 
 			class:active={filter === 'completed'}
-			on:click={() => filter = 'completed'}
+			onclick={() => filter = 'completed'}
 		>
 			Completed ({completedTasks.length})
 		</button>

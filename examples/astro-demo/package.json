@@ -2,23 +2,26 @@
   "name": "astro-demo",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "concurrently -n lib,demo -c magenta,blue \"pnpm --filter @thepia/flows-auth build:watch\" \"astro dev\"",
+    "dev:astro-only": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/svelte": "^7.2.0",
+    "@astrojs/svelte": "^9.0.1",
     "@thepia/flows-auth": "workspace:*",
-    "astro": "^5.14.1",
+    "astro": "^7.1.0",
     "svelte": "~5.53.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4",
+    "@astrojs/check": "^0.9.9",
     "@tailwindcss/vite": "^4.1.14",
     "@thepia/branding": "^1.4.0",
+    "concurrently": "^9.0.0",
     "tailwindcss": "^4.1.14"
   }
 }

@@ -2,7 +2,7 @@
  * WebAuthn Utilities Tests
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PasskeyChallenge } from '../../src/types';
+import type { PasskeyChallenge } from '../../src/types/index.js';
 import {
   authenticateWithPasskey,
   createPasskey,
@@ -10,7 +10,7 @@ import {
   isPlatformAuthenticatorAvailable,
   isWebAuthnSupported,
   serializeCredential
-} from '../../src/utils/webauthn';
+} from '../../src/utils/webauthn.js';
 
 // Mock WebAuthn APIs
 const mockCredential = {

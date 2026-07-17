@@ -10,10 +10,10 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api';
-import type { User } from '../../types';
-import { reportRefreshEvent } from '../../utils/telemetry';
-import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types';
+import { AuthApiClient } from '../../api/auth-api.js';
+import type { User } from '../../types/index.js';
+import { reportRefreshEvent } from '../../utils/telemetry.js';
+import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types.js';
 
 /**
  * GLOBAL token refresh lock - shared across ALL auth store instances

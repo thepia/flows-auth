@@ -22,9 +22,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, InvitationTokenData } from '../../src/types';
-import { globalUserCache } from '../../src/utils/user-cache';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, InvitationTokenData } from '../../src/types/index.js';
+import { globalUserCache } from '../../src/utils/user-cache.js';
 
 const APP_CODE = 'demo';
 

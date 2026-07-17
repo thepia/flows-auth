@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -107,7 +107,7 @@
     "format": "biome format --write .",
     "check": "biome check .",
     "check:fix": "biome check --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
     "svelte:check": "svelte-check --tsconfig ./tsconfig.json",
     "prepublishOnly": "npm run build",
     "publish:npm": "dotenv -- bash -c 'npm publish --registry https://npm.pkg.github.com --//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}'",

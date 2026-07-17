@@ -6,7 +6,7 @@ import { writable } from 'svelte/store';
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { renderWithStoreProp } from '../helpers/component-test-setup';
+import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
 vi.mock('../../src/utils/webauthn', () => ({

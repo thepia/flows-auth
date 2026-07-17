@@ -5,8 +5,8 @@
  * SPIKE: This is experimental code that can be easily removed
  */
 
-import type { AuthConfig } from '../types';
-import { reportApiError } from '../utils/telemetry';
+import type { AuthConfig } from '../types/index.js';
+import { reportApiError } from '../utils/telemetry.js';
 
 export interface WorkflowMetadata {
   uid: string;

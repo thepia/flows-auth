@@ -4,8 +4,8 @@ import { get } from 'svelte/store';
  * Ensures basic account creation works without passkey requirements
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({
@@ -312,6 +312,70 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
       expect(state.access_token).toBeNull();
+    });
+
+    // Reproduces: UserStatusIsland "User Exists" badge never flips to YES
+    // after registration, because createAccount() success never updates
+    // ui-state.userExists (only checkUser() does). A user reaching
+    // createAccount() got there via checkUser() returning exists:false,
+    // so userExists is stuck at false/null even though the account now exists.
+    it('should mark userExists true after successful account creation', async () => {
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          name: 'Test User',
+          emailVerified: false,
+          createdAt: '2023-01-01T00:00:00Z'
+        }
+      };
+
+      mockApiClient.registerUser.mockResolvedValue(mockResponse);
+      mockApiClient.checkEmail.mockResolvedValue({ exists: false, hasWebAuthn: false });
+
+      // Simulate the real flow: checkUser() runs first and finds no account
+      await authStore.checkUser('test@example.com');
+      expect(get(authStore).userExists).toBe(false);
+
+      await authStore.createAccount({
+        email: 'test@example.com',
+        acceptedTerms: true,
+        acceptedPrivacy: true
+      });
+
+      expect(get(authStore).userExists).toBe(true);
+    });
+
+    it('should mark userExists true after createAccount issues tokens immediately (invitation flow)', async () => {
+      const mockResponse: SignInResponse = {
+        step: 'success',
+        user: {
+          id: '456',
+          email: 'invited@example.com',
+          name: 'Invited User',
+          emailVerified: true,
+          createdAt: '2023-01-01T00:00:00Z'
+        },
+        access_token: 'test-access-token',
+        refresh_token: 'test-refresh-token',
+        expires_in: 3600
+      };
+
+      mockApiClient.registerUser.mockResolvedValue(mockResponse);
+      mockApiClient.checkEmail.mockResolvedValue({ exists: false, hasWebAuthn: false });
+
+      await authStore.checkUser('invited@example.com');
+      expect(get(authStore).userExists).toBe(false);
+
+      await authStore.createAccount({
+        email: 'invited@example.com',
+        acceptedTerms: true,
+        acceptedPrivacy: true,
+        invitationToken: 'special-invite-123'
+      });
+
+      expect(get(authStore).userExists).toBe(true);
     });
   });
 });

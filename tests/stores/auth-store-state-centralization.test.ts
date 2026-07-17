@@ -7,8 +7,8 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
 
 describe('Auth Store State Centralization', () => {
   let authStore: ReturnType<typeof createAuthStore>;
@@ -187,7 +187,7 @@ describe('Auth Store State Centralization', () => {
       // authStore.sendSignInEvent({ type: 'SENT_PIN_EMAIL' });
       // const buttonConfig = authStore.getButtonConfig();
       // Import translation system:
-      // const { m } = await import('../../src/utils/i18n');
+      // const { m } = await import('../../src/utils/i18n.js');
       // Verify translation keys work:
       // expect(m[buttonConfig.primary.textKey]()).toBe('Verify Code');
       // expect(m[buttonConfig.secondary?.textKey || '']()).toBe('Use a different email');

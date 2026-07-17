@@ -1,5 +1,5 @@
 import { beforeEach, describe, test } from 'vitest';
-import type { AuthConfig } from '../../src/types';
+import type { AuthConfig } from '../../src/types/index.js';
 // NOTE: All tests below are `test.todo` stubs. The previous static import of
 // RegistrationForm.svelte (a component that no longer exists) has been removed so
 // the file collects; restore the relevant imports when the stubs are implemented.

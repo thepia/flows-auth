@@ -9,7 +9,7 @@ import type {
   CompactConsentRecord,
   OnboardingMetadata,
   UserPreferences
-} from '../../src/types/onboarding';
+} from '../../src/types/onboarding.js';
 
 // Mock session manager
 let mockStorage: Record<string, string> = {};

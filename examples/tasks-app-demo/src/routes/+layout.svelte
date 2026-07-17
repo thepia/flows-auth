@@ -1,16 +1,14 @@
 <script lang="ts">
-import { browser } from '$app/environment';
-import { onMount } from 'svelte';
-import '../app.css';
 import { setupAuthContext } from '@thepia/flows-auth';
-import type { User } from '@thepia/flows-auth';
+import type { User } from '@thepia/flows-auth/types';
 import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
+import '../app.css';
 
-// Auth state for reactivity
-let isAuthenticated = false;
-let user: User | null = null;
-let isAuthLoading = true;
-let initError: string | null = null;
+interface Props {
+	children?: import('svelte').Snippet;
+}
+
+let { children }: Props = $props();
 
 // Create auth store during initialization (not in onMount)
 const authConfig = {
@@ -31,37 +29,15 @@ const authConfig = {
 
 const authStore = setupAuthContext(authConfig);
 
-// Initialize in onMount (browser-specific operations)
-onMount(() => {
-  if (!browser) {
-    console.log('⚠️ Non-browser environment');
-    return;
-  }
-
-  try {
-    console.log('🚀 Initializing tasks app auth store...');
-
-    // Subscribe to auth state changes for layout reactivity
-    const unsubscribe = authStore.subscribe((state) => {
-      isAuthenticated = state.state === 'authenticated' || state.state === 'authenticated-confirmed';
-      user = state.user;
-      console.log('🔄 Auth state changed:', { state: state.state, user: !!state.user });
-    });
-
-    isAuthLoading = false;
-    console.log('✅ Tasks app auth store setup complete');
-
-    // Return cleanup function
-    return () => {
-      unsubscribe();
-    };
-
-  } catch (error) {
-    console.error('❌ Failed to initialize tasks app:', error);
-    initError = error instanceof Error ? error.message : 'Unknown error';
-    isAuthLoading = false;
-  }
-});
+// Auth state for reactivity — derived directly from Svelte's store
+// auto-subscription ($authStore) instead of a hand-rolled
+// authStore.subscribe(...) that copied fields into local $state. The
+// store's combined state (see AuthStore in flows-auth/src/types/index.ts)
+// exposes `state` (AuthState) and `user` (User | null) directly.
+let isAuthenticated = $derived(
+  $authStore.state === 'authenticated' || $authStore.state === 'authenticated-confirmed'
+);
+let user: User | null = $derived($authStore.user);
 </script>
 
 <div class="app">
@@ -71,7 +47,7 @@ onMount(() => {
 			<div class="auth-status">
 				{#if isAuthenticated && user}
 					<span>Welcome, {user.email}</span>
-					<button on:click={() => authStore?.signOut()}>Sign Out</button>
+					<button onclick={() => authStore?.signOut()}>Sign Out</button>
 				{:else}
 					<span>Not signed in</span>
 				{/if}
@@ -80,7 +56,7 @@ onMount(() => {
 	</header>
 	
 	<main class="container">
-		<slot />
+		{@render children?.()}
 	</main>
 </div>
 

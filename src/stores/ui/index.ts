@@ -5,10 +5,10 @@
  */
 
 // Re-export types
-export type * from '../types';
+export type * from '../types.js';
 export {
   createUIEventHandlers,
   createUIStore,
   signInStateTransitions,
   uiStateSelectors
-} from './ui-state';
+} from './ui-state.js';

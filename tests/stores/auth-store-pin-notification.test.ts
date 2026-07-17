@@ -4,9 +4,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
-import { createAuthStore } from '../../src/stores/auth-store';
-import type { AuthConfig, SignInData, SignInResponse } from '../../src/types';
+import { AuthApiClient } from '../../src/api/auth-api.js';
+import { createAuthStore } from '../../src/stores/auth-store.js';
+import type { AuthConfig, SignInData, SignInResponse } from '../../src/types/index.js';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api');

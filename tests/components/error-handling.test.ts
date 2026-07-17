@@ -19,8 +19,8 @@ vi.mock('../../src/utils/webauthn', () => ({
 import { fireEvent, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInForm from '../../src/components/SignInForm.svelte';
-import type { AuthConfig } from '../../src/types';
-import { renderWithStoreProp } from '../helpers/component-test-setup';
+import type { AuthConfig } from '../../src/types/index.js';
+import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 const defaultConfig: AuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
@@ -64,10 +64,14 @@ describe('Error Handling Regression Tests', () => {
         expect(screen.queryByText('404')).toBeNull();
         expect(screen.queryByText('not found')).toBeNull();
 
-        // ✅ Should show user-friendly message OR auto-transition to registration
+        // ✅ Should show user-friendly message OR auto-transition to registration.
+        // "Endpoint not found" is classified by classifyError() as a service
+        // availability issue ("Service temporarily unavailable.") - that's a
+        // legitimate, non-technical outcome alongside the other two.
         const hasUserFriendlyError =
           screen.queryByText(/authentication.*failed/i) ||
           screen.queryByText(/try again/i) ||
+          screen.queryByText(/service.*unavailable/i) ||
           screen.queryByText(/Terms of Service/i); // Registration step
         expect(hasUserFriendlyError).toBeTruthy();
       });

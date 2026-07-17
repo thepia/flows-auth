@@ -7,7 +7,7 @@
 
 import { devtools } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import type { AuthApiClient } from '../api/auth-api';
+import type { AuthApiClient } from '../api/auth-api.js';
 import {
   addConsentToMetadata,
   confirmConsentInMetadata,
@@ -15,7 +15,7 @@ import {
   getAllConsents,
   getConsentForUrl,
   removeConsentForUrl
-} from '../api/utils/consent-metadata';
+} from '../api/utils/consent-metadata.js';
 import type {
   ClientRegistration,
   CompactConsentRecord,
@@ -25,14 +25,14 @@ import type {
   OnboardingMetadata,
   UpdateOnboardingMetadataRequest,
   UserPreferences
-} from '../types/onboarding';
+} from '../types/onboarding.js';
 import {
   getClientStatus,
   getConsentedUrls,
   hasConsentForUrl,
   OnboardingMetadataSchema,
   parseOnboardingMetadata
-} from '../types/onboarding';
+} from '../types/onboarding.js';
 
 export interface OnboardingState {
   // Metadata

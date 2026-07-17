@@ -5,30 +5,30 @@
 
 	console.log('[ErrorReportingStatus] Component script loading...');
 
-	let queueSize = 0;
-	let config = null;
-	let isReporting = false;
-	let showDetails = false;
+	let queueSize = $state(0);
+	let config = $state(null);
+	let isReporting = $state(false);
+	let showDetails = $state(false);
 
 	// Service Worker state
 	let serviceWorkerManager = null;
-	let swState = {
+	let swState = $state({
 		supported: false,
 		registered: false,
 		active: false,
 		syncStatus: null
-	};
+	});
 
 	// Auth store debugging — obtain from context at init (getContext must run here,
 	// not inside onMount/async). Tolerant: this widget may render outside the provider.
-	let authStore = null;
+	let authStore = $state(null);
 	try {
 		authStore = getAuthStoreFromContext();
 	} catch (contextError) {
 		console.warn('[ErrorReportingStatus] Auth store not available in context:', contextError);
 	}
-	let authState = null;
-	let authStateMachine = null;
+	let authState = $state(null);
+	let authStateMachine = $state(null);
 
 	onMount(async () => {
 		if (!browser) return;
@@ -41,10 +41,7 @@
 			const { getErrorReportingConfig } = await import('../config/errorReporting.js');
 			console.log('[ErrorReportingStatus] Config import successful, calling getErrorReportingConfig()...');
 			config = await getErrorReportingConfig();
-			console.log('[ErrorReportingStatus] Config loaded:', config);
-			
-			// Force reactivity update
-			config = config;
+			console.log('[ErrorReportingStatus] Config loaded:', $state.snapshot(config));
 
 			// TODO(flows-client): the service-worker manager moved from @thepia/flows-auth
 			// (getServiceWorkerManager was removed) into @thepia/flows-client, which
@@ -141,13 +138,13 @@
 		return 'active';
 	}
 	
-	$: statusText = (() => {
-		console.log('[ErrorReportingStatus] statusText reactive update, config:', config, 'queueSize:', queueSize);
+	let statusText = $derived((() => {
+		console.log('[ErrorReportingStatus] statusText reactive update, config:', $state.snapshot(config), 'queueSize:', queueSize);
 		if (!config) return 'Loading...';  // Show loading state
 		if (!config.enabled) return 'Disabled';
 		if (queueSize > 0) return `${queueSize} pending`;
 		return 'Active';
-	})();
+	})());
 
 	function formatLastSync(timestamp) {
 		if (!timestamp) return 'Never';
@@ -169,8 +166,8 @@
 <div class="error-reporting-status">
 		<div 
 			class="status-indicator {getStatusColor()}"
-			on:click={() => showDetails = !showDetails}
-			on:keydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
+			onclick={() => showDetails = !showDetails}
+			onkeydown={(e) => e.key === 'Enter' && (showDetails = !showDetails)}
 			role="button"
 			tabindex="0"
 			title="Error reporting status"
@@ -323,7 +320,7 @@
 				{#if queueSize > 0}
 					<div class="actions">
 						<button
-							on:click={flushReports}
+							onclick={flushReports}
 							disabled={isReporting}
 							class="flush-btn"
 						>

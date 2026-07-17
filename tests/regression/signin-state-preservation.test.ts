@@ -15,8 +15,8 @@
 import { render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../../src/types';
-import { createTestAuthStore } from '../helpers/component-test-setup';
+import type { AuthConfig } from '../../src/types/index.js';
+import { createTestAuthStore } from '../helpers/component-test-setup.js';
 
 const testAuthConfig: Partial<AuthConfig> = {
   apiBaseUrl: 'https://api.thepia.com',

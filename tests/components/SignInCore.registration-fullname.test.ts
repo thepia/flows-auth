@@ -5,7 +5,7 @@ import { fireEvent, waitFor } from '@testing-library/svelte';
  */
 import { describe, expect, it, vi } from 'vitest';
 import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
+import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/utils/webauthn', () => ({

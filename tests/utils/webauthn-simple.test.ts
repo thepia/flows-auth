@@ -2,7 +2,7 @@
  * WebAuthn Utilities Tests (Simplified)
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { generatePasskeyName, isWebAuthnSupported } from '../../src/utils/webauthn';
+import { generatePasskeyName, isWebAuthnSupported } from '../../src/utils/webauthn.js';
 
 describe('WebAuthn Utilities (Simplified)', () => {
   beforeEach(() => {

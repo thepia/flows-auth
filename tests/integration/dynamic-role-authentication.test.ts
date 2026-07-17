@@ -4,13 +4,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
+import { createAuthStore } from '../../src/stores/index.js';
 import type {
   ApplicationContext,
   AuthConfig,
   SignInResponse,
   StorageConfigurationUpdate
-} from '../../src/types';
+} from '../../src/types/index.js';
 
 // Mock the API client
 vi.mock('../../src/api/auth-api', () => ({

@@ -15,14 +15,14 @@ import type {
   ConfirmConsentResponse,
   GetConsentsResponse,
   OnboardingMetadata
-} from '../../types/onboarding';
+} from '../../types/onboarding.js';
 import {
   addConsentToMetadata,
   confirmConsentInMetadata,
   extractOnboardingMetadata,
   getAllConsents,
   getConsentStats
-} from '../utils/consent-metadata';
+} from '../utils/consent-metadata.js';
 
 /**
  * Get all consents for a user

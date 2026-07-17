@@ -5,8 +5,8 @@
  * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api';
-import type { AuthConfig, AuthError, SignInResponse } from '../../src/types';
+import { AuthApiClient } from '../../src/api/auth-api.js';
+import type { AuthConfig, AuthError, SignInResponse } from '../../src/types/index.js';
 
 // Mock fetch globally
 global.fetch = vi.fn();

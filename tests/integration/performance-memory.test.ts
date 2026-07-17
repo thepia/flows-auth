@@ -7,9 +7,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores';
-import type { AuthConfig } from '../../src/types';
-import { PerformanceTestUtils, TEST_ACCOUNTS, TEST_CONFIG, TestUtils } from '../test-setup';
+import { createAuthStore } from '../../src/stores/index.js';
+import type { AuthConfig } from '../../src/types/index.js';
+import { PerformanceTestUtils, TEST_ACCOUNTS, TEST_CONFIG, TestUtils } from '../test-setup.js';
 
 // Test configuration with API fallback
 const getTestConfig = (): AuthConfig => {
@@ -105,7 +105,7 @@ describe('Performance and Memory Tests', () => {
           // Make 10 concurrent email check calls
           const emails = Array(10)
             .fill(0)
-            .map((_, i) => `test${i}@thepia.net`);
+            .map((_, i) => `test${i}@thepia.net`); // TODO @ TEST_CONFIG.domain
 
           // TODO: Replace with actual auth store methods
           // const promises = emails.map((email) =>

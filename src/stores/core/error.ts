@@ -10,8 +10,8 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import type { ApiError } from '../../types';
-import type { ErrorActions, ErrorState, ErrorStore, StoreOptions } from '../types';
+import type { ApiError } from '../../types/index.js';
+import type { ErrorActions, ErrorState, ErrorStore, StoreOptions } from '../types.js';
 
 /**
  * Initial state for the error store

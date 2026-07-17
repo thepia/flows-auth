@@ -5,8 +5,8 @@
  * Implements SessionPersistence interface for secure native storage integration
  */
 
-import type { SessionData, SessionPersistence, UserData } from '../../types';
-import { createLocalStorageAdapter } from './database';
+import type { SessionData, SessionPersistence, UserData } from '../../types/index.js';
+import { createLocalStorageAdapter } from './database.js';
 
 /**
  * Message types for WebKit communication

@@ -3,7 +3,7 @@
  * These types are framework-agnostic and shared across all store modules
  */
 
-import type { AuthApiClient } from '../api/auth-api';
+import type { AuthApiClient } from '../api/auth-api.js';
 import type {
   ApiError,
   AuthConfig,
@@ -18,7 +18,7 @@ import type {
   SignInState,
   StateMessageConfig,
   User
-} from '../types';
+} from '../types/index.js';
 
 // Re-export core types for convenience
 export type { ApiError, AuthConfig, SignInState, User };
@@ -121,7 +121,7 @@ export interface ErrorActions {
 export interface ErrorStore extends ErrorState, ErrorActions {}
 
 // Re-export event types from canonical location
-export type { AuthEventData, AuthEventType } from '../types';
+export type { AuthEventData, AuthEventType } from '../types/index.js';
 
 // Event handler types for stores
 export type AuthEventHandler<T = AuthEventData> = (data: T) => void;

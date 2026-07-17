@@ -3,7 +3,7 @@
  * Provides translation support with configurable overrides and fallbacks
  */
 
-import * as messages from '../paraglide/messages';
+import * as messages from '../paraglide/messages.js';
 
 let appMessages: { [key: string]: (vars?: Record<string, unknown>) => string } | null = null;
 export function setI18nMessages(messages: {

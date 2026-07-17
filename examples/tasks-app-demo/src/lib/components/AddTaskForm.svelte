@@ -1,12 +1,14 @@
 <script>
+	import { preventDefault } from 'svelte/legacy';
+
 	import { createEventDispatcher } from 'svelte';
 	
 	const dispatch = createEventDispatcher();
 	
-	let title = '';
-	let description = '';
-	let isExpanded = false;
-	let isSubmitting = false;
+	let title = $state('');
+	let description = $state('');
+	let isExpanded = $state(false);
+	let isSubmitting = $state(false);
 	
 	function expandForm() {
 		isExpanded = true;
@@ -72,14 +74,14 @@
 </script>
 
 <div class="add-task-form">
-	<form on:submit|preventDefault={handleSubmit}>
+	<form onsubmit={preventDefault(handleSubmit)}>
 		<div class="form-content" class:expanded={isExpanded}>
 			<div class="title-row">
 				<input 
 					type="text"
 					bind:value={title}
-					on:focus={expandForm}
-					on:keydown={handleTitleKeydown}
+					onfocus={expandForm}
+					onkeydown={handleTitleKeydown}
 					placeholder={isExpanded ? "What needs to be done?" : "Add a new task..."}
 					class="title-input"
 					disabled={isSubmitting}
@@ -89,7 +91,7 @@
 					<button 
 						type="button"
 						class="collapse-btn"
-						on:click={collapseForm}
+						onclick={collapseForm}
 						title="Collapse"
 					>
 						−
@@ -101,7 +103,7 @@
 				<div class="description-row">
 					<textarea 
 						bind:value={description}
-						on:keydown={handleKeydown}
+						onkeydown={handleKeydown}
 						placeholder="Add a description (optional)"
 						class="description-input"
 						rows="3"
@@ -118,7 +120,7 @@
 						<button 
 							type="button"
 							class="cancel-btn"
-							on:click={() => { title = ''; description = ''; collapseForm(); }}
+							onclick={() => { title = ''; description = ''; collapseForm(); }}
 							disabled={isSubmitting}
 						>
 							Cancel

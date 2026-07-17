@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, ExplainerConfig } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, ExplainerConfig } from '../../src/types/index.js';
 
 describe('AuthStore getExplainerConfig', () => {
   let authStore: ReturnType<typeof createAuthStore>;

@@ -5,8 +5,8 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores';
-import type { AuthConfig, SignInResponse } from '../../src/types';
+import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
@@ -63,8 +63,8 @@ describe('signInWithPasskey', () => {
     sessionStorage.clear();
 
     // Get the mocked dependencies first
-    const { AuthApiClient } = await import('../../src/api/auth-api');
-    const webAuthnModule = await import('../../src/utils/webauthn');
+    const { AuthApiClient } = await import('../../src/api/auth-api.js');
+    const webAuthnModule = await import('../../src/utils/webauthn.js');
 
     // Create a shared mock instance that all new AuthApiClient() calls will return
     mockApiClient = {
@@ -317,7 +317,7 @@ describe('signInWithPasskey', () => {
       await authStore.signInWithPasskey('test@example.com');
 
       // Verify session was saved by checking real session manager
-      const { getSession } = await import('../../src/utils/sessionManager');
+      const { getSession } = await import('../../src/utils/sessionManager.js');
       const savedSession = getSession();
 
       expect(savedSession).toBeTruthy();

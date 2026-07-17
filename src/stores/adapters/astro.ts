@@ -3,8 +3,8 @@
  * Simplifies using flows-auth with Astro's islands architecture
  */
 
-import { createAuthStore } from '../auth-store';
-import type { AuthConfig } from '../types';
+import { createAuthStore } from '../auth-store.js';
+import type { AuthConfig } from '../types.js';
 
 /**
  * Creates a singleton auth store optimized for Astro islands

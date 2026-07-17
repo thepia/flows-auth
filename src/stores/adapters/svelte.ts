@@ -6,9 +6,9 @@
 import type { Readable, Unsubscriber, Writable } from 'svelte/store';
 import { derived, readable, writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
-import type { AuthStore } from '../../types';
-import type { SvelteAuthStore } from '../../types/svelte';
-import type { ComposedAuthStore } from '../auth-store';
+import type { AuthStore } from '../../types/index.js';
+import type { SvelteAuthStore } from '../../types/svelte.js';
+import type { ComposedAuthStore } from '../auth-store.js';
 
 /**
  * Convert a Zustand store to a Svelte readable store

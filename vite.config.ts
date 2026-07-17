@@ -36,6 +36,14 @@ function copyDirRecursive(src: string, dest: string) {
     if (entry.isDirectory()) {
       copyDirRecursive(srcPath, destPath);
     } else {
+      // Skip the write if content is unchanged, so `build:watch` doesn't
+      // touch every file's mtime on every rebuild — that floods consumers'
+      // dev-server file watchers (e.g. astro-demo running build:watch
+      // alongside `astro dev`) with spurious change events for the whole
+      // tree and can trigger HMR re-transform races.
+      if (existsSync(destPath) && readFileSync(destPath).equals(readFileSync(srcPath))) {
+        continue;
+      }
       copyFileSync(srcPath, destPath);
     }
   }
@@ -178,6 +186,15 @@ export default defineConfig({
     },
     sourcemap: true,
     target: 'es2020',
-    minify: 'esbuild' // Strip comments and minify dist builds
+    minify: 'esbuild', // Strip comments and minify dist builds
+    // Vite's default emptyOutDir wipes dist/ at the start of every build,
+    // including every `build:watch` rebuild cycle - combined with
+    // copySourceFiles() that means the whole dist/src tree gets deleted and
+    // recreated on every rebuild regardless of what changed, flooding
+    // consumers' dev-server file watchers (e.g. astro-demo running
+    // build:watch alongside `astro dev`) and triggering HMR re-transform
+    // races. copySourceFiles()'s content-comparison skip only helps once
+    // dist/ is allowed to persist across builds.
+    emptyOutDir: false
   }
 });

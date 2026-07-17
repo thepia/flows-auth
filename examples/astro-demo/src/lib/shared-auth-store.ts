@@ -32,7 +32,7 @@ export const sharedAuthStore = createAuthStore({
   enablePasskeys: true,
   enableMagicLinks: false,
   signInMode: 'login-or-register',
-  appCode: true, // Use app-based endpoints for PIN authentication
+  appCode: 'app', // Use app-based endpoints for PIN authentication
   enableDevtools: import.meta.env.DEV // Enable devtools in development
 });
 

@@ -11,7 +11,7 @@ export {
   type EmailAuthStore,
   getEmailAuthCapabilities,
   isEmailOperationInProgress
-} from './email-auth';
+} from './email-auth.js';
 export {
   createPasskeyStore,
   getPasskeyReadiness,
@@ -19,4 +19,4 @@ export {
   type PasskeyActions,
   type PasskeyState,
   type PasskeyStore
-} from './passkey';
+} from './passkey.js';

@@ -105,7 +105,7 @@ describe('Development Environment Regression Tests', () => {
   describe('Bug Fix: Component Import Structure', () => {
     it('should export components correctly', async () => {
       // ✅ REGRESSION TEST: Main exports should be importable
-      const { SignInForm, createAuthStore } = await import('../../src/index');
+      const { SignInForm, createAuthStore } = await import('../../src/index.js');
 
       expect(SignInForm).toBeDefined();
       expect(createAuthStore).toBeDefined();

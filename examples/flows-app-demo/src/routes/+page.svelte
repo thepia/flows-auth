@@ -5,7 +5,7 @@
   import DevSidebar from '$lib/components/DevSidebar.svelte';
   import { devScenarioManager, type DevScenario } from '$lib/dev/scenarios.js';
   import type { User } from '@thepia/flows-auth';
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   import { onMount } from 'svelte';
 
   let currentScenario: DevScenario = $state();

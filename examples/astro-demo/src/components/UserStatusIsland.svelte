@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { sharedAuthStore } from '../lib/shared-auth-store';
-  import { makeSvelteCompatible } from '@thepia/flows-auth/stores/adapters/svelte';
+  import { makeSvelteCompatible } from '@thepia/flows-auth/svelte';
   
   // Same store instance as SignInIsland!
   const auth = makeSvelteCompatible(sharedAuthStore);

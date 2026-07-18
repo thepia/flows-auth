@@ -3,12 +3,12 @@
  * Provides compile-time type-safe translation support
  */
 
-import { getContext, setContext } from 'svelte';
-import { derived, writable } from 'svelte/store';
 // Raw Paraglide message namespace (functions take (inputs, {locale})). Routed
 // through the core public surface so this Svelte-target file never reaches into
 // core's file tree relatively — see src/core/index.ts `paraglideMessages`.
 import { getLocale, type Locale, paraglideMessages as m, setLocale } from '@thepia/flows-auth';
+import { getContext, setContext } from 'svelte';
+import { derived, writable } from 'svelte/store';
 
 // Re-export Paraglide types and utilities
 export { getLocale, type Locale, setLocale } from '@thepia/flows-auth';

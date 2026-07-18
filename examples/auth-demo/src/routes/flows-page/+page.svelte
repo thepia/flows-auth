@@ -16,7 +16,8 @@
     if (!browser) return;
 
     try {
-      const { createAuthStore, makeSvelteCompatible, SignInForm, SignInCore: SignInCoreComponent } = await import('@thepia/flows-auth');
+      const { createAuthStore, SignInCore: SignInCoreComponent } = await import('@thepia/flows-auth');
+const { makeSvelteCompatible, SignInForm } = await import('@thepia/flows-auth/svelte');
 
       const zustandStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',

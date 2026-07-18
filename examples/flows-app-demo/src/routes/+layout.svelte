@@ -2,7 +2,7 @@
   import './app.css';
   import '../branding/design-tokens.css';
   import { browser, dev } from '$app/environment';
-  import { setupAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth/svelte';
   interface Props {
     children?: import('svelte').Snippet;
   }

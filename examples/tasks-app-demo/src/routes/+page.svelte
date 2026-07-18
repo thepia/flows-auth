@@ -1,7 +1,7 @@
 <script lang="ts">
-import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth';
+import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 import type { SvelteAuthStore } from '@thepia/flows-auth';
-import type { User } from '@thepia/flows-auth/types';
+import type { User } from '@thepia/flows-auth';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
 import TaskCard from '../lib/components/TaskCard.svelte';
 

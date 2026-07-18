@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { browser, dev } from '$app/environment';
   import { createEventDispatcher } from 'svelte';
-  import { type User, getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { type User } from '@thepia/flows-auth';
+import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   
   // Import console bridge helpers
   let logAuthEvent: ((eventType: string, data: any) => void) | null = null;

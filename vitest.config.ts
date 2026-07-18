@@ -75,7 +75,10 @@ export default defineConfig({
         find: /^@thepia\/flows-auth\/svelte$/,
         replacement: resolve(__dirname, './src/svelte/index.ts')
       },
-      { find: /^@thepia\/flows-auth\/dev$/, replacement: resolve(__dirname, './src/svelte/dev.ts') },
+      {
+        find: /^@thepia\/flows-auth\/dev$/,
+        replacement: resolve(__dirname, './src/svelte/dev.ts')
+      },
       {
         find: /^@thepia\/flows-auth\/style\.css$/,
         replacement: resolve(__dirname, './dist/flows-auth.css')

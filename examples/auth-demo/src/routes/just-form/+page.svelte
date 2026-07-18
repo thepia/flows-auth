@@ -1,6 +1,6 @@
 <script>
   import { getContext } from 'svelte';
-  import { SignInForm } from '@thepia/flows-auth';
+  import { SignInForm } from '@thepia/flows-auth/svelte';
 
   const AUTH_CONTEXT_KEY = 'flows-auth-store';
   const authStore = getContext(AUTH_CONTEXT_KEY);

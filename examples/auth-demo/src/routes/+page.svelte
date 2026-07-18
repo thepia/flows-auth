@@ -8,7 +8,8 @@ import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 
 import { CaretRight, User, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
-import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 // Get authStore from context (setupAuthContext in layout sets the actual store)

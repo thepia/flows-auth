@@ -1,6 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
-	import { getAuthStoreFromContext } from '@thepia/flows-auth';
+	import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 	import { onMount } from 'svelte';
 
 	console.log('[ErrorReportingStatus] Component script loading...');

@@ -13,14 +13,19 @@ export { SyncApiClient } from './api/sync-api.js';
 
 // Context constants for consistency across components
 export { AUTH_CONTEXT_KEY, CONTEXT_KEYS } from './constants/context-keys.js';
-
+// Paraglide message runtime — re-exported so the ./svelte target (paraglide-i18n)
+// can reach the raw message namespace + locale controls via the package name
+// (self-reference) rather than a cross-target relative path.
+export * as paraglideMessages from './paraglide/messages.js';
+export { getLocale, type Locale, setLocale } from './paraglide/runtime.js';
+// Astro store adapter — framework-agnostic (wraps createAuthStore; no Astro runtime import)
+export { createAstroAuthStore, getAstroApiUrl } from './stores/adapters/astro.js';
 // New Modular Stores (Zustand-based)
 export {
   type ComposedAuthStore,
   createAuthStore
 } from './stores/auth-store.js';
 export { createNativeAppSessionAdapter, isThepiaApp } from './stores/index.js';
-
 // Enhanced auth store interface types
 export type {
   AuthFlowResult,
@@ -40,7 +45,6 @@ export {
 } from './types/metadata-schema.js';
 // Svelte Store Types (type-only; describes the shape the ./svelte adapter produces)
 export type { SvelteAuthStore } from './types/svelte.js';
-
 export type { ApiServerConfig, ApiServerInfo } from './utils/api-detection.js';
 // API Detection
 export { DEFAULT_API_CONFIG, detectApiServer } from './utils/api-detection.js';
@@ -54,6 +58,15 @@ export {
   millisecondsSince,
   nowISO
 } from './utils/date-helpers.js';
+// Default Configuration Utilities (NEW - eliminates app-level duplication)
+export {
+  createDefaultAuthConfig,
+  detectDefaultApiServer,
+  getCachedDefaultConfig,
+  isDevelopmentEnvironment,
+  quickAuthSetup,
+  resetConfigCache
+} from './utils/default-config.js';
 // i18n message proxy (m) + app-message override hook — framework-agnostic
 export * from './utils/i18n.js';
 export type { InvitationProcessingResult } from './utils/invitation-processing.js';
@@ -120,22 +133,6 @@ export {
   isWebAuthnSupported,
   serializeCredential
 } from './utils/webauthn.js';
-
-// Paraglide message runtime — re-exported so the ./svelte target (paraglide-i18n)
-// can reach the raw message namespace + locale controls via the package name
-// (self-reference) rather than a cross-target relative path.
-export * as paraglideMessages from './paraglide/messages.js';
-export { getLocale, type Locale, setLocale } from './paraglide/runtime.js';
-
-// Default Configuration Utilities (NEW - eliminates app-level duplication)
-export {
-  createDefaultAuthConfig,
-  detectDefaultApiServer,
-  getCachedDefaultConfig,
-  isDevelopmentEnvironment,
-  quickAuthSetup,
-  resetConfigCache
-} from './utils/default-config.js';
 
 // Version — injected at build time from package.json (see the `define` in
 // tsup.config.ts and vitest.config.ts) so it can never drift from the published

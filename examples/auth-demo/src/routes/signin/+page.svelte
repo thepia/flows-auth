@@ -3,7 +3,8 @@
 
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
-import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
 
 // Paraglide i18n setup
 import * as m from '../../paraglide/messages';

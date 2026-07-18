@@ -11,29 +11,8 @@
  * They are compiled by svelte-package and can be imported directly if needed.
  */
 
-// Main components
-export { default as AccountCreationForm } from './components/AccountCreationForm.svelte';
-export { default as EmailVerificationBanner } from './components/EmailVerificationBanner.svelte';
-export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
-export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
-export { default as SignInForm } from './components/SignInForm.svelte';
-
-// Core granular components
-export {
-  AuthButton,
-  AuthStateMessage,
-  EmailInput,
-  PolicyViewer,
-  SignInCore
-} from './components/core/index.js';
-
-// Icon system
-export { default as Icon } from './components/icons/Icon.svelte';
-export type { IconProps, IconSize, IconVariant, IconWeight } from './components/icons/types.js';
-
 // Svelte store adapter (Zustand -> Svelte readable/writable)
 export { makeSvelteCompatible } from './adapters/svelte.js';
-
 // Auth Context Utilities (Svelte-specific helpers)
 export {
   assertAuthConfig,
@@ -42,6 +21,23 @@ export {
   resetGlobalAuthStore,
   setupAuthContext
 } from './auth-context.js';
+// Main components
+export { default as AccountCreationForm } from './components/AccountCreationForm.svelte';
+// Core granular components
+export {
+  AuthButton,
+  AuthStateMessage,
+  EmailInput,
+  PolicyViewer,
+  SignInCore
+} from './components/core/index.js';
+export { default as EmailVerificationBanner } from './components/EmailVerificationBanner.svelte';
+export { default as EmailVerificationPrompt } from './components/EmailVerificationPrompt.svelte';
+export { default as ErrorReportingStatus } from './components/ErrorReportingStatus.svelte';
+// Icon system
+export { default as Icon } from './components/icons/Icon.svelte';
+export type { IconProps, IconSize, IconVariant, IconWeight } from './components/icons/types.js';
+export { default as SignInForm } from './components/SignInForm.svelte';
 
 // Paraglide/Svelte i18n glue
 export { createParaglideI18n } from './paraglide-i18n.js';

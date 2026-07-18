@@ -32,8 +32,8 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "build:watch": "svelte-package -i src/svelte -o dist/svelte --watch",
-    "build:paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/core/paraglide",
+    "build:watch": "node scripts/build-watch.mjs",
+    "build:paraglide": "node scripts/build-paraglide.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

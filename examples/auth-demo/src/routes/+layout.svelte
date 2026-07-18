@@ -2,7 +2,8 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, makeSvelteCompatible, setI18nMessages, setupAuthContext, ErrorReportingStatus } from '@thepia/flows-auth'; // ✅ Static imports
+import { createAuthStore, setI18nMessages } from '@thepia/flows-auth';
+import { makeSvelteCompatible, setupAuthContext, ErrorReportingStatus } from '@thepia/flows-auth/svelte'; // ✅ Static imports
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';

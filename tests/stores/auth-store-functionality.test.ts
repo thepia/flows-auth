@@ -42,8 +42,8 @@ describe('Auth Functionality Tests', () => {
     global.fetch.mockClear();
 
     // Import fresh modules
-    const authStoreModule = await import('../../src/stores/index.js');
-    const { createAuthStore: createBaseStore, makeSvelteCompatible } = authStoreModule;
+    const { createAuthStore: createBaseStore } = await import('../../src/core/stores/index.js');
+    const { makeSvelteCompatible } = await import('../../src/svelte/adapters/svelte.js');
     createAuthStore = (config) => makeSvelteCompatible(createBaseStore(config));
 
     // Standard test config

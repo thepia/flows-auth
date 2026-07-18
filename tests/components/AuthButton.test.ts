@@ -13,7 +13,7 @@
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AuthButton from '../../src/components/core/AuthButton.svelte';
+import AuthButton from '../../src/svelte/components/core/AuthButton.svelte';
 
 // No mocking of Paraglide functions - use real functions to test actual integration
 

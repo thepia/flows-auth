@@ -5,8 +5,9 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, SignInData, SignInEvent, SignInState } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, SignInData, SignInEvent, SignInState } from '../../src/core/types/index.js';
 
 describe('SignIn State Transitions', () => {
   let authStore: ReturnType<typeof createAuthStore>;

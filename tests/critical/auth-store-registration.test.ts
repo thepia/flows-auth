@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import { makeSvelteCompatible } from '../../src/stores/adapters/svelte.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 /**
  * CRITICAL AUTH STORE REGISTRATION TESTS

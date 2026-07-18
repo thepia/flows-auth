@@ -13,7 +13,7 @@
  */
 
 import { describe, expectTypeOf, test } from 'vitest';
-import type { SignInData, SignInResponse, User } from '../../src/types/index.js';
+import type { SignInData, SignInResponse, User } from '../../src/core/types/index.js';
 
 describe('Type Compatibility Tests', () => {
   test('SignInResponse should have flat token structure', () => {

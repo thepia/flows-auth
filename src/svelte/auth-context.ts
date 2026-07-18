@@ -17,11 +17,11 @@
  */
 
 import { getContext, setContext } from 'svelte';
-import { AUTH_CONTEXT_KEY } from '../constants/context-keys.js';
-import { makeSvelteCompatible } from '../stores/adapters/svelte.js';
-import { createAuthStore } from '../stores/auth-store.js';
-import type { AuthConfig } from '../types/index.js';
-import type { SvelteAuthStore } from '../types/svelte.js';
+import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from './adapters/svelte.js';
+import { createAuthStore } from '@thepia/flows-auth';
+import type { AuthConfig } from '@thepia/flows-auth';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
 
 // Module-level fallback for Svelte 5 HMR: getContext throws lifecycle_outside_component
 // inside HMR branch effects, so getAuthStoreFromContext falls back to this reference.

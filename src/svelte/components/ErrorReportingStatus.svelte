@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getAuthStoreFromContext } from '../utils/auth-context';
-	import type { SvelteAuthStore } from '../types/svelte';
+	import { getAuthStoreFromContext } from '../auth-context.js';
+	import type { SvelteAuthStore } from '@thepia/flows-auth';
 
 	// Browser detection without SvelteKit dependency
 	const browser = typeof window !== 'undefined';
@@ -126,7 +126,7 @@
 		if (!browser) return;
 
 		try {
-			import('../utils/telemetry').then(({ getTelemetryQueueSize }) => {
+			import('@thepia/flows-auth').then(({ getTelemetryQueueSize }) => {
 				queueSize = getTelemetryQueueSize();
 			});
 		} catch (error) {
@@ -139,7 +139,7 @@
 
 		isReporting = true;
 		try {
-			const { flushTelemetry } = await import('../utils/telemetry');
+			const { flushTelemetry } = await import('@thepia/flows-auth');
 			flushTelemetry();
 			await updateQueueStatus();
 		} catch (error) {
@@ -151,7 +151,7 @@
 
 	async function testAuthError() {
 		try {
-			const { reportAuthState } = await import('../utils/telemetry');
+			const { reportAuthState } = await import('@thepia/flows-auth');
 			reportAuthState({
 				event: 'login-attempt',
 				email: 'demo@test.com',
@@ -166,7 +166,7 @@
 
 	async function testWebAuthnError() {
 		try {
-			const { reportWebAuthnError } = await import('../utils/telemetry');
+			const { reportWebAuthnError } = await import('@thepia/flows-auth');
 			const mockError = {
 				name: 'NotAllowedError',
 				message: 'User cancelled the operation',
@@ -184,7 +184,7 @@
 
 	async function testApiError() {
 		try {
-			const { reportApiError } = await import('../utils/telemetry');
+			const { reportApiError } = await import('@thepia/flows-auth');
 			reportApiError(
 				'https://api.thepia.com/auth/test-endpoint',
 				'POST',

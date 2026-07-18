@@ -12,19 +12,20 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, RegistrationRequest } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, RegistrationRequest } from '../../src/core/types/index.js';
 import {
   getAccessToken,
   getCurrentUser,
   getSession,
   isSessionValid as isAuthenticated
-} from '../../src/utils/sessionManager.js';
+} from '../../src/core/utils/sessionManager.js';
 
 // Mock sessionManager (we verify calls but don't control implementation)
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn().mockReturnValue({
     type: 'sessionStorage',
@@ -39,7 +40,7 @@ vi.mock('../../src/utils/sessionManager', () => ({
   getAccessToken: vi.fn()
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -56,7 +57,7 @@ vi.mock('../../src/utils/storageManager', () => ({
   }))
 }));
 
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn().mockReturnValue(true),
   isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
   isConditionalMediationSupported: vi.fn().mockResolvedValue(true),
@@ -67,7 +68,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   generatePasskeyName: vi.fn().mockReturnValue('Test Device')
 }));
 
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),

@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ClientRateLimiter } from '../../src/utils/client-rate-limiter.js';
+import { ClientRateLimiter } from '../../src/core/utils/client-rate-limiter.js';
 
 describe('ClientRateLimiter', () => {
   let rateLimiter: ClientRateLimiter;

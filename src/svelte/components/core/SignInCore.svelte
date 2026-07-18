@@ -7,10 +7,10 @@
   import { run, preventDefault } from 'svelte/legacy';
 
 import { createEventDispatcher, onMount } from 'svelte';
-import type { SvelteAuthStore } from '../../types/svelte';
-import type { AuthError, AuthMethod, User } from '../../types';
-import { getAuthStoreFromContext } from '../../utils/auth-context';
-import { m } from '../../utils/i18n';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
+import type { AuthError, AuthMethod, User } from '@thepia/flows-auth';
+import { getAuthStoreFromContext } from '../../auth-context.js';
+import { m } from '@thepia/flows-auth';
 
 import AuthButton from './AuthButton.svelte';
 import AuthExplainer from './AuthExplainer.svelte';

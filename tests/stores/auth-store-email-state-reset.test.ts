@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 describe('Auth Store Email State Reset', () => {
   let store: ReturnType<typeof createAuthStore>;

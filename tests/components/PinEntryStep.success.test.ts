@@ -5,12 +5,12 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PinEntryStep from '../../src/components/core/PinEntryStep.svelte';
-import type { SignInData } from '../../src/types/index.js';
+import PinEntryStep from '../../src/svelte/components/core/PinEntryStep.svelte';
+import type { SignInData } from '../../src/core/types/index.js';
 import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))

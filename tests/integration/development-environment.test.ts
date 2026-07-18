@@ -105,7 +105,8 @@ describe('Development Environment Regression Tests', () => {
   describe('Bug Fix: Component Import Structure', () => {
     it('should export components correctly', async () => {
       // ✅ REGRESSION TEST: Main exports should be importable
-      const { SignInForm, createAuthStore } = await import('../../src/index.js');
+      const { createAuthStore } = await import('@thepia/flows-auth');
+      const { SignInForm } = await import('@thepia/flows-auth/svelte');
 
       expect(SignInForm).toBeDefined();
       expect(createAuthStore).toBeDefined();

@@ -4,16 +4,16 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
 import type {
   ApplicationContext,
   AuthConfig,
   SignInResponse,
   StorageConfigurationUpdate
-} from '../../src/types/index.js';
+} from '../../src/core/types/index.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {

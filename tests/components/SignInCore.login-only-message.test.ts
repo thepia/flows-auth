@@ -6,12 +6,12 @@ import { render } from '@testing-library/svelte';
  * when signInMode is 'login-only' and user doesn't exist.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../../src/types/index.js';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   startConditionalAuthentication: vi.fn(() => Promise.resolve()),
@@ -19,7 +19,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock error reporter
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),

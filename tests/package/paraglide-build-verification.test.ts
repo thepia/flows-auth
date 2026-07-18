@@ -298,7 +298,7 @@ describe('Paraglide Build Verification', () => {
     it('should be importable using the m[key]() pattern', async () => {
       try {
         // Test the import pattern used by components
-        const messagesModule = await import('../../src/paraglide/messages.js');
+        const messagesModule = await import('../../src/core/paraglide/messages.js');
         const m = messagesModule.m || messagesModule;
 
         expect(m).toBeDefined();

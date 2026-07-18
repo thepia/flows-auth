@@ -7,8 +7,8 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
-import type { AuthConfig, InvitationTokenData } from '../../src/types/index.js';
+import RegistrationForm from '../../src/svelte/components/RegistrationForm.svelte';
+import type { AuthConfig, InvitationTokenData } from '../../src/core/types/index.js';
 
 // Mock WebAuthn API
 Object.defineProperty(navigator, 'credentials', {

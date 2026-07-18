@@ -41,7 +41,7 @@
  */
 
 import { beforeAll, describe, expect, test } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 import { TEST_ACCOUNTS, TEST_CONFIG } from '../test-setup.js';
 
 describe('API Environment Integration', () => {

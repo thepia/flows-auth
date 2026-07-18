@@ -8,7 +8,7 @@
   import { run } from 'svelte/legacy';
 
 import { createEventDispatcher } from 'svelte';
-import { m } from '../../utils/i18n';
+import { m } from '@thepia/flows-auth';
 
 // Internal state (non-controlled)
 let value = $state('');

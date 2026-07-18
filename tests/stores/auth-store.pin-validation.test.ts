@@ -5,11 +5,12 @@
  * in the auth store's checkUser functionality
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -26,7 +27,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock WebAuthn
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => false),

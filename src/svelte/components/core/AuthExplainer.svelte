@@ -19,8 +19,8 @@
     Pulse
 
   } from 'phosphor-svelte';
-  import type { ApiError, ExplainerConfig } from '../../types';
-  import { m } from '../../utils/i18n';
+  import type { ApiError, ExplainerConfig } from '@thepia/flows-auth';
+  import { m } from '@thepia/flows-auth';
   import Icon from '../icons/Icon.svelte';
 
   

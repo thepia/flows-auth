@@ -5,10 +5,10 @@
 -->
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
-import type { User } from '../types';
+import type { User } from '@thepia/flows-auth';
 import Icon from './icons/Icon.svelte';
 import { ArrowsClockwise } from 'phosphor-svelte';
-import { m } from '../utils/i18n';
+import { m } from '@thepia/flows-auth';
 
 
   interface Props {

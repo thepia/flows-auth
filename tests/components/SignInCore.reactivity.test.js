@@ -7,7 +7,7 @@
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup';
 
 // Using real auth store - no mocking needed

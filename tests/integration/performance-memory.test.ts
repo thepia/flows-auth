@@ -7,8 +7,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { PerformanceTestUtils, TEST_ACCOUNTS, TEST_CONFIG, TestUtils } from '../test-setup.js';
 
 // Test configuration with API fallback

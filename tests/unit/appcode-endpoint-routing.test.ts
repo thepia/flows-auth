@@ -6,14 +6,14 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock the API detection to prevent localhost detection
-vi.mock('../../src/utils/api-detection', () => ({
+vi.mock('../../src/core/utils/api-detection', () => ({
   detectApiServer: vi.fn().mockResolvedValue({
     url: 'https://api.thepia.com',
     type: 'production',

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import type { AuthConfig } from '../../src/types/index.js';
-import { globalUserCache } from '../../src/utils/user-cache.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import { globalUserCache } from '../../src/core/utils/user-cache.js';
 
 // Mock fetch for API calls
 global.fetch = vi.fn();

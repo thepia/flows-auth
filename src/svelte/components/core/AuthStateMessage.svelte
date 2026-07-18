@@ -5,7 +5,7 @@
 <script lang="ts">
   import { run } from 'svelte/legacy';
 
-import { m } from '../../utils/i18n';
+import { m } from '@thepia/flows-auth';
 
 
   interface Props {

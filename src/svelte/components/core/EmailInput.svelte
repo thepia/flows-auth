@@ -3,7 +3,7 @@
   Features: validation, WebAuthn autocomplete, conditional authentication trigger
 -->
 <script lang="ts">
-import { m } from '../../utils/i18n';
+import { m } from '@thepia/flows-auth';
 import { createEventDispatcher } from 'svelte';
 
 

@@ -23,10 +23,11 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
-import { globalUserCache } from '../../src/utils/user-cache.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import { globalUserCache } from '../../src/core/utils/user-cache.js';
 
 const mockNavigatorCredentials = {
   create: vi.fn(),

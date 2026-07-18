@@ -20,11 +20,11 @@ describe('Tree-Shaking Support (Built Package)', () => {
   it('should support modular imports via package.json exports', async () => {
     // Test the exports structure defined in package.json (now using src files for tree-shaking)
     const storeExports = {
-      './stores': '../../src/stores/index.ts',
-      './stores/core': '../../src/stores/core/index.ts',
-      './stores/auth-methods': '../../src/stores/auth-methods/index.ts',
-      './stores/ui': '../../src/stores/ui/index.ts',
-      './stores/adapters': '../../src/stores/adapters/index.ts'
+      './stores': '../../src/core/stores/index.ts',
+      './stores/core': '../../src/core/stores/core/index.ts',
+      './stores/auth-methods': '../../src/core/stores/auth-methods/index.ts',
+      './stores/ui': '../../src/core/stores/ui/index.ts',
+      './stores/adapters': '../../src/core/stores/adapters/index.ts'
     };
 
     // Verify each export path exists and works
@@ -69,8 +69,8 @@ describe('Tree-Shaking Support (Built Package)', () => {
     expect(fullStore.api.sendEmailSignin).toBeDefined(); // Includes email auth too
 
     // Selective import (would be smaller in real bundling scenario)
-    const { createPasskeyStore } = await import('../../src/stores/auth-methods/index.js');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
+    const { createPasskeyStore } = await import('../../src/core/stores/auth-methods/index.js');
+    const { createAuthCoreStore } = await import('../../src/core/stores/core/index.js');
 
     // Create minimal setup with only needed stores
     const coreStore = createAuthCoreStore({
@@ -104,8 +104,8 @@ describe('Tree-Shaking Support (Built Package)', () => {
 
   it('should support framework-specific imports without cross-contamination', async () => {
     // Simulates importing only Svelte adapter without React dependencies
-    const { createSvelteAdapter } = await import('../../src/stores/adapters/index.js');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
+    const { createSvelteAdapter } = await import('../../src/core/stores/adapters/index.js');
+    const { createAuthCoreStore } = await import('../../src/core/stores/core/index.js');
 
     expect(typeof createSvelteAdapter).toBe('function');
     expect(typeof createAuthCoreStore).toBe('function');

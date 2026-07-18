@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AuthConfig } from '../../src/types/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Mock service worker registration
 const mockServiceWorkerRegistration = {
@@ -29,8 +29,8 @@ const mockApiClient = {
 };
 
 // Mock the telemetry module to avoid auto-mocking issues
-vi.mock('../../src/utils/telemetry', async () => {
-  const actual = await vi.importActual('../../src/utils/telemetry');
+vi.mock('../../src/core/utils/telemetry', async () => {
+  const actual = await vi.importActual('../../src/core/utils/telemetry');
   return actual;
 });
 
@@ -75,7 +75,7 @@ describe('Telemetry System', () => {
     });
 
     // Import telemetry functions
-    const telemetryModule = await import('../../src/utils/telemetry.js');
+    const telemetryModule = await import('../../src/core/utils/telemetry.js');
     initializeTelemetry = telemetryModule.initializeTelemetry;
     reportAuthEvent = telemetryModule.reportAuthEvent;
     reportSessionEvent = telemetryModule.reportSessionEvent;
@@ -233,7 +233,7 @@ describe('Telemetry System', () => {
       });
 
       // Re-import telemetry with new navigator mock
-      const telemetryModule = await import('../../src/utils/telemetry.js');
+      const telemetryModule = await import('../../src/core/utils/telemetry.js');
       const localInitializeTelemetry = telemetryModule.initializeTelemetry;
       const localReportAuthEvent = telemetryModule.reportAuthEvent;
 

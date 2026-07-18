@@ -11,8 +11,8 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Following thepia.com pattern - real API server detection
 const API_BASE = 'https://dev.thepia.com:8443';

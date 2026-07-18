@@ -19,6 +19,13 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      // Self-reference: the ./svelte target imports core via the package name.
+      // At dev/typecheck time resolve that to source; at publish time Node
+      // resolves it through the package `exports` map (dist/index.d.ts).
+      "@thepia/flows-auth": ["./src/core/index.ts"]
+    },
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src/**/*"],

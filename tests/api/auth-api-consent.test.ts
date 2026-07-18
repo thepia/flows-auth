@@ -5,14 +5,14 @@
  * and onboarding metadata endpoints.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import type {
   ConfirmConsentRequest,
   ConfirmConsentResponse,
   GetConsentsResponse,
   GetOnboardingMetadataResponse
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 
 // Mock fetch for API calls
 global.fetch = vi.fn();

@@ -5,12 +5,13 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -26,7 +27,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock WebAuthn browser APIs - require real browser interaction
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true),
@@ -63,8 +64,8 @@ describe('signInWithPasskey', () => {
     sessionStorage.clear();
 
     // Get the mocked dependencies first
-    const { AuthApiClient } = await import('../../src/api/auth-api.js');
-    const webAuthnModule = await import('../../src/utils/webauthn.js');
+    const { AuthApiClient } = await import('../../src/core/api/auth-api.js');
+    const webAuthnModule = await import('../../src/core/utils/webauthn.js');
 
     // Create a shared mock instance that all new AuthApiClient() calls will return
     mockApiClient = {
@@ -317,7 +318,7 @@ describe('signInWithPasskey', () => {
       await authStore.signInWithPasskey('test@example.com');
 
       // Verify session was saved by checking real session manager
-      const { getSession } = await import('../../src/utils/sessionManager.js');
+      const { getSession } = await import('../../src/core/utils/sessionManager.js');
       const savedSession = getSession();
 
       expect(savedSession).toBeTruthy();

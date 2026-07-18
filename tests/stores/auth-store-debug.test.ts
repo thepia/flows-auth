@@ -34,7 +34,7 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
     vi.clearAllMocks();
 
     // Import fresh modules - NEW MODULAR ARCHITECTURE
-    const authStoreModule = await import('../../src/stores/index.js');
+    const authStoreModule = await import('../../src/core/stores/index.js');
     createAuthStore = authStoreModule.createAuthStore;
 
     // Standard test config

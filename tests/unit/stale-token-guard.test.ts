@@ -8,8 +8,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthCoreStore } from '../../src/stores/core/auth-core.js';
-import type { AuthConfig, StoreOptions } from '../../src/stores/types.js';
+import { createAuthCoreStore } from '../../src/core/stores/core/auth-core.js';
+import type { AuthConfig, StoreOptions } from '../../src/core/stores/types.js';
 
 describe('Stale Token Overwrite Protection', () => {
   let authCore: ReturnType<typeof createAuthCoreStore>;

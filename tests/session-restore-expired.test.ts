@@ -9,9 +9,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../src/stores/auth-store.js';
-import type { AuthConfig } from '../src/types/index.js';
-import type { SessionData, SessionPersistence } from '../src/types/database.js';
+import { createAuthStore } from '../src/core/stores/auth-store.js';
+import type { AuthConfig } from '../src/core/types/index.js';
+import type { SessionData, SessionPersistence } from '../src/core/types/database.js';
 import { createMockSessionPersistence } from './helpers/session-persistence-mock.js';
 
 describe('Session Restoration with Expired Token', () => {

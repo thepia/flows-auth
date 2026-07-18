@@ -16,12 +16,12 @@ import {
   getConsentedUrls,
   hasConsentForUrl,
   parseOnboardingMetadata
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 import type {
   CompactConsentRecord,
   ConfirmConsentRequest,
   OnboardingMetadata
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 
 describe('Onboarding Types - Zod Validation', () => {
   describe('CompactConsentRecordSchema', () => {

@@ -5,11 +5,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { AuthConfig, User } from '../../src/types/index.js';
+import type { AuthConfig, User } from '../../src/core/types/index.js';
 import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock.js';
 
 // Set up global mocks before any imports
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn().mockReturnValue(true),
   isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
   isConditionalMediationSupported: vi.fn().mockResolvedValue(true),
@@ -19,7 +19,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   getOptimalSessionConfig: vi.fn().mockReturnValue({
     type: 'sessionStorage',
     sessionTimeout: 28800000,
@@ -37,7 +37,7 @@ vi.mock('../../src/utils/sessionManager', () => ({
   })
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -54,7 +54,7 @@ vi.mock('../../src/utils/storageManager', () => ({
   }))
 }));
 
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -72,7 +72,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Import after mocks are set up
-import { createAuthStore } from '../../src/stores/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
 
 /**
  * CRITICAL INTEGRATION TEST: API Response Format Compatibility
@@ -95,11 +95,11 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     vi.clearAllMocks();
 
     // Get references to the mocked modules
-    mockWebAuthn = await vi.importMock('../../src/utils/webauthn');
-    mockSessionManager = await vi.importMock('../../src/utils/sessionManager');
+    mockWebAuthn = await vi.importMock('../../src/core/utils/webauthn');
+    mockSessionManager = await vi.importMock('../../src/core/utils/sessionManager');
 
     // Get the mocked AuthApiClient constructor
-    const authApiModule = await vi.importMock('../../src/api/auth-api');
+    const authApiModule = await vi.importMock('../../src/core/api/auth-api');
     const MockedAuthApiClient = authApiModule.AuthApiClient;
 
     // Create a mock API client instance

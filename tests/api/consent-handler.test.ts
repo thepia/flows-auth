@@ -11,8 +11,8 @@ import {
   getConsentStatsHandler,
   getConsentsHandler,
   validateConsentRequest
-} from '../../src/api/handlers/consent-handler.js';
-import type { ConfirmConsentRequest, OnboardingMetadata } from '../../src/types/onboarding.js';
+} from '../../src/core/api/handlers/consent-handler.js';
+import type { ConfirmConsentRequest, OnboardingMetadata } from '../../src/core/types/onboarding.js';
 
 describe('Consent Handler', () => {
   const testUrl = 'https://example.com/terms';

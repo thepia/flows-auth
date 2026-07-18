@@ -5,11 +5,11 @@ import { writable } from 'svelte/store';
  * Tests the "Enter pin here" button functionality and SENT_PIN_EMAIL event
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))

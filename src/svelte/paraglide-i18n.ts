@@ -5,11 +5,13 @@
 
 import { getContext, setContext } from 'svelte';
 import { derived, writable } from 'svelte/store';
-import * as m from '../paraglide/messages.js';
-import { getLocale, type Locale, setLocale } from '../paraglide/runtime.js';
+// Raw Paraglide message namespace (functions take (inputs, {locale})). Routed
+// through the core public surface so this Svelte-target file never reaches into
+// core's file tree relatively — see src/core/index.ts `paraglideMessages`.
+import { getLocale, type Locale, paraglideMessages as m, setLocale } from '@thepia/flows-auth';
 
 // Re-export Paraglide types and utilities
-export { getLocale, type Locale, setLocale } from '../paraglide/runtime.js';
+export { getLocale, type Locale, setLocale } from '@thepia/flows-auth';
 export { m };
 
 // Type for all available message functions

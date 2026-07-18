@@ -6,13 +6,13 @@
 import { screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
-import type { AuthConfig } from '../../src/types/index.js';
-import * as webauthnUtils from '../../src/utils/webauthn.js';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import * as webauthnUtils from '../../src/core/utils/webauthn.js';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
   authenticateWithPasskey: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 // Mock error reporter
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),

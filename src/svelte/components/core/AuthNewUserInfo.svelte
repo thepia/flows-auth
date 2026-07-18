@@ -5,7 +5,7 @@
 <script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
-import { m } from '../../utils/i18n';
+import { m } from '@thepia/flows-auth';
 
 
   interface Props {

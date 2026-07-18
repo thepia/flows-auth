@@ -6,8 +6,8 @@
   import { run } from 'svelte/legacy';
 
 import { createEventDispatcher } from 'svelte';
-import type { SingleButtonConfig } from '../../types';
-import { m } from '../../utils/i18n';
+import type { SingleButtonConfig } from '@thepia/flows-auth';
+import { m } from '@thepia/flows-auth';
 import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
 

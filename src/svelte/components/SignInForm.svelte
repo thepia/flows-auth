@@ -7,11 +7,11 @@
 
   import { WarningCircle as AlertTriangle, CheckCircle, User as UserIcon, Key, Lock, Shield, Certificate as BadgeCheck } from 'phosphor-svelte';
 
-  import type { User, AuthError, AuthMethod } from '../types';
-  import type { SvelteAuthStore } from '../stores/adapters/svelte';
-  import { getAuthStoreFromContext } from '../utils/auth-context';
+  import type { User, AuthError, AuthMethod } from '@thepia/flows-auth';
+  import type { SvelteAuthStore } from '../adapters/svelte.js';
+  import { getAuthStoreFromContext } from '../auth-context.js';
   import SignInCore from './core/SignInCore.svelte';
-  import { m } from '../utils/i18n';
+  import { m } from '@thepia/flows-auth';
 
   
 

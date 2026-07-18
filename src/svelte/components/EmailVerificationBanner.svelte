@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { EmailVerificationBannerProps } from '../types';
+  import type { EmailVerificationBannerProps } from '@thepia/flows-auth';
 
   
   interface Props {

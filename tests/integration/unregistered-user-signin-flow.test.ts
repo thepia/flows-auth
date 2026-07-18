@@ -6,7 +6,7 @@
  */
 
 import { beforeAll, describe, expect, test } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 
 const LOCAL_API_URL = 'https://dev.thepia.com:8443';
 const PRODUCTION_API_URL = 'https://api.thepia.com';

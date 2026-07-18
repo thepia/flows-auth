@@ -4,15 +4,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig, SignInData } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig, SignInData } from '../../src/core/types/index.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api');
+vi.mock('../../src/core/api/auth-api');
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false))
 }));

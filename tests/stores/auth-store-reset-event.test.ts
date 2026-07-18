@@ -2,18 +2,18 @@
  * Test RESET event handling in auth store state machine
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   startConditionalAuthentication: vi.fn(() => Promise.resolve())
 }));
 
 // Mock telemetry
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),

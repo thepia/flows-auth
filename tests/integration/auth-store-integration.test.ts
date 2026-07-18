@@ -8,8 +8,9 @@
 
 import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Import shared test configuration
 import { TEST_CONFIG } from '../test-setup.js';

@@ -6,9 +6,9 @@
   import { preventDefault } from 'svelte/legacy';
 
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import { getAuthStoreFromContext } from '../utils/auth-context';
-  import type { SvelteAuthStore } from '../types/svelte';
-  import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '../utils/webauthn';
+  import { getAuthStoreFromContext } from '../auth-context.js';
+  import type { SvelteAuthStore } from '@thepia/flows-auth';
+  import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '@thepia/flows-auth';
   import type {
     AuthConfig,
     User,
@@ -17,7 +17,7 @@
     AuthEventData,
     InvitationTokenData,
     AdditionalField
-  } from '../types';
+  } from '@thepia/flows-auth';
 
   
   interface Props {

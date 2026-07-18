@@ -7,8 +7,8 @@
  */
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Following thepia.com pattern - real API server detection
 const API_BASE = 'https://dev.thepia.com:8443';

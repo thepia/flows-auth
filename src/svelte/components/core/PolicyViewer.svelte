@@ -9,9 +9,9 @@
 
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { X, Check } from 'phosphor-svelte';
-  import type { SvelteAuthStore } from '../../types/svelte';
-  import { getAuthStoreFromContext } from '../../utils/auth-context';
-  import { isThepiaApp }from '../../stores/core/native-app-session-adapter';
+  import type { SvelteAuthStore } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '../../auth-context.js';
+  import { isThepiaApp }from '@thepia/flows-auth';
 
   
   interface Props {

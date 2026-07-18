@@ -7,7 +7,7 @@
 
 import { fireEvent, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 describe('SignInCore - Email Validation in Reactive Flow', () => {

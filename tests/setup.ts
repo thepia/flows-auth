@@ -8,7 +8,7 @@ import '@testing-library/jest-dom';
 import '@testing-library/svelte/vitest';
 
 // Mock the error reporter module before it's imported anywhere else
-vi.mock('../src/utils/telemetry', () => ({
+vi.mock('../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),

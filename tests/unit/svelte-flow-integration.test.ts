@@ -8,7 +8,7 @@
 import { render } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import TestFlow from '../../src/components/TestFlow.svelte';
+import TestFlow from '../../src/svelte/components/TestFlow.svelte';
 
 // Mock SvelteFlow stores to prevent initialization issues
 vi.mock('@xyflow/svelte', async () => {

@@ -8,8 +8,8 @@
 
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import { createAuthStore } from '../../src/stores/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/core/stores/index.js';
 
 // Mock fetch to avoid real API calls
 const mockFetch = vi.fn();

@@ -13,7 +13,7 @@
  */
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/index.js';
+import { createAuthStore } from '@thepia/flows-auth';
 
 // Test configuration
 interface TestConfig {

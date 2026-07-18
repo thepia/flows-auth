@@ -27,9 +27,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock.js';
 
 // Mock localStorage

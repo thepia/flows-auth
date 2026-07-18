@@ -4,7 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 
 // Test configuration
 const TEST_CONFIG = {

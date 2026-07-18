@@ -11,8 +11,9 @@ import { createOnboardingStore } from './onboarding-store.js';
 // UI stores
 import { createUIStore } from './ui/ui-state.js';
 
-// Re-export adapters
-export { makeSvelteCompatible, toReadable as createSvelteAdapter } from './adapters/svelte.js';
+// Note: the Svelte adapter (makeSvelteCompatible / createSvelteAdapter) lives in
+// the ./svelte target now — it imports svelte/store and is not part of the
+// framework-agnostic core surface.
 
 export type { ComposedAuthStore } from './auth-store.js';
 export { createAuthStore } from './auth-store.js';

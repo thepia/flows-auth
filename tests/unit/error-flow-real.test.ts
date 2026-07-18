@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
 
 /**
  * Unit Test: Error Store Classification Logic

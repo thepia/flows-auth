@@ -32,19 +32,19 @@ describe('Component Exports', () => {
   });
 
   it('should import SignInForm as named export', async () => {
-    const { SignInForm } = await import('../../src/index.js');
+    const { SignInForm } = await import('@thepia/flows-auth/svelte');
     expect(SignInForm).toBeDefined();
     expect(typeof SignInForm).toBe('function');
   });
 
   it('should import createAuthStore as named export', async () => {
-    const { createAuthStore } = await import('../../src/index.js');
+    const { createAuthStore } = await import('@thepia/flows-auth');
     expect(createAuthStore).toBeDefined();
     expect(typeof createAuthStore).toBe('function');
   });
 
   it('should import AuthApiClient as named export', async () => {
-    const { AuthApiClient } = await import('../../src/index.js');
+    const { AuthApiClient } = await import('@thepia/flows-auth');
     expect(AuthApiClient).toBeDefined();
     expect(typeof AuthApiClient).toBe('function');
   });
@@ -55,7 +55,7 @@ describe('Component Exports', () => {
       isPlatformAuthenticatorAvailable,
       authenticateWithPasskey,
       createPasskey
-    } = await import('../../src/index.js');
+    } = await import('@thepia/flows-auth');
 
     expect(isWebAuthnSupported).toBeDefined();
     expect(isPlatformAuthenticatorAvailable).toBeDefined();
@@ -64,7 +64,7 @@ describe('Component Exports', () => {
   });
 
   it('should create and render SignInForm component without errors', async () => {
-    const { SignInForm } = await import('../../src/index.js');
+    const { SignInForm } = await import('@thepia/flows-auth/svelte');
 
     expect(() => {
       renderWithStoreProp(SignInForm, {
@@ -78,7 +78,7 @@ describe('Component Exports', () => {
   });
 
   it('should create auth store without errors', async () => {
-    const { createAuthStore, createDefaultConfig } = await import('../../src/index.js');
+    const { createAuthStore, createDefaultConfig } = await import('@thepia/flows-auth');
 
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
@@ -91,7 +91,7 @@ describe('Component Exports', () => {
   });
 
   it('should create API client without errors', async () => {
-    const { AuthApiClient, createDefaultConfig } = await import('../../src/index.js');
+    const { AuthApiClient, createDefaultConfig } = await import('@thepia/flows-auth');
 
     const config = createDefaultConfig({
       apiBaseUrl: 'https://test.com',
@@ -104,7 +104,7 @@ describe('Component Exports', () => {
   });
 
   it('should have correct component properties and methods', async () => {
-    const { SignInForm } = await import('../../src/index.js');
+    const { SignInForm } = await import('@thepia/flows-auth/svelte');
 
     // Svelte 5 components compile to plain functions of shape
     // `(anchor, props) => Exports`, not classes with $set/$on/$destroy -
@@ -116,11 +116,11 @@ describe('Component Exports', () => {
   });
 
   it('should maintain consistent exports between builds', async () => {
-    const authLib = await import('../../src/index.js');
+    // Post-split surface: agnostic logic lives at the root `.`, Svelte UI at `./svelte`.
+    const authLib = await import('@thepia/flows-auth');
+    const svelteLib = await import('@thepia/flows-auth/svelte');
 
-    // Check all expected exports are present
-    const expectedExports = [
-      'SignInForm',
+    const expectedRootExports = [
       'createAuthStore',
       'AuthApiClient',
       'isWebAuthnSupported',
@@ -132,15 +132,20 @@ describe('Component Exports', () => {
       'createDefaultConfig',
       'VERSION'
     ];
+    const expectedSvelteExports = ['SignInForm'];
 
-    for (const exportName of expectedExports) {
+    for (const exportName of expectedRootExports) {
       expect(authLib).toHaveProperty(exportName);
       expect(authLib[exportName as keyof typeof authLib]).toBeDefined();
+    }
+    for (const exportName of expectedSvelteExports) {
+      expect(svelteLib).toHaveProperty(exportName);
+      expect(svelteLib[exportName as keyof typeof svelteLib]).toBeDefined();
     }
   });
 
   it('should handle component instantiation in different environments', async () => {
-    const { SignInForm } = await import('../../src/index.js');
+    const { SignInForm } = await import('@thepia/flows-auth/svelte');
 
     const baseAuthConfig = {
       apiBaseUrl: 'https://test.com',

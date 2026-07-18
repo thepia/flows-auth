@@ -7,8 +7,8 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AccountCreationForm from '../../src/components/AccountCreationForm.svelte';
-import type { AuthConfig, InvitationTokenData } from '../../src/types/index.js';
+import AccountCreationForm from '../../src/svelte/components/AccountCreationForm.svelte';
+import type { AuthConfig, InvitationTokenData } from '../../src/core/types/index.js';
 
 // Mock the auth store with subscription support
 const mockSubscriptionCallbacks: Array<(state: any) => void> = [];
@@ -39,7 +39,7 @@ vi.mock('../../src/stores', () => ({
 }));
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));

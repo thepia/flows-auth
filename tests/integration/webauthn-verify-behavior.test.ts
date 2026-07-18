@@ -7,8 +7,8 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Test configuration
 const testConfig: AuthConfig = {

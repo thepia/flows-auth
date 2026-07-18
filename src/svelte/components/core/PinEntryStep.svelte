@@ -6,8 +6,8 @@
   import { preventDefault } from 'svelte/legacy';
 
 import { createEventDispatcher } from 'svelte';
-import type { AuthMethod } from '../../types';
-import type { SvelteAuthStore } from '../../types/svelte';
+import type { AuthMethod } from '@thepia/flows-auth';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
 import CodeInput from './CodeInput.svelte';
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';

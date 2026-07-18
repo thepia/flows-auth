@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 
 /**
  * Integration test for actual server response from /demo/verify-email

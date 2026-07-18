@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Unexpected token
+https://svelte.dev/e/js_parse_error -->
 <!--
   Demo component showing how the app uses merged Paraglide messages
   that combine library defaults + app-specific overrides

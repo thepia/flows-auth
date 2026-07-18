@@ -10,8 +10,7 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api.js';
-import type { SignInData, User } from '../../types/index.js';
+import type { SignInData } from '../../types/index.js';
 import { reportWebAuthnError } from '../../utils/telemetry.js';
 import {
   authenticateWithPasskey,
@@ -102,7 +101,7 @@ export function createPasskeyStore(options: StoreOptions) {
 
     // Authentication methods
     signIn: async (email: string, conditional = false) => {
-      const startTime = Date.now();
+      const _startTime = Date.now();
 
       if (!get().isSupported) {
         throw new Error('Passkeys are not supported on this device');

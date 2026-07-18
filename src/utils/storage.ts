@@ -166,7 +166,7 @@ export const authStorage = {
 
   getExpiresAt: () => {
     const value = getStorageItem(STORAGE_KEYS.EXPIRES_AT);
-    return value ? Number.parseInt(value) : null;
+    return value ? Number.parseInt(value, 10) : null;
   },
   setExpiresAt: (timestamp: number) =>
     setStorageItem(STORAGE_KEYS.EXPIRES_AT, timestamp.toString()),

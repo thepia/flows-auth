@@ -303,7 +303,7 @@ let helpText = $derived(`Enter ${maxlength}-digit verification code`);
 
 <style>
   label {
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
   }
 
   /* Screen reader only content */

@@ -14,7 +14,6 @@ import type {
   ExplainerConfig,
   SessionPersistence,
   SignInData,
-  SignInEvent,
   SignInState,
   StateMessageConfig,
   User

@@ -16,14 +16,13 @@ export { makeSvelteCompatible, toReadable as createSvelteAdapter } from './adapt
 
 export type { ComposedAuthStore } from './auth-store.js';
 export { createAuthStore } from './auth-store.js';
+// Re-export session adapters
+export { createLocalStorageAdapter } from './core/database.js';
 export {
   cleanupNativeAppBridge,
   createNativeAppSessionAdapter,
   isThepiaApp
 } from './core/index.js';
-
-// Re-export session adapters
-export { createLocalStorageAdapter } from './core/database.js';
 // Re-export types
 export type * from './types.js';
 // Re-export individual store creators for advanced usage

@@ -222,32 +222,32 @@ let isDisabled = $derived(effectiveDisabled || loading);
 
   /* Primary button variant - brand colors from CSS variables */
   :global(.auth-btn-primary) {
-    background: var(--color-brand-primary, #988ACA);
+    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     color: white;
     border: 2px solid transparent;
   }
 
   :global(.auth-btn-primary:hover:not(:disabled)) {
-    background: var(--color-brand-primary-hover, #7B6BB7);
+    background: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(152, 138, 202, 0.5), 0 3px 12px rgba(152, 138, 202, 0.3);
   }
 
   :global(.auth-btn-primary:active:not(:disabled)) {
     transform: translateY(0);
-    background: var(--color-brand-primary-active, #654CA3);
+    background: var(--color-brand-primaryActive, var(--auth-primary-active, #654CA3));
     box-shadow: 0 3px 12px rgba(152, 138, 202, 0.4);
   }
 
   /* Secondary button variant */
   :global(.auth-btn-secondary) {
     background: transparent;
-    color: var(--color-brand-primary, #988ACA);
-    border: 2px solid var(--color-brand-primary, #988ACA);
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    border: 2px solid var(--color-brand-primary, var(--auth-primary-color, #988ACA));
   }
 
   :global(.auth-btn-secondary:hover:not(:disabled)) {
-    background: var(--color-brand-primary, #988ACA);
+    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 5px 18px rgba(152, 138, 202, 0.4), 0 2px 10px rgba(152, 138, 202, 0.2);
@@ -255,20 +255,20 @@ let isDisabled = $derived(effectiveDisabled || loading);
 
   :global(.auth-btn-secondary:active:not(:disabled)) {
     transform: translateY(0);
-    background: var(--color-brand-primary-hover, #7B6BB7);
+    background: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
     box-shadow: 0 3px 10px rgba(152, 138, 202, 0.3);
   }
 
   /* Ghost button variant */
   :global(.auth-btn-ghost) {
     background: transparent;
-    color: var(--auth-text-secondary, #6b7280);
+    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
     border: 2px solid transparent;
   }
 
   :global(.auth-btn-ghost:hover:not(:disabled)) {
-    background: var(--auth-background-muted, #f3f4f6);
-    color: var(--auth-text-primary, #111827);
+    background: var(--color-bg-secondary, var(--auth-background-muted, #f3f4f6));
+    color: var(--color-text-primary, var(--auth-text-primary, #111827));
   }
 
   /* Disabled state for all variants */

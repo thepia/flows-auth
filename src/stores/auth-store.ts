@@ -485,7 +485,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       }
     },
 
-    startConditionalAuthentication: async (emailAddress: string) => {
+    startConditionalAuthentication: async (_emailAddress: string) => {
       // TODO: Implement conditional authentication
       console.warn('startConditionalAuthentication not yet implemented');
       return false;
@@ -694,7 +694,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       }
     },
 
-    registerIndividualUser: async (userData: {
+    registerIndividualUser: async (_userData: {
       email: string;
       firstName?: string;
       lastName?: string;

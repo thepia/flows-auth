@@ -62,7 +62,7 @@ export class AuthApiClient {
         const apiServer = await detectApiServer();
         console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
         return apiServer.url.replace(/\/$/, '');
-      } catch (error) {
+      } catch (_error) {
         // Fall back to configured URL if detection fails
         console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
       }
@@ -126,7 +126,7 @@ export class AuthApiClient {
       endpoint
     );
 
-    if (!response || !response.ok) {
+    if (!response?.ok) {
       const error = await this.handleErrorResponse(response);
 
       // Report API error
@@ -627,7 +627,7 @@ export class AuthApiClient {
 
   /**
    * Send magic link for email verification
-   * 
+   *
    * TODO use /app endpoint or remove
    */
   async sendMagicLinkEmail(email: string): Promise<{

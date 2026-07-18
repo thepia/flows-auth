@@ -13,27 +13,27 @@ import { getLocale } from '../../paraglide/runtime.js';
 const authStoreContext = getContext(AUTH_CONTEXT_KEY);
 
 // Create reactive reference to the auth store
-$: authStore = $authStoreContext;
+let authStore = $derived($authStoreContext);
 
 // Component references for dynamic imports
 let SessionStateMachineComponent = null;
 
 // Registration state
-let emailInput = '';
+let emailInput = $state('');
 let testEmail = 'demo@example.com';
 
 // 🔑 Reactive locale tracking for component rerenders
-$: currentLocale = getLocale();
+let currentLocale = $derived(getLocale());
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
-let userStateResult = null;
-let isCheckingState = false;
-let registrationSuccess = '';
-let invitationToken = '';
+let userStateResult = $state(null);
+let isCheckingState = $state(false);
+let registrationSuccess = $state('');
+let invitationToken = $state('');
 
 // Auth state tracking
-let currentUser = null;
-let authState = 'initial';
+let currentUser = $state(null);
+let authState = $state('initial');
 let signInState = 'emailEntry';
 let stateMachineState = null;
 let stateMachineContext = null;
@@ -321,14 +321,14 @@ async function updateDomain() {
 
           <div class="quick-emails">
             <span>Quick test emails:</span>
-            <button class="email-btn" on:click={() => emailInput = 'demo@example.com'}>demo@example.com</button>
-            <button class="email-btn" on:click={() => emailInput = 'test@thepia.net'}>test@thepia.net</button>
-            <button class="email-btn" on:click={() => emailInput = 'new@user.com'}>new@user.com</button>
+            <button class="email-btn" onclick={() => emailInput = 'demo@example.com'}>demo@example.com</button>
+            <button class="email-btn" onclick={() => emailInput = 'test@thepia.net'}>test@thepia.net</button>
+            <button class="email-btn" onclick={() => emailInput = 'new@user.com'}>new@user.com</button>
           </div>
 
           <button
             class="btn btn-primary"
-            on:click={checkUserState}
+            onclick={checkUserState}
             disabled={isCheckingState || !emailInput.trim()}
           >
             {isCheckingState ? 'Checking...' : 'Check User State'}
@@ -376,19 +376,19 @@ async function updateDomain() {
                 <div class="recommended-action">
                   <h5>Recommended Action:</h5>
                   {#if getRecommendedAction(userStateResult) === 'register-new'}
-                    <button class="btn btn-primary" on:click={registerWithPasskey}>
+                    <button class="btn btn-primary" onclick={registerWithPasskey}>
                       <User size={16} />
                       Register New User with Passkey
                     </button>
                     <p class="action-note">User doesn't exist. Create new account with passkey.</p>
                   {:else if getRecommendedAction(userStateResult) === 'verify-email'}
-                    <button class="btn btn-secondary" on:click={registerIndividualUser}>
+                    <button class="btn btn-secondary" onclick={registerIndividualUser}>
                       <Envelope size={16} />
                       Send Verification Email
                     </button>
                     <p class="action-note">User exists but email not verified. Send verification email first.</p>
                   {:else if getRecommendedAction(userStateResult) === 'add-passkey'}
-                    <button class="btn btn-secondary" on:click={setupPasskeyForVerifiedUser}>
+                    <button class="btn btn-secondary" onclick={setupPasskeyForVerifiedUser}>
                       <Key size={16} />
                       Add Passkey to Verified Account
                     </button>
@@ -482,7 +482,7 @@ async function updateDomain() {
 
           <button
             class="btn btn-primary"
-            on:click={registerWithInvitation}
+            onclick={registerWithInvitation}
             disabled={!invitationToken.trim()}
           >
             Register with Invitation

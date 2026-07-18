@@ -261,7 +261,7 @@
   .current-signin-state-generalError :global(.svelte-flow__node[data-id="generalError"]) {
     border: 2px solid #f59e0b !important;
     font-weight: 600 !important;
-    background: var(--signin-node-active-bg) !important;
+    background: var(--color-bg-brand-subtle, var(--signin-node-active-bg)) !important;
     box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15) !important;
     animation: pulse 2s infinite;
   }

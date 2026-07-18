@@ -476,7 +476,7 @@ const dispatch = createEventDispatcher<{
     max-width: 500px;
     width: 100%;
     margin: 0 auto;
-    font-family: var(--font-family-brand, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-family: var(--font-fontFamily-brand-body, var(--auth-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif));
   }
 
   :global(.registration-form.compact) {
@@ -518,7 +518,7 @@ const dispatch = createEventDispatcher<{
     top: 0;
     background: none;
     border: none;
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     cursor: pointer;
     padding: 8px;
     border-radius: 4px;
@@ -527,7 +527,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.back-button:hover) {
-    background: var(--primary-light, #e6f2ff);
+    background: var(--color-brand-primarySubtle, var(--auth-primary-light, #EBE7F8));
   }
 
   :global(.step-title) {
@@ -601,7 +601,7 @@ const dispatch = createEventDispatcher<{
 
   .form-field input:focus {
     outline: none;
-    border-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     box-shadow: 0 0 0 3px rgba(152, 138, 202, 0.1);
   }
 
@@ -634,11 +634,11 @@ const dispatch = createEventDispatcher<{
     margin-top: 2px;
     width: 16px;
     height: 16px;
-    accent-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    accent-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
   }
 
   :global(.checkbox-label a) {
-    color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     text-decoration: none;
   }
 
@@ -648,7 +648,7 @@ const dispatch = createEventDispatcher<{
 
   :global(.submit-button) {
     width: 100%;
-    background: var(--thepia-primary, var(--brand-primary, #0066cc));
+    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     color: white;
     border: none;
     padding: 16px;
@@ -665,7 +665,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.submit-button:hover:not(:disabled)) {
-    background: var(--thepia-primary-600, var(--brand-primary-dark, #0056b3));
+    background: var(--auth-primary-dark, #654CA3);
     transform: translateY(-1px);
   }
 
@@ -706,7 +706,7 @@ const dispatch = createEventDispatcher<{
   :global(.link-button) {
     background: none;
     border: none;
-    color: var(--thepia-primary, var(--brand-primary, #0066cc));
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     cursor: pointer;
     text-decoration: underline;
     font: inherit;
@@ -714,7 +714,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.link-button:hover) {
-    color: var(--thepia-primary-600, var(--brand-primary-dark, #0056b3));
+    color: var(--auth-primary-dark, #654CA3);
   }
 
   /* Mobile responsive for registration form */
@@ -769,7 +769,7 @@ const dispatch = createEventDispatcher<{
     }
 
     :global(.form-field input:focus) {
-      border-color: var(--thepia-primary, var(--brand-primary, #0066cc));
+      border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     }
 
     :global(.form-field input.readonly) {
@@ -809,7 +809,7 @@ const dispatch = createEventDispatcher<{
   .email-input:focus,
   .name-input:focus {
     outline: none;
-    border-color: var(--brand-primary, #0066cc);
+    border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
   }
 
@@ -847,11 +847,11 @@ const dispatch = createEventDispatcher<{
     margin: 0;
     width: 18px;
     height: 18px;
-    accent-color: var(--brand-primary, #0066cc);
+    accent-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
   }
 
   .checkbox-label a {
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     text-decoration: none;
   }
 
@@ -864,7 +864,7 @@ const dispatch = createEventDispatcher<{
   .register-button {
     width: 100%;
     padding: 12px 16px;
-    background: var(--brand-primary, #0066cc);
+    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -882,7 +882,7 @@ const dispatch = createEventDispatcher<{
 
   .continue-button:hover:not(:disabled),
   .register-button:hover:not(:disabled) {
-    background: var(--brand-primary-hover, #0052a3);
+    background: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
     transform: translateY(-1px);
   }
 
@@ -964,7 +964,7 @@ const dispatch = createEventDispatcher<{
   }
 
   .powered-by strong {
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
   }
 
   /* New styles for enhanced features */
@@ -1040,7 +1040,7 @@ const dispatch = createEventDispatcher<{
   .link-button {
     background: none;
     border: none;
-    color: var(--brand-primary, #0066cc);
+    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
     cursor: pointer;
     text-decoration: underline;
     font-size: inherit;
@@ -1050,7 +1050,7 @@ const dispatch = createEventDispatcher<{
   }
 
   .link-button:hover {
-    color: var(--brand-primary-hover, #0052a3);
+    color: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
   }
 
   /* Mobile responsive */

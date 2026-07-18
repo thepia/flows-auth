@@ -3,13 +3,13 @@
   import { onMount } from 'svelte';
   import { getLocale } from '../../paraglide/runtime.js';
 
-  let authStore = null;
+  let authStore = $state(null);
   let SignInCore = null;
-  let SignInFormComponent = null;
+  let SignInFormComponent = $state(null);
   let emailInput = '';
 
   // 🔑 Reactive locale tracking for component rerenders
-  $: currentLocale = getLocale();
+  let currentLocale = $derived(getLocale());
 
 
   onMount(async () => {
@@ -596,7 +596,7 @@ function handleStepChange(detail) {
 {/if}
 
             {#if SignInFormComponent && authStore}
-              <svelte:component this={SignInFormComponent}
+              <SignInFormComponent
                 store={authStore}
                 initialEmail={emailInput}
                 className="demo-signin-form"

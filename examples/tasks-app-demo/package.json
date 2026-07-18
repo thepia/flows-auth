@@ -44,7 +44,7 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
-    "@thepia/branding": "^1.4.0",
+    "@thepia/branding": "^1.5.2",
     "@thepia/flows-auth": "workspace:*"
   }
 }

@@ -9,9 +9,9 @@
   const auth = getAuthStoreFromContext();
   
   // Subscribe to auth state
-  $: authState = $auth;
-  $: isAuthenticated = authState.state === 'authenticated' || authState.state === 'authenticated-confirmed';
-  $: user = authState.user;
+  let authState = $derived($auth);
+  let isAuthenticated = $derived(authState.state === 'authenticated' || authState.state === 'authenticated-confirmed');
+  let user = $derived(authState.user);
   
   function handleSignOut() {
     auth.signOut();
@@ -27,7 +27,7 @@
     
     {#if user}
       <p><strong>User:</strong> {user.email}</p>
-      <button on:click={handleSignOut} class="sign-out-btn">
+      <button onclick={handleSignOut} class="sign-out-btn">
         Sign Out
       </button>
     {:else}

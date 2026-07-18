@@ -6,11 +6,11 @@
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
   
-  let testResults = [];
-  let SessionStateMachineComponent = null;
-  let SignInCoreComponent = null;
-  let componentsLoaded = false;
-  let loadError = null;
+  let testResults = $state([]);
+  let SessionStateMachineComponent = $state(null);
+  let SignInCoreComponent = $state(null);
+  let componentsLoaded = $state(false);
+  let loadError = $state(null);
   
   function addResult(test, success, message) {
     testResults = [...testResults, { test, success, message, timestamp: new Date().toISOString() }];
@@ -91,8 +91,7 @@
         <div class="component-test">
           <h3>SessionStateMachineFlow</h3>
           <div class="component-container">
-            <svelte:component 
-              this={SessionStateMachineComponent}
+            <SessionStateMachineComponent
               authState="unauthenticated"
               width={400}
               height={200}
@@ -105,8 +104,7 @@
         <div class="component-test">
           <h3>SignInCore (without auth context - should show fallback)</h3>
           <div class="component-container">
-            <svelte:component 
-              this={SignInCoreComponent}
+            <SignInCoreComponent
               config={{
                 apiBaseUrl: 'https://api.thepia.com',
                 clientId: 'test',

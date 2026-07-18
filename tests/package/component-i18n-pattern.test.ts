@@ -9,12 +9,15 @@
  * All components must go through `m['key']()` instead.
  *
  * Also verifies that dist/src/ is in sync with src/ so the consuming app
- * doesn't silently receive stale built components.
+ * doesn't silently receive stale built components. Note dist/src is the
+ * *preprocessed* form of src (TS stripped, lang="ts" removed), so "in sync"
+ * means dist === preprocessSvelteSource(src), not a verbatim copy.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { preprocessSvelteSource } from '../../scripts/preprocess-svelte';
 
 const ROOT = join(__dirname, '../..');
 const SRC_DIR = join(ROOT, 'src');
@@ -77,12 +80,14 @@ describe('Component i18n Pattern', () => {
     for (const srcFile of svelteFiles) {
       const rel = relative(SRC_DIR, srcFile);
       const distFile = join(DIST_SRC_DIR, rel);
-      it(`dist/src/${rel} must match src/${rel}`, () => {
+      it(`dist/src/${rel} must match preprocessed src/${rel}`, async () => {
         if (!existsSync(DIST_SRC_DIR)) return; // skip if no build yet
         expect(existsSync(distFile), `dist/src/${rel} is missing — run pnpm build`).toBe(true);
         const srcContent = readFileSync(srcFile, 'utf-8');
         const distContent = readFileSync(distFile, 'utf-8');
-        expect(distContent, `dist/src/${rel} is stale — run pnpm build`).toBe(srcContent);
+        // dist/src ships the preprocessed (TS-stripped) form, not a verbatim copy.
+        const expected = await preprocessSvelteSource(srcContent, srcFile);
+        expect(distContent, `dist/src/${rel} is stale — run pnpm build`).toBe(expected);
       });
     }
   });

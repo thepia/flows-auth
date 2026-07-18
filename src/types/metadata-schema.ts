@@ -16,7 +16,7 @@
  * No metadata storage needed for organization association.
  */
 
-import { email, z } from 'zod';
+import { z } from 'zod';
 
 // ============================================================================
 // Unified Metadata Schema (Auth0 app_metadata and WorkOS metadata)

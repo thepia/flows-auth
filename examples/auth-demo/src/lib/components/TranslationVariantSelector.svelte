@@ -1,8 +1,8 @@
 <script>
   import { currentVariant, variantMetadata, switchTranslationVariant } from '../stores/translation-variants.js';
   
-  let isOpen = false;
-  let dropdownElement;
+  let isOpen = $state(false);
+  let dropdownElement = $state();
   
   // Handle variant selection
   function selectVariant(variant) {
@@ -23,15 +23,15 @@
   }
   
   // Get current variant metadata
-  $: currentMeta = variantMetadata[$currentVariant] || variantMetadata.standard;
+  let currentMeta = $derived(variantMetadata[$currentVariant] || variantMetadata.standard);
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="translation-variant-selector" bind:this={dropdownElement}>
   <button 
     class="variant-button"
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
     aria-label="Select translation variant"
     aria-expanded={isOpen}
   >
@@ -60,7 +60,7 @@
         <button
           class="variant-option"
           class:active={$currentVariant === key}
-          on:click={() => selectVariant(key)}
+          onclick={() => selectVariant(key)}
         >
           <span class="option-icon">{meta.icon}</span>
           <div class="option-content">

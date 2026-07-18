@@ -145,15 +145,18 @@ describe('Cross-Device Passwordless Authentication', () => {
       console.log('✅ thepia-app client supports passwordless');
     });
 
-    it('should reject clients not configured for passwordless', async () => {
-      const legacyClient = new AuthApiClient({
+    it('should not gate passwordless by clientId (routing keys off appCode)', async () => {
+      // Passwordless routes to `/{appCode}/send-email` and intentionally does NOT
+      // send clientId (see AuthApiClient.startPasswordlessAuthentication). So a
+      // different clientId must not change availability — the old clientId-based
+      // gating no longer exists. This guards against re-introducing it.
+      const otherClient = new AuthApiClient({
         ...TEST_CONFIG,
-        clientId: 'legacy-client' // This should not be configured for passwordless
+        clientId: 'legacy-client'
       });
 
-      await expect(legacyClient.startPasswordlessAuthentication(testEmail)).rejects.toThrow(
-        /not enabled/i
-      );
+      const result = await otherClient.startPasswordlessAuthentication(testEmail);
+      expect(result.success).toBe(true);
     });
   });
 

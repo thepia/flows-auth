@@ -11,7 +11,6 @@ import type { AuthApiClient } from '../api/auth-api.js';
 import {
   addConsentToMetadata,
   confirmConsentInMetadata,
-  extractOnboardingMetadata,
   getAllConsents,
   getConsentForUrl,
   removeConsentForUrl
@@ -20,7 +19,6 @@ import type {
   ClientRegistration,
   CompactConsentRecord,
   ConfirmConsentRequest,
-  GetOnboardingMetadataResponse,
   Invitations,
   OnboardingMetadata,
   UpdateOnboardingMetadataRequest,
@@ -30,8 +28,7 @@ import {
   getClientStatus,
   getConsentedUrls,
   hasConsentForUrl,
-  OnboardingMetadataSchema,
-  parseOnboardingMetadata
+  OnboardingMetadataSchema
 } from '../types/onboarding.js';
 
 export interface OnboardingState {

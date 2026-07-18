@@ -88,7 +88,7 @@ export class SessionMigrator {
       }
 
       // Step 4: Perform migration
-      const migrationResult = await this.performMigration(
+      const _migrationResult = await this.performMigration(
         currentSession,
         fromType,
         toType,
@@ -177,7 +177,7 @@ export class SessionMigrator {
    */
   private async performMigration(
     session: SignInData,
-    fromType: StorageType,
+    _fromType: StorageType,
     toType: StorageType,
     preserveTokens: boolean
   ): Promise<void> {

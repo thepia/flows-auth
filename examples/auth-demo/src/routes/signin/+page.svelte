@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
@@ -10,67 +12,60 @@ import { getLocale } from '../../paraglide/runtime.js';
 // Error testing components
 import ErrorTestMenu from '$lib/components/ErrorTestMenu.svelte';
 
-// ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
-export let isAuthenticated = false;
-export let user = null;
+
+  interface Props {
+    // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
+    isAuthenticated?: boolean;
+    user?: any;
+  }
+
+  let { isAuthenticated = false, user = null }: Props = $props();
 
 // Get authStore from context instead of props
 const authStore = getContext(AUTH_CONTEXT_KEY);
 
-// Debug logging
-$: if (authStore && browser) {
-  console.log('📦 [SIGNIN] Auth store from context:', {
-    authStore: !!authStore,
-    debugId: authStore?._debugId,
-    signInState: authStore?.signInState,
-    isAuthenticated,
-    user: !!user
-  });
-}
 
 // Optional SvelteKit props
 export const params = {};
 
 // Component state
-let currentUser = null;
-let authState = 'unauthenticated'; // Start with unauthenticated, not loading
+let currentUser = $state(null);
+let authState = $state('unauthenticated'); // Start with unauthenticated, not loading
 let stateMachineState = null;
 
-// 🔑 Reactive locale tracking for component rerenders
-$: currentLocale = getLocale() || 'en'; // Fallback to 'en' if locale not ready
 let stateMachineContext = null;
 
 
 // State Machine components - loaded dynamically in onMount
-let SessionStateMachineComponent = null;
-let SignInStateMachineComponent = null;
-let SignInFormComponent = null;
-let SignInCoreComponent = null;
+let SessionStateMachineComponent = $state(null);
+let SignInStateMachineComponent = $state(null);
+let SignInFormComponent = $state(null);
+let SignInCoreComponent = $state(null);
 
 // Demo controls
-let emailInput = '';
+let emailInput = $state('');
 let testEmail = 'demo@example.com';
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
 
 // SignIn form configuration options
-let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
+let signInMode = $state('login-or-register'); // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
-let enablePasskeys = false;
-let enableMagicLinks = true;
+let enablePasskeys = $state(false);
+let enableMagicLinks = $state(true);
 
 // New size and variant options
-let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
-let formVariant = 'inline'; // 'inline', 'popup'
-let popupPosition = 'top-right'; // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
-let useSignInForm = false; // Toggle between SignInCore and SignInForm
-let signInCoreLayout = 'full-width'; // 'full-width', 'hero-centered'
+let formSize = $state('medium'); // 'small', 'medium', 'large', 'full'
+let formVariant = $state('inline'); // 'inline', 'popup'
+let popupPosition = $state('top-right'); // 'top-right', 'top-left', 'bottom-right', 'bottom-left'
+let useSignInForm = $state(false); // Toggle between SignInCore and SignInForm
+let signInCoreLayout = $state('full-width'); // 'full-width', 'hero-centered'
 
 // Declare reactive variables first
-let signInState = 'emailEntry';
-let hasValidPinStatus = false;
-let pinRemainingMinutes = 0;
+let signInState = $state('emailEntry');
+let hasValidPinStatus = $state(false);
+let pinRemainingMinutes = $state(0);
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -130,30 +125,7 @@ const clientVariants = {
 };
 
 // Reactive computations from auth store - simplified debugging
-let lastLoggedState = null;
-$: {
-  if (authStore) {
-    const storeValue = $authStore;
-
-    // Only log when state actually changes to prevent spam
-    if (storeValue.state !== lastLoggedState) {
-      console.log('🔄 [SignIn] Auth state changed:', {
-        state: storeValue.state,
-        signInState: storeValue.signInState,
-        hasUser: !!storeValue.user,
-        timestamp: new Date().toISOString()
-      });
-      lastLoggedState = storeValue.state;
-    }
-
-    // Update our local variables to stay synchronized with the store
-    signInState = storeValue.signInState || 'emailEntry';
-    hasValidPinStatus = hasValidPin(storeValue);
-    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
-    authState = storeValue.state;
-    currentUser = storeValue.user;
-  }
-}
+let lastLoggedState = $state(null);
 
 // Helper functions for PIN status
 function hasValidPin(storeValue) {
@@ -190,14 +162,6 @@ function handleSignInClose() {
   // For demo purposes, we'll just log it
 }
 
-// Get current client variant and build translation overrides
-$: currentClientVariant = clientVariants[selectedClientVariant] || clientVariants.default;
-$: combinedTranslations = selectedClientVariant === 'custom' 
-  ? customTranslationOverrides 
-  : {
-      ...currentClientVariant.translations,
-      ...customTranslationOverrides
-    };
 
 
 // Config is now managed entirely through authStore.updateConfig() calls above
@@ -310,6 +274,51 @@ onMount(async () => {
     }
   }
 });
+// Debug logging
+run(() => {
+    if (authStore && browser) {
+    console.log('📦 [SIGNIN] Auth store from context:', {
+      authStore: !!authStore,
+      debugId: authStore?._debugId,
+      signInState: authStore?.signInState,
+      isAuthenticated,
+      user: !!user
+    });
+  }
+  });
+// 🔑 Reactive locale tracking for component rerenders
+let currentLocale = $derived(getLocale() || 'en'); // Fallback to 'en' if locale not ready
+run(() => {
+  if (authStore) {
+    const storeValue = $authStore;
+
+    // Only log when state actually changes to prevent spam
+    if (storeValue.state !== lastLoggedState) {
+      console.log('🔄 [SignIn] Auth state changed:', {
+        state: storeValue.state,
+        signInState: storeValue.signInState,
+        hasUser: !!storeValue.user,
+        timestamp: new Date().toISOString()
+      });
+      lastLoggedState = storeValue.state;
+    }
+
+    // Update our local variables to stay synchronized with the store
+    signInState = storeValue.signInState || 'emailEntry';
+    hasValidPinStatus = hasValidPin(storeValue);
+    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
+    authState = storeValue.state;
+    currentUser = storeValue.user;
+  }
+});
+// Get current client variant and build translation overrides
+let currentClientVariant = $derived(clientVariants[selectedClientVariant] || clientVariants.default);
+let combinedTranslations = $derived(selectedClientVariant === 'custom' 
+  ? customTranslationOverrides 
+  : {
+      ...currentClientVariant.translations,
+      ...customTranslationOverrides
+    });
 </script>
 
 <!-- 🔑 Conditional wrapper forces rerender when locale changes -->
@@ -332,13 +341,13 @@ onMount(async () => {
       <div class="config-section">
         <h4>🔄 Set Initial Email</h4>
         <div class="quick-emails">
-          <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'demo@example.com'}>
+          <button class="btn btn-outline btn-xs" onclick={() => emailInput = 'demo@example.com'}>
             demo@example.com
           </button>
-          <button class="btn btn-outline btn-xs" on:click={() => emailInput = 'test@thepia.net'}>
+          <button class="btn btn-outline btn-xs" onclick={() => emailInput = 'test@thepia.net'}>
             test@thepia.net
           </button>
-          <button class="btn btn-outline btn-xs" on:click={() => emailInput = ''}>
+          <button class="btn btn-outline btn-xs" onclick={() => emailInput = ''}>
             Clear
           </button>
         </div>
@@ -419,12 +428,12 @@ onMount(async () => {
           <div class="radio-group">
             <label class="radio-option">
               <input type="radio" bind:group={signInMode} value="login-only"
-                     on:change={() => authStore?.updateConfig?.({ signInMode })} />
+                     onchange={() => authStore?.updateConfig?.({ signInMode })} />
               <span>Login Only (error for new users)</span>
             </label>
             <label class="radio-option">
               <input type="radio" bind:group={signInMode} value="login-or-register"
-                     on:change={() => authStore?.updateConfig?.({ signInMode })} />
+                     onchange={() => authStore?.updateConfig?.({ signInMode })} />
               <span>Login or Register as Needed</span>
             </label>
           </div>
@@ -529,12 +538,12 @@ onMount(async () => {
           <div class="checkbox-group">
             <label class="checkbox-option">
               <input type="checkbox" bind:checked={enablePasskeys} 
-                     on:change={() => authStore?.updateConfig?.({ enablePasskeys })} />
+                     onchange={() => authStore?.updateConfig?.({ enablePasskeys })} />
               <span>Enable Passkeys</span>
             </label>
             <label class="checkbox-option">
               <input type="checkbox" bind:checked={enableMagicLinks}
-                     on:change={() => authStore?.updateConfig?.({ enableMagicLinks })} />
+                     onchange={() => authStore?.updateConfig?.({ enableMagicLinks })} />
               <span>Enable Magic Links</span>
             </label>
           </div>
@@ -553,7 +562,7 @@ onMount(async () => {
         {#if useSignInForm && formVariant === 'popup'}
           <!-- Popup SignInForm - no card wrapper to avoid double borders -->
           {#if browser && SignInFormComponent}
-            <svelte:component this={SignInFormComponent}
+            <SignInFormComponent
               store={authStore}
               initialEmail={emailInput}
               size={formSize}
@@ -576,7 +585,7 @@ onMount(async () => {
 
               {#if useSignInForm}
                 {#if browser && SignInFormComponent}
-                  <svelte:component this={SignInFormComponent}
+                  <SignInFormComponent
                     store={authStore}
                     initialEmail={emailInput}
                     size={formSize}
@@ -610,7 +619,7 @@ onMount(async () => {
             <div class="card-body">
               {#if browser && authStore && SignInCoreComponent}
 
-                  <svelte:component this={SignInCoreComponent}
+                  <SignInCoreComponent
                     store={authStore}
                     initialEmail={emailInput}
                     className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
@@ -646,7 +655,7 @@ onMount(async () => {
           {#if SessionStateMachineComponent}
             <!-- Compact AuthState Machine (Simplified) -->
             <div class="compact-machine">
-              <svelte:component this={SessionStateMachineComponent}
+              <SessionStateMachineComponent
                 authState={authState}
                 compact={true}
                 width={280}
@@ -659,7 +668,7 @@ onMount(async () => {
             <!-- Sign-In State Machine (Interactive) -->
             {#if SignInStateMachineComponent}
               <div class="compact-machine">
-                <svelte:component this={SignInStateMachineComponent}
+                <SignInStateMachineComponent
                   currentSignInState={signInState}
                   width={280}
                   height={200}
@@ -712,10 +721,10 @@ onMount(async () => {
             <div class="control-group-compact">
               <span class="group-label">Session:</span>
               <div class="control-buttons-compact">
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.checkSession()}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.checkSession()}>
                   Check
                 </button>
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.stateMachine.send({ type: 'INVALID_SESSION' })}>
                   Invalid
                 </button>
               </div>
@@ -724,13 +733,13 @@ onMount(async () => {
             <div class="control-group-compact">
               <span class="group-label">Input:</span>
               <div class="control-buttons-compact">
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.clickNext()}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.clickNext()}>
                   Next
                 </button>
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.typeEmail(emailInput || 'demo@test.com')}>
                   Email
                 </button>
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.clickContinue()}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.clickContinue()}>
                   Continue
                 </button>
               </div>
@@ -739,13 +748,13 @@ onMount(async () => {
             <div class="control-group-compact">
               <span class="group-label">Auth:</span>
               <div class="control-buttons-compact">
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} })}>
                   Passkey
                 </button>
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} })}>
                   Success
                 </button>
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.stateMachine.send({ type: 'WEBAUTHN_ERROR', error: { code: 'test', message: 'Test error' }, timing: 1000 })}>
                   Error
                 </button>
               </div>
@@ -754,7 +763,7 @@ onMount(async () => {
             <div class="control-group-compact">
               <span class="group-label">Reset:</span>
               <div class="control-buttons-compact">
-                <button class="btn btn-outline btn-xs" on:click={() => authStore.resetToAuth()}>
+                <button class="btn btn-outline btn-xs" onclick={() => authStore.resetToAuth()}>
                   Reset
                 </button>
               </div>

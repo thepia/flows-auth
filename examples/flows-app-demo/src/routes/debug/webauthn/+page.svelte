@@ -3,24 +3,24 @@ import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 
 // WebAuthn testing state
-let supportsWebAuthn = false;
-let supportsConditionalUI = false;
-let testResults: any[] = [];
-let currentTest = '';
-let isLoading = false;
+let supportsWebAuthn = $state(false);
+let supportsConditionalUI = $state(false);
+let testResults: any[] = $state([]);
+let currentTest = $state('');
+let isLoading = $state(false);
 
 // Credential data
-let credentialId = '';
+let credentialId = $state('');
 let publicKey = '';
-let userHandle = '';
+let userHandle = $state('');
 let challenge = '';
 
 // Configuration
-let rpId = 'dev.thepia.net';
-let rpName = 'Thepia WebAuthn Debugger';
-let userId = '';
-let userName = '';
-let userDisplayName = '';
+let rpId = $state('dev.thepia.net');
+let rpName = $state('Thepia WebAuthn Debugger');
+let userId = $state('');
+let userName = $state('');
+let userDisplayName = $state('');
 
 // Test utilities
 function arrayBufferToBase64url(buffer: ArrayBuffer): string {
@@ -606,7 +606,7 @@ onMount(() => {
           <h3 class="font-medium text-gray-700 text-sm uppercase tracking-wide">Registration</h3>
           
           <button 
-            on:click={createDiscoverableCredential}
+            onclick={createDiscoverableCredential}
             disabled={isLoading || !supportsWebAuthn}
             class="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -614,7 +614,7 @@ onMount(() => {
           </button>
           
           <button 
-            on:click={createNonDiscoverableCredential}
+            onclick={createNonDiscoverableCredential}
             disabled={isLoading || !supportsWebAuthn}
             class="w-full bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -624,7 +624,7 @@ onMount(() => {
           <h3 class="font-medium text-gray-700 text-sm uppercase tracking-wide mt-6">Authentication</h3>
           
           <button 
-            on:click={authenticateWithCredentialId}
+            onclick={authenticateWithCredentialId}
             disabled={isLoading || !supportsWebAuthn || !credentialId}
             class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -632,7 +632,7 @@ onMount(() => {
           </button>
           
           <button 
-            on:click={authenticateDiscoverable}
+            onclick={authenticateDiscoverable}
             disabled={isLoading || !supportsWebAuthn}
             class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -640,7 +640,7 @@ onMount(() => {
           </button>
           
           <button 
-            on:click={testConditionalUI}
+            onclick={testConditionalUI}
             disabled={isLoading || !supportsConditionalUI}
             class="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -650,7 +650,7 @@ onMount(() => {
           <h3 class="font-medium text-gray-700 text-sm uppercase tracking-wide mt-6">Utilities</h3>
           
           <button 
-            on:click={testWebAuthnSupport}
+            onclick={testWebAuthnSupport}
             disabled={isLoading}
             class="w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
           >
@@ -658,7 +658,7 @@ onMount(() => {
           </button>
           
           <button 
-            on:click={clearStoredData}
+            onclick={clearStoredData}
             class="w-full bg-orange-600 text-white py-2 px-4 rounded hover:bg-orange-700 text-sm"
           >
             Clear Stored Data
@@ -672,7 +672,7 @@ onMount(() => {
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold text-gray-900">Test Results</h2>
         <button 
-          on:click={clearResults}
+          onclick={clearResults}
           class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
         >
           Clear Results

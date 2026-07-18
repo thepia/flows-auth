@@ -9,7 +9,13 @@ export default defineConfig(({ mode }) => ({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',
-      strategy: ['localStorage', 'cookie', 'globalVariable', 'baseLocale']
+      strategy: ['localStorage', 'cookie', 'globalVariable', 'baseLocale'],
+      // Pin the output layout to match flows-auth's own src/paraglide. Paraglide
+      // 2.4.0 defaults to "message-modules" (per-message barrel, no en.js/da.js,
+      // no dot-notation aliases), which breaks the dot-notation `m["auth.signIn"]`
+      // lookups and the paraglide-multi-directory-merge tests. "locale-modules"
+      // restores messages/_index.js with `export { fn as "dot.key" }` + en.js/da.js.
+      outputStructure: 'locale-modules'
     }),
     sveltekit(),
     tailwindcss()

@@ -125,7 +125,7 @@ run(() => {
     padding: 8px 0 0 0;
     font-size: 14px;
     line-height: 1.5;
-    color: var(--auth-text, currentColor);
+    color: var(--color-text-primary, var(--auth-text, currentColor));
   }
 
   .auth-message.animate {
@@ -161,19 +161,19 @@ run(() => {
 
   /* Message types - clean styling, no default backgrounds/borders */
   .type-error {
-    color: var(--auth-error-text, #dc2626);
+    color: var(--color-text-error, var(--auth-error-text, #dc2626));
   }
 
   .type-success {
-    color: var(--auth-success-text, #059669);
+    color: var(--color-text-success, var(--auth-success-text, #059669));
   }
 
   .type-info {
-    color: var(--auth-info-text, #0369a1);
+    color: var(--color-text-info, var(--auth-info-text, #0369a1));
   }
 
   .type-warning {
-    color: var(--auth-warning-text, #d97706);
+    color: var(--color-text-warning, var(--auth-warning-text, #d97706));
   }
 
   /* Pin status variant - matches SignInCore pin-status-message styling */

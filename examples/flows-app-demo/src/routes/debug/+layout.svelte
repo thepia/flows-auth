@@ -1,14 +1,19 @@
 <script lang="ts">
   import { browser, dev } from '$app/environment';
   import { onMount } from 'svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
 
-  let showBackButton = true;
+  let { children }: Props = $props();
+
+  let showBackButton = $state(true);
 
   onMount(() => {
     if (browser) {
       // Show back button for all debug pages
-      showBackButton = $page.url.pathname.startsWith('/debug');
+      showBackButton = page.url.pathname.startsWith('/debug');
     }
   });
 
@@ -30,7 +35,7 @@
 <div class="debug-layout">
   {#if showBackButton}
     <div class="debug-nav">
-      <button on:click={goBack} class="back-btn">
+      <button onclick={goBack} class="back-btn">
         ← Back to Demo
       </button>
       <div class="debug-badge">
@@ -39,7 +44,7 @@
     </div>
   {/if}
   
-  <slot />
+  {@render children?.()}
 </div>
 
 <style>

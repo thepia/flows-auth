@@ -10,7 +10,6 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api.js';
 import type { User } from '../../types/index.js';
 import { reportRefreshEvent } from '../../utils/telemetry.js';
 import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types.js';
@@ -68,7 +67,7 @@ export function createAuthCoreStore(options: StoreOptions) {
     if (!config.enablePasskeys) return false;
 
     // Check for WebAuthn support
-    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+    return !!(window.PublicKeyCredential && navigator.credentials?.create);
   };
 
   const storeImpl = (
@@ -278,7 +277,7 @@ export function createAuthCoreStore(options: StoreOptions) {
               // The counter is reset in the success path (after updateTokens) not here
               try {
                 await get().refreshTokens();
-              } catch (retryError) {
+              } catch (_retryError) {
                 // Errors are already logged and handled by refreshTokens()
                 // This catch prevents unhandled promise rejection
               }

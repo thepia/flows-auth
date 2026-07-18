@@ -11,7 +11,7 @@
  * - Role-based storage strategy
  */
 
-import type { SignInData, StorageConfig, UserData } from '../types/index.js';
+import type { SignInData, StorageConfig } from '../types/index.js';
 import {
   getOptimalStorageConfig,
   getStorageManager,

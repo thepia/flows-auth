@@ -2,15 +2,20 @@
   PROOF TEST LAYOUT
   Creates ONE auth store with ONE config, makes it available to all children
 -->
-<script>
+<script lang="ts">
   import { browser } from '$app/environment';
   import { setupAuthContext } from '@thepia/flows-auth';
 
   // Layout component that will show auth state
   import LayoutAuthStatus from './LayoutAuthStatus.svelte';
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
 
   let authStore = null;
-  let authStoreReady = false;
+  let authStoreReady = $state(false);
 
   // SINGLE config object that will be shared by ALL components
   const sharedConfig = {
@@ -55,7 +60,7 @@
   
   <div class="page-section">
     <h2>Page Components</h2>
-    <slot />
+    {@render children?.()}
   </div>
 </div>
 

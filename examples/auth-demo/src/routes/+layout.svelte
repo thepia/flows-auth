@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
@@ -7,15 +7,20 @@ import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
 import '@thepia/flows-auth/style.css';
+	interface Props {
+		children?: import('svelte').Snippet<[any]>;
+	}
+
+	let { children }: Props = $props();
 
 // Optional SvelteKit props
 export const params = {};
 
 // Auth state for reactivity
-let isAuthenticated = false;
-let user = null;
-let isAuthLoading = true;
-let initError = null;
+let isAuthenticated = $state(false);
+let user = $state(null);
+let isAuthLoading = $state(true);
+let initError = $state(null);
 
 // 🌐 Set up Paraglide message context for library components
 // This allows library components to use auth-demo's merged messages
@@ -98,7 +103,7 @@ onMount(() => {
 								<span class="welcome">Welcome, {user.email}!</span>
 								<button
 									class="btn btn-outline"
-									on:click={() => authStore?.signOut()}
+									onclick={() => authStore?.signOut()}
 								>
 									Sign Out
 								</button>
@@ -126,7 +131,7 @@ onMount(() => {
 				<div class="error-state">
 					<h2>❌ Initialization Error</h2>
 					<p>{initError}</p>
-					<button class="btn btn-outline" on:click={() => window.location.reload()}>
+					<button class="btn btn-outline" onclick={() => window.location.reload()}>
 						Reload Page
 					</button>
 				</div>
@@ -136,10 +141,7 @@ onMount(() => {
 
 				<!-- ✅ Pass authStore to all pages via slot props -->
 				{console.log('🎯 Layout rendering slot (context-based):', { authStore: !!authStore, isAuthenticated, user: !!user })}
-				<slot
-					isAuthenticated={isAuthenticated}
-					user={user}
-				/>
+				{@render children?.({ isAuthenticated, user, })}
 			{/if}
 		</div>
 	</main>

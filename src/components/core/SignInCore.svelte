@@ -560,7 +560,7 @@ run(() => {
 
   .email-code-message,
   .magic-link-message {
-    color: var(--auth-text-secondary, #6b7280);
+    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
     margin: 16px 0 24px 0;
     line-height: 1.5;
   }

@@ -52,7 +52,7 @@ export function decodeInvitationToken(token: string): InvitationTokenData {
       issuedAt: payload.iat ? new Date(payload.iat * 1000) : null,
       ...payload
     };
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to decode invitation token');
   }
 }
@@ -109,7 +109,7 @@ export function validateInvitationToken(
 
     // For production, you would verify the signature here using a public key
     // For now, we'll do basic validation
-    const [header, payload, signature] = parts;
+    const [_header, payload, signature] = parts;
 
     // Validate that the signature is not empty (basic check)
     if (!signature || signature.length < 10) {
@@ -124,7 +124,7 @@ export function validateInvitationToken(
         console.warn('Token payload mismatch detected');
         return { isValid: false, reason: 'invalid_structure', data };
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn('Failed to re-decode token payload for validation');
       return { isValid: false, reason: 'invalid_structure', data };
     }

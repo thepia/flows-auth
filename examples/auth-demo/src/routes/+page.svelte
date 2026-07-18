@@ -1,4 +1,6 @@
 <script>
+  import { run } from 'svelte/legacy';
+
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 // Paraglide demo translations
@@ -14,26 +16,19 @@ const authStore = getContext(AUTH_CONTEXT_KEY);
 
 // Component state
 let currentUser = null;
-let authState = 'unauthenticated'; // Start with unauthenticated, not loading
-let stateMachineState = null;
+let authState = $state('unauthenticated'); // Start with unauthenticated, not loading
+let stateMachineState = $state(null);
 
-// 🔑 Reactive locale tracking for component rerenders
-$: currentLocale = getLocale();
 let stateMachineContext = null;
 let authSubscribed = false;
 
 // Auth config will be retrieved from the auth store (created in layout)
-let authConfig = null;
+let authConfig = $state(null);
 
-// Get authConfig from authStore when available
-$: if (authStore && authStore.getConfig) {
-  authConfig = authStore.getConfig();
-  console.log('⚙️ Auth config from authStore:', authConfig);
-}
 
 // State Machine components - loaded dynamically in onMount
-let SessionStateMachineComponent = null;
-let SignInStateMachineComponent = null;
+let SessionStateMachineComponent = $state(null);
+let SignInStateMachineComponent = $state(null);
 let SignInFormComponent = null;
 let SignInCoreComponent = null;
 
@@ -70,33 +65,12 @@ let useSignInForm = false; // Toggle between SignInCore and SignInForm
 // Note: authState already exists above
 
 // Declare reactive variables first
-let signInState = 'emailEntry';
-let hasValidPinStatus = false;
-let pinRemainingMinutes = 0;
+let signInState = $state('emailEntry');
+let hasValidPinStatus = $state(false);
+let pinRemainingMinutes = $state(0);
 
 // Reactive computations from auth store - simplified debugging
-let lastLoggedState = null;
-$: {
-  if (authStore) {
-    const storeValue = $authStore;
-
-    // Only log when state actually changes to prevent spam
-    if (storeValue.state !== lastLoggedState) {
-      console.log('🔄 [Sidebar] Auth state changed:', {
-        state: storeValue.state,
-        signInState: storeValue.signInState,
-        hasUser: !!storeValue.user,
-        timestamp: new Date().toISOString()
-      });
-      lastLoggedState = storeValue.state;
-    }
-
-    // Update our local variables
-    signInState = storeValue.signInState || 'emailEntry';
-    hasValidPinStatus = hasValidPin(storeValue);
-    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
-  }
-}
+let lastLoggedState = $state(null);
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'
@@ -502,32 +476,64 @@ function getPinTimeRemaining(state) {
   }
 }
 
+
+
+// 🔑 Reactive locale tracking for component rerenders
+let currentLocale = $derived(getLocale());
+// Get authConfig from authStore when available
+run(() => {
+    if (authStore && authStore.getConfig) {
+    authConfig = authStore.getConfig();
+    console.log('⚙️ Auth config from authStore:', authConfig);
+  }
+  });
+run(() => {
+  if (authStore) {
+    const storeValue = $authStore;
+
+    // Only log when state actually changes to prevent spam
+    if (storeValue.state !== lastLoggedState) {
+      console.log('🔄 [Sidebar] Auth state changed:', {
+        state: storeValue.state,
+        signInState: storeValue.signInState,
+        hasUser: !!storeValue.user,
+        timestamp: new Date().toISOString()
+      });
+      lastLoggedState = storeValue.state;
+    }
+
+    // Update our local variables
+    signInState = storeValue.signInState || 'emailEntry';
+    hasValidPinStatus = hasValidPin(storeValue);
+    pinRemainingMinutes = getPinTimeRemaining(storeValue) || 0;
+  }
+});
 // Get current client variant and build translation overrides
-$: currentClientVariant = clientVariants[selectedClientVariant] || clientVariants.default;
-$: combinedTranslations = selectedClientVariant === 'custom' 
+let currentClientVariant = $derived(clientVariants[selectedClientVariant] || clientVariants.default);
+let combinedTranslations = $derived(selectedClientVariant === 'custom' 
   ? customTranslationOverrides 
   : {
       ...currentClientVariant.translations,
       ...customTranslationOverrides
-    };
-
+    });
 // Update authStore config when controls change
-$: if (authStore && authStore.updateConfig) {
-  authStore.updateConfig({
-    enablePasskeys,
-    enableMagicLinks,
-    signInMode,
-    language: selectedLanguage,
-    fallbackLanguage: 'en',
-    branding: {
-      ...authConfig?.branding,
-      companyName: currentClientVariant.companyName
-    }
+run(() => {
+    if (authStore && authStore.updateConfig) {
+    authStore.updateConfig({
+      enablePasskeys,
+      enableMagicLinks,
+      signInMode,
+      language: selectedLanguage,
+      fallbackLanguage: 'en',
+      branding: {
+        ...authConfig?.branding,
+        companyName: currentClientVariant.companyName
+      }
+    });
+  }
   });
-}
-
 // Create reactive config that updates when controls change
-$: dynamicAuthConfig = authConfig ? {
+let dynamicAuthConfig = $derived(authConfig ? {
   ...authConfig,
   enablePasskeys,
   enableMagicLinks,
@@ -540,7 +546,7 @@ $: dynamicAuthConfig = authConfig ? {
     ...authConfig.branding,
     companyName: currentClientVariant.companyName
   }
-} : null;
+} : null);
 
 // Note: Config logging removed to prevent console spam
 </script>
@@ -632,7 +638,7 @@ $: dynamicAuthConfig = authConfig ? {
                 <div class="machine-grid">
                   <!-- AuthState Machine (Simplified) -->
                   <div class="machine-section">
-                    <svelte:component this={SessionStateMachineComponent}
+                    <SessionStateMachineComponent
                       authState={authState}
                       width={600}
                       height={300}
@@ -648,7 +654,7 @@ $: dynamicAuthConfig = authConfig ? {
                   <!-- Sign-In State Machine (Simplified) -->
                   {#if SignInStateMachineComponent}
                     <div class="machine-section">
-                      <svelte:component this={SignInStateMachineComponent}
+                      <SignInStateMachineComponent
                         currentSignInState={signInState}
                         width={600}
                         height={300}

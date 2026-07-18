@@ -3,6 +3,11 @@
   import '../branding/design-tokens.css';
   import { browser, dev } from '$app/environment';
   import { setupAuthContext } from '@thepia/flows-auth';
+  interface Props {
+    children?: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
 
   // Initialize console bridge and error reporting in development
   if (browser && dev) {
@@ -41,7 +46,7 @@
 </script>
 
 <main>
-  <slot />
+  {@render children?.()}
 </main>
 
 <style>

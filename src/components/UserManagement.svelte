@@ -160,26 +160,26 @@ async function handleRefreshTokens() {
     justify-content: space-between;
     align-items: flex-start;
     padding: 20px 0;
-    border-bottom: 1px solid var(--auth-border, #e5e7eb);
+    border-bottom: 1px solid var(--color-border-default, var(--auth-border, #e5e7eb));
     margin-bottom: 24px;
   }
 
   .user-info h3 {
     margin: 0 0 8px 0;
     font-size: 1.25rem;
-    color: var(--auth-text-primary, #111827);
+    color: var(--color-text-primary, var(--auth-text-primary, #111827));
   }
 
   .user-name {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--auth-text-primary, #111827);
+    color: var(--color-text-primary, var(--auth-text-primary, #111827));
     margin: 0 0 4px 0;
   }
 
   .user-email {
     font-size: 0.875rem;
-    color: var(--auth-text-secondary, #6b7280);
+    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
     margin: 0;
   }
 
@@ -190,9 +190,9 @@ async function handleRefreshTokens() {
   }
 
   .refresh-button {
-    background: var(--auth-button-secondary-bg, #f9fafb);
-    color: var(--auth-button-secondary-text, #374151);
-    border: 1px solid var(--auth-button-secondary-border, #d1d5db);
+    background: var(--color-bg-secondary, var(--auth-button-secondary-bg, #f9fafb));
+    color: var(--color-text-secondary, var(--auth-button-secondary-text, #374151));
+    border: 1px solid var(--color-border-default, var(--auth-button-secondary-border, #d1d5db));
     border-radius: 6px;
     padding: 8px;
     cursor: pointer;
@@ -205,8 +205,8 @@ async function handleRefreshTokens() {
   }
 
   .refresh-button:hover:not(:disabled) {
-    background: var(--auth-button-secondary-hover-bg, #f3f4f6);
-    border-color: var(--auth-button-secondary-hover-border, #9ca3af);
+    background: var(--color-bg-secondary-hover, var(--auth-button-secondary-hover-bg, #f3f4f6));
+    border-color: var(--color-border-2, var(--auth-button-secondary-hover-border, #9ca3af));
   }
 
   .refresh-button:disabled {
@@ -235,9 +235,9 @@ async function handleRefreshTokens() {
   }
 
   .sign-out-button {
-    background: var(--auth-button-secondary-bg, #f9fafb);
-    color: var(--auth-button-secondary-text, #374151);
-    border: 1px solid var(--auth-button-secondary-border, #d1d5db);
+    background: var(--color-bg-secondary, var(--auth-button-secondary-bg, #f9fafb));
+    color: var(--color-text-secondary, var(--auth-button-secondary-text, #374151));
+    border: 1px solid var(--color-border-default, var(--auth-button-secondary-border, #d1d5db));
     border-radius: 6px;
     padding: 8px 16px;
     font-size: 0.875rem;
@@ -246,8 +246,8 @@ async function handleRefreshTokens() {
   }
 
   .sign-out-button:hover {
-    background: var(--auth-button-secondary-hover-bg, #f3f4f6);
-    border-color: var(--auth-button-secondary-hover-border, #9ca3af);
+    background: var(--color-bg-secondary-hover, var(--auth-button-secondary-hover-bg, #f3f4f6));
+    border-color: var(--color-border-2, var(--auth-button-secondary-hover-border, #9ca3af));
   }
 
   .management-sections {
@@ -257,8 +257,8 @@ async function handleRefreshTokens() {
   }
 
   .management-card {
-    background: var(--auth-card-bg, #ffffff);
-    border: 1px solid var(--auth-border, #e5e7eb);
+    background: var(--color-surface-raised, var(--auth-card-bg, #ffffff));
+    border: 1px solid var(--color-border-default, var(--auth-border, #e5e7eb));
     border-radius: 12px;
     padding: 20px;
     text-align: left;
@@ -266,7 +266,7 @@ async function handleRefreshTokens() {
   }
 
   .management-card:hover {
-    border-color: var(--auth-primary-color, #3b82f6);
+    border-color: var(--color-brand-primary, var(--auth-primary-color, #3b82f6));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
@@ -281,7 +281,7 @@ async function handleRefreshTokens() {
     margin: 0;
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--auth-text-primary, #111827);
+    color: var(--color-text-primary, var(--auth-text-primary, #111827));
   }
 
   .card-icon {
@@ -292,7 +292,7 @@ async function handleRefreshTokens() {
   .card-description {
     margin: 0 0 16px 0;
     font-size: 0.875rem;
-    color: var(--auth-text-secondary, #6b7280);
+    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
     line-height: 1.5;
   }
 
@@ -303,9 +303,9 @@ async function handleRefreshTokens() {
   }
 
   .action-button {
-    background: var(--auth-button-secondary-bg, #f9fafb);
-    color: var(--auth-button-secondary-text, #374151);
-    border: 1px solid var(--auth-button-secondary-border, #d1d5db);
+    background: var(--color-bg-secondary, var(--auth-button-secondary-bg, #f9fafb));
+    color: var(--color-text-secondary, var(--auth-button-secondary-text, #374151));
+    border: 1px solid var(--color-border-default, var(--auth-button-secondary-border, #d1d5db));
     border-radius: 6px;
     padding: 8px 16px;
     font-size: 0.875rem;
@@ -315,14 +315,14 @@ async function handleRefreshTokens() {
   }
 
   .action-button:hover {
-    background: var(--auth-button-secondary-hover-bg, #f3f4f6);
-    border-color: var(--auth-button-secondary-hover-border, #9ca3af);
+    background: var(--color-bg-secondary-hover, var(--auth-button-secondary-hover-bg, #f3f4f6));
+    border-color: var(--color-border-2, var(--auth-button-secondary-hover-border, #9ca3af));
   }
 
   .action-button.primary {
-    background: var(--auth-primary-color, #3b82f6);
+    background: var(--color-brand-primary, var(--auth-primary-color, #3b82f6));
     color: white;
-    border-color: var(--auth-primary-color, #3b82f6);
+    border-color: var(--color-brand-primary, var(--auth-primary-color, #3b82f6));
   }
 
   .action-button.primary:hover {

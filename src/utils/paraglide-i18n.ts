@@ -4,7 +4,7 @@
  */
 
 import { getContext, setContext } from 'svelte';
-import { derived, type Readable, writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import * as m from '../paraglide/messages.js';
 import { getLocale, type Locale, setLocale } from '../paraglide/runtime.js';
 

@@ -11,7 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { ApiError } from '../../types/index.js';
-import type { ErrorActions, ErrorState, ErrorStore, StoreOptions } from '../types.js';
+import type { ErrorState, ErrorStore, StoreOptions } from '../types.js';
 
 /**
  * Initial state for the error store
@@ -67,7 +67,7 @@ export function createErrorStore(options: StoreOptions) {
     retryLastRequest: async () => {
       const state = get();
 
-      if (!state.apiError || !state.apiError.retryable || !state.lastFailedRequest) {
+      if (!state.apiError?.retryable || !state.lastFailedRequest) {
         return false;
       }
 

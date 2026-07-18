@@ -3,7 +3,7 @@
  * Converts Zustand stores to Svelte readable stores for reactive usage
  */
 
-import type { Readable, Unsubscriber, Writable } from 'svelte/store';
+import type { Readable, Writable } from 'svelte/store';
 import { derived, readable, writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
 import type { AuthStore } from '../../types/index.js';
@@ -32,14 +32,14 @@ export function toWritable<T>(zustandStore: StoreApi<T>): Writable<T> {
 
   return {
     subscribe,
-    set: (value: T) => {
+    set: (_value: T) => {
       // Zustand stores typically don't have a direct set method
       // This would need to be implemented per store based on actions
       console.warn('Direct set not supported on Zustand stores. Use store actions instead.');
     },
     update: (updater: (value: T) => T) => {
       const currentState = zustandStore.getState();
-      const newState = updater(currentState);
+      updater(currentState);
       // Same limitation as set - would need store-specific implementation
       console.warn('Direct update not supported on Zustand stores. Use store actions instead.');
     }
@@ -217,7 +217,7 @@ export function createComputedStore<T, U>(
     const unsubscribe = zustandStore.subscribe((state) => {
       const newValue = compute(state);
 
-      if (!hasValue || !equals || !equals(lastValue, newValue)) {
+      if (!hasValue || !equals?.(lastValue, newValue)) {
         lastValue = newValue;
         hasValue = true;
         set(newValue);

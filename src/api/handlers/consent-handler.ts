@@ -17,7 +17,6 @@ import type {
   OnboardingMetadata
 } from '../../types/onboarding.js';
 import {
-  addConsentToMetadata,
   confirmConsentInMetadata,
   extractOnboardingMetadata,
   getAllConsents,

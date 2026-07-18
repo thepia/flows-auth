@@ -5,8 +5,22 @@
   import * as m from '../../paraglide/messages.js';
   import { Pulse as Activity, User, Envelope } from 'phosphor-svelte';
 
+
+
+  function getActiveTab(path) {
+    if (path === '/signin') return 'signin';
+    if (path === '/register') return 'register';
+    return 'overview';
+  }
+
+  function handleTabClick(tab) {
+    if (tab.href) {
+      // Use normal navigation for all tabs
+      goto(tab.href);
+    }
+  }
   // Tab configuration with Paraglide functions
-  $: tabs = [
+  let tabs = $derived([
     {
       id: 'overview',
       title: m.tabs_overview_title(),
@@ -28,24 +42,10 @@
       icon: Envelope,
       href: '/register'
     }
-  ];
-
+  ]);
   // Get current active tab based on URL
-  $: currentPath = $page.url.pathname;
-  $: activeTab = getActiveTab(currentPath);
-
-  function getActiveTab(path) {
-    if (path === '/signin') return 'signin';
-    if (path === '/register') return 'register';
-    return 'overview';
-  }
-
-  function handleTabClick(tab) {
-    if (tab.href) {
-      // Use normal navigation for all tabs
-      goto(tab.href);
-    }
-  }
+  let currentPath = $derived($page.url.pathname);
+  let activeTab = $derived(getActiveTab(currentPath));
 </script>
 
 <nav class="tab-navigation" aria-label="Demo navigation">
@@ -59,10 +59,10 @@
           aria-selected={activeTab === tab.id}
           aria-controls="tab-panel-{tab.id}"
           tabindex={activeTab === tab.id ? 0 : -1}
-          on:click={() => handleTabClick(tab)}
+          onclick={() => handleTabClick(tab)}
         >
           <div class="tab-icon">
-            <svelte:component this={tab.icon} size={20} />
+            <tab.icon size={20} />
           </div>
           <div class="tab-content">
             <span class="tab-title">{tab.title}</span>

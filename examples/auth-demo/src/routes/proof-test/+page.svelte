@@ -9,7 +9,7 @@
   import PageAuthComponent from './PageAuthComponent.svelte';
 
   // Get auth store from context using the library's helper
-  let authStore = null;
+  let authStore = $state(null);
   let authError = null;
 
   try {

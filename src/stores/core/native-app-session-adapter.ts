@@ -137,7 +137,7 @@ class NativeAppBridge {
    * Cleanup pending requests
    */
   cleanup(): void {
-    for (const [requestId, pending] of this.pendingRequests.entries()) {
+    for (const [_requestId, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeout);
       pending.reject(new Error('Bridge cleanup'));
     }

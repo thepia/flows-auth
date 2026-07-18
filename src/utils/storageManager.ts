@@ -233,7 +233,7 @@ export function getStorageManager(): ConfigurableStorageManager {
 /**
  * Helper function to determine optimal storage config based on user context
  */
-export function getOptimalStorageConfig(userRole?: string, domain?: string): StorageConfig {
+export function getOptimalStorageConfig(userRole?: string, _domain?: string): StorageConfig {
   // Employee users get persistent sessions
   if (userRole === 'employee' || userRole === 'staff' || userRole === 'admin') {
     return {

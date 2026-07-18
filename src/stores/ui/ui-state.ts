@@ -18,7 +18,7 @@ import type {
   SignInState,
   StateMessageConfig
 } from '../../types/index.js';
-import type { StoreOptions, UIActions, UIState, UIStore } from '../types.js';
+import type { StoreOptions, UIState, UIStore } from '../types.js';
 
 /**
  * Initial state for the UI store
@@ -128,7 +128,8 @@ export function createUIStore(options: StoreOptions) {
     },
 
     // Event-based actions for state machine
-    userChecked: (userData: { // TODO formal type
+    userChecked: (userData: {
+      // TODO formal type
       email: string;
       exists: boolean;
       hasPasskey: boolean;
@@ -170,7 +171,7 @@ export function createUIStore(options: StoreOptions) {
     },
 
     // TODO formal method type
-    authSuccess: (method: 'passkey' | 'email-code' | 'magic-link') => {
+    authSuccess: (_method: 'passkey' | 'email-code' | 'magic-link') => {
       set((state) => ({
         ...state,
         signInState: 'signedIn',
@@ -274,10 +275,10 @@ export function createUIStore(options: StoreOptions) {
 
       function getEmailCodeOnlyButtonConfig(
         config: AuthConfig,
-        state: typeof currentState
+        _state: typeof currentState
       ): ButtonConfig {
         // Button disabled state logic
-        let isDisabled = !email || !email?.trim();
+        let isDisabled = !email?.trim();
 
         switch (signInState) {
           case 'emailEntry':
@@ -307,9 +308,9 @@ export function createUIStore(options: StoreOptions) {
 
       function getPasskeyButtonConfig(
         config: AuthConfig,
-        state: typeof currentState
+        _state: typeof currentState
       ): ButtonConfig {
-        const isDisabled = !email || !email?.trim() || loading || !userExists;
+        const isDisabled = !email?.trim() || loading || !userExists;
 
         let secondary: any;
         if (config.enableMagicLinks) {

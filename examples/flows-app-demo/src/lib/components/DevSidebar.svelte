@@ -12,8 +12,8 @@
     });
   }
   
-  let isOpen = false;
-  let currentScenario: DevScenario;
+  let isOpen = $state(false);
+  let currentScenario: DevScenario = $state();
   let unsubscribe: (() => void) | null = null;
   
   onMount(() => {
@@ -85,7 +85,7 @@
   <button 
     class="dev-toggle" 
     class:open={isOpen}
-    on:click={toggleSidebar}
+    onclick={toggleSidebar}
     title="Development Tools"
   >
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -97,7 +97,7 @@
   <div class="dev-sidebar" class:open={isOpen}>
     <div class="sidebar-header">
       <h3>Development Tools</h3>
-      <button class="close-btn" on:click={toggleSidebar}>×</button>
+      <button class="close-btn" onclick={toggleSidebar}>×</button>
     </div>
     
     <div class="sidebar-content">
@@ -128,7 +128,7 @@
               class="scenario-btn"
               class:active={currentScenario?.id === scenario.id}
               style="border-left-color: {scenario.branding.colors.primary};"
-              on:click={() => selectScenario(scenario.id)}
+              onclick={() => selectScenario(scenario.id)}
             >
               <div class="scenario-name">{scenario.name}</div>
               <div class="scenario-company">{scenario.branding.companyName}</div>
@@ -141,16 +141,16 @@
       <section class="scenario-section">
         <h4>Trigger Auth States</h4>
         <div class="trigger-buttons">
-          <button class="trigger-btn new-user" on:click={() => triggerScenario('new-user')}>
+          <button class="trigger-btn new-user" onclick={() => triggerScenario('new-user')}>
             👤 New User
           </button>
-          <button class="trigger-btn existing-user" on:click={() => triggerScenario('existing-user')}>
+          <button class="trigger-btn existing-user" onclick={() => triggerScenario('existing-user')}>
             🔐 Existing User
           </button>
-          <button class="trigger-btn error" on:click={() => triggerScenario('error')}>
+          <button class="trigger-btn error" onclick={() => triggerScenario('error')}>
             ❌ Auth Error
           </button>
-          <button class="trigger-btn network-error" on:click={() => triggerScenario('network-error')}>
+          <button class="trigger-btn network-error" onclick={() => triggerScenario('network-error')}>
             📶 Network Error
           </button>
         </div>
@@ -160,10 +160,10 @@
       <section class="scenario-section">
         <h4>Dev Actions</h4>
         <div class="dev-actions">
-          <button class="action-btn" on:click={clearLocalStorage}>
+          <button class="action-btn" onclick={clearLocalStorage}>
             🧹 Clear Storage
           </button>
-          <button class="action-btn" on:click={copyConfig}>
+          <button class="action-btn" onclick={copyConfig}>
             📋 Copy Config
           </button>
           <a href="/debug/webauthn" class="action-btn" style="text-decoration: none; display: block;">
@@ -190,8 +190,8 @@
       class="sidebar-backdrop" 
       role="button" 
       tabindex="-1"
-      on:click={toggleSidebar}
-      on:keydown={(e) => e.key === 'Escape' && toggleSidebar()}
+      onclick={toggleSidebar}
+      onkeydown={(e) => e.key === 'Escape' && toggleSidebar()}
     ></div>
   {/if}
 {/if}

@@ -28,10 +28,10 @@
     openAuth: { switchUser?: boolean };
   }>();
 
-  let currentUser: User | null = null;
-  let showProfileMenu = false;
-  let isLoading = true;
-  let profileMenuRef: HTMLDivElement;
+  let currentUser: User | null = $state(null);
+  let showProfileMenu = $state(false);
+  let isLoading = $state(true);
+  let profileMenuRef: HTMLDivElement = $state();
 
   onMount(async () => {
     if (!browser) return;
@@ -181,7 +181,7 @@
       .substring(0, 2);
   }
 
-  $: userInitials = currentUser?.name ? getInitials(currentUser.name) : '';
+  let userInitials = $derived(currentUser?.name ? getInitials(currentUser.name) : '');
 </script>
 
 {#if isLoading}
@@ -194,7 +194,7 @@
   <div class="account-menu" bind:this={profileMenuRef}>
     <button
       class="profile-button"
-      on:click={toggleProfileMenu}
+      onclick={toggleProfileMenu}
       aria-label="User profile"
       aria-expanded={showProfileMenu}
       type="button"
@@ -237,7 +237,7 @@
         <div class="profile-actions">
           <button
             class="profile-action"
-            on:click={handleSwitchUser}
+            onclick={handleSwitchUser}
             type="button"
           >
             <svg class="action-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -247,7 +247,7 @@
           </button>
           <button
             class="profile-action"
-            on:click={handleSignOut}
+            onclick={handleSignOut}
             type="button"
           >
             <svg class="action-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -264,7 +264,7 @@
   <!-- Unauthenticated State -->
   <button
     class="account-icon sign-in"
-    on:click={handleAuthClick}
+    onclick={handleAuthClick}
     aria-label="Sign in"
     type="button"
   >

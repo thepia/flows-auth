@@ -1,10 +1,4 @@
-/**
- * Auth Library Types
- * Based on thepia.com React implementation
- */
-
-import type { AuthApiClient } from '../api/auth-api.js';
-import type { SessionData, SessionPersistence, TokenData } from './database.js';
+import type { SessionPersistence, TokenData } from './database.js';
 
 export type { TokenData } from './database.js';
 

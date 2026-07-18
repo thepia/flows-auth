@@ -8,8 +8,8 @@
   import { getAuthStoreFromContext } from '@thepia/flows-auth';
   import { onMount } from 'svelte';
 
-  let currentScenario: DevScenario;
-  let currentUser: User | null = null;
+  let currentScenario: DevScenario = $state();
+  let currentUser: User | null = $state(null);
   // Obtain the auth store from Svelte context during component init.
   // getContext() must run here (not inside onMount/async) per ADR 0004.
   const authStore = getAuthStoreFromContext();
@@ -220,7 +220,7 @@
                   <p>Click the account icon in the header to start the authentication process.</p>
                   <button 
                     class="cta-button"
-                    on:click={() => handleOpenAuth({ detail: {} })}
+                    onclick={() => handleOpenAuth({ detail: {} })}
                     type="button"
                   >
                     <svg class="cta-icon" viewBox="0 0 20 20" fill="currentColor">

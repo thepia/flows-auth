@@ -1,17 +1,20 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { browser } from '$app/environment';
-  // Try importing the raw Svelte component from relative path
-  import SignInForm from '../../../../../src/components/SignInForm.svelte';
+  import { SignInForm } from '@thepia/flows-auth';
 
-  export let config: any;
+  interface Props {
+    config: any;
+  }
+
+  let { config }: Props = $props();
 
   const dispatch = createEventDispatcher<{
     success: { user: any; method: string };
     error: { error: any };
   }>();
 
-  let mounted = false;
+  let mounted = $state(false);
 
   onMount(async () => {
     if (!browser) return;

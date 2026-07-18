@@ -2,15 +2,15 @@
   Page Auth Component
   Individual component that uses the shared auth store via context
 -->
-<script>
+<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { getAuthStoreFromContext } from '@thepia/flows-auth';
 
-  export let title;
+  let { title } = $props();
 
-  let authState = null;
+  let authState = $state(null);
   let storeId = Math.random().toString(36).substring(2, 11);
-  let authStore = null;
+  let authStore = $state(null);
   let authError = null;
   let unsubscribe = null;
 
@@ -84,9 +84,9 @@
     </div>
     
     <div class="test-actions">
-      <button on:click={testSignIn} class="btn-test">Sign In</button>
-      <button on:click={testSignOut} class="btn-test">Sign Out</button>
-      <button on:click={checkStoreIdentity} class="btn-debug">Check Store</button>
+      <button onclick={testSignIn} class="btn-test">Sign In</button>
+      <button onclick={testSignOut} class="btn-test">Sign Out</button>
+      <button onclick={checkStoreIdentity} class="btn-debug">Check Store</button>
     </div>
   {:else}
     <p class="error">❌ No auth store provided</p>

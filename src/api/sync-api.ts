@@ -35,7 +35,7 @@ export interface UploadRequest {
 }
 
 export class SyncApiClient {
-  private config: AuthConfig;
+  readonly config: AuthConfig;
   private baseUrl: string;
 
   constructor(config: AuthConfig) {

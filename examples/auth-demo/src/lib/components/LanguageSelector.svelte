@@ -1,11 +1,13 @@
 <script>
+  import { run } from 'svelte/legacy';
+
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { Globe } from 'phosphor-svelte';
   import { baseLocale, setLocale, getLocale } from '../../paraglide/runtime.js';
 
   // Paraglide language management
-  let currentLocale = 'en'; // Default fallback
+  let currentLocale = $state('en'); // Default fallback
 
   // Supported languages (matching Paraglide configuration)
   const languages = [
@@ -13,8 +15,8 @@
     { code: 'da', name: 'Dansk', flag: '🇩🇰' }
   ];
 
-  let isOpen = false;
-  let currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+  let isOpen = $state(false);
+  let currentLanguage = $state(languages.find(lang => lang.code === currentLocale) || languages[0]);
 
   // Load current locale from Paraglide on mount
   onMount(() => {
@@ -32,20 +34,24 @@
   });
 
   // Update current language when locale changes
-  $: currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+  run(() => {
+    currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
+  });
 
   // Reactive sync with Paraglide locale changes (e.g., from other components or external changes)
-  $: if (browser) {
-    try {
-      const paraglideLoc = getLocale();
-      if (paraglideLoc !== currentLocale) {
-        currentLocale = paraglideLoc;
-        console.log('🔄 Language selector synced with Paraglide locale:', currentLocale);
+  run(() => {
+    if (browser) {
+      try {
+        const paraglideLoc = getLocale();
+        if (paraglideLoc !== currentLocale) {
+          currentLocale = paraglideLoc;
+          console.log('🔄 Language selector synced with Paraglide locale:', currentLocale);
+        }
+      } catch (error) {
+        // Ignore errors during reactive updates
       }
-    } catch (error) {
-      // Ignore errors during reactive updates
     }
-  }
+  });
 
   function selectLanguage(language) {
     if (browser) {
@@ -80,12 +86,12 @@
   }
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="language-selector">
   <button 
     class="language-button"
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
     aria-label="Select language"
     aria-expanded={isOpen}
   >
@@ -118,7 +124,7 @@
         <button
           class="language-option"
           class:active={language.code === currentLocale}
-          on:click={() => selectLanguage(language)}
+          onclick={() => selectLanguage(language)}
         >
           <span class="flag">{language.flag}</span>
           <span class="name">{language.name}</span>

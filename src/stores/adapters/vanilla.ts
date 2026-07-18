@@ -4,7 +4,6 @@
  */
 
 import type { StoreApi } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
 
 /**
  * Vanilla store subscription helper

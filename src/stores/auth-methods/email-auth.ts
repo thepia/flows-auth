@@ -10,8 +10,7 @@
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { AuthApiClient } from '../../api/auth-api.js';
-import type { SignInData, User } from '../../types/index.js';
+import type { SignInData } from '../../types/index.js';
 import { createSessionData } from '../core/session.js';
 import type { StoreOptions } from '../types.js';
 
@@ -227,7 +226,7 @@ export function createEmailAuthStore(options: StoreOptions) {
 
         console.log('🔗 Sending magic link:', { email });
 
-        const response = await api.signInWithMagicLink({ email });
+        const _response = await api.signInWithMagicLink({ email });
 
         set({
           isSendingMagicLink: false,
@@ -339,7 +338,7 @@ export function createEmailAuthStore(options: StoreOptions) {
  * Helper functions for PIN validation (extracted from original auth-store)
  */
 function checkForValidPin(userCheck: any): boolean {
-  if (!userCheck || !userCheck.lastPin?.expiresAt) return false;
+  if (!userCheck?.lastPin?.expiresAt) return false;
 
   try {
     const expiryTime = new Date(userCheck.lastPin.expiresAt);
@@ -352,7 +351,7 @@ function checkForValidPin(userCheck: any): boolean {
 }
 
 function getRemainingPinMinutes(userCheck: any): number {
-  if (!userCheck || !userCheck.lastPin?.expiresAt) return 0;
+  if (!userCheck?.lastPin?.expiresAt) return 0;
 
   try {
     const expiryTime = new Date(userCheck.lastPin.expiresAt);

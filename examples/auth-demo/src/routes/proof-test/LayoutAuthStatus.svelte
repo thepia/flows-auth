@@ -6,9 +6,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { getAuthStoreFromContext } from '@thepia/flows-auth';
 
-  let authState = null;
+  let authState = $state(null);
   let storeId = Math.random().toString(36).substring(2, 11);
-  let authStore = null;
+  let authStore = $state(null);
   let authError = null;
   let unsubscribe = null;
 
@@ -66,8 +66,8 @@
     </div>
     
     <div class="test-actions">
-      <button on:click={testSignIn} class="btn-test">Test Sign In</button>
-      <button on:click={testSignOut} class="btn-test">Test Sign Out</button>
+      <button onclick={testSignIn} class="btn-test">Test Sign In</button>
+      <button onclick={testSignOut} class="btn-test">Test Sign Out</button>
     </div>
   {:else}
     <p class="error">❌ No auth store received</p>

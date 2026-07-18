@@ -4,18 +4,23 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
-  statSync,
   writeFileSync
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import sveltePreprocess from 'svelte-preprocess';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import { preprocessSvelteSource } from './scripts/preprocess-svelte';
 
-// Helper function to recursively copy directory
-function copyDirRecursive(src: string, dest: string) {
+// preprocessSvelteSource (imported above) strips TS + lang="ts" from .svelte on
+// the way to dist/src so consumers can compile the shipped source without their
+// own preprocessor. Shared with the dist/src sync test.
+
+// Helper function to recursively copy directory (async: .svelte files are
+// preprocessed on the way out — see preprocessSvelteSource).
+async function copyDirRecursive(src: string, dest: string) {
   if (!existsSync(src)) return;
 
   if (!existsSync(dest)) {
@@ -34,7 +39,16 @@ function copyDirRecursive(src: string, dest: string) {
     }
 
     if (entry.isDirectory()) {
-      copyDirRecursive(srcPath, destPath);
+      await copyDirRecursive(srcPath, destPath);
+    } else if (entry.name.endsWith('.svelte')) {
+      // Ship a TS-free, consumer-compilable component.
+      const out = await preprocessSvelteSource(readFileSync(srcPath, 'utf8'), srcPath);
+      // Skip the write if unchanged (compare against the *preprocessed* result),
+      // so `build:watch` doesn't churn mtimes and flood consumer file watchers.
+      if (existsSync(destPath) && readFileSync(destPath, 'utf8') === out) {
+        continue;
+      }
+      writeFileSync(destPath, out, 'utf8');
     } else {
       // Skip the write if content is unchanged, so `build:watch` doesn't
       // touch every file's mtime on every rebuild — that floods consumers'
@@ -90,14 +104,14 @@ function fixDtsImports() {
 function copySourceFiles() {
   return {
     name: 'copy-source-files',
-    writeBundle() {
+    async writeBundle() {
       const srcDir = resolve(__dirname, 'src');
       const distSrcDir = resolve(__dirname, 'dist/src');
 
-      console.log('📦 Copying source files to dist/src for source imports...');
+      console.log('📦 Copying source files to dist/src (preprocessing .svelte to strip TS)...');
 
       // Copy entire src directory to dist/src
-      copyDirRecursive(srcDir, distSrcDir);
+      await copyDirRecursive(srcDir, distSrcDir);
 
       console.log('✅ Copied all source files to dist/src');
 
@@ -106,7 +120,7 @@ function copySourceFiles() {
       const paraglideDistRoot = resolve(__dirname, 'dist/paraglide');
 
       if (existsSync(paraglideSrc)) {
-        copyDirRecursive(paraglideSrc, paraglideDistRoot);
+        await copyDirRecursive(paraglideSrc, paraglideDistRoot);
         console.log('✅ Copied Paraglide files to dist/paraglide');
       }
     }

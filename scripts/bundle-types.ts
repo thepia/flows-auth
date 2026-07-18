@@ -9,7 +9,7 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 const srcTypesDir = resolve(__dirname, '../src/types');
 const distDir = resolve(__dirname, '../dist');

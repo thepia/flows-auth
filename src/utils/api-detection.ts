@@ -120,7 +120,7 @@ export async function detectApiServer(
         serverInfo
       };
     }
-  } catch (error) {
+  } catch (_error) {
     console.log('ℹ️ Local API server not available, using production');
   }
 

@@ -6,7 +6,7 @@
  */
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { extname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 const srcTypesDir = resolve(__dirname, '../src/types');
 const distDir = resolve(__dirname, '../dist');
@@ -15,7 +15,7 @@ const outputFile = resolve(distDir, 'types.ts');
 mkdirSync(distDir, { recursive: true });
 
 // Read all .ts files from src/types and extract only type definitions
-function extractTypeDefinitions(dir: string, visited = new Set<string>()): string[] {
+function _extractTypeDefinitions(dir: string, visited = new Set<string>()): string[] {
   const definitions: string[] = [];
   const files = readdirSync(dir);
 

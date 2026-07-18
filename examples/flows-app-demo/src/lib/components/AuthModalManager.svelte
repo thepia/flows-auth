@@ -16,10 +16,10 @@
     });
   }
 
-  let isModalOpen = false;
-  let isSwitchUser = false;
-  let currentScenario: DevScenario;
-  let authConfig: any = null;
+  let isModalOpen = $state(false);
+  let isSwitchUser = $state(false);
+  let currentScenario: DevScenario = $state();
+  let authConfig: any = $state(null);
   let unsubscribe: (() => void) | null = null;
 
   onMount(() => {
@@ -162,8 +162,8 @@
   <!-- Modal Backdrop -->
   <div 
     class="modal-backdrop"
-    on:click={handleBackdropClick}
-    on:keydown={handleKeydown}
+    onclick={handleBackdropClick}
+    onkeydown={handleKeydown}
     role="button"
     aria-label="Close dialog"
     tabindex="-1"
@@ -189,7 +189,7 @@
         
         <button 
           class="modal-close"
-          on:click={handleCloseModal}
+          onclick={handleCloseModal}
           aria-label="Close dialog"
           type="button"
         >

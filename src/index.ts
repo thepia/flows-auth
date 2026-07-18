@@ -36,7 +36,6 @@ export type { IconProps, IconSize, IconVariant, IconWeight } from './components/
 
 // State Machine
 
-export { createNativeAppSessionAdapter, isThepiaApp } from './stores/index.js';
 // Svelte Adapter
 export { makeSvelteCompatible } from './stores/adapters/svelte.js';
 // New Modular Stores (Zustand-based)
@@ -44,15 +43,16 @@ export {
   type ComposedAuthStore,
   createAuthStore
 } from './stores/auth-store.js';
-// Types
-export type * from './types/index.js';
-export type { SignInData, StorageConfig } from './types/index.js';
+export { createNativeAppSessionAdapter, isThepiaApp } from './stores/index.js';
 // Enhanced auth store interface types
 export type {
   AuthFlowResult,
   EnhancedUserCheck,
   InvitationAuthOptions
 } from './types/enhanced-auth.js';
+// Types
+export type * from './types/index.js';
+export type { SignInData, StorageConfig } from './types/index.js';
 // Metadata Schema (unified for Auth0 and WorkOS)
 export {
   getFieldCount,

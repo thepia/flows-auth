@@ -219,7 +219,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
       }
     },
 
-    async getUser(userId?: string): Promise<UserData | null> {
+    async getUser(_userId?: string): Promise<UserData | null> {
       if (typeof window === 'undefined') return null;
 
       try {
@@ -241,7 +241,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
       }
     },
 
-    async clearUser(userId?: string): Promise<void> {
+    async clearUser(_userId?: string): Promise<void> {
       if (typeof window === 'undefined') return;
 
       try {

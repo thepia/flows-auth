@@ -35,7 +35,10 @@ export class ClientRateLimiter {
   /**
    * Execute a request with intelligent rate limiting
    */
-  async executeRequest<T>(requestFn: () => Promise<Response>, endpoint: string): Promise<Response> {
+  async executeRequest<_T>(
+    requestFn: () => Promise<Response>,
+    endpoint: string
+  ): Promise<Response> {
     // Check server-imposed backoff first
     if (this.config.respectServerHeaders) {
       await this.handleServerBackoff(endpoint);
@@ -113,9 +116,9 @@ export class ClientRateLimiter {
       const rateLimitReset = response.headers.get('X-RateLimit-Reset');
 
       if (retryAfter) {
-        waitTime = Number.parseInt(retryAfter) * 1000;
+        waitTime = Number.parseInt(retryAfter, 10) * 1000;
       } else if (rateLimitReset) {
-        waitTime = Math.max(0, Number.parseInt(rateLimitReset) * 1000 - Date.now());
+        waitTime = Math.max(0, Number.parseInt(rateLimitReset, 10) * 1000 - Date.now());
       }
 
       this.backoffState.set(endpoint, {

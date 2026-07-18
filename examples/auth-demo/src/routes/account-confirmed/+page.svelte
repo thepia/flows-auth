@@ -1,20 +1,22 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { browser } from '$app/environment';
 import { page } from '$app/stores';
 import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
 
 let authStore: any = null;
-let loading: boolean = true;
-let error: string | null = null;
-let success: boolean = false;
-let redirectUrl: string = '/';
+let loading: boolean = $state(true);
+let error: string | null = $state(null);
+let success: boolean = $state(false);
+let redirectUrl: string = $state('/');
 let tokenData: {
   token: string;
   email: string;
   userId: string;
   fullToken: string;
-} | null = null;
+} | null = $state(null);
 
 // Development domain mapping for local redirects
 const PRODUCTION_TO_LOCAL_MAPPING = {
@@ -158,9 +160,11 @@ onMount(async () => {
 });
 
 // Reactive statement to log page changes
-$: if ($page.url && browser) {
-  console.log('📍 Page URL changed:', $page.url.href);
-}
+run(() => {
+    if ($page.url && browser) {
+    console.log('📍 Page URL changed:', $page.url.href);
+  }
+  });
 </script>
 
 <div class="confirmation-container">
@@ -226,7 +230,7 @@ $: if ($page.url && browser) {
               {/if}
             </div>
             <div class="redirect-actions">
-              <button class="btn btn-primary" on:click={() => {
+              <button class="btn btn-primary" onclick={() => {
                 if (redirectUrl.startsWith('http')) {
                   window.location.href = redirectUrl;
                 } else {
@@ -235,7 +239,7 @@ $: if ($page.url && browser) {
               }}>
                 Go Now
               </button>
-              <button class="btn btn-outline" on:click={() => goto('/')}>
+              <button class="btn btn-outline" onclick={() => goto('/')}>
                 Stay Here
               </button>
             </div>
@@ -250,7 +254,7 @@ $: if ($page.url && browser) {
             Please check that your email link is complete and try again. If the problem persists, 
             request a new authentication email.
           </p>
-          <button class="btn btn-primary" on:click={() => goto('/')}>
+          <button class="btn btn-primary" onclick={() => goto('/')}>
             Return to Main Page
           </button>
         </div>

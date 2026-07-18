@@ -2,9 +2,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { fetchInterceptor } from '../utils/fetch-interceptor.js';
   
-  let isOpen = false;
+  let isOpen = $state(false);
   let isInstalled = false;
-  let activeMappings = [];
+  let activeMappings = $state([]);
   
   const errorTypes = [
     {
@@ -129,14 +129,14 @@
   }
 </script>
 
-<svelte:window on:click={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="error-test-menu">
   <button 
     class="menu-trigger"
     class:active={isOpen}
     class:has-errors={activeMappings.length > 0}
-    on:click={toggleMenu}
+    onclick={toggleMenu}
     title="Network Error Testing - {activeMappings.length} active error{activeMappings.length === 1 ? '' : 's'}"
   >
     🧪 Test Errors
@@ -168,7 +168,7 @@
         {#each errorTypes as errorType}
           <button 
             class="menu-item"
-            on:click={() => triggerError(errorType.id)}
+            onclick={() => triggerError(errorType.id)}
           >
             <span class="menu-icon">{errorType.icon}</span>
             <div class="menu-content">
@@ -185,7 +185,7 @@
         
         <button 
           class="menu-item clear-item"
-          on:click={() => triggerError('clear')}
+          onclick={() => triggerError('clear')}
           disabled={activeMappings.length === 0}
         >
           <span class="menu-icon">✨</span>

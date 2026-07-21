@@ -94,12 +94,16 @@
   },
   "homepage": "https://github.com/thepia/flows-auth#readme",
   "peerDependencies": {
+    "@thepia/branding": "^1.5.5",
     "@xyflow/svelte": "0.1.30",
     "d3": "^7.0.0",
     "phosphor-svelte": "^2.0.0 || ^3.0.0",
     "svelte": "^5.0.0"
   },
   "peerDependenciesMeta": {
+    "@thepia/branding": {
+      "optional": true
+    },
     "svelte": {
       "optional": true
     },

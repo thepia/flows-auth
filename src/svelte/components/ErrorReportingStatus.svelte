@@ -346,119 +346,129 @@
 </div>
 
 <style>
+	/* Shadow-DOM encapsulation: this widget must render identically whether
+	   mounted in the light DOM or inside a shadow root, so it can't rely on
+	   the host page's reset/typography (a shadow root gets none of that).
+	   Everything the component needs is set explicitly in this scope. */
+	:where(.error-reporting-status, .error-reporting-status *) {
+		box-sizing: border-box;
+	}
+
 	.error-reporting-status {
 		position: fixed;
-		bottom: 1rem;
-		right: 1rem;
-		background: white;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
+		bottom: var(--size-space-4, 1rem);
+		right: var(--size-space-4, 1rem);
+		background: var(--color-surface-raised, white);
+		border: 1px solid var(--color-border-subtle, #e9ecef);
+		border-radius: var(--size-radius-4, 8px);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		font-family: var(--font-fontFamily-brand-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 		font-size: 0.8rem;
+		line-height: var(--size-line-normal, 1.5);
 		z-index: 1000;
 		min-width: 120px;
 		max-width: 300px;
 	}
-	
+
 	.status-indicator {
-		padding: 0.5rem 0.75rem;
+		padding: var(--size-space-2, 0.5rem) var(--size-space-3, 0.75rem);
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--size-space-2, 0.5rem);
 		cursor: pointer;
 		transition: background-color 0.2s;
 	}
-	
+
 	.status-indicator:hover {
-		background: #f8f9fa;
+		background: var(--color-bg-primary-hover, #f8f9fa);
 	}
-	
+
 	.status-indicator.disabled {
-		color: #6c757d;
+		color: var(--color-disabled-text, #6c757d);
 		opacity: 0.7;
 	}
-	
+
 	.status-indicator.pending {
-		color: #ffc107;
+		color: var(--color-text-warning, #ffc107);
 	}
-	
+
 	.status-indicator.active {
-		color: #28a745;
+		color: var(--color-text-accent, #28a745);
 	}
-	
+
 	.status-icon {
 		font-size: 0.9rem;
 	}
-	
+
 	.status-text {
-		font-weight: 500;
+		font-weight: var(--font-weight-medium, 500);
 	}
-	
+
 	.status-details {
-		padding: 0.75rem;
-		border-top: 1px solid #f1f3f4;
-		background: #f8f9fa;
+		padding: var(--size-space-3, 0.75rem);
+		border-top: 1px solid var(--color-border-subtle, #f1f3f4);
+		background: var(--color-bg-muted, #f8f9fa);
 		max-height: 400px;
 		overflow-y: auto;
 	}
-	
+
 	.detail-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--size-space-2, 0.5rem);
 	}
-	
+
 	.detail-row:last-child {
 		margin-bottom: 0;
 	}
-	
+
 	.detail-label {
-		color: #6c757d;
-		font-weight: 500;
+		color: var(--color-text-secondary, #6c757d);
+		font-weight: var(--font-weight-medium, 500);
 	}
-	
+
 	.detail-value {
-		color: #333;
+		color: var(--color-text-primary, #333);
 		text-align: right;
 		max-width: 60%;
 		word-break: break-all;
 	}
-	
+
 	.detail-value.endpoint {
 		font-size: 0.7rem;
-		font-family: monospace;
+		font-family: var(--font-fontFamily-brand-mono, monospace);
 	}
 
 	.detail-value.success {
-		color: #28a745;
-		font-weight: 500;
+		color: var(--color-text-success, #28a745);
+		font-weight: var(--font-weight-medium, 500);
 	}
 
 	.detail-value.error {
-		color: #dc3545;
-		font-weight: 500;
+		color: var(--color-text-error, #dc3545);
+		font-weight: var(--font-weight-medium, 500);
 	}
 
 	.detail-value.warning {
-		color: #ffc107;
-		font-weight: 500;
+		color: var(--color-text-warning, #ffc107);
+		font-weight: var(--font-weight-medium, 500);
 	}
 
 	.detail-value.auth-state {
-		font-family: monospace;
-		font-size: 0.75rem;
+		font-family: var(--font-fontFamily-brand-mono, monospace);
+		font-size: var(--size-font-xs, 0.75rem);
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 	}
 
 	.section-divider {
-		font-weight: 600;
-		color: #495057;
-		margin: 0.75rem 0 0.5rem 0;
-		padding-bottom: 0.25rem;
-		border-bottom: 1px solid #dee2e6;
-		font-size: 0.75rem;
+		font-weight: var(--font-weight-semibold, 600);
+		color: var(--color-text-secondary, #495057);
+		margin: var(--size-space-3, 0.75rem) 0 var(--size-space-2, 0.5rem) 0;
+		padding-bottom: var(--size-space-1, 0.25rem);
+		border-bottom: 1px solid var(--color-border-default, #dee2e6);
+		font-size: var(--size-font-xs, 0.75rem);
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
 	}
@@ -466,84 +476,90 @@
 	.test-actions {
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
-		gap: 0.25rem;
-		margin-bottom: 0.75rem;
+		gap: var(--size-space-1, 0.25rem);
+		margin-bottom: var(--size-space-3, 0.75rem);
 	}
 
 	.test-btn {
-		padding: 0.25rem 0.5rem;
-		border: 1px solid #dee2e6;
-		background: white;
-		border-radius: 4px;
+		padding: var(--size-space-1, 0.25rem) var(--size-space-2, 0.5rem);
+		border: 1px solid var(--color-border-default, #dee2e6);
+		background: var(--color-bg-primary, white);
+		border-radius: var(--size-radius-2, 4px);
+		font-family: inherit;
 		font-size: 0.7rem;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
 
 	.test-btn:hover {
-		background: #f8f9fa;
+		background: var(--color-bg-primary-hover, #f8f9fa);
 	}
 
 	.test-btn.auth {
-		border-color: #28a745;
-		color: #28a745;
+		border-color: var(--color-border-success, #28a745);
+		color: var(--color-text-success, #28a745);
 	}
 
 	.test-btn.webauthn {
-		border-color: #ffc107;
-		color: #856404;
+		border-color: var(--color-border-warning, #ffc107);
+		color: var(--color-text-warning, #856404);
 	}
 
 	.test-btn.api {
-		border-color: #dc3545;
-		color: #dc3545;
+		border-color: var(--color-border-error, #dc3545);
+		color: var(--color-text-error, #dc3545);
 	}
-	
+
 	.actions {
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid #dee2e6;
+		margin-top: var(--size-space-3, 0.75rem);
+		padding-top: var(--size-space-3, 0.75rem);
+		border-top: 1px solid var(--color-border-default, #dee2e6);
 	}
-	
+
 	.flush-btn {
 		width: 100%;
-		padding: 0.5rem;
-		background: #007bff;
-		color: white;
+		padding: var(--size-space-2, 0.5rem);
+		background: var(--color-brand-primary, #007bff);
+		color: var(--color-text-inverse, white);
 		border: none;
-		border-radius: 4px;
+		border-radius: var(--size-radius-2, 4px);
+		font-family: inherit;
 		font-size: 0.8rem;
 		cursor: pointer;
 		transition: background-color 0.2s;
 	}
-	
+
 	.flush-btn:hover:not(:disabled) {
-		background: #0056b3;
+		background: var(--color-brand-primaryHover, #0056b3);
 	}
-	
+
 	.flush-btn:disabled {
+		/* No branding token models a muted-but-still-white-text button: the
+		   design system's disabled-bg tokens are meant to pair with
+		   --color-disabled-text (dark-on-light), not white text. Reusing one
+		   here would break contrast, so this stays a literal. */
 		background: #6c757d;
 		cursor: not-allowed;
 	}
-	
+
 	@media (max-width: 768px) {
 		.error-reporting-status {
-			bottom: 0.5rem;
-			right: 0.5rem;
+			bottom: var(--size-space-2, 0.5rem);
+			right: var(--size-space-2, 0.5rem);
 			min-width: 100px;
 			max-width: 250px;
 		}
-		
+
 		.status-indicator {
 			padding: 0.4rem 0.6rem;
 		}
-		
+
 		.status-details {
-			padding: 0.5rem;
+			padding: var(--size-space-2, 0.5rem);
 		}
-		
+
 		.detail-value {
-			font-size: 0.75rem;
+			font-size: var(--size-font-xs, 0.75rem);
 		}
 
 		.test-actions {

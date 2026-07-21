@@ -1,3 +1,6 @@
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";
+
 /* Reset and base styles */
 *,
 *::before,

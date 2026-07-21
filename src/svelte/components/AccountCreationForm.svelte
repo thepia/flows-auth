@@ -55,8 +55,11 @@ const dispatch = createEventDispatcher<{
   switchToSignIn: Record<string, never>;
 }>();
 
-  // Auth store - use prop or fallback to context
-  const authStore = store || getAuthStoreFromContext();
+  // Auth store - use prop or fallback to context. The mount-time check below only ever
+  // runs once (component init isn't reactive) — that's intentional, a missing store should
+  // fail fast at mount rather than reactively un-throw later. The $derived still keeps
+  // `store={authStore}` reactive further down in the template.
+  let authStore = $derived.by(() => store || getAuthStoreFromContext());
 
   if (!authStore) {
     throw new Error('AccountCreationForm requires store prop or auth store in context');
@@ -476,7 +479,7 @@ const dispatch = createEventDispatcher<{
     max-width: 500px;
     width: 100%;
     margin: 0 auto;
-    font-family: var(--font-fontFamily-brand-body, var(--auth-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif));
+    font-family: var(--font-fontFamily-brand-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   }
 
   :global(.registration-form.compact) {
@@ -518,7 +521,7 @@ const dispatch = createEventDispatcher<{
     top: 0;
     background: none;
     border: none;
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
     cursor: pointer;
     padding: 8px;
     border-radius: 4px;
@@ -527,7 +530,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.back-button:hover) {
-    background: var(--color-brand-primarySubtle, var(--auth-primary-light, #EBE7F8));
+    background: var(--color-brand-primarySubtle, #EBE7F8);
   }
 
   :global(.step-title) {
@@ -601,7 +604,7 @@ const dispatch = createEventDispatcher<{
 
   .form-field input:focus {
     outline: none;
-    border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    border-color: var(--color-brand-primary, #988ACA);
     box-shadow: 0 0 0 3px rgba(152, 138, 202, 0.1);
   }
 
@@ -634,11 +637,11 @@ const dispatch = createEventDispatcher<{
     margin-top: 2px;
     width: 16px;
     height: 16px;
-    accent-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    accent-color: var(--color-brand-primary, #988ACA);
   }
 
   :global(.checkbox-label a) {
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
     text-decoration: none;
   }
 
@@ -648,7 +651,7 @@ const dispatch = createEventDispatcher<{
 
   :global(.submit-button) {
     width: 100%;
-    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    background: var(--color-brand-primary, #988ACA);
     color: white;
     border: none;
     padding: 16px;
@@ -665,7 +668,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.submit-button:hover:not(:disabled)) {
-    background: var(--auth-primary-dark, #654CA3);
+    background: var(--color-brand-primaryActive, #654CA3);
     transform: translateY(-1px);
   }
 
@@ -706,7 +709,7 @@ const dispatch = createEventDispatcher<{
   :global(.link-button) {
     background: none;
     border: none;
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
     cursor: pointer;
     text-decoration: underline;
     font: inherit;
@@ -714,7 +717,7 @@ const dispatch = createEventDispatcher<{
   }
 
   :global(.link-button:hover) {
-    color: var(--auth-primary-dark, #654CA3);
+    color: var(--color-brand-primaryActive, #654CA3);
   }
 
   /* Mobile responsive for registration form */
@@ -733,55 +736,6 @@ const dispatch = createEventDispatcher<{
   @media (max-width: 480px) {
     :global(.webauthn-register-step) {
       padding: 24px 16px;
-    }
-  }
-
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    :global(.auth-container) {
-      background: #2d3748;
-      box-shadow: 
-        0 20px 25px -5px rgba(0, 0, 0, 0.4),
-        0 10px 10px -5px rgba(0, 0, 0, 0.2);
-    }
-
-    :global(.step-title) {
-      color: #f7fafc;
-    }
-
-    :global(.step-description) {
-      color: #a0aec0;
-    }
-
-    :global(.warning-banner) {
-      background: #78350f;
-      color: #fed7aa;
-    }
-
-    :global(.form-field label) {
-      color: #e2e8f0;
-    }
-
-    :global(.form-field input) {
-      background: #374151;
-      border-color: #4a5568;
-      color: #f7fafc;
-    }
-
-    :global(.form-field input:focus) {
-      border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
-    }
-
-    :global(.form-field input.readonly) {
-      background: #1f2937;
-    }
-
-    :global(.checkbox-label) {
-      color: #e2e8f0;
-    }
-
-    :global(.form-footer) {
-      color: #a0aec0;
     }
   }
 
@@ -809,7 +763,7 @@ const dispatch = createEventDispatcher<{
   .email-input:focus,
   .name-input:focus {
     outline: none;
-    border-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    border-color: var(--color-brand-primary, #988ACA);
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
   }
 
@@ -847,11 +801,11 @@ const dispatch = createEventDispatcher<{
     margin: 0;
     width: 18px;
     height: 18px;
-    accent-color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    accent-color: var(--color-brand-primary, #988ACA);
   }
 
   .checkbox-label a {
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
     text-decoration: none;
   }
 
@@ -864,7 +818,7 @@ const dispatch = createEventDispatcher<{
   .register-button {
     width: 100%;
     padding: 12px 16px;
-    background: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    background: var(--color-brand-primary, #988ACA);
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -882,7 +836,7 @@ const dispatch = createEventDispatcher<{
 
   .continue-button:hover:not(:disabled),
   .register-button:hover:not(:disabled) {
-    background: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
+    background: var(--color-brand-primaryHover, #7B6BB7);
     transform: translateY(-1px);
   }
 
@@ -964,7 +918,7 @@ const dispatch = createEventDispatcher<{
   }
 
   .powered-by strong {
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
   }
 
   /* New styles for enhanced features */
@@ -1040,7 +994,7 @@ const dispatch = createEventDispatcher<{
   .link-button {
     background: none;
     border: none;
-    color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
+    color: var(--color-brand-primary, #988ACA);
     cursor: pointer;
     text-decoration: underline;
     font-size: inherit;
@@ -1050,7 +1004,7 @@ const dispatch = createEventDispatcher<{
   }
 
   .link-button:hover {
-    color: var(--color-brand-primaryHover, var(--auth-primary-hover, #7B6BB7));
+    color: var(--color-brand-primaryHover, #7B6BB7);
   }
 
   /* Mobile responsive */

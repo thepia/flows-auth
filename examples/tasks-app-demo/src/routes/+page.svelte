@@ -1,5 +1,10 @@
 <script lang="ts">
-import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
+import {
+  EmailVerificationBanner,
+  EmailVerificationPrompt,
+  SignInForm,
+  getAuthStoreFromContext
+} from '@thepia/flows-auth/svelte';
 import type { SvelteAuthStore } from '@thepia/flows-auth';
 import type { User } from '@thepia/flows-auth';
 import { getPendingTasks, getUnreadNotifications, mockTasks } from '../lib/stores/mockData.js';
@@ -200,10 +205,11 @@ function handleViewDetails(task) {
 	{:else}
 		<!-- Email Verification Banner -->
 		{#if showVerificationBanner && isUnconfirmed}
-			<!-- TODO: Re-enable when EmailVerificationBanner import is fixed -->
-			<div class="verification-banner">
-				<p>Please verify your email: {currentUser?.email || ''}</p>
-			</div>
+			<EmailVerificationBanner
+				email={currentUser?.email ?? ''}
+				onDismiss={handleVerificationBannerDismiss}
+				onResend={handleResendVerificationEmail}
+			/>
 		{/if}
 
 		<!-- Main Dashboard -->
@@ -330,11 +336,12 @@ function handleViewDetails(task) {
 
 <!-- Email Verification Prompt -->
 {#if showVerificationPrompt && isUnconfirmed}
-	<!-- TODO: Re-enable when EmailVerificationPrompt import is fixed -->
-	<div class="verification-prompt">
-		<p>Verify your email ({currentUser?.email || ''}) to access advanced task features</p>
-		<button onclick={handleVerificationPromptDismiss}>Dismiss</button>
-	</div>
+	<EmailVerificationPrompt
+		email={currentUser?.email ?? ''}
+		featureName="advanced task features"
+		onDismiss={handleVerificationPromptDismiss}
+		onResend={handleResendVerificationEmail}
+	/>
 {/if}
 
 <style>

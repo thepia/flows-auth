@@ -125,7 +125,7 @@ run(() => {
     padding: 8px 0 0 0;
     font-size: 14px;
     line-height: 1.5;
-    color: var(--color-text-primary, var(--auth-text, currentColor));
+    color: var(--color-text-primary, currentColor);
   }
 
   .auth-message.animate {
@@ -161,19 +161,19 @@ run(() => {
 
   /* Message types - clean styling, no default backgrounds/borders */
   .type-error {
-    color: var(--color-text-error, var(--auth-error-text, #dc2626));
+    color: var(--color-text-error, #dc2626);
   }
 
   .type-success {
-    color: var(--color-text-success, var(--auth-success-text, #059669));
+    color: var(--color-text-success, #059669);
   }
 
   .type-info {
-    color: var(--color-text-info, var(--auth-info-text, #0369a1));
+    color: var(--color-text-info, #0369a1);
   }
 
   .type-warning {
-    color: var(--color-text-warning, var(--auth-warning-text, #d97706));
+    color: var(--color-text-warning, #d97706);
   }
 
   /* Pin status variant - matches SignInCore pin-status-message styling */
@@ -212,36 +212,4 @@ run(() => {
     text-decoration: none;
   }
 
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .type-error {
-      color: var(--auth-error-text-dark, #f87171);
-    }
-
-    .type-success {
-      color: var(--auth-success-text-dark, #34d399);
-    }
-
-    .type-info {
-      color: var(--auth-info-text-dark, #60a5fa);
-    }
-
-    .type-warning {
-      color: var(--auth-warning-text-dark, #fbbf24);
-    }
-
-    .variant-pin-status {
-      background: #0c1821;
-      border-color: #1e3a8a;
-      color: #60a5fa;
-    }
-
-    .variant-pin-status :global(.pin-direct-link) {
-      color: #60a5fa;
-    }
-
-    .variant-pin-status :global(.pin-direct-link:hover:not(:disabled)) {
-      color: #93c5fd;
-    }
-  }
 </style>

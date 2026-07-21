@@ -30,8 +30,6 @@ let authConfig = $state(null);
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = $state(null);
 let SignInStateMachineComponent = $state(null);
-let SignInFormComponent = null;
-let SignInCoreComponent = null;
 
 // Demo controls
 let selectedDemo = 'overview';
@@ -164,10 +162,6 @@ onMount(async () => {
   console.log('🎯 Demo page initializing...');
   
   try {
-    // Import main components from main package
-    const authModule = await import('@thepia/flows-auth');
-    const { SignInForm, SignInCore } = authModule;
-
     // Import Flow components from dev export (avoids @xyflow/svelte in main bundle)
     const devModule = await import('@thepia/flows-auth/dev');
     const { SessionStateMachineFlow, SignInStateMachineFlow } = devModule;
@@ -175,10 +169,8 @@ onMount(async () => {
     // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
-    SignInFormComponent = SignInForm;
-    SignInCoreComponent = SignInCore;
 
-    console.log('✅ Auth components loaded dynamically');
+    console.log('✅ Flow visualization components loaded dynamically');
     
     // Use auth store passed from layout (explicit prop passing pattern per ADR 0004)
     if (authStore) {

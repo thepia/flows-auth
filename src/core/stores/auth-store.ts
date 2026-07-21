@@ -19,6 +19,7 @@ import type {
   SignInData,
   StorageConfigurationUpdate
 } from '../types/index.js';
+import { configureSessionStorage } from '../utils/sessionManager.js';
 // Telemetry
 import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry.js';
 // Feature stores
@@ -829,8 +830,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           migrateExistingSession: update.migrateExistingSession
         };
 
-        // Import storage manager for dynamic configuration
-        const { configureSessionStorage } = await import('../utils/sessionManager.js');
         configureSessionStorage(newStorageConfig);
 
         console.log('✅ Storage configuration updated successfully');

@@ -141,7 +141,7 @@ let displayLabel = $derived(getDisplayText(label || 'email.label'));
 
 <style>
   label {
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
   }
 </style>
 

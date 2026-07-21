@@ -156,7 +156,7 @@ pnpm add @thepia/flows-auth
   <button on:click={() => authStore.signOut()}>Sign Out</button>
 {:else}
   <SignInForm 
-    {authStore}
+    store={authStore}
     on:success={handleAuthSuccess}
     on:error={handleAuthError}
   />

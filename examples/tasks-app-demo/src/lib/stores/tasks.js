@@ -4,6 +4,7 @@
 
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
+import { reportSyncError, reportTaskError } from '../config/errorReporting.js';
 
 // Task type definition for documentation
 // Task: { uid, title, description?, completed, createdAt, updatedAt, syncStatus }
@@ -63,7 +64,6 @@ class TasksManager {
       tasks.set(taskList);
     } catch (error) {
       console.error('[Tasks] Failed to load tasks:', error);
-      const { reportTaskError } = await import('../config/errorReporting.js');
       await reportTaskError('tasks.load', error, { context: 'TasksManager.loadTasks' });
     }
   }
@@ -107,7 +107,6 @@ class TasksManager {
       return task;
     } catch (error) {
       console.error('[Tasks] Failed to add task:', error);
-      const { reportTaskError } = await import('../config/errorReporting.js');
       await reportTaskError('tasks.add', error, {
         context: 'TasksManager.addTask',
         taskTitle: title
@@ -150,7 +149,6 @@ class TasksManager {
       await this.requestSync();
     } catch (error) {
       console.error('[Tasks] Failed to update task:', error);
-      const { reportTaskError } = await import('../config/errorReporting.js');
       await reportTaskError('tasks.update', error, {
         context: 'TasksManager.updateTask',
         taskUid: uid,
@@ -174,7 +172,6 @@ class TasksManager {
       await this.requestSync();
     } catch (error) {
       console.error('[Tasks] Failed to delete task:', error);
-      const { reportTaskError } = await import('../config/errorReporting.js');
       await reportTaskError('tasks.delete', error, {
         context: 'TasksManager.deleteTask',
         taskUid: uid
@@ -205,7 +202,6 @@ class TasksManager {
       this.updateSyncStatus();
     } catch (error) {
       console.error('[Tasks] Sync request failed:', error);
-      const { reportSyncError } = await import('../config/errorReporting.js');
       await reportSyncError('sync.request', error, {
         context: 'TasksManager.requestSync'
       });
@@ -227,7 +223,6 @@ class TasksManager {
       }));
     } catch (error) {
       console.error('[Tasks] Failed to update sync status:', error);
-      const { reportSyncError } = await import('../config/errorReporting.js');
       await reportSyncError('sync.status', error, {
         context: 'TasksManager.updateSyncStatus'
       });
@@ -254,8 +249,7 @@ class TasksManager {
 
       window.addEventListener('flows-auth:sync-error', async (event) => {
         console.error('[Tasks] Sync error:', event.detail);
-        const { reportSyncError } = await import('../config/errorReporting.js');
-        await reportSyncError('sync.background', event.detail, {
+          await reportSyncError('sync.background', event.detail, {
           context: 'ServiceWorker.syncError',
           eventType: 'flows-auth:sync-error'
         });

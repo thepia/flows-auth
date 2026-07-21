@@ -32,6 +32,10 @@
   }: Props = $props();
 
   // Get auth store from prop or context
+  // NOTE: kept as a plain `const`, not `$derived` — this component reads live state via
+  // the classic `$authStore.xxx` store-auto-subscription sigil, which requires `authStore`
+  // itself to stay a plain store reference; wrapping it in a rune breaks that sigil
+  // (verified via svelte-autofixer).
   const authStore = store || getAuthStoreFromContext();
 
   const dispatch = createEventDispatcher<{
@@ -346,7 +350,7 @@
   }
 
   .policy-viewer-content {
-    background: var(--color-bg-primary, var(--auth-background, #ffffff));
+    background: var(--color-bg-primary, #ffffff);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -361,8 +365,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    border-bottom: 1px solid var(--color-border-default, var(--auth-border-color, #e5e7eb));
-    background: var(--color-bg-primary, var(--auth-background, #ffffff));
+    border-bottom: 1px solid var(--color-border-default, #e5e7eb);
+    background: var(--color-bg-primary, #ffffff);
     flex-shrink: 0;
     gap: 16px;
   }
@@ -382,7 +386,7 @@
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -395,17 +399,17 @@
   }
 
   .policy-tab:hover {
-    color: var(--color-text-primary, var(--auth-text-primary, #111827));
-    background: var(--color-bg-primary-hover, var(--auth-hover-background, #f3f4f6));
+    color: var(--color-text-primary, #111827);
+    background: var(--color-bg-primary-hover, #f3f4f6);
   }
 
   .policy-tab.active {
-    color: var(--color-accent, var(--auth-accent-color, #10b981));
-    border-bottom-color: var(--color-accent, var(--auth-accent-color, #10b981));
+    color: var(--color-accent, #10b981);
+    border-bottom-color: var(--color-accent, #10b981);
   }
 
   .consent-check {
-    color: var(--color-accent, var(--auth-accent-color, #10b981));
+    color: var(--color-accent, #10b981);
   }
 
   .policy-viewer-close {
@@ -413,7 +417,7 @@
     border: none;
     padding: 8px;
     cursor: pointer;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -422,12 +426,12 @@
   }
 
   .policy-viewer-close:hover {
-    background: var(--color-bg-primary-hover, var(--auth-hover-background, #f3f4f6));
-    color: var(--color-text-primary, var(--auth-text-primary, #111827));
+    background: var(--color-bg-primary-hover, #f3f4f6);
+    color: var(--color-text-primary, #111827);
   }
 
   .policy-viewer-close:focus {
-    outline: 2px solid var(--color-accent, var(--auth-accent-color, #10b981));
+    outline: 2px solid var(--color-accent, #10b981);
     outline-offset: 2px;
   }
 
@@ -435,7 +439,7 @@
     flex: 1;
     overflow: auto;
     padding: 0;
-    background: var(--color-bg-primary, var(--auth-background, #ffffff));
+    background: var(--color-bg-primary,  #ffffff);
   }
 
   .policy-iframe {
@@ -451,8 +455,8 @@
     flex-direction: column;
     gap: 12px;
     padding: 20px 24px;
-    border-top: 1px solid var(--color-border-default, var(--auth-border-color, #e5e7eb));
-    background: var(--color-bg-primary, var(--auth-background, #ffffff));
+    border-top: 1px solid var(--color-border-default, #e5e7eb);
+    background: var(--color-bg-primary, #ffffff);
     flex-shrink: 0;
   }
 
@@ -466,7 +470,7 @@
 
   .accept-button {
     padding: 12px 20px;
-    background: var(--color-accent, var(--auth-accent-color, #10b981));
+    background: var(--color-accent, #10b981);
     color: white;
     border: none;
     border-radius: 6px;
@@ -480,7 +484,7 @@
   }
 
   .accept-button:hover:not(:disabled) {
-    background: var(--color-accent-hover, var(--auth-accent-hover, #059669));
+    background: var(--color-accent-hover, #059669);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   }
@@ -495,7 +499,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
   }
 
   /* Responsive */
@@ -562,16 +566,16 @@
   }
 
   .policy-viewer-body::-webkit-scrollbar-track {
-    background: var(--color-bg-primary-hover, var(--auth-hover-background, #f3f4f6));
+    background: var(--color-bg-primary-hover, #f3f4f6);
     border-radius: 4px;
   }
 
   .policy-viewer-body::-webkit-scrollbar-thumb {
-    background: var(--color-text-3, var(--auth-text-tertiary, #9ca3af));
+    background: var(--color-text-3, #9ca3af);
     border-radius: 4px;
   }
 
   .policy-viewer-body::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    background: var(--color-text-secondary, #6b7280);
   }
 </style>

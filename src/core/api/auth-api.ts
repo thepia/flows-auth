@@ -29,6 +29,7 @@ import type {
   GetOnboardingMetadataResponse,
   UpdateOnboardingMetadataRequest
 } from '../types/onboarding.js';
+import { detectApiServer } from '../utils/api-detection.js';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter.js';
 import { reportApiError } from '../utils/telemetry.js';
 import { globalUserCache } from '../utils/user-cache.js';
@@ -58,7 +59,6 @@ export class AuthApiClient {
     if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
       try {
         // Try to use the detection utility if available
-        const { detectApiServer } = await import('../utils/api-detection.js');
         const apiServer = await detectApiServer();
         console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
         return apiServer.url.replace(/\/$/, '');

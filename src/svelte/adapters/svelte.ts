@@ -3,12 +3,10 @@
  * Converts Zustand stores to Svelte readable stores for reactive usage
  */
 
+import type { AuthStore, ComposedAuthStore, SvelteAuthStore } from '@thepia/flows-auth';
 import type { Readable, Writable } from 'svelte/store';
 import { derived, readable, writable } from 'svelte/store';
 import type { StoreApi } from 'zustand';
-import type { AuthStore } from '@thepia/flows-auth';
-import type { SvelteAuthStore } from '@thepia/flows-auth';
-import type { ComposedAuthStore } from '@thepia/flows-auth';
 
 /**
  * Convert a Zustand store to a Svelte readable store

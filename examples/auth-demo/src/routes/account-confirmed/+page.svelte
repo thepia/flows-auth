@@ -5,8 +5,11 @@ import { browser } from '$app/environment';
 import { page } from '$app/stores';
 import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
+import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
-let authStore: any = null;
+// getContext() must run here, synchronously during component init, not inside
+// onMount/async — see ADR 0004 and the same pattern in tasks-app-demo/+page.svelte.
+let authStore: any = getAuthStoreFromContext();
 let loading: boolean = $state(true);
 let error: string | null = $state(null);
 let success: boolean = $state(false);
@@ -80,10 +83,7 @@ onMount(async () => {
   console.log('🔍 URL searchParams:', Object.fromEntries($page.url.searchParams));
   
   try {
-    // Get the global auth store
-    const { getGlobalAuthStore } = await import('@thepia/flows-auth');
-    authStore = getGlobalAuthStore();
-    
+
     // Extract token from URL parameters
     const urlParams = $page.url.searchParams;
     const token = urlParams.get('token') || urlParams.get('access_token') || urlParams.get('auth_token');

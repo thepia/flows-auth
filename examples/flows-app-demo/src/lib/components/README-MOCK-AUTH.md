@@ -41,7 +41,7 @@ For real authentication, always use:
   });
 </script>
 
-<SignInForm {authStore} on:success={handleSuccess} />
+<SignInForm store={authStore} on:success={handleSuccess} />
 ```
 
 ```svelte

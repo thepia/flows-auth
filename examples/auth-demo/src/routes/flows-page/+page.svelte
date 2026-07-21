@@ -1,41 +1,24 @@
 <script>
   import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
   import { getLocale } from '../../paraglide/runtime.js';
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
 
-  let authStore = $state(null);
-  let SignInCore = null;
-  let SignInFormComponent = $state(null);
   let emailInput = '';
 
   // 🔑 Reactive locale tracking for component rerenders
   let currentLocale = $derived(getLocale());
 
-
-  onMount(async () => {
-    if (!browser) return;
-
-    try {
-      const { createAuthStore, SignInCore: SignInCoreComponent } = await import('@thepia/flows-auth');
-const { makeSvelteCompatible, SignInForm } = await import('@thepia/flows-auth/svelte');
-
-      const zustandStore = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
-        domain: 'thepia.net',
-        enablePasskeys: true,
-        enableMagicLinks: false
-      });
-
-      authStore = makeSvelteCompatible(zustandStore);
-
-      SignInCore = SignInCoreComponent;
-      SignInFormComponent = SignInForm;
-
-      console.log('✅ Auth components loaded successfully');
-    } catch (error) {
-      console.error('Failed to load auth:', error);
-    }
-  });
+  const authStore = browser
+    ? makeSvelteCompatible(
+        createAuthStore({
+          apiBaseUrl: 'https://api.thepia.com',
+          domain: 'thepia.net',
+          enablePasskeys: true,
+          enableMagicLinks: false
+        })
+      )
+    : null;
 
   function handleSignInSuccess(detail) {
   console.log('✅ SignInForm Success:', detail);
@@ -596,8 +579,8 @@ function handleStepChange(detail) {
 </main>
 {/if}
 
-            {#if SignInFormComponent && authStore}
-              <SignInFormComponent
+            {#if authStore}
+              <SignInForm
                 store={authStore}
                 initialEmail={emailInput}
                 className="demo-signin-form"

@@ -9,7 +9,13 @@ import type {
   StorageConfigurationUpdate,
   StorageType
 } from '../types/index.js';
-import { clearSession, getSession, isSessionValid, saveSession } from './sessionManager.js';
+import {
+  clearSession,
+  configureSessionStorage,
+  getSession,
+  isSessionValid,
+  saveSession
+} from './sessionManager.js';
 
 /**
  * Session migration class for handling secure data transfers between storage types
@@ -197,7 +203,6 @@ export class SessionMigrator {
     }
 
     // Update storage configuration based on target type
-    const { configureSessionStorage } = await import('./sessionManager.js');
     const newStorageConfig = {
       type: toType,
       userRole: session.user.preferences?.role || 'guest',

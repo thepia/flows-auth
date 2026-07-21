@@ -13,15 +13,6 @@
   import SignInCore from './core/SignInCore.svelte';
   import { m } from '@thepia/flows-auth';
 
-  
-
-  
-
-  
-
-  
-
-  
   interface Props {
     // Auth store prop (preferred)
     store?: SvelteAuthStore | null;
@@ -70,8 +61,11 @@
     close: {}; // New event for popup close
   }>();
 
-  // Auth store - use prop or fallback to context
-  const authStore = store || getAuthStoreFromContext();
+  // Auth store - use prop or fallback to context. The mount-time check below only ever
+  // runs once (component init isn't reactive) — that's intentional, a missing store should
+  // fail fast at mount rather than reactively un-throw later. The $derived still keeps
+  // `store={authStore}` reactive further down in the template.
+  let authStore = $derived.by(() => store || getAuthStoreFromContext());
 
   if (!authStore) {
     throw new Error('SignInForm requires store prop or auth store in context');
@@ -199,7 +193,7 @@
   /* Container and layout styles */
   .auth-form {
     background: white;
-    border: 1px solid var(--color-border-subtle, var(--auth-border-subtle, #e5e7eb));
+    border: 1px solid var(--color-border-subtle, #e5e7eb);
     border-radius: 8px;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -237,7 +231,7 @@
     position: fixed;
     z-index: 1000;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    border-color: var(--color-border-default, var(--auth-border, #d1d5db));
+    border-color: var(--color-border-default, #d1d5db);
     /* Ensure close button is positioned relative to this container */
     /* position: relative is already set on .auth-form, but we need it here too for fixed positioning */
   }
@@ -268,9 +262,9 @@
     top: 12px;
     right: 12px;
     background: white;
-    border: 1px solid var(--color-border-subtle, var(--auth-border-subtle, #e5e7eb));
+    border: 1px solid var(--color-border-subtle, #e5e7eb);
     font-size: 18px;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     cursor: pointer;
     padding: 8px;
     line-height: 1;
@@ -285,8 +279,8 @@
   }
 
   .popup-close:hover {
-    background: var(--color-bg-secondary, var(--auth-background-muted, #f3f4f6));
-    color: var(--color-text-primary, var(--auth-text-primary, #111827));
+    background: var(--color-bg-secondary, #f3f4f6);
+    color: var(--color-text-primary, #111827);
   }
 
   /* Logo styles */
@@ -304,7 +298,7 @@
 
   /* Auth header styles */
   .auth-header {
-    /* font-family: var(--font-fontFamily-brand-body, var(--auth-font-family)); */
+    /* font-family: var(--font-fontFamily-brand-body); */
     padding: 24px 24px 0;
     text-align: center;
   }
@@ -312,14 +306,14 @@
   .auth-title {
     font-size: 24px;
     font-weight: 600;
-    color: var(--color-text-primary, var(--auth-text-primary, #111827));
+    color: var(--color-text-primary, #111827);
     margin: 0 0 8px 0;
     line-height: 1.3;
   }
 
   .auth-description {
     font-size: 16px;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     margin: 0;
     line-height: 1.5;
   }
@@ -348,7 +342,7 @@
   /* Error state */
   .config-error {
     text-align: center;
-    color: var(--color-text-error, var(--auth-error-text, #dc2626));
+    color: var(--color-text-error, #dc2626);
     padding: 20px;
     font-size: 14px;
   }
@@ -365,17 +359,17 @@
     text-align: center;
     margin-top: 16px;
     padding: 12px 0;
-    border-top: 1px solid var(--color-border-subtle, var(--auth-border-subtle, #e5e7eb));
+    border-top: 1px solid var(--color-border-subtle, #e5e7eb);
   }
 
   .powered-by {
     font-size: 12px;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     margin: 0;
   }
 
   .powered-by strong {
-    color: var(--color-text-primary, var(--auth-text-primary, #111827));
+    color: var(--color-text-primary, #111827);
   }
 
   /* Responsive adjustments */

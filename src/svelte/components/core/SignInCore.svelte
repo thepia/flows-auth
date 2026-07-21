@@ -42,6 +42,10 @@ import PolicyViewer from './PolicyViewer.svelte';
 
 // Auth store - use prop or fallback to context
 // If store prop is provided, use it. Otherwise get from context (throws if missing).
+// NOTE: kept as a plain `const`, not `$derived` — this component reads live state via
+// the classic `$authStore.xxx` store-auto-subscription sigil throughout (including in
+// an $effect's dependency list), which requires `authStore` itself to stay a plain
+// store reference; wrapping it in a rune breaks that sigil (verified via svelte-autofixer).
 const authStore = store || getAuthStoreFromContext();
 
 let authConfig = $derived(authStore?.getConfig?.());
@@ -560,7 +564,7 @@ run(() => {
 
   .email-code-message,
   .magic-link-message {
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     margin: 16px 0 24px 0;
     line-height: 1.5;
   }

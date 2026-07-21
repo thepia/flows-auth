@@ -14,6 +14,7 @@ import type { SignInData } from '../../types/index.js';
 import { reportWebAuthnError } from '../../utils/telemetry.js';
 import {
   authenticateWithPasskey,
+  createCredential,
   isConditionalMediationSupported,
   isPlatformAuthenticatorAvailable,
   isWebAuthnSupported,
@@ -231,8 +232,7 @@ export function createPasskeyStore(options: StoreOptions) {
         });
 
         // Create WebAuthn credential using browser API
-        const webauthnUtils = await import('../../utils/webauthn.js');
-        const credential = await webauthnUtils.createCredential(registrationOptions);
+        const credential = await createCredential(registrationOptions);
 
         // Verify WebAuthn registration with server
         const verificationResult = await api.verifyWebAuthnRegistration({

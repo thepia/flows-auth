@@ -11,7 +11,7 @@
       "**",
       "!**/examples",
       "!**/tests",
-      "!**/src/paraglide",
+      "!**/src/core/paraglide",
       "!**/node_modules",
       "!**/dist",
       "!**/build",

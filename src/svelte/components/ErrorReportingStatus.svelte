@@ -2,6 +2,13 @@
 	import { onMount } from 'svelte';
 	import { getAuthStoreFromContext } from '../auth-context.js';
 	import type { SvelteAuthStore } from '@thepia/flows-auth';
+	import {
+		flushTelemetry,
+		getTelemetryQueueSize,
+		reportApiError,
+		reportAuthState,
+		reportWebAuthnError
+	} from '@thepia/flows-auth';
 
 	// Browser detection without SvelteKit dependency
 	const browser = typeof window !== 'undefined';
@@ -15,12 +22,14 @@
 	let { store = null }: Props = $props();
 
 	// Auth store - use prop or fallback to context
-	let authStore = null;
-	try {
-		authStore = store || getAuthStoreFromContext();
-	} catch (error) {
-		console.warn('ErrorReportingStatus: No auth store available in context');
-	}
+	let authStore = $derived.by(() => {
+		try {
+			return store || getAuthStoreFromContext();
+		} catch {
+			console.warn('ErrorReportingStatus: No auth store available in context');
+			return null;
+		}
+	});
 
 	let queueSize = $state(0);
 	let config = $state(null);
@@ -126,20 +135,17 @@
 		if (!browser) return;
 
 		try {
-			import('@thepia/flows-auth').then(({ getTelemetryQueueSize }) => {
-				queueSize = getTelemetryQueueSize();
-			});
+			queueSize = getTelemetryQueueSize();
 		} catch (error) {
 			// Silently fail - telemetry may not be initialized yet
 		}
 	}
-	
+
 	async function flushReports() {
 		if (!browser || isReporting) return;
 
 		isReporting = true;
 		try {
-			const { flushTelemetry } = await import('@thepia/flows-auth');
 			flushTelemetry();
 			await updateQueueStatus();
 		} catch (error) {
@@ -151,7 +157,6 @@
 
 	async function testAuthError() {
 		try {
-			const { reportAuthState } = await import('@thepia/flows-auth');
 			reportAuthState({
 				event: 'login-attempt',
 				email: 'demo@test.com',
@@ -166,7 +171,6 @@
 
 	async function testWebAuthnError() {
 		try {
-			const { reportWebAuthnError } = await import('@thepia/flows-auth');
 			const mockError = {
 				name: 'NotAllowedError',
 				message: 'User cancelled the operation',
@@ -184,7 +188,6 @@
 
 	async function testApiError() {
 		try {
-			const { reportApiError } = await import('@thepia/flows-auth');
 			reportApiError(
 				'https://api.thepia.com/auth/test-endpoint',
 				'POST',
@@ -393,7 +396,7 @@
 	}
 
 	.status-indicator.active {
-		color: var(--color-text-accent, #28a745);
+		color: var(--color-brand-primary, #988ACA);
 	}
 
 	.status-icon {
@@ -519,7 +522,7 @@
 	.flush-btn {
 		width: 100%;
 		padding: var(--size-space-2, 0.5rem);
-		background: var(--color-brand-primary, #007bff);
+		background: var(--color-brand-primary, #988ACA);
 		color: var(--color-text-inverse, white);
 		border: none;
 		border-radius: var(--size-radius-2, 4px);
@@ -530,7 +533,7 @@
 	}
 
 	.flush-btn:hover:not(:disabled) {
-		background: var(--color-brand-primaryHover, #0056b3);
+		background: var(--color-brand-primaryHover, #7B6BB7);
 	}
 
 	.flush-btn:disabled {

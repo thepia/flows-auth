@@ -89,21 +89,6 @@ A modal component for displaying policy documents (Privacy Policy, Terms of Serv
 
 ## Advanced Usage
 
-### Custom Styling
-
-The component uses CSS variables for theming:
-
-```css
-:root {
-  --auth-background: #ffffff;
-  --auth-text-primary: #111827;
-  --auth-text-secondary: #6b7280;
-  --auth-border-color: #e5e7eb;
-  --auth-accent-color: #10b981;
-  --auth-hover-background: #f3f4f6;
-}
-```
-
 ### Multiple Policies
 
 ```svelte

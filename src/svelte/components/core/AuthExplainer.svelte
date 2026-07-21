@@ -131,7 +131,7 @@
     gap: 6px;
     text-align: left;
     font-size: 0.75rem;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     line-height: 1.4;
     opacity: 0.8;
   }
@@ -146,7 +146,7 @@
   .feature-icon {
     width: 20px;
     height: 20px;
-    color: var(--color-accent, var(--auth-accent-color, #10b981));
+    color: var(--color-accent, #10b981);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,7 +155,7 @@
 
   .feature-text {
     font-size: 0.875rem;
-    color: var(--color-text-secondary, var(--auth-text-secondary, #6b7280));
+    color: var(--color-text-secondary, #6b7280);
     line-height: 1.4;
   }
 

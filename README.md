@@ -531,22 +531,19 @@ When configured, the auth store will automatically:
 
 ## Whitelabel Theming
 
-The library supports complete visual customization through CSS custom properties:
+Components are styled with `@thepia/branding` design tokens (an optional
+peer dependency) — override them directly, no flows-auth-specific theming
+API needed:
 
 ```css
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";
+
 :root {
-  /* Brand colors */
-  --auth-primary-color: #your-brand-color;
-  --auth-secondary-color: #your-secondary-color;
-  --auth-accent-color: #your-accent-color;
-  
-  /* Typography */
-  --auth-font-family: 'Your Brand Font', sans-serif;
-  --auth-border-radius: 8px;
-  
-  /* Spacing */
-  --auth-padding: 24px;
-  --auth-gap: 16px;
+  --color-brand-primary: #your-brand-color;
+  --color-brand-primaryHover: #your-brand-color-darker;
+  --font-fontFamily-brand-body: 'Your Brand Font', sans-serif;
+  --size-radius-4: 8px;
 }
 ```
 
@@ -688,21 +685,23 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
 ```svelte
 <!-- examples/basic/App.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  
-  const config = {
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: 'https://api.example.com',
     clientId: 'demo-client',
+    appCode: 'app',
     domain: 'example.com',
     enablePasskeys: true,
     enableMagicLinks: false,
     branding: {
       companyName: 'Demo Company'
     }
-  };
+  }));
 </script>
 
-<SignInForm {config} />
+<SignInForm store={authStore} />
 ```
 
 ### Whitelabel Example
@@ -710,11 +709,13 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
 ```svelte
 <!-- examples/whitelabel/App.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  
-  const config = {
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: process.env.VITE_API_URL,
     clientId: process.env.VITE_CLIENT_ID,
+    appCode: 'app',
     domain: process.env.VITE_DOMAIN,
     enablePasskeys: true,
     branding: {
@@ -723,16 +724,15 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
       primaryColor: process.env.VITE_PRIMARY_COLOR,
       customCSS: `
         .auth-form {
-          --auth-border-radius: 0;
-          --auth-shadow: none;
-          border: 2px solid var(--auth-primary-color);
+          --size-radius-4: 0;
+          border: 2px solid var(--color-brand-primary);
         }
       `
     }
-  };
+  }));
 </script>
 
-<SignInForm {config} compact />
+<SignInForm store={authStore} compact />
 ```
 
 ## Testing

@@ -5,6 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.11.0",
   "scripts": {
+    "predev": "npm run build:tokens",
     "dev": "vite dev",
     "dev:auto": "./scripts/dev-with-api-detection.sh",
     "dev:local": "./scripts/dev-with-api-detection.sh --local-api",

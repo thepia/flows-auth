@@ -290,30 +290,30 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
     border: none;
     background: none;
     cursor: pointer;
-    border-radius: var(--radius-full);
-    transition: all var(--transition-normal);
-    color: var(--color-gray-700);
+    border-radius: var(--size-radius-full, 9999px);
+    transition: all 200ms ease;
+    color: var(--color-text-secondary, #374151);
   }
 
   .account-icon:hover {
-    color: var(--brand-primary);
-    background: var(--brand-primary-light);
+    color: var(--color-brand-primary, #0066cc);
+    background: var(--color-brand-primarySubtle, #eff6ff);
   }
 
   .account-icon:focus {
     outline: none;
-    ring: 2px solid var(--brand-primary);
+    ring: 2px solid var(--color-brand-primary, #0066cc);
     ring-offset: 2px;
   }
 
   .account-icon.loading {
-    background: var(--color-gray-100);
+    background: var(--color-bg-secondary, #f3f4f6);
     cursor: default;
   }
 
   .account-icon.loading:hover {
-    background: var(--color-gray-100);
-    color: var(--color-gray-700);
+    background: var(--color-bg-secondary, #f3f4f6);
+    color: var(--color-text-secondary, #374151);
   }
 
   .account-icon-svg {
@@ -324,8 +324,8 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   .loading-spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid var(--color-gray-200);
-    border-top: 2px solid var(--brand-primary);
+    border: 2px solid var(--color-border-default, #e5e7eb);
+    border-top: 2px solid var(--color-brand-primary, #0066cc);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -346,29 +346,29 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-full);
-    background: var(--brand-primary);
+    border-radius: var(--size-radius-full, 9999px);
+    background: var(--color-brand-primary, #0066cc);
     color: white;
     border: none;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    transition: all 200ms ease;
   }
 
   .profile-button:hover {
-    background: var(--brand-primary-hover);
+    background: var(--color-brand-primaryHover, #0052a3);
     transform: scale(1.05);
   }
 
   .profile-button:focus {
     outline: none;
-    ring: 2px solid var(--brand-primary);
+    ring: 2px solid var(--color-brand-primary, #0066cc);
     ring-offset: 2px;
   }
 
   .profile-avatar {
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-full);
+    border-radius: var(--size-radius-full, 9999px);
     object-fit: cover;
   }
 
@@ -380,38 +380,38 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   .profile-menu {
     position: absolute;
     right: 0;
-    top: calc(100% + var(--spacing-2));
+    top: calc(100% + var(--size-space-2, 0.5rem));
     width: 280px;
-    background: var(--color-white);
-    border: var(--border-width) solid var(--color-gray-200);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    z-index: var(--z-dropdown);
+    background: var(--color-bg-primary, #ffffff);
+    border: 1px solid var(--color-border-default, #e5e7eb);
+    border-radius: var(--size-radius-6, 0.75rem);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
     overflow: hidden;
   }
 
   .profile-header {
-    padding: var(--spacing-4);
-    border-bottom: var(--border-width) solid var(--color-gray-200);
-    background: var(--color-gray-50);
+    padding: var(--size-space-4, 1rem);
+    border-bottom: 1px solid var(--color-border-default, #e5e7eb);
+    background: var(--color-bg-secondary, #f9fafb);
   }
 
   .profile-info {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
+    gap: var(--size-space-3, 0.75rem);
   }
 
   .profile-avatar-large {
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-full);
+    border-radius: var(--size-radius-full, 9999px);
     object-fit: cover;
     flex-shrink: 0;
   }
 
   .profile-initials-large {
-    background: var(--brand-primary);
+    background: var(--color-brand-primary, #0066cc);
     color: white;
     display: flex;
     align-items: center;
@@ -428,8 +428,8 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   .profile-name {
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-medium);
-    color: var(--color-gray-900);
-    margin-bottom: var(--spacing-1);
+    color: var(--color-text-primary, #111827);
+    margin-bottom: var(--size-space-1, 0.25rem);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -437,35 +437,35 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   .profile-email {
     font-size: var(--font-size-sm);
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary, #4b5563);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .profile-actions {
-    padding: var(--spacing-2);
+    padding: var(--size-space-2, 0.5rem);
   }
 
   .profile-action {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
+    gap: var(--size-space-3, 0.75rem);
     width: 100%;
-    padding: var(--spacing-3) var(--spacing-4);
+    padding: var(--size-space-3, 0.75rem) var(--size-space-4, 1rem);
     border: none;
     background: none;
-    color: var(--color-gray-700);
+    color: var(--color-text-secondary, #374151);
     font-size: var(--font-size-sm);
     text-align: left;
     cursor: pointer;
-    border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    border-radius: var(--size-radius-3, 0.375rem);
+    transition: all 150ms ease;
   }
 
   .profile-action:hover {
-    background: var(--color-gray-100);
-    color: var(--color-gray-900);
+    background: var(--color-bg-secondary, #f3f4f6);
+    color: var(--color-text-primary, #111827);
   }
 
   .action-icon {

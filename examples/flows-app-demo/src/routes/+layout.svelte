@@ -1,6 +1,7 @@
 <script lang="ts">
   import './app.css';
-  import '../branding/design-tokens.css';
+  import '../branding/dist/css/tokens.css';
+  import '../branding/scenario-themes.css';
   import { browser, dev } from '$app/environment';
   import { setupAuthContext } from '@thepia/flows-auth/svelte';
   interface Props {

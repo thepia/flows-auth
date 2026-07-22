@@ -267,12 +267,12 @@
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
-    z-index: var(--z-modal);
+    z-index: 1050;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-4);
-    animation: fadeIn var(--transition-normal);
+    padding: var(--size-space-4, 1rem);
+    animation: fadeIn 200ms ease;
   }
 
   @keyframes fadeIn {
@@ -281,14 +281,14 @@
   }
 
   .modal-content {
-    background: var(--color-white);
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-2xl);
+    background: var(--color-bg-primary, #ffffff);
+    border-radius: var(--size-radius-8, 1rem);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     max-width: 480px;
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
-    animation: slideIn var(--transition-normal);
+    animation: slideIn 200ms ease;
   }
 
   @keyframes slideIn {
@@ -306,9 +306,9 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--spacing-4);
-    padding: var(--spacing-6);
-    border-bottom: var(--border-width) solid var(--color-gray-200);
+    gap: var(--size-space-4, 1rem);
+    padding: var(--size-space-6, 1.5rem);
+    border-bottom: 1px solid var(--color-border-default, #e5e7eb);
   }
 
   .modal-title-section {
@@ -318,16 +318,16 @@
   .modal-title {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-bold);
-    color: var(--color-gray-900);
-    margin: 0 0 var(--spacing-2) 0;
-    line-height: var(--line-height-tight);
+    color: var(--color-text-primary, #111827);
+    margin: 0 0 var(--size-space-2, 0.5rem) 0;
+    line-height: var(--font-lineHeight-tight, 1.25);
   }
 
   .modal-subtitle {
     font-size: var(--font-size-base);
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary, #4b5563);
     margin: 0;
-    line-height: var(--line-height-normal);
+    line-height: var(--font-lineHeight-normal, 1.5);
   }
 
   .modal-close {
@@ -337,17 +337,17 @@
     width: 32px;
     height: 32px;
     border: none;
-    background: var(--color-gray-100);
-    color: var(--color-gray-500);
-    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary, #f3f4f6);
+    color: var(--color-text-3, #6b7280);
+    border-radius: var(--size-radius-4, 0.5rem);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 150ms ease;
     flex-shrink: 0;
   }
 
   .modal-close:hover {
-    background: var(--color-gray-200);
-    color: var(--color-gray-700);
+    background: var(--color-border-default, #e5e7eb);
+    color: var(--color-text-secondary, #374151);
   }
 
   .close-icon {
@@ -356,38 +356,38 @@
   }
 
   .modal-body {
-    padding: 0 var(--spacing-6) var(--spacing-6);
+    padding: 0 var(--size-space-6, 1.5rem) var(--size-space-6, 1.5rem);
   }
 
   .modal-footer {
-    padding: var(--spacing-6);
-    border-top: var(--border-width) solid var(--color-gray-200);
-    background: var(--color-gray-50);
+    padding: var(--size-space-6, 1.5rem);
+    border-top: 1px solid var(--color-border-default, #e5e7eb);
+    background: var(--color-bg-secondary, #f9fafb);
   }
 
   .auth-features {
     display: flex;
-    gap: var(--spacing-3);
-    margin-bottom: var(--spacing-4);
+    gap: var(--size-space-3, 0.75rem);
+    margin-bottom: var(--size-space-4, 1rem);
     justify-content: center;
   }
 
   .feature-badge {
     display: flex;
     align-items: center;
-    gap: var(--spacing-2);
-    padding: var(--spacing-2) var(--spacing-3);
-    background: var(--color-gray-100);
-    color: var(--color-gray-500);
-    border-radius: var(--radius-full);
+    gap: var(--size-space-2, 0.5rem);
+    padding: var(--size-space-2, 0.5rem) var(--size-space-3, 0.75rem);
+    background: var(--color-bg-secondary, #f3f4f6);
+    color: var(--color-text-3, #6b7280);
+    border-radius: var(--size-radius-full, 9999px);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
-    transition: all var(--transition-fast);
+    transition: all 150ms ease;
   }
 
   .feature-badge.enabled {
-    background: var(--brand-primary-light);
-    color: var(--brand-primary);
+    background: var(--color-brand-primarySubtle, #eff6ff);
+    color: var(--color-brand-primary, #0066cc);
   }
 
   .feature-icon {
@@ -403,9 +403,9 @@
   .security-notice {
     display: flex;
     align-items: center;
-    gap: var(--spacing-2);
+    gap: var(--size-space-2, 0.5rem);
     font-size: var(--font-size-sm);
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary, #4b5563);
     text-align: center;
     justify-content: center;
   }
@@ -413,7 +413,7 @@
   .security-icon {
     width: 16px;
     height: 16px;
-    color: var(--color-success);
+    color: var(--color-text-success, #10b981);
     flex-shrink: 0;
   }
 
@@ -422,18 +422,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-8);
+    padding: var(--size-space-8, 2rem);
     text-align: center;
   }
 
   .loading-auth .spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid var(--color-gray-200);
-    border-top: 3px solid var(--brand-primary);
+    border: 3px solid var(--color-border-default, #e5e7eb);
+    border-top: 3px solid var(--color-brand-primary, #0066cc);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: var(--spacing-4);
+    margin-bottom: var(--size-space-4, 1rem);
   }
 
   @keyframes spin {
@@ -442,14 +442,14 @@
   }
 
   .loading-auth p {
-    color: var(--color-gray-600);
+    color: var(--color-text-secondary, #4b5563);
     margin: 0;
   }
 
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .modal-backdrop {
-      padding: var(--spacing-2);
+      padding: var(--size-space-2, 0.5rem);
     }
     
     .modal-content {
@@ -457,15 +457,15 @@
     }
     
     .modal-header {
-      padding: var(--spacing-4);
+      padding: var(--size-space-4, 1rem);
     }
     
     .modal-body {
-      padding: 0 var(--spacing-4) var(--spacing-4);
+      padding: 0 var(--size-space-4, 1rem) var(--size-space-4, 1rem);
     }
     
     .modal-footer {
-      padding: var(--spacing-4);
+      padding: var(--size-space-4, 1rem);
     }
     
     .modal-title {

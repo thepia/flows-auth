@@ -180,19 +180,22 @@ run(() => {
 let displayIconComponent = $derived(getDisplayIconComponent());
 // Reactive disabled state for template
 let isDisabled = $derived(effectiveDisabled || loading);
+// Matches ../icons/Icon.svelte's sizeMap (--icon-size-sm/md/lg) - kept as a plain
+// number here rather than routing through Icon.svelte, since that component
+// also forces a --color-brand-primary icon color by default, which would fight
+// the button variant's own text color (white on primary, muted on ghost, etc).
+const iconSizeBySize = { sm: 16, md: 20, lg: 24 };
+let iconSize = $derived(iconSizeBySize[size]);
 </script>
 
 <button
   {type}
-  class="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[2.75rem]
+  class="auth-btn
          {variant === 'primary' ? 'auth-btn-primary' : ''}
          {variant === 'secondary' ? 'auth-btn-secondary' : ''}
          {variant === 'ghost' ? 'auth-btn-ghost' : ''}
-         {size === 'sm' ? 'px-3 py-1.5 text-sm' : ''}
-         {size === 'md' ? 'px-4 py-2 text-base' : ''}
-         {size === 'lg' ? 'px-5 py-3 text-lg' : ''}
-         {fullWidth ? 'w-full' : ''}
-         {isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+         auth-btn-size-{size}
+         {fullWidth ? 'auth-btn-full' : ''}
          {className}"
   disabled={isDisabled}
   onclick={handleClick}
@@ -200,13 +203,11 @@ let isDisabled = $derived(effectiveDisabled || loading);
   aria-describedby={loading ? 'button-loading-text' : null}
 >
   {#if loading}
-    <div class="animate-spin w-4 h-4 border-2 border-transparent border-t-current rounded-full" aria-hidden="true"></div>
-    <span id="button-loading-text" class="sr-only">Signing in...</span>
+    <div class="auth-btn-spinner" aria-hidden="true"></div>
+    <span id="button-loading-text" class="auth-btn-sr-only">Signing in...</span>
   {:else if displayIconComponent}
-    {#if displayIconComponent}
-      {@const SvelteComponent = displayIconComponent}
-      <SvelteComponent size={16} weight="bold" aria-hidden="true" />
-    {/if}
+    {@const SvelteComponent = displayIconComponent}
+    <SvelteComponent size={iconSize} weight="bold" aria-hidden="true" />
   {/if}
   
   <span>{displayText}</span>
@@ -218,6 +219,81 @@ let isDisabled = $derived(effectiveDisabled || loading);
     position: relative;
     overflow: hidden;
     text-decoration: none;
+  }
+
+  /* Layout/spacing/typography previously assumed Tailwind utility classes, which
+     produce no CSS at all in a consumer without Tailwind (this library has no
+     Tailwind dependency and never bundles generated utilities) - hand-written
+     here instead, using the same CSS custom properties as the variant colors
+     below. */
+  .auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-space-2, 0.5rem);
+    font-weight: var(--font-weight-medium, 500);
+    border-radius: var(--size-radius-4, 0.5rem);
+    transition: all 200ms ease;
+    cursor: pointer;
+  }
+
+  .auth-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-input-focus, 0 0 0 3px rgba(152, 138, 202, 0.1));
+  }
+
+  .auth-btn-full {
+    width: 100%;
+  }
+
+  /* Height per size is deliberately pinned to the same scale as the shared Icon
+     component's size prop (../icons/Icon.svelte's sm/md/lg -> --icon-size-sm/md/lg,
+     16/20/24px) that this button's own icon is rendered with, so a text button and
+     a standalone icon button (e.g. AccountIcon's 40px default / 48px avatar) line
+     up at the same height when they sit next to each other. */
+  .auth-btn-size-sm {
+    min-height: 2rem; /* 32px: --icon-size-sm (16px) + padding */
+    padding: 0.375rem var(--size-space-3, 0.75rem);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .auth-btn-size-md {
+    min-height: 2.5rem; /* 40px: --icon-size-md (20px) + padding - matches AccountIcon's default 40px button */
+    padding: var(--size-space-2, 0.5rem) var(--size-space-4, 1rem);
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .auth-btn-size-lg {
+    min-height: 3rem; /* 48px: --icon-size-lg (24px) + padding - matches AccountIcon's 48px avatar variant */
+    padding: var(--size-space-3, 0.75rem) var(--size-space-5, 1.25rem);
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  .auth-btn-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: var(--size-radius-full, 9999px);
+    animation: auth-btn-spin 0.6s linear infinite;
+  }
+
+  @keyframes auth-btn-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .auth-btn-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* Primary button variant - brand colors from CSS variables */

@@ -299,8 +299,8 @@ describe('AuthButton Component', () => {
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
 
-      // Check for spinner (uses animate-spin Tailwind class)
-      const spinner = container.querySelector('.animate-spin');
+      // Check for spinner
+      const spinner = container.querySelector('.auth-btn-spinner');
       expect(spinner).toBeTruthy();
     });
 
@@ -475,9 +475,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-3');
-      expect(button.className).toContain('py-1.5');
-      expect(button.className).toContain('text-sm');
+      expect(button.className).toContain('auth-btn-size-sm');
     });
 
     it('should apply medium size classes', () => {
@@ -495,9 +493,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-4');
-      expect(button.className).toContain('py-2');
-      expect(button.className).toContain('text-base');
+      expect(button.className).toContain('auth-btn-size-md');
     });
 
     it('should apply large size classes', () => {
@@ -515,9 +511,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-5');
-      expect(button.className).toContain('py-3');
-      expect(button.className).toContain('text-lg');
+      expect(button.className).toContain('auth-btn-size-lg');
     });
   });
 
@@ -537,8 +531,8 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.disabled).toBe(true);
-      expect(button.className).toContain('cursor-not-allowed');
-      expect(button.className).toContain('opacity-50');
+      // Disabled visuals (cursor/opacity) come from the native `button:disabled`
+      // CSS rule, not a class - the disabled attribute above is what matters here.
     });
 
     it('should be disabled when loading', () => {
@@ -556,8 +550,9 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button') as HTMLButtonElement;
-      expect(button.className).toContain('cursor-not-allowed');
-      expect(button.className).toContain('opacity-50');
+      expect(button.disabled).toBe(true);
+      // Disabled visuals (cursor/opacity) come from the native `button:disabled`
+      // CSS rule, not a class - the disabled attribute above is what matters here.
     });
 
     it('should apply full width class when fullWidth is true', () => {
@@ -575,7 +570,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('w-full');
+      expect(button.className).toContain('auth-btn-full');
     });
 
     it('should not apply full width class when fullWidth is false', () => {
@@ -593,7 +588,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).not.toContain('w-full');
+      expect(button.className).not.toContain('auth-btn-full');
     });
   });
 

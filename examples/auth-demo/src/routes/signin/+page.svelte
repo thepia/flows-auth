@@ -52,7 +52,6 @@ let signInMode = $state('login-or-register'); // 'login-only' or 'login-or-regis
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = $state(false);
-let enableMagicLinks = $state(true);
 
 // New size and variant options
 let formSize = $state('medium'); // 'small', 'medium', 'large', 'full'
@@ -529,14 +528,9 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
           <div class="config-label">Authentication Methods:</div>
           <div class="checkbox-group">
             <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enablePasskeys} 
+              <input type="checkbox" bind:checked={enablePasskeys}
                      onchange={() => authStore?.updateConfig?.({ enablePasskeys })} />
               <span>Enable Passkeys</span>
-            </label>
-            <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enableMagicLinks}
-                     onchange={() => authStore?.updateConfig?.({ enableMagicLinks })} />
-              <span>Enable Magic Links</span>
             </label>
           </div>
         </div>

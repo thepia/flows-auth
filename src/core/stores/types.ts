@@ -206,7 +206,7 @@ export interface UIActions {
   }) => void;
   pinEmailSent: () => void;
   reset: () => void;
-  authSuccess: (method: 'passkey' | 'email-code' | 'magic-link') => void;
+  authSuccess: (method: 'passkey' | 'email-code') => void;
   authError: () => void;
 
   // UI Configuration methods

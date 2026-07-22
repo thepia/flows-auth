@@ -16,7 +16,6 @@ vi.mock('../../src/core/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       checkEmail: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       sendAppEmailCode: vi.fn(),
       verifyAppEmailCode: vi.fn(),
@@ -42,7 +41,6 @@ describe('Auth Store Pin Validation', () => {
     clientId: 'test-client',
     domain: 'test.com',
     enablePasskeys: false,
-    enableMagicLinks: false,
     appCode: 'test-app'
   };
 
@@ -58,7 +56,6 @@ describe('Auth Store Pin Validation', () => {
     // Create a mock API client
     mockApiClient = {
       checkEmail: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       sendAppEmailCode: vi.fn(),
       verifyAppEmailCode: vi.fn(),

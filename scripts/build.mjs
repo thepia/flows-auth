@@ -49,6 +49,17 @@ rmSync(DIST_OLD, { recursive: true, force: true });
 run(`tsup --out-dir ${DIST_BUILD}`);
 run(`tsc -p tsconfig.build.json --outDir ${DIST_BUILD}`);
 
+// 2b. Work around a tsc declaration-emit bug: re-exporting a string-named binding
+//     (Paraglide emits `export { email_label as "email.label" }`) gets its quotes
+//     dropped when tsc aggregates it into a barrel .d.ts, producing invalid syntax
+//     like `export { email_label as email.label }`. Patch it back in place.
+const paraglideMessagesDts = resolve(DIST_BUILD, 'paraglide/messages/_index.d.ts');
+if (existsSync(paraglideMessagesDts)) {
+  const before = readFileSync(paraglideMessagesDts, 'utf8');
+  const after = before.replace(/\bas ([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\b/g, 'as "$1"');
+  if (after !== before) writeFileSync(paraglideMessagesDts, after);
+}
+
 // 3. Svelte target (svelte-preprocess transpiles TS, emits per-file .svelte.d.ts)
 run(`svelte-package -i src/svelte -o ${join(DIST_BUILD, 'svelte')}`);
 

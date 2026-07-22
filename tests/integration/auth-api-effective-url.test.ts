@@ -27,7 +27,6 @@ describe('AuthApiClient effective base URL', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false
   };
 
   beforeEach(() => {

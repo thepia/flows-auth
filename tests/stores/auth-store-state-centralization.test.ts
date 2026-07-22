@@ -20,7 +20,6 @@ describe('Auth Store State Centralization', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -34,7 +33,6 @@ describe('Auth Store State Centralization', () => {
       clientId: 'test-client',
       domain: 'thepia.com',
       enablePasskeys: true,
-      enableMagicLinks: true,
       appCode: 'test'
     };
     authStore = makeSvelteCompatible(createAuthStore(config, mockApiClient));

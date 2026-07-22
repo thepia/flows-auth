@@ -25,7 +25,6 @@ pnpm add @thepia/flows-auth
     clientId: 'your-app',
     appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net' // or 'thepia.com'
   };
 
@@ -139,7 +138,6 @@ The flows-auth library is designed as a **client-only** solution that works in t
     clientId: 'your-app',
     appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net'
   };
 
@@ -208,7 +206,6 @@ const authConfig = {
   clientId: 'your-app',
   appCode: 'app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -222,7 +219,6 @@ const authConfig = {
   clientId: 'your-app',
   appCode: 'app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -237,7 +233,6 @@ interface AuthConfig {
   clientId: string;             // Required — identifies your app to the API
   appCode: string;              // Required — app-specific endpoint routing
   enablePasskeys?: boolean;     // Enable WebAuthn passkeys (default: true)
-  enableMagicLinks?: boolean;   // Enable magic link fallback (default: true)
   domain?: string;              // Domain for storage scope (thepia.com or thepia.net)
 }
 ```
@@ -256,7 +251,6 @@ The library supports **passwordless-only** authentication:
 ```typescript
 {
   enablePasskeys: true,        // WebAuthn/passkey authentication (recommended)
-  enableMagicLinks: false,      // Email-based fallback for unsupported devices
 
   // Enterprise options (when required by customers)
   enterprise: {
@@ -276,7 +270,7 @@ The library implements a **cookie-free**, passwordless authentication flow:
 2. **Method Detection** - Server determines available auth methods
 3. **Authentication** - User completes authentication via:
    - **Passkey (WebAuthn)** - Primary method using biometrics
-   - **Magic link** - Email-based fallback for unsupported devices
+   - **Email code** - Numeric PIN fallback for unsupported devices
 4. **Success** - User is signed in with tokens stored in browser storage
 
 ### 🍪 Privacy-First Approach
@@ -369,14 +363,14 @@ try {
   // User is now authenticated
 } catch (error) {
   console.error('Passkey auth failed:', error);
-  // Fallback to magic link
+  // Fallback to email code
 }
 
 try {
-  await authStore.signInWithMagicLink(email);   // Email-based authentication
-  // User will receive email with login link
+  await authStore.sendEmailCode(email);         // Email-based authentication
+  // User will receive email with a numeric code
 } catch (error) {
-  console.error('Magic link failed:', error);
+  console.error('Email code failed:', error);
 }
 
 // Session management
@@ -405,7 +399,6 @@ The library uses a centralized **ApiError architecture** with translation-based 
     clientId: 'your-client-id',
     appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net'
   }));
 
@@ -620,7 +613,7 @@ The development scripts automatically detect and configure the appropriate API s
 1. **WebAuthn not working**: Ensure HTTPS is enabled (required for WebAuthn)
 2. **CORS errors**: Verify your domain is configured in the API server
 3. **Token refresh failing**: Check localStorage for stored tokens
-4. **Magic links not working**: Verify email service configuration
+4. **Email codes not working**: Verify email service configuration
 
 ### Getting Help
 

@@ -30,7 +30,6 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-spam-protection-test',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Spam Protection Test',
       showPoweredBy: true

@@ -20,10 +20,10 @@ describe('CRITICAL: Auth Store Registration Methods', () => {
     // TODO: Setup real auth store with minimal mocking
     authConfig = {
       apiBaseUrl: 'https://api.test.com',
-      appBaseUrl: 'https://app.test.com',
-      enableWebAuthn: true,
-      enableEmailAuth: false,
-      requireEmailVerification: true
+      clientId: 'test-client',
+      domain: 'test.thepia.net',
+      appCode: 'app',
+      enablePasskeys: true
     };
 
     authStore = makeSvelteCompatible(createAuthStore(authConfig));

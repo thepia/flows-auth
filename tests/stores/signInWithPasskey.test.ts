@@ -19,7 +19,6 @@ vi.mock('../../src/core/api/auth-api', () => ({
       checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
       getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
       signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-      signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       signOut: vi.fn().mockResolvedValue({ success: true })
     };
@@ -46,7 +45,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -72,7 +70,6 @@ describe('signInWithPasskey', () => {
       checkEmail: vi.fn().mockResolvedValue({ exists: false, hasPasskey: false }),
       getPasskeyChallenge: vi.fn().mockResolvedValue({ challenge: 'test', allowCredentials: [] }),
       signInWithPasskey: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
-      signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       refresh_token: vi.fn().mockRejectedValue(new Error('Not implemented in test')),
       signOut: vi.fn().mockResolvedValue({ success: true })
     };

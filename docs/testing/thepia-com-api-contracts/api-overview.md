@@ -44,7 +44,7 @@ sequenceDiagram
 - `POST /auth/webauthn/challenge` - Get WebAuthn challenge
 - `POST /auth/webauthn/verify` - Verify WebAuthn response
 - `POST /auth/start-passwordless` - Start passwordless authentication (magic links)
-- `POST /auth/verify-magic-link` - Verify magic link token
+- `POST /auth/passwordless-callback` - Verify magic link token
 
 ### **Session Management**
 - `POST /auth/refresh` - Refresh authentication session

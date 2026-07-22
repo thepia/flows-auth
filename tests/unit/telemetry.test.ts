@@ -40,7 +40,6 @@ const createTestConfig = (serviceWorkerLogging: any): AuthConfig => ({
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   errorReporting: {
     enabled: true,
     serviceWorkerLogging
@@ -52,6 +51,7 @@ describe('Telemetry System', () => {
   let reportAuthEvent: any;
   let reportSessionEvent: any;
   let reportRefreshEvent: any;
+  let reportWebAuthnError: any;
   let resetTelemetry: any;
   beforeEach(async () => {
     // Reset all mocks
@@ -65,11 +65,13 @@ describe('Telemetry System', () => {
       writable: true
     });
 
-    // Mock global window
+    // Mock global window (navigator mirrors the global navigator mock above,
+    // since production code reads window.navigator.userAgent)
     Object.defineProperty(global, 'window', {
       value: {
         location: { href: 'https://test.example.com' },
-        name: 'test-tab'
+        name: 'test-tab',
+        navigator: { userAgent: 'test-agent' }
       },
       writable: true
     });
@@ -80,6 +82,7 @@ describe('Telemetry System', () => {
     reportAuthEvent = telemetryModule.reportAuthEvent;
     reportSessionEvent = telemetryModule.reportSessionEvent;
     reportRefreshEvent = telemetryModule.reportRefreshEvent;
+    reportWebAuthnError = telemetryModule.reportWebAuthnError;
     resetTelemetry = telemetryModule.resetTelemetry;
 
     // Reset telemetry state between tests
@@ -286,6 +289,61 @@ describe('Telemetry System', () => {
         }),
         url: 'https://test.example.com',
         tabId: 'test-tab'
+      });
+    });
+  });
+
+  describe('Dev error-reports wire contract', () => {
+    // thepia.com's /dev/error-reports endpoint destructures
+    // `{ errors, authStates, sessionId, timestamp }` from the POST body
+    // (src/api/dev/error-reports.ts). Every event we send MUST match that
+    // envelope or the server silently drops it.
+    it('sends auth-state events inside the {errors, authStates, sessionId, timestamp} envelope', async () => {
+      const config = createTestConfig({ enabled: false });
+      initializeTelemetry(mockApiClient as any, config);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      reportAuthEvent('SIGN_IN', { method: 'passkey' });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockApiClient.request).toHaveBeenCalledWith(
+        '/dev/error-reports',
+        expect.objectContaining({ method: 'POST' })
+      );
+
+      const [, options] = mockApiClient.request.mock.calls[0];
+      const body = JSON.parse(options.body as string);
+
+      expect(Array.isArray(body.errors)).toBe(true);
+      expect(Array.isArray(body.authStates)).toBe(true);
+      expect(typeof body.sessionId).toBe('string');
+      expect(body.sessionId.length).toBeGreaterThan(0);
+      expect(typeof body.timestamp).toBe('number');
+      expect(body.authStates).toHaveLength(1);
+      expect(body.authStates[0]).toMatchObject({
+        type: 'auth-state-change',
+        event: 'SIGN_IN'
+      });
+      expect(body.errors).toHaveLength(0);
+    });
+
+    it('sends webauthn errors as an entry in the errors array', async () => {
+      const config = createTestConfig({ enabled: false });
+      initializeTelemetry(mockApiClient as any, config);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      reportWebAuthnError('authentication', { name: 'NotAllowedError', message: 'denied' });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const [, options] = mockApiClient.request.mock.calls[0];
+      const body = JSON.parse(options.body as string);
+
+      expect(body.authStates).toHaveLength(0);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0]).toMatchObject({
+        type: 'webauthn-error',
+        message: 'denied',
+        severity: expect.any(String)
       });
     });
   });

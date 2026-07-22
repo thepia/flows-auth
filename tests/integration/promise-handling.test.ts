@@ -420,7 +420,9 @@ describe('Promise Handling', () => {
         .mockRejectedValueOnce(new Error('Temporary error'))
         .mockResolvedValue({
           success: true,
-          message: 'Code sent'
+          step: 'code_sent',
+          message: 'Code sent',
+          timestamp: Date.now()
         });
 
       const emailInput = getByLabelText('Email address');

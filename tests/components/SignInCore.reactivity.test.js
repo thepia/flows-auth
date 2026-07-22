@@ -18,7 +18,6 @@ describe('SignInCore Configuration Reactivity', () => {
         authConfig: {
           ...TEST_AUTH_CONFIGS.withAppCode,
           enablePasskeys: true,
-          enableMagicLinks: false
         }
       });
 
@@ -46,7 +45,6 @@ describe('SignInCore Configuration Reactivity', () => {
         authConfig: {
           ...TEST_AUTH_CONFIGS.withAppCode,
           enablePasskeys: true,
-          enableMagicLinks: false
         }
       });
 
@@ -91,15 +89,14 @@ describe('SignInCore Configuration Reactivity', () => {
     it('should validate reactive statement pattern', () => {
       // Test basic configuration object creation
       let enablePasskeys = true;
-      const enableMagicLinks = true;
       const signInMode = 'login-or-register';
 
-      const config1 = { enablePasskeys, enableMagicLinks, signInMode };
+      const config1 = { enablePasskeys, signInMode };
 
       // Change variables
       enablePasskeys = false;
 
-      const config2 = { enablePasskeys, enableMagicLinks, signInMode };
+      const config2 = { enablePasskeys, signInMode };
 
       // Objects should be different references
       expect(config1).not.toBe(config2);

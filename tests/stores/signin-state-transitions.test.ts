@@ -19,7 +19,6 @@ describe('SignIn State Transitions', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       appCode: 'test'
     };
     const baseStore = createAuthStore(config);
@@ -40,7 +39,7 @@ describe('SignIn State Transitions', () => {
           initials: ''
         },
         authMethod: 'email-code',
-        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // authMethod: 'passkey' | 'password' | 'email-code';
         // lastActivity: number;
 
         tokens: {

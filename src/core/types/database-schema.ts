@@ -36,7 +36,7 @@ export const SessionDataSchema = z.object({
   expiresAt: ISODateString.describe('Token expiration time (ISO 8601)'),
   refreshedAt: ISODateString.optional().describe('Last token refresh time (ISO 8601)'),
   authMethod: z
-    .enum(['passkey', 'password', 'email-code', 'magic-link'])
+    .enum(['passkey', 'password', 'email-code'])
     .optional()
     .describe('Authentication method used'),
   supabaseToken: z.string().optional().describe('Supabase JWT token'),
@@ -61,7 +61,7 @@ export const UserDataSchema = z.object({
   lastLoginAt: ISODateString.optional().describe('Last login time (ISO 8601)'),
   metadata: z.record(z.string(), z.unknown()).optional().describe('User metadata'),
   authMethod: z
-    .enum(['passkey', 'password', 'email-code', 'magic-link'])
+    .enum(['passkey', 'password', 'email-code'])
     .optional()
     .describe('Preferred auth method')
 });

@@ -77,7 +77,6 @@
       clientId: scenario.config.clientId,
       domain: 'dev.thepia.net', // Fixed: Use dev.thepia.net for proper WebAuthn support
       enablePasskeys: scenario.config.enablePasskeys,
-      enableMagicLinks: scenario.config.enableMagicLinks,
       branding: {
         companyName: scenario.branding.companyName,
         logoUrl: '/thepia-logo.svg',
@@ -229,20 +228,6 @@
                 <path fill-rule="evenodd" d="M18 8a6 6 0 0 1-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1 1 18 8Zm-6-4a1 1 0 1 0 0 2 2 2 0 0 1 2 2 1 1 0 1 0 2 0 4 4 0 0 0-4-4Z" clip-rule="evenodd"/>
               </svg>
               Passkey Disabled
-            {/if}
-          </div>
-          
-          <div class="feature-badge" class:enabled={currentScenario.config.enableMagicLinks}>
-            {#if currentScenario.config.enableMagicLinks}
-              <svg class="feature-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M3 4a2 2 0 0 1 2-2h1.007a1 1 0 0 1 .757.349L8.72 4.216A1 1 0 0 0 9.477 4.5h8.023a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Z"/>
-              </svg>
-              Magic Link
-            {:else}
-              <svg class="feature-icon disabled" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M3 4a2 2 0 0 1 2-2h1.007a1 1 0 0 1 .757.349L8.72 4.216A1 1 0 0 0 9.477 4.5h8.023a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Z"/>
-              </svg>
-              Magic Link Disabled
             {/if}
           </div>
         </div>

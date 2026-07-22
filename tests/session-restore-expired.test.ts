@@ -59,7 +59,6 @@ describe('Session Restoration with Expired Token', () => {
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: false,
       database: mockDatabase
     };
 
@@ -106,7 +105,6 @@ describe('Session Restoration with Expired Token', () => {
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: false,
       database: mockDatabase
     };
 
@@ -124,9 +122,10 @@ describe('Session Restoration with Expired Token', () => {
       { timeout: 5000 }
     );
 
-    // Verify refresh endpoint was called
+    // Verify refresh endpoint was called (app-code-namespaced, per auth-api.ts's
+    // getEffectiveAppCode() - defaults to 'app' when config.appCode is unset)
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/refresh'),
+      expect.stringContaining('/app/refresh'),
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('valid_refresh_token')
@@ -176,7 +175,6 @@ describe('Session Restoration with Expired Token', () => {
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: false,
       database: mockDatabase
     };
 
@@ -216,7 +214,6 @@ describe('Session Restoration with Expired Token', () => {
       domain: 'test.com',
       clientId: 'test-client',
       enablePasskeys: false,
-      enableMagicLinks: false,
       database: mockDatabase
     };
 

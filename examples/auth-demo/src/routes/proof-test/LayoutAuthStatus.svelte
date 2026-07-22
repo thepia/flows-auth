@@ -42,7 +42,7 @@
   function testSignIn() {
     if (authStore) {
       console.log(`🔄 Layout component (${storeId}): Testing sign-in...`);
-      authStore.signInWithMagicLink('test@example.com');
+      authStore.sendEmailCode('test@example.com');
     }
   }
   

@@ -122,7 +122,6 @@ async function initializeComponent() {
   console.log('🔐 SignInCore Authentication Methods:', {
     passkeysEnabled: $authStore.passkeysEnabled,
     enablePasskeys: authConfig.enablePasskeys,
-    enableMagicLinks: authConfig.enableMagicLinks,
     signInMode: authConfig.signInMode,
   });
 
@@ -240,9 +239,6 @@ async function handleSecondaryAction() {
         console.log('📧 Secondary action: Sending new pin');
         await handleEmailCodeAuth();
       }
-    } else if (secondaryMethod === 'magic-link') {
-      console.log('🔗 Secondary action: Sending magic link');
-      await handleMagicLinkAuth();
     }
   } catch (err: any) {
     authStore.setLoading(false);
@@ -353,20 +349,6 @@ async function handlePasskeyAuth() {
         method: 'passkey',
       });
     }
-  } catch (err: any) {
-    // Error handling is now managed by AuthStore
-    throw err;
-  }
-}
-
-// Handle magic link authentication
-async function handleMagicLinkAuth() {
-  try {
-    // signInWithMagicLink() always resolves to null - the auth store
-    // transitions to 'pinEntry' internally (via notifyPinSent-equivalent
-    // signInStateTransitions.emailCodeSent) once the link is sent.
-    await authStore.signInWithMagicLink(email);
-    authStore.setLoading(false);
   } catch (err: any) {
     // Error handling is now managed by AuthStore
     throw err;
@@ -557,13 +539,11 @@ run(() => {
   }
 
   .email-code-input,
-  .magic-link-sent,
   .signed-in-success {
     text-align: center;
   }
 
-  .email-code-message,
-  .magic-link-message {
+  .email-code-message {
     color: var(--color-text-secondary, #6b7280);
     margin: 16px 0 24px 0;
     line-height: 1.5;

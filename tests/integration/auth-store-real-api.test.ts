@@ -9,7 +9,6 @@
  * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
-import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
@@ -25,7 +24,6 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true
@@ -192,10 +190,10 @@ describe('Auth Store Real API Integration Tests', () => {
       expect(authStore).toBeDefined();
       expect(authStore.isAuthenticated()).toBe(false);
 
-      const state = get(authStore);
+      const state = authStore.core.getState();
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
-      expect(state.accessToken).toBeNull();
+      expect(state.access_token).toBeNull();
     });
 
     it('should handle user check through auth store API', async () => {
@@ -275,19 +273,19 @@ describe('Auth Store Real API Integration Tests', () => {
         return;
       }
 
-      const initialState = get(authStore);
+      const initialState = authStore.core.getState();
       expect(initialState.state).toBe('unauthenticated');
 
       // Make API call and verify state remains consistent
       try {
         await authStore.api.checkEmail(testEmail);
 
-        const stateAfterApiCall = get(authStore);
+        const stateAfterApiCall = authStore.core.getState();
         expect(stateAfterApiCall.state).toBe('unauthenticated');
         expect(stateAfterApiCall.user).toBeNull();
       } catch (error) {
         // API call might fail, but state should still be consistent
-        const stateAfterError = get(authStore);
+        const stateAfterError = authStore.core.getState();
         expect(stateAfterError.state).toBe('unauthenticated');
       }
     });
@@ -308,7 +306,7 @@ describe('Auth Store Real API Integration Tests', () => {
       const results = await Promise.all(promises);
 
       // Verify state is still consistent after concurrent calls
-      const finalState = get(authStore);
+      const finalState = authStore.core.getState();
       expect(finalState.state).toBe('unauthenticated');
       expect(finalState.user).toBeNull();
 

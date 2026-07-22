@@ -383,29 +383,6 @@ export { auth_sendpintoemail3 as "auth.sendPinToEmail" }
 * @returns {string}
 */
 /* @__NO_SIDE_EFFECTS__ */
-const auth_sendmagiclink2 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.auth_sendmagiclink2(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("auth_sendmagiclink2", locale)
-	if (locale === "en") return en.auth_sendmagiclink2(inputs)
-	return da.auth_sendmagiclink2(inputs)
-};
-export { auth_sendmagiclink2 as "auth.sendMagicLink" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
 const auth_loading = (inputs = {}, options = {}) => {
 	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
 		return /** @type {any} */ (globalThis).__paraglide_ssr.auth_loading(inputs) 
@@ -462,29 +439,6 @@ const auth_sendingpin1 = (inputs = {}, options = {}) => {
 	return da.auth_sendingpin1(inputs)
 };
 export { auth_sendingpin1 as "auth.sendingPin" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
-const auth_sendingmagiclink2 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.auth_sendingmagiclink2(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("auth_sendingmagiclink2", locale)
-	if (locale === "en") return en.auth_sendingmagiclink2(inputs)
-	return da.auth_sendingmagiclink2(inputs)
-};
-export { auth_sendingmagiclink2 as "auth.sendingMagicLink" }
 /**
 * This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
 *
@@ -843,29 +797,6 @@ export { status_signinsuccess2 as "status.signInSuccess" }
 * @returns {string}
 */
 /* @__NO_SIDE_EFFECTS__ */
-const status_magiclinksent2 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.status_magiclinksent2(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("status_magiclinksent2", locale)
-	if (locale === "en") return en.status_magiclinksent2(inputs)
-	return da.status_magiclinksent2(inputs)
-};
-export { status_magiclinksent2 as "status.magicLinkSent" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
 const error_network = (inputs = {}, options = {}) => {
 	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
 		return /** @type {any} */ (globalThis).__paraglide_ssr.error_network(inputs) 
@@ -1060,29 +991,6 @@ const error_authfailed1 = (inputs = {}, options = {}) => {
 	return da.error_authfailed1(inputs)
 };
 export { error_authfailed1 as "error.authFailed" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
-const error_magiclinkfailed2 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.error_magiclinkfailed2(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("error_magiclinkfailed2", locale)
-	if (locale === "en") return en.error_magiclinkfailed2(inputs)
-	return da.error_magiclinkfailed2(inputs)
-};
-export { error_magiclinkfailed2 as "error.magicLinkFailed" }
 /**
 * This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
 *
@@ -1888,75 +1796,6 @@ const signin_webauthnindicator3 = (inputs = {}, options = {}) => {
 	return da.signin_webauthnindicator3(inputs)
 };
 export { signin_webauthnindicator3 as "signIn.webAuthnIndicator" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
-const magiclink_title1 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.magiclink_title1(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("magiclink_title1", locale)
-	if (locale === "en") return en.magiclink_title1(inputs)
-	return da.magiclink_title1(inputs)
-};
-export { magiclink_title1 as "magicLink.title" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
-const magiclink_description1 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.magiclink_description1(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("magiclink_description1", locale)
-	if (locale === "en") return en.magiclink_description1(inputs)
-	return da.magiclink_description1(inputs)
-};
-export { magiclink_description1 as "magicLink.description" }
-/**
-* This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
-*
-* - Changing this function will be over-written by the next build.
-*
-* - If you want to change the translations, you can either edit the source files e.g. `en.json`, or
-* use another inlang app like [Fink](https://inlang.com/m/tdozzpar) or the [VSCode extension Sherlock](https://inlang.com/m/r7kp499g).
-* 
-* @param {{}} inputs
-* @param {{ locale?: "en" | "da" }} options
-* @returns {string}
-*/
-/* @__NO_SIDE_EFFECTS__ */
-const magiclink_differentemail2 = (inputs = {}, options = {}) => {
-	if (experimentalMiddlewareLocaleSplitting && isServer === false) {
-		return /** @type {any} */ (globalThis).__paraglide_ssr.magiclink_differentemail2(inputs) 
-	}
-	const locale = options.locale ?? getLocale()
-	trackMessageCall("magiclink_differentemail2", locale)
-	if (locale === "en") return en.magiclink_differentemail2(inputs)
-	return da.magiclink_differentemail2(inputs)
-};
-export { magiclink_differentemail2 as "magicLink.differentEmail" }
 /**
 * This function has been compiled by [Paraglide JS](https://inlang.com/m/gerre34r).
 *

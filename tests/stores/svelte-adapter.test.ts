@@ -12,7 +12,11 @@ import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
-import type { AuthConfig } from '../../src/core/types/index.js';
+// Imported via the package self-reference (not a relative path) so this resolves
+// to the exact same module identity makeSvelteCompatible() uses internally -
+// otherwise structurally-identical AuthStore/SvelteAuthStore types from two
+// different import paths are treated as nominally distinct (private field branding).
+import type { AuthConfig, AuthStore, SvelteAuthStore } from '@thepia/flows-auth';
 
 // Mock external dependencies
 vi.mock('../../src/core/api/auth-api', () => ({
@@ -86,12 +90,11 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app'
 };
 
 describe('Svelte Store Adapter', () => {
-  let store: any;
+  let store: SvelteAuthStore;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -118,10 +121,10 @@ describe('Svelte Store Adapter', () => {
     it('should implement proper Svelte store contract for component usage', async () => {
       // Test that the store can be used exactly like Svelte components expect
       let subscriptionCallCount = 0;
-      let lastReceivedState: any = null;
+      let lastReceivedState!: AuthStore; // subscribe() below fires synchronously with initial state (Svelte contract)
 
       // Subscribe like a Svelte component would
-      const unsubscribe = store.subscribe((state: any) => {
+      const unsubscribe = store.subscribe((state: AuthStore) => {
         subscriptionCallCount++;
         lastReceivedState = state;
       });
@@ -156,8 +159,8 @@ describe('Svelte Store Adapter', () => {
     });
 
     it('should be reactive when state changes', () => {
-      let capturedState: any;
-      const unsubscribe = store.subscribe((state: any) => {
+      let capturedState!: AuthStore; // subscribe() below fires synchronously with initial state
+      const unsubscribe = store.subscribe((state: AuthStore) => {
         capturedState = state;
       });
 
@@ -174,13 +177,13 @@ describe('Svelte Store Adapter', () => {
     });
 
     it('should support multiple subscribers', () => {
-      let state1: any;
-      let state2: any;
+      let state1!: AuthStore; // subscribe() below fires synchronously with initial state
+      let state2!: AuthStore; // subscribe() below fires synchronously with initial state
 
-      const unsub1 = store.subscribe((s: any) => {
+      const unsub1 = store.subscribe((s: AuthStore) => {
         state1 = s;
       });
-      const unsub2 = store.subscribe((s: any) => {
+      const unsub2 = store.subscribe((s: AuthStore) => {
         state2 = s;
       });
 

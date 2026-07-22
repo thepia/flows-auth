@@ -23,7 +23,6 @@ describe('SignInForm Registration Flow Regression', () => {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
     enablePasskeys: true,
-    enableMagicLinks: false
   };
 
   beforeAll(async () => {
@@ -233,9 +232,9 @@ describe('SignInForm Registration Flow Regression', () => {
         if (hasPasskeys) {
           expectedStep = 'passkey-auth';
           console.log('🔐 Expected flow: Passkey authentication');
-        } else if (userExists && TEST_CONFIG.enableMagicLinks) {
-          expectedStep = 'magic-link';
-          console.log('📧 Expected flow: Magic link authentication');
+        } else if (userExists) {
+          expectedStep = 'email-code';
+          console.log('📧 Expected flow: Email code authentication');
         } else if (!userExists) {
           expectedStep = 'registration-terms';
           console.log('📝 Expected flow: Registration (NEW USER)');
@@ -252,7 +251,7 @@ describe('SignInForm Registration Flow Regression', () => {
           expect(expectedStep).toBe('registration-terms');
         } else {
           console.log('✅ EXISTING USER DETECTED - Authentication flow should be triggered');
-          expect(['passkey-auth', 'magic-link']).toContain(expectedStep);
+          expect(['passkey-auth', 'email-code']).toContain(expectedStep);
         }
       } catch (error) {
         console.error('❌ Email submission simulation failed:', error);

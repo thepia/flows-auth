@@ -27,7 +27,6 @@ const defaultConfig: AuthConfig = {
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: true,
   branding: {
     companyName: 'Test Company'
   }
@@ -156,8 +155,8 @@ describe('Error Handling Regression Tests', () => {
 
     it('should NOT show unhelpful error messages for missing passkeys', async () => {
       const { authStore } = renderWithStoreProp(SignInForm, {
-        authConfig: { ...defaultConfig, enableMagicLinks: true },
-        props: { config: { ...defaultConfig, enableMagicLinks: true } },
+        authConfig: { ...defaultConfig },
+        props: { config: { ...defaultConfig } },
         mockUserCheck: {
           exists: true,
           hasPasskey: false,
@@ -178,7 +177,6 @@ describe('Error Handling Regression Tests', () => {
 
         // ✅ Should either auto-transition or provide clear action
         const hasActionableFlow =
-          screen.queryByText(/magic link/i) ||
           screen.queryByText(/Terms of Service/i) ||
           screen.queryByText(/check.*email/i);
         expect(hasActionableFlow).toBeTruthy();

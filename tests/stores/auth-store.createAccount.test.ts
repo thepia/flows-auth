@@ -27,7 +27,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: false,
-  enableMagicLinks: true,
   appCode: 'test-app',
   signInMode: 'login-or-register',
   invitationToken: 'test-invitation-token'
@@ -46,7 +45,6 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),

@@ -28,7 +28,7 @@ describe('PinEntryStep Success Flow', () => {
     });
 
     // Set email then transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -41,11 +41,12 @@ describe('PinEntryStep Success Flow', () => {
         id: '123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'test-access-token',
-        refresh_token: 'test-refresh-token',
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
@@ -91,7 +92,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -141,7 +142,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -189,7 +190,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {

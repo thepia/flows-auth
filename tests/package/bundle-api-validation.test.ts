@@ -289,7 +289,6 @@ describe('Bundle API Validation (Integration)', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       appCode: 'test-app'
     };
 

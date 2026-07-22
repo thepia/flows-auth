@@ -6,10 +6,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   SessionMigrationResult,
-  SignInData,
   StorageConfigurationUpdate
 } from '../../src/core/types/index.js';
-import { ConfigurableStorageManager } from '../../src/core/utils/storageManager.js';
 
 // Mock browser storage APIs
 const mockSessionStorage = {

@@ -7,7 +7,7 @@ import { onMount, getContext } from 'svelte';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 
-import { CaretRight, User, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
+import { CaretRight, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
 import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
 
@@ -51,7 +51,6 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
-let enableMagicLinks = true;
 
 // New size and variant options
 let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
@@ -514,7 +513,6 @@ run(() => {
     if (authStore && authStore.updateConfig) {
     authStore.updateConfig({
       enablePasskeys,
-      enableMagicLinks,
       signInMode,
       language: selectedLanguage,
       fallbackLanguage: 'en',
@@ -529,7 +527,6 @@ run(() => {
 let dynamicAuthConfig = $derived(authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicLinks,
   signInMode,
   // i18n configuration
   language: selectedLanguage,
@@ -564,12 +561,6 @@ let dynamicAuthConfig = $derived(authConfig ? {
             <h3>{m["overview.features.passkeys.title"]()}</h3>
             <p>{m["overview.features.passkeys.description"]()}</p>
             <a href="/signin" class="feature-link">{m["overview.try_signin"]()}</a>
-          </div>
-          <div class="feature-card">
-            <User size={48} weight="regular" class="feature-icon" />
-            <h3>{m["overview.features.magic_links.title"]()}</h3>
-            <p>{m["overview.features.magic_links.description"]()}</p>
-            <a href="/register" class="feature-link">{m["overview.try_register"]()}</a>
           </div>
           <div class="feature-card">
             <Pulse size={48} weight="bold" class="feature-icon" />

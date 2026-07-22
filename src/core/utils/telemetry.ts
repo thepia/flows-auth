@@ -4,7 +4,12 @@
  */
 
 import type { AuthApiClient } from '../api/auth-api.js';
-import type { AuthConfig } from '../types/index.js';
+import type {
+  AuthConfig,
+  AuthStateReport,
+  ErrorReport,
+  ErrorReportPayload
+} from '../types/index.js';
 
 export interface SerializedError {
   name?: string;
@@ -25,12 +30,6 @@ export interface AuthStateEvent {
     | 'webauthn-register-start'
     | 'webauthn-register-success'
     | 'webauthn-register-failure'
-    | 'magic-link-request'
-    | 'magic-link-sent'
-    | 'magic-link-failure'
-    | 'magic-link-verify-start'
-    | 'magic-link-verify-success'
-    | 'magic-link-verify-failure'
     | 'sign-in-started'
     | 'sign-in-success'
     | 'sign-in-error'
@@ -41,7 +40,7 @@ export interface AuthStateEvent {
     | 'registration-failure';
   email?: string;
   userId?: string;
-  authMethod?: 'passkey' | 'password' | 'email' | 'magic-link' | 'unknown';
+  authMethod?: 'passkey' | 'password' | 'email' | 'unknown';
   duration?: number;
   error?: string;
   context?: Record<string, unknown>;
@@ -65,6 +64,52 @@ export interface ApiErrorEvent {
 
 export type ErrorReportEvent = AuthStateEvent | WebAuthnErrorEvent | ApiErrorEvent;
 
+/**
+ * Split a telemetry event into the `errors` / `authStates` arrays expected by
+ * thepia.com's /dev/error-reports endpoint (see ../types/dev-error-reports.js).
+ */
+function toDevReportArrays(
+  event: ErrorReportEvent,
+  timestamp: number
+): { errors: ErrorReport[]; authStates: AuthStateReport[] } {
+  if (event.type === 'auth-state-change') {
+    const authState: AuthStateReport = {
+      type: 'auth-state-change',
+      event: event.event,
+      authMethod: event.authMethod === 'unknown' ? undefined : event.authMethod,
+      userId: event.userId,
+      email: event.email,
+      error: event.error,
+      duration: event.duration,
+      timestamp,
+      context: event.context
+    };
+    return { errors: [], authStates: [authState] };
+  }
+
+  if (event.type === 'webauthn-error') {
+    const errorReport: ErrorReport = {
+      type: 'webauthn-error',
+      message: event.error.message || event.error.name || 'WebAuthn error',
+      stack: event.error.stack,
+      timestamp,
+      context: { operation: event.operation, ...event.context },
+      severity: 'high'
+    };
+    return { errors: [errorReport], authStates: [] };
+  }
+
+  // api-error
+  const errorReport: ErrorReport = {
+    type: 'api-error',
+    message: event.message,
+    timestamp,
+    context: { url: event.url, method: event.method, status: event.status, ...event.context },
+    severity: event.status >= 500 ? 'high' : 'medium'
+  };
+  return { errors: [errorReport], authStates: [] };
+}
+
 class Telemetry {
   private api: AuthApiClient | null = null;
   private config: AuthConfig | null = null;
@@ -72,6 +117,10 @@ class Telemetry {
   private retryQueue: { event: ErrorReportEvent; attempts: number }[] = [];
   private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
   private serviceWorkerInitialized = false;
+  private sessionId =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   setApiClient(api: AuthApiClient, config: AuthConfig) {
     this.api = api;
@@ -157,11 +206,16 @@ class Telemetry {
       throw new Error('No API client available');
     }
 
-    const payload = {
-      ...event,
-      timestamp: Date.now(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
+    const timestamp = Date.now();
+    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : 'server';
+    const url = typeof window !== 'undefined' ? window.location.href : 'unknown';
+    const { errors, authStates } = toDevReportArrays(event, timestamp);
+
+    const payload: ErrorReportPayload = {
+      errors: errors.map((e) => ({ ...e, userAgent, url, sessionId: this.sessionId })),
+      authStates,
+      sessionId: this.sessionId,
+      timestamp
     };
 
     // Use the API client to send the error report

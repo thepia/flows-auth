@@ -42,7 +42,6 @@ describe('AccountCreationForm Component', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg'

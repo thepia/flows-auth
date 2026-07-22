@@ -42,6 +42,17 @@ export type SignInEvent =
   | { type: 'RESET' } // Reset to email entry
   | { type: 'ERROR'; error: SignInError }; // Generic error occurred
 
+/**
+ * Additional event types handled by AuthStoreFunctions.sendSignInEvent()'s legacy
+ * event system, kept for backward compatibility. These aren't part of the formal
+ * SignInState machine (SignInEvent above) - they're direct field setters routed
+ * through the same legacy dispatch function.
+ */
+export type LegacySignInEvent =
+  | SignInEvent
+  | { type: 'SET_EMAIL'; email: string }
+  | { type: 'SET_FULL_NAME'; fullName: string };
+
 export interface WebAuthnError {
   name: string;
   message: string;

@@ -9,7 +9,7 @@ This directory contains documentation for all user-facing components in the flow
 | Component | Purpose | Documentation | Specification |
 |-----------|---------|---------------|---------------|
 | **AccountCreationForm** | Complete user registration with WebAuthn | [`AccountCreationForm.md`](./AccountCreationForm.md) | [`AccountCreationForm-spec.md`](../specifications/AccountCreationForm-spec.md) |
-| **SignInForm** | Multi-method authentication (passkey/password/magic-link) | *Coming Soon* | [`signInWithPasskey-spec.md`](../specifications/signInWithPasskey-spec.md) |
+| **SignInForm** | Multi-method authentication (passkey/email-code) | *Coming Soon* | [`signInWithPasskey-spec.md`](../specifications/signInWithPasskey-spec.md) |
 
 ### 🔧 **Utility Components**
 
@@ -32,8 +32,7 @@ This directory contains documentation for all user-facing components in the flow
     clientId: 'your-client-id',
     appCode: 'app',
     domain: 'example.com',
-    enablePasskeys: true,
-    enableMagicLinks: false,
+    enablePasskeys: true
   }));
 
   let showRegistration = $state(false);

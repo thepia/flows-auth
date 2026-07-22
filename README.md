@@ -6,7 +6,7 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 
 - 🔐 **WebAuthn/Passkey Support** - Secure, passwordless authentication
 - 🎨 **Whitelabel Ready** - Complete branding and theming system
-- 🔄 **Multi-step Flow** - Email → Passkey/Magic Link
+- 🔄 **Multi-step Flow** - Email → Passkey/Email Code
 - 📱 **Mobile Optimized** - Works seamlessly on all devices
 - 🧪 **Fully Tested** - Comprehensive test coverage
 - 📦 **Tree Shakeable** - Import only what you need
@@ -106,7 +106,6 @@ Set up once in your root layout, access anywhere with `getAuthStoreFromContext()
     clientId: 'your-client-id',
     domain: 'yourapp.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Your Company',
       logoUrl: '/logo.svg',
@@ -159,7 +158,6 @@ export const authStore = createAstroAuthStore({
   apiBaseUrl: getAstroApiUrl(),
   domain: 'yourapp.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register'
 });
 ```
@@ -238,8 +236,7 @@ For single-page apps or when you don't need context:
     apiBaseUrl: 'https://api.yourapp.com',
     clientId: 'your-client-id',
     domain: 'yourapp.com',
-    enablePasskeys: true,
-    enableMagicLinks: false
+    enablePasskeys: true
   };
 
   const auth = createAuthStore(authConfig);
@@ -333,8 +330,7 @@ You can also use individual step components for custom flows:
 ```svelte
 import { 
   EmailStep,
-  PasskeyStep, 
-  MagicLinkStep 
+  PasskeyStep
 } from '@thepia/flows-auth/components';
 ```
 
@@ -401,7 +397,7 @@ auth.subscribe($auth => {
 // Sign in methods
 await auth.signIn('user@example.com');
 await auth.signInWithPasskey('user@example.com');
-await auth.signInWithMagicLink('user@example.com');
+await auth.sendEmailCode('user@example.com');
 
 // Other methods
 await auth.signOut();
@@ -421,7 +417,6 @@ interface AuthConfig {
   
   // Feature flags
   enablePasskeys: boolean;
-  enableMagicLinks: boolean;
   
   // Optional
   redirectUri?: string;
@@ -464,7 +459,6 @@ flows-auth uses a `SessionPersistence` interface for all session persistence. By
     clientId: 'demo',
     domain: 'thepia.net',
     enablePasskeys: true,
-    enableMagicLinks: false,
     // Automatic session persistence via flows-client service worker
     database: flowsDB.session
   };
@@ -582,7 +576,6 @@ Currently receives placeholder tokens from thepia.com API (`"webauthn-verified"`
 
 ### 📋 Planned Features (API Not Ready)
 - Token refresh functionality (logic implemented, waiting for API)
-- Magic link authentication (fallback method)
 
 See [API Integration Status](./docs/auth/api-integration-status.md) for complete technical details.
 
@@ -656,7 +649,7 @@ The following documents are the **single source of truth** for their respective 
 A comprehensive demo application is included in `src/demo-app/` that showcases all features of the flows-auth library. The demo includes:
 
 - **Live Authentication Flow**: Complete sign-in/sign-out functionality
-- **Feature Showcase**: Demonstrates WebAuthn and magic link authentication
+- **Feature Showcase**: Demonstrates WebAuthn and email code authentication
 - **Configuration Examples**: Shows different branding and configuration options
 - **Responsive Design**: Works on desktop and mobile devices
 
@@ -694,7 +687,6 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
     appCode: 'app',
     domain: 'example.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Demo Company'
     }

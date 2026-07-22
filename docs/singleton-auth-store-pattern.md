@@ -118,7 +118,7 @@ The flows-auth library provides a **singleton auth store pattern** that ensures 
   <p>Welcome, {user.email}!</p>
   <button on:click={() => authStore.signOut()}>Sign Out</button>
 {:else}
-  <button on:click={() => authStore.signInWithMagicLink('user@example.com')}>
+  <button on:click={() => authStore.sendEmailCode('user@example.com')}>
     Sign In
   </button>
 {/if}

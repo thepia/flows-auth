@@ -89,7 +89,6 @@
           {#if currentScenario}
             <div class="auth-methods">
               <span class="method-badge" class:enabled={currentScenario.config.enablePasskeys}>Passkeys</span>
-              <span class="method-badge" class:enabled={currentScenario.config.enableMagicLinks}>Magic Link</span>
             </div>
           {/if}
           
@@ -201,13 +200,6 @@
                       <div class="feature-details">
                         <strong>WebAuthn/Passkey Authentication</strong>
                         <small>Biometric authentication using Touch ID, Face ID, or security keys</small>
-                      </div>
-                    </li>
-                    <li class="feature-item" class:enabled={currentScenario.config.enableMagicLinks}>
-                      <span class="feature-icon">{currentScenario.config.enableMagicLinks ? '✅' : '❌'}</span>
-                      <div class="feature-details">
-                        <strong>Magic Link Authentication</strong>
-                        <small>Passwordless login via secure email links</small>
                       </div>
                     </li>
                   </ul>

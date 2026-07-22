@@ -22,7 +22,6 @@ const testAuthConfig: Partial<AuthConfig> = {
   apiBaseUrl: 'https://api.thepia.com',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'TEST'
 };
 

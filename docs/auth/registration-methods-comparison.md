@@ -10,7 +10,7 @@ The flows-auth library provides three distinct registration/authentication metho
 |--------|----------|-------------------|----------------|-------------------|
 | `registerUser()` | Invitation-based registration | Optional (via token) | **Immediate** | Invitation flow |
 | `registerIndividualUser()` | Personal account creation | **Required** | After verification | Individual registration |
-| `signInWithMagicLink()` | Existing user login | N/A | **Immediate** | Existing user auth |
+| `sendEmailCode()` + `verifyCode()` | Existing user login | N/A | After code entry | Existing user auth |
 
 ## Detailed Method Analysis
 
@@ -80,29 +80,28 @@ async function registerIndividualUser(userData: {
 - When email verification is mandatory
 - Self-service account creation
 
-### 3. signInWithMagicLink() - Existing User Authentication
+### 3. sendEmailCode() / verifyCode() - Existing User Authentication
 
-**Purpose**: Authenticate users who already have verified accounts
+**Purpose**: Authenticate users who already have verified accounts, as a fallback when passkeys aren't available
 
 **Key Characteristics:**
 - **Existing user only** - Account must already exist
-- **Immediate authentication** - Provides tokens upon email verification
+- **Two-step authentication** - User must enter the numeric code they receive by email
 - **Email already verified** - User's email was verified during registration
 - **Login context** - Not registration, just authentication
 
 **Implementation Details:**
 ```typescript
-async function signInWithMagicLink(request: MagicLinkRequest): Promise<SignInResponse>
+async function sendEmailCode(email: string): Promise<{ success: boolean; message: string; timestamp: number }>
+async function verifyCode(email: string, code: string): Promise<SignInData>
 ```
 
 **State Machine Path:**
-`emailEntry` → `userLookup` → `scenarioDetection` → `existingUserAuth` → `emailLinkAuth` → `authenticated`
+`emailEntry` → `userLookup` → `scenarioDetection` → `existingUserAuth` → `pinEntry` → `authenticated`
 
 **When to Use:**
-- User forgot password / wants passwordless login
 - Existing account authentication
-- Cross-device login scenarios
-- When passkeys are not available
+- When passkeys are not available on the device
 
 ## Critical Authentication Side Effects
 
@@ -123,12 +122,13 @@ async function signInWithMagicLink(request: MagicLinkRequest): Promise<SignInRes
 
 This dual behavior is why:
 - `registerIndividualUser()` works - it creates account then sends verification
-- `signInWithMagicLink()` works - it authenticates existing users
 - Email verification **always** results in authentication (not just verification)
+
+**Note**: `startPasswordlessAuthentication()` remains available on the API client for direct use, but flows-auth's store/UI no longer wires it to a button - `sendEmailCode()`/`verifyCode()` (numeric code entry) is the supported existing-user email fallback.
 
 ### Email Verification = Authentication
 
-**Key Insight**: In Auth0's passwordless flow, email verification is not separate from authentication. When a user clicks a magic link:
+**Key Insight**: In Auth0's passwordless flow, email verification is not separate from authentication. When a user clicks the link from `startPasswordlessAuthentication()`:
 
 1. **Auth0 validates** the link and user identity
 2. **Sets email_verified: true** in the user profile
@@ -173,9 +173,10 @@ if (response.user) {
 
 ### For Existing User Login
 ```typescript
-// Use signInWithMagicLink for returning users
-await authStore.signInWithMagicLink(userEmail);
-// Auth store handles polling and authentication
+// Use sendEmailCode for returning users without a passkey
+await authStore.sendEmailCode(userEmail);
+// User enters the code they receive, then:
+await authStore.verifyCode(userEmail, code);
 ```
 
 ## Common Implementation Mistakes

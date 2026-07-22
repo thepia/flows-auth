@@ -21,7 +21,6 @@ vi.mock('../../src/core/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -84,7 +83,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app',
   branding: {
     companyName: 'Test Company',
@@ -293,7 +291,6 @@ describe('New Modular Auth Store Architecture', () => {
 
     it('should provide unified API', () => {
       expect(composedStore.signInWithPasskey).toBeInstanceOf(Function);
-      expect(composedStore.signInWithMagicLink).toBeInstanceOf(Function);
       expect(composedStore.sendEmailCode).toBeInstanceOf(Function);
       expect(composedStore.verifyEmailCode).toBeInstanceOf(Function);
       expect(composedStore.checkUser).toBeInstanceOf(Function);

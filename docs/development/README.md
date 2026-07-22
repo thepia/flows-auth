@@ -63,8 +63,7 @@ import { createAuthStore, AccountCreationForm, SignInForm } from '@thepia/flows-
 const authStore = createAuthStore({
   apiBaseUrl: 'https://api.example.com',
   domain: 'example.com',
-  enablePasskeys: true,
-  enableMagicLinks: false
+  enablePasskeys: true
 });
 ```
 

@@ -14,7 +14,6 @@ const TEST_CONFIG = {
   domain: 'test.thepia.net',
   appCode: 'demo', // Use demo appCode for examples
   enablePasskeys: false,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Thepia Test',
     showPoweredBy: false

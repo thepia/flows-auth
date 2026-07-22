@@ -44,7 +44,6 @@ describe('SignInCore Login-Only Mode Message', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true,
         signInMode: 'login-only'
       }
     });
@@ -59,7 +58,6 @@ describe('SignInCore Login-Only Mode Message', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true,
         signInMode: 'login-only'
       }
     });
@@ -74,7 +72,6 @@ describe('SignInCore Login-Only Mode Message', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true,
         signInMode: 'login-or-register'
       }
     });
@@ -89,7 +86,6 @@ describe('SignInCore Login-Only Mode Message', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true,
         signInMode: 'login-only'
       }
     });

@@ -37,7 +37,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true
         },
         props: {
           initialEmail: 'test@example.com'
@@ -57,7 +56,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true,
           branding: {
             logoUrl: 'https://example.com/logo.png',
             companyName: 'Test Company'
@@ -170,7 +168,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true
         },
         props: {
           showLogo: true,

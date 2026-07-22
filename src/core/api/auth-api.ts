@@ -9,7 +9,6 @@ import type {
   CheckUserResponse,
   EmailCodeSendResponse,
   LogoutRequest,
-  MagicLinkRequest,
   PasskeyChallenge,
   PasskeyCredential,
   PasskeyRequest,
@@ -326,28 +325,6 @@ export class AuthApiClient {
   }
 
   /**
-   * Request magic link
-   * Note: Uses the unified passwordless endpoint
-   */
-  async signInWithMagicLink(request: MagicLinkRequest): Promise<SignInResponse> {
-    // The /auth/signin/magic-link endpoint doesn't exist - use startPasswordlessAuthentication
-    console.warn(
-      '⚠️ signInWithMagicLink() called - redirecting to startPasswordlessAuthentication()'
-    );
-
-    // Use the unified passwordless endpoint instead
-    const result = await this.startPasswordlessAuthentication(request.email);
-
-    // Convert the passwordless response to SignInResponse format
-    return {
-      step: result.success ? 'email-sent' : 'error',
-      message: result.message,
-      needsPasskey: false,
-      needsVerification: true // Passwordless always requires verification
-    } as SignInResponse;
-  }
-
-  /**
    * Get passkey challenge
    */
   async getPasskeyChallenge(email: string): Promise<PasskeyChallenge> {
@@ -399,16 +376,6 @@ export class AuthApiClient {
       },
       true
     );
-  }
-
-  /**
-   * Verify magic link token
-   */
-  async verifyMagicLink(token: string): Promise<SignInResponse> {
-    return this.request<SignInResponse>('/auth/verify-magic-link', {
-      method: 'POST',
-      body: JSON.stringify({ token })
-    });
   }
 
   /**
@@ -622,27 +589,6 @@ export class AuthApiClient {
       headers: {
         Origin: typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'
       }
-    });
-  }
-
-  /**
-   * Send magic link for email verification
-   *
-   * TODO use /app endpoint or remove
-   */
-  async sendMagicLinkEmail(email: string): Promise<{
-    success: boolean;
-    message?: string;
-  }> {
-    return this.request<{
-      success: boolean;
-      message?: string;
-    }>('/auth/magic-link', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: email.trim(),
-        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'https://app.thepia.net'}/auth/callback`
-      })
     });
   }
 

@@ -26,8 +26,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: false,
-        enableMagicLinks: true
+        enablePasskeys: false
       }
     });
 
@@ -41,7 +40,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -52,7 +51,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.setEmailCode('123456');
 
     await waitFor(() => {
-      expect(authStore.getState().emailCode).toBe('123456');
+      expect(authStore.ui.getState().emailCode).toBe('123456');
     });
 
     // Find the verify button and its form
@@ -76,7 +75,6 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
@@ -90,7 +88,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -101,7 +99,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.setEmailCode('123456');
 
     await waitFor(() => {
-      expect(authStore.getState().emailCode).toBe('123456');
+      expect(authStore.ui.getState().emailCode).toBe('123456');
     });
 
     const input = screen.getByRole('textbox', { name: /code/i });
@@ -123,7 +121,6 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
@@ -131,7 +128,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -161,7 +158,6 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
@@ -169,7 +165,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {

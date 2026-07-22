@@ -3,7 +3,7 @@
  *
  * Purpose: verify determineAuthMethod()'s routing in SignInCore picks the
  * right auth method (passkey / passkey-with-fallback / email-code /
- * magic-link / new-user registration) for each user-state + config
+ * new-user registration) for each user-state + config
  * combination, entirely behind the single sign-in button - there is no
  * separate "continue" step or method-choice screen (see webauthn-flow.test.ts
  * for WebAuthn-ceremony-specific edge cases; this file focuses on the
@@ -43,7 +43,6 @@ function createTestStore(overrides: Partial<AuthConfig> = {}) {
     clientId: 'test-client',
     domain: 'test.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     ...overrides
   };
   return makeSvelteCompatible(createAuthStore(config));
@@ -101,7 +100,7 @@ describe('Automatic Flow Detection', () => {
   describe('Existing user routing', () => {
     it('should route to passkey sign-in as the primary action when the user has a passkey', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/auth/check-user')) {
+        if (url.includes('/app/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
@@ -118,37 +117,15 @@ describe('Automatic Flow Detection', () => {
       expect(getSubmitButton().textContent).toContain('Sign in with Passkey');
     });
 
-    it('should offer magic link as the secondary option when passkey-with-fallback applies', async () => {
+    it('should send an email code automatically for an existing user without a passkey (email-only)', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/auth/check-user')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
-          });
-        }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-      });
-
-      const authStore = createTestStore({ enablePasskeys: true, enableMagicLinks: true });
-      render(SignInForm, { props: { store: authStore } });
-
-      await typeEmailAndWait('existing-with-passkey@test.com');
-
-      const buttons = screen.getAllByRole('button');
-      const buttonTexts = buttons.map((b) => b.textContent);
-      expect(buttonTexts.some((t) => t?.includes('Sign in with Passkey'))).toBe(true);
-      expect(buttonTexts.some((t) => t?.includes('Send Magic Link'))).toBe(true);
-    });
-
-    it('should send a magic link automatically for an existing user without a passkey (email-only)', async () => {
-      mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/auth/check-user')) {
+        if (url.includes('/app/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: false, userId: 'user-456' })
           });
         }
-        if (url.includes('/auth/start-passwordless')) {
+        if (url.includes('/app/send-email')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -157,9 +134,9 @@ describe('Automatic Flow Detection', () => {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
 
-      // No appCode configured, so a passkey-less existing user with
-      // magic links enabled routes to 'email-only' -> signInWithMagicLink().
-      const authStore = createTestStore({ enablePasskeys: true, enableMagicLinks: true });
+      // No appCode configured, so a passkey-less existing user
+      // routes to 'email-only' -> sendEmailCode().
+      const authStore = createTestStore({ enablePasskeys: true });
       render(SignInForm, { props: { store: authStore } });
 
       await typeEmailAndWait('existing-no-passkey@test.com');
@@ -282,7 +259,7 @@ describe('Automatic Flow Detection', () => {
   describe('Form state management', () => {
     it('should reflect only the final email after rapid changes, with no stale overwrite', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/auth/check-user')) {
+        if (url.includes('/app/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: false })

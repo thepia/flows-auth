@@ -38,7 +38,6 @@ describe('Auth Store RESET Event Handling', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -52,7 +51,6 @@ describe('Auth Store RESET Event Handling', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test',
       signInMode: 'login-only'
     };

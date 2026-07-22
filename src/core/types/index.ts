@@ -6,6 +6,7 @@ import type { AuthFlowResult, EnhancedUserCheck } from './enhanced-auth.js';
 import type { UserMetadata } from './metadata-schema.js';
 // SignIn state types (keeping only the types, removed the class)
 import type {
+  LegacySignInEvent,
   SignInContext,
   SignInError,
   SignInEvent,
@@ -53,13 +54,12 @@ export type AuthState =
   | 'authenticated' // Generic authenticated state for backward compatibility
   | 'error';
 
-export type AuthMethod = 'passkey' | 'magic-link' | 'email-code';
+export type AuthMethod = 'passkey' | 'email-code';
 
 // Sign-in flow states - passwordless only
 export type SignInStep =
   | 'email'
   | 'passkey'
-  | 'magic-link'
   | 'email-code'
   | 'email-sent'
   | 'loading'
@@ -109,7 +109,7 @@ export interface SignInData {
   tokens: Partial<TokenData>;
 
   /** Authentication method used */
-  authMethod?: 'passkey' | 'password' | 'email-code' | 'magic-link'; // Made optional
+  authMethod?: 'passkey' | 'password' | 'email-code'; // Made optional
 }
 
 // Storage configuration
@@ -162,7 +162,6 @@ export interface AuthConfig {
   clientId: string;
   domain: string;
   enablePasskeys: boolean;
-  enableMagicLinks: boolean;
   redirectUri?: string;
   branding?: AuthBranding;
   errorReporting?: ErrorReportingConfig;
@@ -302,7 +301,6 @@ export interface SignInResponse {
   refresh_token?: string;
   expires_in?: number;
   requiresPasskey?: boolean;
-  magicLinkSent?: boolean;
   challengeId?: string;
   step: SignInStep; // TODO align server and client
   emailVerifiedViaInvitation?: boolean; // True if email was verified via invitation token
@@ -362,11 +360,6 @@ export interface PasskeyRequest {
   email: string; // Changed to email for consistency with other methods
   credential: SerializedPasskeyCredential; // Serialized (base64url) credential sent to server
   challengeId?: string; // Optional challenge ID for verification
-}
-
-export interface MagicLinkRequest {
-  email: string;
-  redirectUri?: string;
 }
 
 /**
@@ -599,7 +592,6 @@ export interface WebAuthnVerificationResult {
 export type KnownAuthErrorCode =
   | 'passkey_failed'
   | 'passkey_not_supported'
-  | 'magic_link_failed'
   | 'email_failed'
   | 'check_user_failed'
   | 'registration_failed'
@@ -687,13 +679,13 @@ export type AuthEventType =
  */
 export interface AuthEvents {
   sign_in_started: {
-    method: 'passkey' | 'magic-link' | 'email-code';
+    method: 'passkey' | 'email-code';
     email?: string;
   };
 
   sign_in_success: {
     user: User;
-    method: 'passkey' | 'magic-link' | 'email-code';
+    method: 'passkey' | 'email-code';
     duration?: number;
   };
 
@@ -702,7 +694,7 @@ export interface AuthEvents {
       code: string;
       message: string;
     };
-    method: 'passkey' | 'magic-link' | 'email-code';
+    method: 'passkey' | 'email-code';
   };
 
   sign_out: {
@@ -834,15 +826,6 @@ export interface PasskeyStepProps {
   branding?: AuthBranding;
 }
 
-export interface MagicLinkStepProps {
-  email: string;
-  onBack: () => void;
-  onResend?: () => void;
-  loading?: boolean;
-  error?: string;
-  branding?: AuthBranding;
-}
-
 export interface TermsOfServiceProps {
   onAccept: (accepted: { terms: boolean; privacy: boolean; marketing?: boolean }) => void;
   onBack?: () => void;
@@ -904,7 +887,6 @@ export interface AuthStore {
 export interface AuthStoreFunctions {
   // Core authentication
   signInWithPasskey: (email: string, conditional?: boolean) => Promise<SignInData>;
-  signInWithMagicLink: (email: string) => Promise<SignInData | null>;
   signOut: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   startConditionalAuthentication: (email: string) => Promise<boolean>;
@@ -1009,7 +991,6 @@ export type AuthButtonMethod =
   | 'passkey'
   | 'email'
   | 'email-code'
-  | 'magic-link'
   | 'generic'
   | 'continue-touchid'
   | 'continue-faceid'
@@ -1059,7 +1040,8 @@ export interface ExplainerConfig {
 
 // Re-export i18n utilities for convenience
 export { m, setI18nMessages } from '../utils/i18n.js';
-
+// Re-export generic wire-level error body (shared with thepia.com's REST endpoints)
+export type { ApiErrorBody } from './api-error.js';
 // Re-export auth store schema types and validators for runtime validation
 export type {
   AuthStoreState,
@@ -1083,6 +1065,12 @@ export {
   UserSchema,
   WebAuthnErrorSchema
 } from './auth-store-schema.js';
-
+// Re-export dev error-reporting wire contract (shared with thepia.com's /dev/error-reports)
+export type {
+  AuthStateReport,
+  DevErrorSeverity,
+  ErrorReport,
+  ErrorReportPayload
+} from './dev-error-reports.js';
 // Re-export onboarding types (consents, preferences, invitations, clients)
 export type * from './onboarding.js';

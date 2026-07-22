@@ -27,7 +27,6 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }

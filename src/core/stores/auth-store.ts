@@ -322,28 +322,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       }
     },
 
-    signInWithMagicLink: async (emailAddress: string) => {
-      try {
-        eventEmitters.signInStarted({ method: 'magic-link', email: emailAddress });
-
-        // TODO set loading, and clear it upon completion
-        // Send magic link (returns null - user needs to click link)
-        await email.getState().sendMagicLink(emailAddress);
-
-        signInStateTransitions.emailCodeSent(ui); // Do this for now. TODO consider magicLinkSent()
-
-        // Magic link doesn't return auth data immediately
-        // User needs to click the link in their email
-        return null;
-      } catch (err) {
-        eventEmitters.signInError({
-          error: { code: 'magic_link_failed', message: (err as Error).message },
-          method: 'magic-link'
-        });
-        throw err;
-      }
-    },
-
     sendEmailCode: async (emailAddress: string) => {
       try {
         eventEmitters.signInStarted({ method: 'email-code', email: emailAddress });

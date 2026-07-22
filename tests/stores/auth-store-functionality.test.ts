@@ -53,7 +53,6 @@ describe('Auth Functionality Tests', () => {
       clientId: 'test-client-id',
       appCode: 'functionality-test',
       enablePasskeys: true,
-      enableMagicLinks: false,
       signInMode: 'login-or-register',
       language: 'en',
       applicationContext: {

@@ -17,15 +17,11 @@
 
   "overview": {
     "title": "Thepia Flows Authentication",
-    "subtitle": "Passwordless authentication with WebAuthn passkeys and magic links",
+    "subtitle": "Passwordless authentication with WebAuthn passkeys and email codes",
     "features": {
       "passkeys": {
         "title": "WebAuthn Passkeys",
         "description": "Secure, passwordless authentication using biometrics or security keys"
-      },
-      "magic_links": {
-        "title": "Magic Links",
-        "description": "One-click authentication via secure email links"
       },
       "state_machine": {
         "title": "State Machine",

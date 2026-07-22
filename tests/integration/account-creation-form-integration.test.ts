@@ -38,7 +38,6 @@ function createTestStore() {
     domain: 'test.com',
     appCode: APP_CODE,
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }

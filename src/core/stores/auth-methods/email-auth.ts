@@ -4,7 +4,6 @@
  * Handles email-based authentication methods:
  * - PIN code generation and verification
  * - App-based email authentication
- * - Magic link generation and handling
  * - Organization-specific email flows
  */
 
@@ -21,14 +20,11 @@ export interface EmailAuthState {
   // Operation states
   isSendingCode: boolean;
   isVerifyingCode: boolean;
-  isSendingMagicLink: boolean;
 
   // Email flow state
   codeSent: boolean;
   codeVerified: boolean;
-  magicLinkSent: boolean;
   lastCodeSentTime: number | null;
-  lastMagicLinkSentTime: number | null;
 
   // Rate limiting and cooldowns
   canResendCode: boolean;
@@ -50,9 +46,6 @@ export interface EmailAuthActions {
   verifyCode: (email: string, code: string) => Promise<SignInData>;
   resendCode: (email: string) => Promise<{ success: boolean; message: string; timestamp: number }>;
 
-  // Magic link methods
-  sendMagicLink: (email: string) => Promise<void>;
-
   // User check methods
   checkUser: (email: string) => Promise<{
     exists: boolean;
@@ -65,7 +58,6 @@ export interface EmailAuthActions {
   // State management
   setCodeSent: (sent: boolean) => void;
   setCodeVerified: (verified: boolean) => void;
-  setMagicLinkSent: (sent: boolean) => void;
   startResendCooldown: (seconds?: number) => void;
   clearError: () => void;
   reset: () => void;
@@ -82,12 +74,9 @@ export interface EmailAuthStore extends EmailAuthState, EmailAuthActions {}
 const initialState: EmailAuthState = {
   isSendingCode: false,
   isVerifyingCode: false,
-  isSendingMagicLink: false,
   codeSent: false,
   codeVerified: false,
-  magicLinkSent: false,
   lastCodeSentTime: null,
-  lastMagicLinkSentTime: null,
   canResendCode: true,
   resendCooldownSeconds: 0,
   resendAttempts: 0,
@@ -216,40 +205,6 @@ export function createEmailAuthStore(options: StoreOptions) {
       return await get().sendCode(email);
     },
 
-    sendMagicLink: async (email: string) => {
-      try {
-        set({
-          isSendingMagicLink: true,
-          lastError: null,
-          lastSentEmail: email
-        });
-
-        console.log('🔗 Sending magic link:', { email });
-
-        const _response = await api.signInWithMagicLink({ email });
-
-        set({
-          isSendingMagicLink: false,
-          magicLinkSent: true,
-          lastMagicLinkSentTime: Date.now()
-        });
-
-        console.log('✅ Magic link sent successfully');
-
-        // Magic link just sends email — auth happens when user clicks the link
-      } catch (error) {
-        const linkError = error as Error;
-
-        set({
-          isSendingMagicLink: false,
-          lastError: linkError
-        });
-
-        console.error('❌ Failed to send magic link:', linkError);
-        throw error;
-      }
-    },
-
     checkUser: async (
       email: string
     ): Promise<{
@@ -292,10 +247,6 @@ export function createEmailAuthStore(options: StoreOptions) {
 
     setCodeVerified: (verified: boolean) => {
       set({ codeVerified: verified });
-    },
-
-    setMagicLinkSent: (sent: boolean) => {
-      set({ magicLinkSent: sent });
     },
 
     startResendCooldown: (seconds = 30) => {
@@ -371,7 +322,7 @@ function getRemainingPinMinutes(userCheck: any): number {
  */
 export function getEmailAuthCapabilities(
   emailStore: ReturnType<typeof createEmailAuthStore>,
-  config: { appCode?: string | boolean; enableMagicLinks?: boolean }
+  config: { appCode?: string | boolean }
 ) {
   const state = emailStore.getState();
 
@@ -380,10 +331,9 @@ export function getEmailAuthCapabilities(
 
   return {
     canSendCode: hasAppCode,
-    canSendMagicLink: config.enableMagicLinks || !hasAppCode,
     canResendCode: state.canResendCode && state.resendAttempts < 3,
     resendCooldown: state.resendCooldownSeconds,
-    recommendedMethod: hasAppCode ? 'email-code' : 'magic-link'
+    recommendedMethod: 'email-code' as const
   };
 }
 
@@ -394,5 +344,5 @@ export function isEmailOperationInProgress(
   emailStore: ReturnType<typeof createEmailAuthStore>
 ): boolean {
   const state = emailStore.getState();
-  return state.isSendingCode || state.isVerifyingCode || state.isSendingMagicLink;
+  return state.isSendingCode || state.isVerifyingCode;
 }

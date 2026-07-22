@@ -29,7 +29,6 @@ describe('Token Refresh Security & Edge Cases', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }

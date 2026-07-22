@@ -17,7 +17,6 @@ vi.mock('../../src/core/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -97,7 +96,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app',
   branding: {
     companyName: 'Test Company',

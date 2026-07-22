@@ -21,6 +21,7 @@ interface TestConfig {
   appCode: string;
   provider: 'workos' | 'auth0';
   domain: string;
+  clientId: string;
 }
 
 // Detect which API server to test against
@@ -54,7 +55,8 @@ describe('BDD: flows-auth API Consumption', () => {
       apiBaseUrl,
       appCode: 'demo', // Primary test organization
       provider: 'workos',
-      domain: 'dev.thepia.net'
+      domain: 'dev.thepia.net',
+      clientId: 'test-client'
     };
   });
 
@@ -66,8 +68,8 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false, // Disabled for WorkOS testing
-        enableMagicLinks: false
       });
 
       // Then: Auth store should be properly initialized
@@ -86,6 +88,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 
@@ -105,6 +108,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
     });
@@ -164,6 +168,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
     });
@@ -228,8 +233,8 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false, // Explicitly disabled
-        enableMagicLinks: false
       });
 
       // When: Checking what auth methods are available
@@ -254,6 +259,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
     });
@@ -303,6 +309,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
     });
@@ -329,6 +336,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false // Matches backend capability
       });
 
@@ -355,6 +363,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
     });
@@ -385,6 +394,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: 'https://definitely-does-not-exist.invalid',
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 
@@ -409,7 +419,9 @@ describe('BDD: flows-auth API Consumption', () => {
       const authStore = createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
-        domain: testConfig.domain
+        domain: testConfig.domain,
+        clientId: testConfig.clientId,
+        enablePasskeys: false
       });
 
       // When: Checking available methods
@@ -434,6 +446,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 

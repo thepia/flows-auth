@@ -16,7 +16,6 @@ const testConfig: AuthConfig = {
   clientId: 'test-flows-auth',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: false

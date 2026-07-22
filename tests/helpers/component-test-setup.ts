@@ -27,7 +27,6 @@ export function createTestAuthStore(authConfig: Partial<AuthConfig> = {}) {
     domain: 'test.auth0.com',
     appCode: 'test-app', // Modern approach - appCode replaces clientId
     enablePasskeys: true,
-    enableMagicLinks: false,
     signInMode: 'login-or-register',
     language: 'en',
     ...authConfig
@@ -155,13 +154,6 @@ export const TEST_AUTH_CONFIGS = {
   withAppCode: {
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false
-  },
-
-  /** Legacy config without app code (magic links only) */
-  legacyMagicLinks: {
-    enablePasskeys: true,
-    enableMagicLinks: true
   },
 
   /** Login-only mode (no registration) */
@@ -169,14 +161,12 @@ export const TEST_AUTH_CONFIGS = {
     appCode: 'test-app',
     signInMode: 'login-only' as const,
     enablePasskeys: true,
-    enableMagicLinks: false
   },
 
   /** Passkeys disabled */
   noPasskeys: {
     appCode: 'test-app',
     enablePasskeys: false,
-    enableMagicLinks: false
   }
 } as const;
 

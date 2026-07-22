@@ -17,7 +17,6 @@ const mockConfig: AuthConfig = {
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company'
   }
@@ -109,93 +108,9 @@ describe('AuthApiClient', () => {
       );
     });
 
-    // magic link isn't really working and is legacy
-    it.skip('should handle POST requests with body', async () => {
-      const mockResponse: SignInResponse = {
-        step: 'success',
-        user: {
-          id: '123',
-          email: 'test@example.com',
-          name: 'Test User',
-          emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        },
-        access_token: 'token',
-        refresh_token: 'refresh'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
-
-      const result = await apiClient.signInWithMagicLink({
-        email: 'test@example.com'
-      });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/test-app/send-email',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          }),
-          body: JSON.stringify({
-            email: 'test@example.com'
-          })
-        })
-      );
-
-      expect(result).toEqual(mockResponse);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle HTTP error responses', async () => {
-      const errorResponse = {
-        success: false,
-        message: 'Invalid email or password'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true, // API returns 200 with success: false
-        json: () => Promise.resolve(errorResponse)
-      });
-
-      const result = await apiClient.signInWithMagicLink({ email: 'test@example.com' });
-
-      // signInWithMagicLink now returns error response instead of throwing
-      expect(result.step).toBe('error');
-      expect(result.message).toBe('Invalid email or password');
-    });
   });
 
   describe('Authentication Methods', () => {
-    it('should handle passwordless authentication via signInWithMagicLink', async () => {
-      // signInWithMagicLink now redirects to startPasswordlessAuthentication
-      const mockApiResponse = {
-        success: true,
-        message: 'Email code sent successfully'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockApiResponse)
-      });
-
-      const result = await apiClient.signInWithMagicLink({
-        email: 'test@example.com'
-      });
-
-      // Expect converted response format
-      expect(result).toEqual({
-        step: 'email-sent',
-        message: 'Email code sent successfully',
-        needsPasskey: false,
-        needsVerification: true
-      });
-    });
-
     it.skip('should handle passkey sign in', async () => {
       // Passkey support not yet implemented
       const mockCredential = {
@@ -249,29 +164,6 @@ describe('AuthApiClient', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('should handle magic link (passwordless) sign in', async () => {
-      // signInWithMagicLink returns passwordless response
-      const mockApiResponse = {
-        success: true,
-        message: 'Check your email for the code'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockApiResponse)
-      });
-
-      const result = await apiClient.signInWithMagicLink({
-        email: 'test@example.com'
-      });
-
-      expect(result).toEqual({
-        step: 'email-sent',
-        message: 'Check your email for the code',
-        needsPasskey: false,
-        needsVerification: true
-      });
-    });
   });
 
   describe('Token Management', () => {
@@ -712,27 +604,5 @@ describe('AuthApiClient', () => {
       );
     });
 
-    it('should verify magic link', async () => {
-      const mockResponse: SignInResponse = {
-        step: 'success',
-        user: {
-          id: '123',
-          email: 'test@example.com',
-          name: 'Test User',
-          emailVerified: true,
-          createdAt: '2023-01-01T00:00:00Z'
-        },
-        access_token: 'access-token'
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
-
-      const result = await apiClient.verifyMagicLink('magic-token');
-
-      expect(result).toEqual(mockResponse);
-    });
   });
 });

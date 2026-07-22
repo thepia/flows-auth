@@ -21,7 +21,6 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true
@@ -93,13 +92,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       expect(authApiClient.config.apiBaseUrl).toBe(API_BASE);
 
       // Test that all expected endpoints would be constructed correctly
-      const endpoints = [
-        'check-user',
-        'webauthn/challenge',
-        'webauthn/verify',
-        'signin/magic-link',
-        'verify-magic-link'
-      ];
+      const endpoints = ['check-user', 'webauthn/challenge', 'webauthn/verify'];
 
       endpoints.forEach((endpoint) => {
         const fullUrl = `${authApiClient.config.apiBaseUrl}/auth/${endpoint}`;
@@ -214,51 +207,6 @@ describe('Auth0Service Real API Integration Tests', () => {
       } catch (error: any) {
         expect(error.message).toBeDefined();
         console.log(`✅ WebAuthn challenge correctly rejected for non-existent user`);
-      }
-    });
-  });
-
-  describe('Magic Link Integration', () => {
-    it('should handle magic link request', async () => {
-      if (!apiAvailable) {
-        console.log('Skipping: Live API not available');
-        return;
-      }
-
-      try {
-        const result = await authApiClient.sendMagicLinkEmail(testEmail);
-
-        expect(result).toHaveProperty('step');
-        expect(result.step).toBe('magic_link_sent');
-
-        if (result.message) {
-          expect(typeof result.message).toBe('string');
-        }
-
-        console.log(`✅ Magic link sent to ${testEmail}`);
-      } catch (error: any) {
-        console.log(`⚠️ Magic link error (may be expected): ${error.message}`);
-        expect(error.message).toBeDefined();
-      }
-    });
-
-    it('should handle magic link for non-existent user', async () => {
-      if (!apiAvailable) {
-        console.log('Skipping: Live API not available');
-        return;
-      }
-
-      const nonExistentEmail = `non-existent-${Date.now()}@example.com`;
-
-      try {
-        const result = await authApiClient.sendMagicLinkEmail(nonExistentEmail);
-
-        // Some APIs might still send magic link for non-existent users for security
-        expect(result).toHaveProperty('step');
-        console.log(`✅ Magic link handled for non-existent user: ${result.step}`);
-      } catch (error: any) {
-        console.log(`✅ Magic link correctly rejected for non-existent user: ${error.message}`);
-        expect(error.message).toBeDefined();
       }
     });
   });

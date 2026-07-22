@@ -54,7 +54,6 @@ describe('Auth Store PIN Notification', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test'
     };
 

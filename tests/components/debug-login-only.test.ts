@@ -38,7 +38,6 @@ describe('Debug Login-Only Message', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true,
         signInMode: 'login-only'
       }
     });

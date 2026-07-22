@@ -83,7 +83,7 @@ export const AuthCoreStateSchema = z.object({
 export const SessionStateSchema = z.object({
   user: UserSchema.nullable(),
   tokens: TokensSchema.nullable(),
-  authMethod: z.enum(['passkey', 'pin', 'email-link', 'magic-link']).nullable(),
+  authMethod: z.enum(['passkey', 'pin', 'email-link']).nullable(),
   sessionId: z.string().nullable(),
   createdAt: z.number().nullable(),
   expiresAt: z.number().nullable()

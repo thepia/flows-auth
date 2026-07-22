@@ -171,7 +171,7 @@ export function createUIStore(options: StoreOptions) {
     },
 
     // TODO formal method type
-    authSuccess: (_method: 'passkey' | 'email-code' | 'magic-link') => {
+    authSuccess: (_method: 'passkey' | 'email-code') => {
       set((state) => ({
         ...state,
         signInState: 'signedIn',
@@ -312,24 +312,13 @@ export function createUIStore(options: StoreOptions) {
       ): ButtonConfig {
         const isDisabled = !email?.trim() || loading || !userExists;
 
-        let secondary: any;
-        if (config.enableMagicLinks) {
-          secondary = {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: true,
-            disabled: isDisabled
-          };
-        } else {
-          secondary = {
-            method: 'email-code',
-            textKey: 'auth.sendPinByEmail',
-            loadingTextKey: 'auth.sendingPin',
-            supportsWebAuthn: true,
-            disabled: isDisabled
-          };
-        }
+        const secondary = {
+          method: 'email-code' as const,
+          textKey: 'auth.sendPinByEmail',
+          loadingTextKey: 'auth.sendingPin',
+          supportsWebAuthn: true,
+          disabled: isDisabled
+        };
 
         const buttonConfig: ButtonConfig = {
           primary: {
@@ -656,7 +645,7 @@ export function createUIEventHandlers(
     /**
      * Handle authentication success from any method
      */
-    handleAuthSuccess: (method: 'passkey' | 'email-code' | 'magic-link') => {
+    handleAuthSuccess: (method: 'passkey' | 'email-code') => {
       signInStateTransitions.authenticationSuccess(uiStore);
 
       if (dependencies.eventStore) {
@@ -667,7 +656,7 @@ export function createUIEventHandlers(
     /**
      * Handle authentication error from any method
      */
-    handleAuthError: (error: Error, method: 'passkey' | 'email-code' | 'magic-link') => {
+    handleAuthError: (error: Error, method: 'passkey' | 'email-code') => {
       signInStateTransitions.authenticationError(uiStore, error);
 
       if (dependencies.eventStore) {

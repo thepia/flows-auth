@@ -45,7 +45,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: false
 };
 
 const createTestSession = (): SignInData => ({

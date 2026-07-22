@@ -35,7 +35,7 @@ export interface SessionData {
   refreshToken?: string; // Optional - sessions without refresh tokens expire permanently
   expiresAt: string; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
   refreshedAt: string; // ISO 8601 timestamp string - when token was last refreshed (prevents spam refreshes)
-  authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+  authMethod: 'passkey' | 'password' | 'email-code';
   supabaseToken?: string; // Supabase JWT for database access with RLS
   supabaseExpiresAt?: string; // ISO 8601 timestamp string - Supabase token expiration
 }
@@ -52,7 +52,7 @@ export interface UserData {
   createdAt?: string; // ISO date string
   lastLoginAt?: string; // ISO date string
   metadata?: Record<string, unknown>;
-  authMethod?: 'passkey' | 'password' | 'email-code' | 'magic-link';
+  authMethod?: 'passkey' | 'password' | 'email-code';
 }
 
 /**

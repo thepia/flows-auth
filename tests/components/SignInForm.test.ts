@@ -23,7 +23,6 @@ const mockConfig: AuthConfig = {
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: true,
   branding: {
     companyName: 'Test Company',
     logoUrl: 'https://example.com/logo.svg',

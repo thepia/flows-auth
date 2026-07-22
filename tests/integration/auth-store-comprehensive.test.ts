@@ -26,7 +26,6 @@ const getTestConfig = (): AuthConfig => {
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true
@@ -269,7 +268,7 @@ describe('Auth Store Integration Tests', () => {
       }
     });
 
-    it('should handle magic link authentication', async () => {
+    it('should handle email code authentication', async () => {
       if (!apiServerRunning) {
         console.log('Skipping: API server not available');
         return;
@@ -278,22 +277,22 @@ describe('Auth Store Integration Tests', () => {
       const existingEmail = TEST_ACCOUNTS.existingWithoutPasskey.email;
 
       try {
-        // signInWithMagicLink() always resolves null - the magic link itself
-        // completes sign-in later when the user clicks it, not this call.
+        // sendEmailCode() only sends the code - real auth completes later
+        // when the user submits the code via verifyEmailCode(), not this call.
         // Success here is signaled by the signInState transition, not a
-        // returned step/magicLinkSent field (those belong to the raw
-        // SignInResponse API shape, not this store method's return value).
-        const result = await authStore.signInWithMagicLink(existingEmail);
+        // returned step field (that belongs to the raw SignInResponse API
+        // shape, not this store method's return value).
+        const result = await authStore.sendEmailCode(existingEmail);
 
-        expect(result).toBeNull();
+        expect(result.success).toBe(true);
 
         const state = authStore.getState();
         expect(state.signInState).toBe('pinEntry');
         expect(state.emailCodeSent).toBe(true);
-        expect(state.state).toBe('unauthenticated'); // Still waiting for magic link click
+        expect(state.state).toBe('unauthenticated'); // Still waiting for code entry
       } catch (error: any) {
-        // Magic link might not be configured in test environment
-        console.log('Magic link test failed (expected in test env):', error.message);
+        // Email code might not be configured in test environment
+        console.log('Email code test failed (expected in test env):', error.message);
         expect(error.message).toBeDefined();
       }
     });

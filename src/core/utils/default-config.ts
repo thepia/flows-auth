@@ -83,7 +83,6 @@ export async function createDefaultAuthConfig(
 
     // Authentication Methods
     enablePasskeys: true,
-    enableMagicLinks: true,
     appCode: 'app',
 
     // Default Branding

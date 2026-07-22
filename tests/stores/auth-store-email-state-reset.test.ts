@@ -11,7 +11,6 @@ describe('Auth Store Email State Reset', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -26,7 +25,6 @@ describe('Auth Store Email State Reset', () => {
       domain: 'test.com',
       appCode: 'demo',
       enablePasskeys: true,
-      enableMagicLinks: false,
       signInMode: 'login-or-register',
       language: 'en'
     };

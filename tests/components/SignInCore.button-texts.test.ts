@@ -42,7 +42,6 @@ describe('SignInCore Button Texts(no passkeys)', () => {
     clientId: 'test-client',
     domain: 'test.com',
     enablePasskeys: false,
-    enableMagicLinks: false,
     signInMode: 'login-or-register'
   };
 

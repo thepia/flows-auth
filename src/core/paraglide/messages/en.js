@@ -65,10 +65,6 @@ export const auth_sendpintoemail3 = /** @type {(inputs: {}) => string} */ () => 
 	return `Send pin to email`
 };
 
-export const auth_sendmagiclink2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Send Magic Link`
-};
-
 export const auth_loading = /** @type {(inputs: {}) => string} */ () => {
 	return `Loading...`
 };
@@ -79,10 +75,6 @@ export const auth_signingin1 = /** @type {(inputs: {}) => string} */ () => {
 
 export const auth_sendingpin1 = /** @type {(inputs: {}) => string} */ () => {
 	return `Sending pin...`
-};
-
-export const auth_sendingmagiclink2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Sending magic link...`
 };
 
 export const auth_authenticating = /** @type {(inputs: {}) => string} */ () => {
@@ -145,10 +137,6 @@ export const status_signinsuccess2 = /** @type {(inputs: {}) => string} */ () =>
 	return `Welcome back!`
 };
 
-export const status_magiclinksent2 = /** @type {(inputs: {}) => string} */ () => {
-	return `We sent a secure login link to`
-};
-
 export const error_network = /** @type {(inputs: {}) => string} */ () => {
 	return `Networking error.`
 };
@@ -183,10 +171,6 @@ export const error_authcancelled1 = /** @type {(inputs: {}) => string} */ () => 
 
 export const error_authfailed1 = /** @type {(inputs: {}) => string} */ () => {
 	return `Authentication failed.`
-};
-
-export const error_magiclinkfailed2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Failed to send magic link.`
 };
 
 export const error_noauthmethods2 = /** @type {(inputs: {}) => string} */ () => {
@@ -327,18 +311,6 @@ export const signin_subtitlegeneric2 = /** @type {(inputs: {}) => string} */ () 
 
 export const signin_webauthnindicator3 = /** @type {(inputs: {}) => string} */ () => {
 	return `🔐 WebAuthn ready - Touch ID/Face ID will appear automatically`
-};
-
-export const magiclink_title1 = /** @type {(inputs: {}) => string} */ () => {
-	return `Check your email`
-};
-
-export const magiclink_description1 = /** @type {(inputs: {}) => string} */ () => {
-	return `We sent a secure login link to`
-};
-
-export const magiclink_differentemail2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Use a different email`
 };
 
 export const registration_termstitle1 = /** @type {(inputs: {}) => string} */ () => {

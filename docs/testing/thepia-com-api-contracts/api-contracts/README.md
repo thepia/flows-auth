@@ -41,12 +41,6 @@ All API behaviors are organized by scenario IDs:
 - T023: Expired challenge
 - T024: Mismatched user ID
 
-### **Magic Link Authentication (T031-T040)**
-- T031: Valid magic link request
-- T032: Magic link for user with passkey
-- T033: Rate limited magic link request
-- T034: Invalid email format
-
 ## Contract Validation Requirements
 
 ### **Schema Validation**

@@ -30,8 +30,8 @@ describe('Type Compatibility Tests', () => {
     expectTypeOf<SignInData['tokens']>().toHaveProperty('expiresAt');
   });
 
-  test('SignInData tokens should use expiresAt (timestamp)', () => {
-    expectTypeOf<SignInData['tokens']['expiresAt']>().toEqualTypeOf<number>();
+  test('SignInData tokens should use expiresAt (ISO timestamp string)', () => {
+    expectTypeOf<SignInData['tokens']['expiresAt']>().toEqualTypeOf<string | undefined>();
   });
 
   test('SignInResponse should use expires_in (seconds)', () => {
@@ -55,7 +55,7 @@ describe('Type Compatibility Tests', () => {
   test('SignInData should have optional authMethod field', () => {
     expectTypeOf<SignInData>().toHaveProperty('authMethod');
     expectTypeOf<SignInData['authMethod']>().toEqualTypeOf<
-      'passkey' | 'password' | 'email-code' | 'magic-link' | undefined
+      'passkey' | 'password' | 'email-code' | undefined
     >();
   });
 
@@ -88,13 +88,13 @@ describe('Type Compatibility Tests', () => {
   test('Conversion: SignInResponse.expires_in maps to SignInData.tokens.expiresAt', () => {
     // This documents the transformation pattern
     type ResponseExpiry = SignInResponse['expires_in']; // number | undefined (seconds)
-    type DataExpiry = SignInData['tokens']['expiresAt']; // number | undefined (milliseconds timestamp, optional in Partial<TokenData>)
+    type DataExpiry = SignInData['tokens']['expiresAt']; // string | undefined (ISO 8601 timestamp, optional in Partial<TokenData>)
 
     expectTypeOf<ResponseExpiry>().toEqualTypeOf<number | undefined>();
-    expectTypeOf<DataExpiry>().toEqualTypeOf<number | undefined>();
+    expectTypeOf<DataExpiry>().toEqualTypeOf<string | undefined>();
 
-    // Conversion: expires_in (seconds) → expiresAt (milliseconds timestamp)
-    // expiresAt = Date.now() + (expires_in * 1000)
+    // Conversion: expires_in (seconds) → expiresAt (ISO timestamp string)
+    // expiresAt = new Date(Date.now() + expires_in * 1000).toISOString()
   });
 
   test('Conversion: SignInResponse flat tokens map to SignInData nested tokens', () => {

@@ -65,10 +65,6 @@ export const auth_sendpintoemail3 = /** @type {(inputs: {}) => string} */ () => 
 	return `Send pin til e-mail`
 };
 
-export const auth_sendmagiclink2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Send Magisk Link`
-};
-
 export const auth_loading = /** @type {(inputs: {}) => string} */ () => {
 	return `Indlæser...`
 };
@@ -79,10 +75,6 @@ export const auth_signingin1 = /** @type {(inputs: {}) => string} */ () => {
 
 export const auth_sendingpin1 = /** @type {(inputs: {}) => string} */ () => {
 	return `Sender pin...`
-};
-
-export const auth_sendingmagiclink2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Sender magisk link...`
 };
 
 export const auth_authenticating = /** @type {(inputs: {}) => string} */ () => {
@@ -145,10 +137,6 @@ export const status_signinsuccess2 = /** @type {(inputs: {}) => string} */ () =>
 	return `Velkommen tilbage!`
 };
 
-export const status_magiclinksent2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Vi sendte et sikkert login link til`
-};
-
 export const error_network = /** @type {(inputs: {}) => string} */ () => {
 	return `Netværksfejl.`
 };
@@ -183,10 +171,6 @@ export const error_authcancelled1 = /** @type {(inputs: {}) => string} */ () => 
 
 export const error_authfailed1 = /** @type {(inputs: {}) => string} */ () => {
 	return `Godkendelse mislykkedes.`
-};
-
-export const error_magiclinkfailed2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Kunne ikke sende magisk link.`
 };
 
 export const error_noauthmethods2 = /** @type {(inputs: {}) => string} */ () => {
@@ -327,18 +311,6 @@ export const signin_subtitlegeneric2 = /** @type {(inputs: {}) => string} */ () 
 
 export const signin_webauthnindicator3 = /** @type {(inputs: {}) => string} */ () => {
 	return `🔐 WebAuthn klar - Touch ID/Face ID vises automatisk`
-};
-
-export const magiclink_title1 = /** @type {(inputs: {}) => string} */ () => {
-	return `Tjek din e-mail`
-};
-
-export const magiclink_description1 = /** @type {(inputs: {}) => string} */ () => {
-	return `Vi sendte et sikkert login link til`
-};
-
-export const magiclink_differentemail2 = /** @type {(inputs: {}) => string} */ () => {
-	return `Brug en anden e-mail`
 };
 
 export const registration_termstitle1 = /** @type {(inputs: {}) => string} */ () => {

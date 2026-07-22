@@ -26,7 +26,6 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }

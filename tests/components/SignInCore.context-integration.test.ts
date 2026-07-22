@@ -36,7 +36,6 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: true
     });
 
     authStore = makeSvelteCompatible(zustandStore);

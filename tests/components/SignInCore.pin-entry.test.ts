@@ -25,8 +25,7 @@ describe('SignInCore PIN Entry', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: true,
-        enableMagicLinks: true
+        enablePasskeys: true
       },
       props: {
         initialEmail: 'test@example.com'
@@ -43,8 +42,7 @@ describe('SignInCore PIN Entry', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: true,
-        enableMagicLinks: true
+        enablePasskeys: true
       },
       props: {
         initialEmail: 'test@example.com'
@@ -61,8 +59,7 @@ describe('SignInCore PIN Entry', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: true,
-        enableMagicLinks: true
+        enablePasskeys: true
       },
       props: {
         initialEmail: 'test@example.com'
@@ -79,8 +76,7 @@ describe('SignInCore PIN Entry', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: true,
-        enableMagicLinks: true
+        enablePasskeys: true
       },
       props: {
         initialEmail: 'test@example.com'

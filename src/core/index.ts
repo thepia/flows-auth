@@ -152,7 +152,6 @@ export function createDefaultConfig(
     domain: '',
     appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Your Company',
       showPoweredBy: true

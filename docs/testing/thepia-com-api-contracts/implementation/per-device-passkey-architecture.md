@@ -98,6 +98,7 @@ interface WebAuthnCredential {
 
 interface DomainSettings {
   // Domain-specific preferences
+  // 'magic_link' maps to the real Auth0 passwordless flow (POST /auth/start-passwordless)
   preferred_auth_method?: 'passkey' | 'magic_link';
   require_device_verification?: boolean;
   session_timeout?: number;

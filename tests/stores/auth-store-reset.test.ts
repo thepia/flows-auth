@@ -50,7 +50,6 @@ describe('Auth Store reset() Method', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test',
       signInMode: 'login-or-register'
     };
@@ -121,7 +120,7 @@ describe('Auth Store reset() Method', () => {
           initials: ''
         },
         authMethod: 'email-code',
-        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // authMethod: 'passkey' | 'password' | 'email-code';
         // lastActivity: number;
 
         tokens: {

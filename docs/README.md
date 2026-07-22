@@ -1,6 +1,6 @@
 # Thepia Flows Authentication Documentation
 
-**Documentation for the @thepia/flows-auth library - Email-first authentication with optional passkey enhancement**
+**Documentation for the @thepia/flows-auth library - Passkey-first authentication with email code fallback**
 
 ## Overview
 
@@ -10,8 +10,8 @@ The Thepia authentication system is designed around **two primary user scenarios
 2. **Invitation-Based Registration** (`flows.thepia.net` + subdomains) - Private invitation-only access with pre-verified emails
 
 Both scenarios use:
-- **Email Links** (magic links) as the primary authentication method
-- **Passkeys** (WebAuthn) as an optional enhancement for security and convenience
+- **Passkeys** (WebAuthn) as the primary authentication method
+- **Email codes** (numeric PIN) as the fallback when passkeys aren't available
 
 ## Quick Start
 
@@ -58,14 +58,12 @@ Both scenarios use:
 
 ## Key Features
 
-### Email-First Authentication
+### Passkey-First Authentication
 
-- ✅ **Magic Links Primary** - Email-based authentication as foundation
+- ✅ **Passkeys Primary** - WebAuthn as the preferred sign-in method on supported devices
+- ✅ **Email Code Fallback** - Numeric PIN via email when passkeys aren't available
 - ✅ **Universal Compatibility** - Works on all devices and browsers
-- ✅ **Passkey Enhancement** - Optional WebAuthn for convenience
 - ✅ **Scenario-Driven** - Tailored flows for each use case
-
-Since most devices support passkeys, but logins should be with passkeys ranther than e-mail.
 
 ### Multi-Domain Support
 - ✅ **app.thepia.net** - Individual registration with email verification
@@ -95,8 +93,8 @@ graph TB
     I[*.thepia.net] --> B
     
     subgraph "Authentication Methods"
-        J[Email Links] --> K[Primary Method]
-        L[Passkeys] --> M[Optional Enhancement]
+        J[Passkeys] --> K[Primary Method]
+        L[Email Codes] --> M[Fallback]
     end
 ```
 
@@ -109,7 +107,6 @@ graph TB
 - User existence checking with verification status
 
 ### ⚠️ In Progress
-- Magic link email authentication endpoints
 - Invitation token validation and registration
 - Proper JWT token generation (currently placeholder)
 
@@ -134,7 +131,6 @@ pnpm add @thepia/flows-auth
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'app.thepia.net' // or 'flows.thepia.net'
   });
 

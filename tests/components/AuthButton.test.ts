@@ -76,23 +76,6 @@ describe('AuthButton Component', () => {
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
     });
-
-    it('should use Paraglide for magic link method', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          }
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Send Magic Link');
-    });
   });
 
   describe('Method-specific Text', () => {
@@ -178,24 +161,6 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Send pin by email');
-    });
-
-    it('should display magic link text when method is email and AppCode is disabled', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'email',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          },
-          isAppCodeBased: false
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Send Magic Link');
     });
 
     it('should display Touch ID text for continue-touchid method', () => {
@@ -320,24 +285,6 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Sending pin...');
-    });
-
-    it('should show magic link loading text when loading magic-link method', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          },
-          loading: true
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Sending magic link...');
     });
 
     it('should use buttonConfig loading text when loading', () => {

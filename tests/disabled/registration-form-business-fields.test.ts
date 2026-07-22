@@ -50,7 +50,6 @@ describe('RegistrationForm Business Fields Regression Test', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',

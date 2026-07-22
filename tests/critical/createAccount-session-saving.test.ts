@@ -101,7 +101,6 @@ describe('createAccount API Contract', () => {
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
       enablePasskeys: true,
-      enableMagicLinks: false
     };
 
     authStore = makeSvelteCompatible(createAuthStore(mockConfig));

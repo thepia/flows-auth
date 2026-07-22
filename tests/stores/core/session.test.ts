@@ -146,12 +146,6 @@ describe('Session Conversion Functions', () => {
         expect(result.authMethod).toBe('email-code');
       });
 
-      it('should set authMethod to "magic-link"', () => {
-        const result = createSessionData(mockUser, { access_token: 'token' }, 'magic-link');
-
-        expect(result.authMethod).toBe('magic-link');
-      });
-
       it('should set authMethod to "password"', () => {
         const result = createSessionData(mockUser, { access_token: 'token' }, 'password');
 

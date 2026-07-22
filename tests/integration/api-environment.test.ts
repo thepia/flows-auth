@@ -246,21 +246,6 @@ describe('API Environment Integration', () => {
       }
     });
 
-    test('should validate magic link endpoint availability', async () => {
-      try {
-        const response = await apiClient.signInWithMagicLink({
-          email: 'magic-link-test@example.com'
-        });
-
-        // Should succeed even for non-existent users in most implementations
-        expect(response).toHaveProperty('step');
-        console.log(`✅ Magic link endpoint reachable`);
-      } catch (error) {
-        // Some implementations may reject non-existent users
-        expect(error).toBeDefined();
-        console.log(`✅ Magic link endpoint reachable (validation error is acceptable)`);
-      }
-    });
   });
 
   describe('Environment Configuration', () => {
@@ -268,11 +253,9 @@ describe('API Environment Integration', () => {
       expect(TEST_CONFIG.domain).toMatch(/\.auth0\.com$/);
       expect(TEST_CONFIG.clientId).toBeTruthy();
       expect(TEST_CONFIG.enablePasskeys).toBe(true);
-      expect(TEST_CONFIG.enableMagicLinks).toBe(false);
 
       console.log(`🔐 Auth0 Domain: ${TEST_CONFIG.domain}`);
       console.log(`🚀 Passkeys enabled: ${TEST_CONFIG.enablePasskeys}`);
-      console.log(`📧 Magic links enabled: ${TEST_CONFIG.enableMagicLinks}`);
     });
 
     test('should have error reporting configured for testing', () => {

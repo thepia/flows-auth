@@ -21,7 +21,6 @@ const LOCAL_TEST_CONFIG = {
   clientId: 'test-flows-auth-client',
   domain: 'dev.thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   errorReporting: {
     enabled: true,
     debug: true
@@ -340,19 +339,18 @@ describe('Auth Store Integration Tests', () => {
     });
   });
 
-  describe('Magic Link Integration', () => {
-    // Magic-link sign-in is fire-and-forget by design (see auth-store.ts
-    // signInWithMagicLink): real auth can't happen until the user clicks the
-    // link emailed to them, in a separate browser context. It always
-    // resolves to null rather than a result object - there is no
-    // {step, magicLinkSent} contract to check anymore.
-    it('should send magic link for existing user', async () => {
+  describe('Email Code Integration', () => {
+    // Email-code sign-in is fire-and-forget by design (see auth-store.ts
+    // sendEmailCode): real auth can't happen until the user enters the code
+    // sent to their email via verifyEmailCode(). sendEmailCode() resolves to
+    // a { success, message, timestamp } result, not a full sign-in response.
+    it('should send email code for existing user', async () => {
       try {
-        const result = await authStore.signInWithMagicLink(
+        const result = await authStore.sendEmailCode(
           TEST_ACCOUNTS.existingWithoutPasskey.email
         );
 
-        expect(result).toBeNull();
+        expect(result.success).toBe(true);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -363,14 +361,14 @@ describe('Auth Store Integration Tests', () => {
       }
 
       const state = get(authStore);
-      expect(state.state).toBe('unauthenticated'); // Still unauthenticated until link clicked
+      expect(state.state).toBe('unauthenticated'); // Still unauthenticated until code verified
     });
 
-    it('should send magic link for new user', async () => {
+    it('should send email code for new user', async () => {
       try {
-        const result = await authStore.signInWithMagicLink(TEST_ACCOUNTS.newUser.email);
+        const result = await authStore.sendEmailCode(TEST_ACCOUNTS.newUser.email);
 
-        expect(result).toBeNull();
+        expect(result.success).toBe(true);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -381,9 +379,9 @@ describe('Auth Store Integration Tests', () => {
       }
     });
 
-    it('should transition sign-in state after sending the link', async () => {
+    it('should transition sign-in state after sending the code', async () => {
       try {
-        await authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email);
+        await authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
         if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
@@ -403,21 +401,21 @@ describe('Auth Store Integration Tests', () => {
       const promises = Array(3)
         .fill(0)
         .map((_, i) =>
-          authStore.signInWithMagicLink(
+          authStore.sendEmailCode(
             `${TEST_ACCOUNTS.existingWithoutPasskey.email.replace('@', `+${i}@`)}`
           )
         );
 
       const results = await Promise.allSettled(promises);
 
-      // All requests should either succeed (resolving to null) or be
-      // properly rate limited (rejected with a defined error)
+      // All requests should either succeed or be properly rate limited
+      // (rejected with a defined error)
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
           expect(result.reason).toBeDefined();
           console.log(`Request ${index} rate limited (expected behavior)`);
         } else {
-          expect(result.value).toBeNull();
+          expect(result.value.success).toBe(true);
         }
       });
     });
@@ -620,7 +618,7 @@ describe('Auth Store Integration Tests', () => {
 
       unsubscribe();
 
-      authStore.signInWithMagicLink('test@example.com').catch(() => {});
+      authStore.sendEmailCode('test@example.com').catch(() => {});
 
       expect(handler).not.toHaveBeenCalled();
     });
@@ -802,7 +800,7 @@ describe('Auth Store E2E Scenarios', () => {
       vi.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
 
       try {
-        await authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email);
+        await authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email);
       } catch (error) {
         expect(error).toBeDefined();
 
@@ -829,9 +827,9 @@ describe('Auth Store E2E Scenarios', () => {
 
     it('should handle concurrent authentication attempts', async () => {
       const promises = [
-        authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email),
-        authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email),
-        authStore.signInWithMagicLink(TEST_ACCOUNTS.existingWithoutPasskey.email)
+        authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email),
+        authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email),
+        authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email)
       ];
 
       const results = await Promise.allSettled(promises);

@@ -35,7 +35,6 @@ describe('SignInCore - Clean Architecture', () => {
     clientId: 'test-client',
     domain: 'test.com',
     enablePasskeys: true,
-    enableMagicLinks: true,
     appCode: 'test-app',
     branding: {
       logoUrl: 'https://example.com/logo.png',
@@ -55,7 +54,6 @@ describe('SignInCore - Clean Architecture', () => {
       });
       return vi.fn(); // Return unsubscribe function
     }),
-    signInWithMagicLink: vi.fn(),
     signInWithPasskey: vi.fn(),
     signOut: vi.fn(),
     initialize: vi.fn()

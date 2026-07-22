@@ -26,9 +26,10 @@ describe('AuthApiClient - Consent Management', () => {
 
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
+      clientId: 'test-client',
+      domain: 'test.thepia.net',
       appCode: 'test-app',
       enablePasskeys: true,
-      enableMagicLinks: false
     };
 
     apiClient = new AuthApiClient(mockConfig);

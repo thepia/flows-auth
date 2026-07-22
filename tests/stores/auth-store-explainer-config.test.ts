@@ -16,7 +16,6 @@ describe('AuthStore getExplainerConfig', () => {
       clientId: 'test-client',
       domain: 'example.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       appCode: 'test-app',
       privacyPolicyUrl: 'https://example.com/privacy',
       branding: {

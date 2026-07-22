@@ -14,7 +14,6 @@ vi.mock('../../src/core/api/auth-api', () => ({
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refreshToken: vi.fn(),
       signOut: vi.fn(),
@@ -33,9 +32,10 @@ describe('auth-core updateTokens', () => {
 
   const testConfig: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',
+    clientId: 'test-client',
     domain: 'test.com',
     enablePasskeys: true,
-    enableMagicLinks: false
+    appCode: 'test-app'
   };
 
   beforeEach(() => {
@@ -152,8 +152,11 @@ describe('auth-core updateTokens', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'new-access',
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
-        supabase_token: null as string | null,
-        supabase_expires_at: null as string | null
+        // Intentionally passing null even though updateTokens' declared type only allows
+        // `string | undefined` here - this test verifies defensive runtime behavior when a
+        // caller passes null (e.g. a misbehaving server response) rather than undefined.
+        supabase_token: null as unknown as undefined,
+        supabase_expires_at: null as unknown as undefined
       });
 
       const state = authStore.core.getState();

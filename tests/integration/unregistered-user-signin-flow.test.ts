@@ -33,7 +33,6 @@ describe('Unregistered User Sign-In Flow', () => {
           clientId: 'test-client',
           domain: 'thepia.net',
           enablePasskeys: true,
-          enableMagicLinks: false
         });
         console.log('✅ Using local API server for testing');
       }
@@ -56,7 +55,6 @@ describe('Unregistered User Sign-In Flow', () => {
             clientId: 'test-client',
             domain: 'thepia.net',
             enablePasskeys: true,
-            enableMagicLinks: false
           });
           console.log('✅ Using production API server for testing');
         }
@@ -191,8 +189,8 @@ describe('Unregistered User Sign-In Flow', () => {
           expectedStep = 'passkey-auth';
           expectedAction = 'Try passkey authentication';
         } else if (userExists) {
-          expectedStep = 'magic-link';
-          expectedAction = 'Send magic link';
+          expectedStep = 'email-code';
+          expectedAction = 'Send email code';
         } else if (!userExists) {
           expectedStep = 'registration-terms';
           expectedAction = 'Switch to registration flow';

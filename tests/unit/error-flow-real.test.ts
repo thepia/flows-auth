@@ -27,7 +27,9 @@ describe('Error Store Classification', () => {
     const store = createAuthStore({
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
-      appCode: 'demo'
+      appCode: 'demo',
+      clientId: 'test-client',
+      enablePasskeys: true
     });
 
     // Simulate the EXACT error object from handleErrorResponse (auth-api.ts:183-186)
@@ -74,7 +76,9 @@ describe('Error Store Classification', () => {
     const store = createAuthStore({
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
-      appCode: 'demo'
+      appCode: 'demo',
+      clientId: 'test-client',
+      enablePasskeys: true
     });
 
     // Step 1: API returns this (auth-api.ts:183-186)
@@ -107,7 +111,9 @@ describe('Error Store Classification', () => {
     const store = createAuthStore({
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
-      appCode: 'demo'
+      appCode: 'demo',
+      clientId: 'test-client',
+      enablePasskeys: true
     });
 
     // From handleErrorResponse (auth-api.ts:197-200)
@@ -127,7 +133,9 @@ describe('Error Store Classification', () => {
     const store = createAuthStore({
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
-      appCode: 'demo'
+      appCode: 'demo',
+      clientId: 'test-client',
+      enablePasskeys: true
     });
 
     // From handleErrorResponse (auth-api.ts:166-170)
@@ -148,7 +156,9 @@ describe('Error Store Classification', () => {
     const store = createAuthStore({
       apiBaseUrl: 'https://api.thepia.com',
       domain: 'thepia.net',
-      appCode: 'app'
+      appCode: 'app',
+      clientId: 'test-client',
+      enablePasskeys: true
     });
 
     // From handleErrorResponse (auth-api.ts:174-179)

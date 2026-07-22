@@ -89,7 +89,7 @@ export class ConfigurableStorageManager {
   private adapter: StorageAdapter;
   private config: StorageConfig;
 
-  constructor(config?: StorageConfig) {
+  constructor(config?: Partial<StorageConfig>) {
     this.config = this.getDefaultConfig(config);
     this.adapter = this.createAdapter();
 
@@ -101,7 +101,7 @@ export class ConfigurableStorageManager {
     });
   }
 
-  private getDefaultConfig(config?: StorageConfig): StorageConfig {
+  private getDefaultConfig(config?: Partial<StorageConfig>): StorageConfig {
     const defaults: StorageConfig = {
       type: 'sessionStorage',
       sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
@@ -215,7 +215,9 @@ let globalStorageManager: ConfigurableStorageManager | null = null;
 /**
  * Initialize global storage manager with configuration
  */
-export function initializeStorageManager(config?: StorageConfig): ConfigurableStorageManager {
+export function initializeStorageManager(
+  config?: Partial<StorageConfig>
+): ConfigurableStorageManager {
   globalStorageManager = new ConfigurableStorageManager(config);
   return globalStorageManager;
 }

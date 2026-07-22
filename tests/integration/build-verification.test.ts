@@ -105,7 +105,6 @@ describe('Build Verification', () => {
       domain: 'test.com',
       appCode: 'test-app',
       enablePasskeys: true,
-      enableMagicLinks: false
     });
     const authStore = makeSvelteCompatible(baseStore);
     expect(typeof authStore.subscribe).toBe('function');

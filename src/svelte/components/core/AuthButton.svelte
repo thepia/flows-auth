@@ -81,7 +81,6 @@ function getDisplayText(): string {
       case 'passkey': return m["auth.signingIn"]();
       case 'email':
       case 'email-code': return m["auth.sendingPin"]();
-      case 'magic-link': return m["auth.sendingMagicLink"]();
       case 'continue-touchid':
       case 'continue-faceid':
       case 'continue-biometric': return m["auth.signingIn"]();
@@ -98,12 +97,8 @@ function getDisplayText(): string {
       }
       return effectiveSupportsWebAuthn ? m["auth.signInWithPasskey"]() : m["auth.signIn"]();
     case 'email':
-      // AppCode-aware: use pin or magic link text
-      return isAppCodeBased ? m["auth.sendPinByEmail"]() : m["auth.sendMagicLink"]();
     case 'email-code':
       return m["auth.sendPinByEmail"]();
-    case 'magic-link':
-      return m["auth.sendMagicLink"]();
     case 'continue-touchid':
       return m["auth.continueWithTouchId"]();
     case 'continue-faceid':
@@ -136,7 +131,6 @@ function getDisplayIconComponent() {
       return isAppleDevice ? Fingerprint : Key;
     case 'email':
     case 'email-code':
-    case 'magic-link':
       return Envelope;
     case 'continue-touchid':
       return Fingerprint;

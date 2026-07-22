@@ -44,7 +44,6 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
       clientId: 'test-client-id',
       appCode: 'debug-test',
       enablePasskeys: true,
-      enableMagicLinks: false,
       language: 'en',
       branding: {
         companyName: 'Debug Test'

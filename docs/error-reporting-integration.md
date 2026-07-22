@@ -66,8 +66,6 @@ These successful operations are already logged by the API server:
 - ❌ Successful passkey registration
 - ❌ Email code sent successfully
 - ❌ Email code verified successfully
-- ❌ Magic link sent successfully
-- ❌ Magic link verified successfully
 
 **Rationale**: These are server-side operations. The API already logs who authenticated, when, and with what method. Client-side telemetry would be redundant and waste bandwidth.
 
@@ -204,7 +202,7 @@ The `ErrorReportingStatus` component provides a UI for monitoring error reportin
   event: 'login-attempt' | 'login-success' | ... ,
   email?: string,
   userId?: string,
-  authMethod?: 'passkey' | 'email' | 'magic-link',
+  authMethod?: 'passkey' | 'email',
   context?: Record<string, any>
 }
 ```

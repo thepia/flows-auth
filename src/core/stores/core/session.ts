@@ -50,7 +50,7 @@ export function createSessionStore(options: StoreOptions) {
         avatar: data.user.avatar,
         emailVerified: data.user.emailVerified,
         metadata: data.user.preferences,
-        authMethod: data.authMethod as 'passkey' | 'password' | 'email-code' | 'magic-link'
+        authMethod: data.authMethod as 'passkey' | 'password' | 'email-code'
       };
 
       // Convert SignInData to SessionData format for session persistence

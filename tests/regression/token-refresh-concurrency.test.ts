@@ -43,7 +43,6 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       appCode: 'test-app',
       origin: 'http://localhost:3000',
       enablePasskeys: true,
-      enableMagicLinks: true,
       sessionTimeout: 8 * 60 * 60 * 1000
     };
 

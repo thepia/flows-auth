@@ -48,7 +48,7 @@
   function testSignIn() {
     if (authStore) {
       console.log(`🔄 ${title} (${storeId}): Testing sign-in...`);
-      authStore.signInWithMagicLink(`test-${storeId}@example.com`);
+      authStore.sendEmailCode(`test-${storeId}@example.com`);
     }
   }
   

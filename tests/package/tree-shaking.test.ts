@@ -39,17 +39,17 @@ describe('Tree-Shaking Support (Built Package)', () => {
     expect(names).toContain('AuthApiClient');
 
     // No Svelte components / makeSvelteCompatible in core.
-    expect(core.SignInForm).toBeUndefined();
-    expect(core.makeSvelteCompatible).toBeUndefined();
+    expect(names).not.toContain('SignInForm');
+    expect(names).not.toContain('makeSvelteCompatible');
   });
 
   it('should keep flow-viz (@xyflow/svelte) out of core and behind ./dev', async () => {
     const core = await import('../../dist/index.js');
 
     // Flow components are only reachable via ./dev, so importing core stays light.
-    expect(core.TestFlow).toBeUndefined();
-    expect(core.SessionStateMachineFlow).toBeUndefined();
-    expect(core.SignInStateMachineFlow).toBeUndefined();
+    expect('TestFlow' in core).toBe(false);
+    expect('SessionStateMachineFlow' in core).toBe(false);
+    expect('SignInStateMachineFlow' in core).toBe(false);
 
     const dev = await import('../../dist/svelte/dev.js');
     expect(dev.TestFlow).toBeDefined();
@@ -72,6 +72,7 @@ describe('Tree-Shaking Support (Built Package)', () => {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       domain: 'test.com',
+      appCode: 'test-app',
       enablePasskeys: true
     });
 

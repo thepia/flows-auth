@@ -87,7 +87,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true
 };
 
 describe('Database Adapter Configuration', () => {
@@ -440,7 +439,7 @@ describe('Database Adapter Configuration', () => {
         refreshToken: 'save-refresh',
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
         refreshedAt: new Date().toISOString(),
-        authMethod: 'magic-link'
+        authMethod: 'email-code'
       };
 
       await adapter.saveSession(sessionData);
@@ -460,7 +459,7 @@ describe('Database Adapter Configuration', () => {
           accessToken: 'save-token',
           refreshToken: 'save-refresh'
         },
-        authMethod: 'magic-link'
+        authMethod: 'email-code'
       });
     });
 

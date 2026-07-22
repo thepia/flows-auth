@@ -16,7 +16,6 @@ const authConfig = {
   clientId: 'tasks-app-demo',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: true,
   errorReporting: {
     enabled: true,
     debug: true

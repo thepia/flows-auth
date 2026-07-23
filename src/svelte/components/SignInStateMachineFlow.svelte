@@ -8,6 +8,7 @@
   import { writable } from 'svelte/store';
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
+  import { debug } from '../../core/utils/debug.js';
 
   interface Props {
     currentSignInState?: string;
@@ -73,7 +74,7 @@
     const stateCategories = signInStateCategories;
     const transitions = signInTransitions;
     
-    console.log('🎨 Creating flow data with currentSignInState:', currentSignInState);
+    debug('🎨 Creating flow data with currentSignInState:', currentSignInState);
     
     const flowNodes = Object.values(stateCategories)
       .flatMap(category => category.states)
@@ -82,7 +83,7 @@
         const isCurrentState = stateName === currentSignInState;
         
         if (stateName === 'emailEntry') {
-          console.log(`  Node ${stateName}: isCurrentState=${isCurrentState}, color=${isCurrentState ? categoryInfo.color : categoryInfo.color + '99'}`);
+          debug(`  Node ${stateName}: isCurrentState=${isCurrentState}, color=${isCurrentState ? categoryInfo.color : categoryInfo.color + '99'}`);
         }
         
         const col = index % 3;
@@ -146,7 +147,7 @@
 
   function handleNodeClick(event) {
     const nodeId = event.detail.node.id;
-    console.log('Sign-in state clicked:', nodeId);
+    debug('Sign-in state clicked:', nodeId);
     if (onStateClick) {
       onStateClick(nodeId);
     }

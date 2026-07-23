@@ -13,6 +13,7 @@ import { createStore } from 'zustand/vanilla';
 import type { User } from '../../types/index.js';
 import { reportRefreshEvent } from '../../utils/telemetry.js';
 import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types.js';
+import { debug } from '../../utils/debug.js';
 
 /**
  * GLOBAL token refresh lock - shared across ALL auth store instances
@@ -150,7 +151,7 @@ export function createAuthCoreStore(options: StoreOptions) {
 
           if (response.access_token) {
             // Log refresh response for debugging
-            console.log('🔄 Token refresh response received:', {
+            debug('🔄 Token refresh response received:', {
               hasAccessToken: !!response.access_token,
               hasRefreshToken: !!response.refresh_token,
               refreshTokenValue: response.refresh_token
@@ -180,7 +181,7 @@ export function createAuthCoreStore(options: StoreOptions) {
                 : undefined
             });
 
-            console.log(
+            debug(
               '✅ Tokens updated successfully, new refresh token saved:',
               response.refresh_token ? `${response.refresh_token.substring(0, 8)}...` : 'none'
             );
@@ -224,7 +225,7 @@ export function createAuthCoreStore(options: StoreOptions) {
               try {
                 // Save back to database adapter
                 await db.saveSession({ refreshToken: '' });
-                console.log('✅ Cleared stale refresh token from storage via SessionPersistence');
+                debug('✅ Cleared stale refresh token from storage via SessionPersistence');
               } catch (error) {
                 console.error('Failed to clear stale refresh token from storage:', error);
               }
@@ -270,7 +271,7 @@ export function createAuthCoreStore(options: StoreOptions) {
             }
 
             refreshTimeout.current = setTimeout(async () => {
-              console.log(
+              debug(
                 `🔄 Retrying token refresh (attempt ${refreshRetryState.attempts}/${refreshRetryState.maxAttempts})`
               );
               // Call refreshTokens() recursively - it will handle success/failure and counter reset
@@ -289,7 +290,7 @@ export function createAuthCoreStore(options: StoreOptions) {
             }
             refreshRetryState.resetTimeout = setTimeout(
               () => {
-                console.log('🔄 Resetting refresh retry counter after successful period');
+                debug('🔄 Resetting refresh retry counter after successful period');
                 refreshRetryState.attempts = 0;
               },
               60 * 60 * 1000
@@ -525,7 +526,7 @@ function scheduleTokenRefresh(
     );
   }
 
-  console.log(
+  debug(
     `🔄 Scheduling token refresh in ${Math.floor(refreshTime / 1000)}s (token expires in ${Math.floor(timeUntilExpiry / 1000)}s, last refreshed ${state.refreshedAt ? `${Math.floor((Date.now() - new Date(state.refreshedAt).getTime()) / 1000)}s ago` : 'never'})`
   );
 

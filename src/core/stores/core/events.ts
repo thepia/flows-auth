@@ -19,6 +19,7 @@ import type {
   EventStore,
   StoreOptions
 } from '../types.js';
+import { debug } from '../../utils/debug.js';
 
 /**
  * Initial state for the event store
@@ -216,7 +217,7 @@ export const eventDebug = {
 
     const unsubscribes = allEventTypes.map((eventType) =>
       eventStore.getState().on(eventType, (data) => {
-        console.log(`🎯 Auth Event: ${eventType}`, data);
+        debug(`🎯 Auth Event: ${eventType}`, data);
       })
     );
 

@@ -12,6 +12,7 @@ import { createStore } from 'zustand/vanilla';
 import type { SignInData } from '../../types/index.js';
 import { createSessionData } from '../core/session.js';
 import type { StoreOptions } from '../types.js';
+import { debug } from '../../utils/debug.js';
 
 /**
  * Email auth store state
@@ -108,7 +109,7 @@ export function createEmailAuthStore(options: StoreOptions) {
           lastSentEmail: email
         });
 
-        console.log('📧 Sending email code:', { email, appCode: config.appCode });
+        debug('📧 Sending email code:', { email, appCode: config.appCode });
 
         const response = await api.sendAppEmailCode(email);
 
@@ -123,7 +124,7 @@ export function createEmailAuthStore(options: StoreOptions) {
           get().startResendCooldown();
         }
 
-        console.log('✅ Email code sent successfully');
+        debug('✅ Email code sent successfully');
         return response || { success: true, message: 'Code sent', timestamp: Date.now() };
       } catch (error) {
         const sendError = error as Error;
@@ -145,7 +146,7 @@ export function createEmailAuthStore(options: StoreOptions) {
           lastError: null
         });
 
-        console.log('🔍 Verifying email code:', { email, hasCode: !!code });
+        debug('🔍 Verifying email code:', { email, hasCode: !!code });
 
         const response = await api.verifyAppEmailCode(email, code);
 
@@ -157,7 +158,7 @@ export function createEmailAuthStore(options: StoreOptions) {
             lastError: null
           });
 
-          console.log('✅ Email code verified successfully');
+          debug('✅ Email code verified successfully');
 
           // Convert SignInResponse to SignInData immediately
           const signInData = createSessionData(
@@ -214,7 +215,7 @@ export function createEmailAuthStore(options: StoreOptions) {
       hasValidPin?: boolean;
       pinRemainingMinutes?: number;
     }> => {
-      console.log('🔍 Checking user:', { email });
+      debug('🔍 Checking user:', { email });
 
       // api.checkEmail() only resolves for genuine "user checked" responses
       // (including exists: false for a not-found user) and throws for real

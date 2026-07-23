@@ -17,6 +17,7 @@ import {
   getStorageManager,
   initializeStorageManager
 } from './storageManager.js';
+import { debug } from './debug.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const EMAIL_PREFILL_KEY = 'thepia_email_prefill';
@@ -34,7 +35,7 @@ export function getSession(): SignInData | null {
     // expiresAt is now an ISO string, parse it for comparison
     const expiresAtMs = session.tokens.expiresAt ? new Date(session.tokens.expiresAt).getTime() : 0;
     if (expiresAtMs < Date.now() && !session.tokens.refreshToken) {
-      console.log('🕐 Session expired: no refresh token and access token expired');
+      debug('🕐 Session expired: no refresh token and access token expired');
       clearSession();
       return null;
     }
@@ -61,7 +62,7 @@ export function saveSession(sessionData: SignInData): void {
       );
     }
 
-    console.log(
+    debug(
       '💾 Session saved to',
       storage.getConfig().type,
       'for user:',
@@ -86,7 +87,7 @@ export function clearSession(): void {
       );
     }
 
-    console.log('🗑️ Session cleared from', storage.getConfig().type);
+    debug('🗑️ Session cleared from', storage.getConfig().type);
   } catch (error) {
     console.error('Failed to clear session:', error);
   }
@@ -176,7 +177,7 @@ export function getAccessToken(): string | null {
  */
 export function configureSessionStorage(config: StorageConfig): void {
   initializeStorageManager(config);
-  console.log('🔧 Session storage configured:', config);
+  debug('🔧 Session storage configured:', config);
 }
 
 /**

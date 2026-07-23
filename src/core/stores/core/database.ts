@@ -2,6 +2,7 @@ import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../.
 import { isOlderThan } from '../../utils/date-helpers.js';
 import { configureSessionStorage, getOptimalSessionConfig } from '../../utils/sessionManager.js';
 import { getStorageManager } from '../../utils/storageManager.js';
+import { debug } from '../../utils/debug.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const LAST_USER_KEY = 'thepia_last_user';
@@ -106,7 +107,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
           });
         }
 
-        console.log(
+        debug(
           '💾 Session saved to',
           storage.getConfig().type,
           'for user:',
@@ -175,7 +176,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
         // Check token expiration only if there's no refresh token
         const expiresAtMs = new Date(session.expiresAt).getTime();
         if (expiresAtMs < Date.now() && !session.refreshToken) {
-          console.log('🕐 Session expired: no refresh token and access token expired');
+          debug('🕐 Session expired: no refresh token and access token expired');
           storage.removeItem(SESSION_KEY);
           return null;
         }
@@ -202,7 +203,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
           });
         }
 
-        console.log('🗑️ Session cleared from', storage.getConfig().type);
+        debug('🗑️ Session cleared from', storage.getConfig().type);
       } catch (error) {
         console.error('Failed to clear session:', error);
       }

@@ -32,6 +32,7 @@ import { detectApiServer } from '../utils/api-detection.js';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter.js';
 import { reportApiError } from '../utils/telemetry.js';
 import { globalUserCache } from '../utils/user-cache.js';
+import { debug } from '../utils/debug.js';
 
 export class AuthApiClient {
   readonly config: AuthConfig;
@@ -59,11 +60,11 @@ export class AuthApiClient {
       try {
         // Try to use the detection utility if available
         const apiServer = await detectApiServer();
-        console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
+        debug(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
         return apiServer.url.replace(/\/$/, '');
       } catch (_error) {
         // Fall back to configured URL if detection fails
-        console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
+        debug('🌐 AuthApiClient: Using configured API:', this.baseUrl);
       }
     }
 
@@ -305,7 +306,7 @@ export class AuthApiClient {
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
-    console.log('🔍 signInWithPasskey called with:', {
+    debug('🔍 signInWithPasskey called with:', {
       requestKeys: Object.keys(request),
       hasUserId: 'userId' in request,
       hasAuthResponse: 'authResponse' in request,
@@ -402,7 +403,7 @@ export class AuthApiClient {
     const endpoint = `/${this.getEffectiveAppCode()}/check-user`;
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
-    console.log('[AuthApiClient] Making check-user request:', {
+    debug('[AuthApiClient] Making check-user request:', {
       email,
       requestUrl,
       baseUrl: this.baseUrl,
@@ -424,7 +425,7 @@ export class AuthApiClient {
       }
     );
 
-    console.log('[AuthApiClient] Raw API response:', {
+    debug('[AuthApiClient] Raw API response:', {
       email,
       requestUrl,
       response: response,
@@ -633,7 +634,7 @@ export class AuthApiClient {
       id: string;
     };
   }> {
-    console.log('🔗 Starting passwordless authentication:', {
+    debug('🔗 Starting passwordless authentication:', {
       email,
       clientId: this.config.clientId,
       apiBaseUrl: this.config.apiBaseUrl,
@@ -688,7 +689,7 @@ export class AuthApiClient {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = `/${effectiveAppCode}/send-email`;
 
-    console.log('📧 Sending email signin:', {
+    debug('📧 Sending email signin:', {
       email,
       endpoint,
       appCode: effectiveAppCode,
@@ -761,7 +762,7 @@ export class AuthApiClient {
   async sendAppEmailCode(email: string): Promise<EmailCodeSendResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('📧 Sending app email code:', {
+    debug('📧 Sending app email code:', {
       email,
       appCode: effectiveAppCode,
       apiBaseUrl: this.config.apiBaseUrl
@@ -782,7 +783,7 @@ export class AuthApiClient {
   async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('🔍 Verifying app email code:', {
+    debug('🔍 Verifying app email code:', {
       email,
       appCode: effectiveAppCode,
       hasCode: !!code,
@@ -797,7 +798,7 @@ export class AuthApiClient {
       })
     });
 
-    console.log('📦 Raw verify-email API response:', {
+    debug('📦 Raw verify-email API response:', {
       email,
       hasUser: 'user' in response,
       hasAccessToken: 'access_token' in response,
@@ -809,7 +810,7 @@ export class AuthApiClient {
       fullResponse: response
     });
 
-    console.log('🔍 Success condition check:', {
+    debug('🔍 Success condition check:', {
       hasUser: !!response.user,
       userValue: response.user,
       hasAccessToken: !!response.access_token,
@@ -826,7 +827,7 @@ export class AuthApiClient {
       // This handles cases where user was previously cached as "doesn't exist"
       // but verification created the user account
       globalUserCache.clear(email);
-      console.log(`🧹 Cleared user cache for ${email} after successful pin verification`);
+      debug(`🧹 Cleared user cache for ${email} after successful pin verification`);
 
       return {
         step: 'success',
@@ -867,7 +868,7 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('👤 Creating app user:', {
+    debug('👤 Creating app user:', {
       email: userData.email,
       appCode: effectiveAppCode,
       hasInvitation: !!userData.invitationToken,

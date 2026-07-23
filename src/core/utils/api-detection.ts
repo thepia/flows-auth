@@ -9,6 +9,8 @@
  * - Localhost: Check local server first, fallback to production (0-3000ms)
  */
 
+import { debug } from './debug.js';
+
 export interface ApiServerConfig {
   localUrl?: string;
   productionUrl: string;
@@ -61,17 +63,17 @@ export async function detectApiServer(
     (currentLocation.hostname.includes('ngrok') ||
       currentLocation.hostname.includes('ngrok-free.app'))
   ) {
-    console.log(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
+    debug(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
     // Continue to local server detection below
   }
   // Check for localhost - treat as development and try local server first
   else if (currentLocation?.hostname === 'localhost') {
-    console.log(`🏠 localhost detected: ${currentLocation.hostname} - trying local API first`);
+    debug(`🏠 localhost detected: ${currentLocation.hostname} - trying local API first`);
     // Continue to local server detection below
   }
   // Check for production domains - skip local server check for performance
   else if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
-    console.log(
+    debug(
       `🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`
     );
     return {
@@ -99,7 +101,7 @@ export async function detectApiServer(
     });
 
     if (localResponse.ok) {
-      console.log(`🔧 Using local API server: ${config.localUrl}`);
+      debug(`🔧 Using local API server: ${config.localUrl}`);
 
       // Try to parse server info
       let serverInfo: ApiServerInfo['serverInfo'];
@@ -121,11 +123,11 @@ export async function detectApiServer(
       };
     }
   } catch (_error) {
-    console.log('ℹ️ Local API server not available, using production');
+    debug('ℹ️ Local API server not available, using production');
   }
 
   // Fallback to production
-  console.log(`🌐 Using production API server: ${config.productionUrl}`);
+  debug(`🌐 Using production API server: ${config.productionUrl}`);
   return {
     url: config.productionUrl,
     type: 'production',

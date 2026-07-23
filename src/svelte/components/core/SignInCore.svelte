@@ -11,6 +11,7 @@ import type { SvelteAuthStore } from '@thepia/flows-auth';
 import type { AuthError, AuthMethod, User } from '@thepia/flows-auth';
 import { getAuthStoreFromContext } from '../../auth-context.js';
 import { m } from '@thepia/flows-auth';
+import { debug } from '../../../core/utils/debug.js';
 
 import AuthButton from './AuthButton.svelte';
 import AuthExplainer from './AuthExplainer.svelte';
@@ -107,11 +108,11 @@ async function checkUserForEmail(emailValue: string) {
 async function initializeComponent() {
   // Only initialize if we have store and config
   if (!store || !authConfig) {
-    console.log('🔍 SignInCore: Waiting for store and config to be available');
+    debug('🔍 SignInCore: Waiting for store and config to be available');
     return;
   }
 
-  console.log('🔐 SignInCore Authentication Methods:', {
+  debug('🔐 SignInCore Authentication Methods:', {
     passkeysEnabled: $authStore.passkeysEnabled,
     enablePasskeys: authConfig.enablePasskeys,
     signInMode: authConfig.signInMode,
@@ -166,7 +167,7 @@ async function handleEmailChange(event: CustomEvent<{value: string}>) {
   email = event.detail.value;
   // Error clearing is now handled by AuthStore
 
-  console.log('📝 Email changed:', {
+  debug('📝 Email changed:', {
     newEmail: event.detail.value,
     emailLength: event.detail.value.length,
     emailTrim: event.detail.value.trim(),
@@ -180,11 +181,11 @@ async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
 
   try {
     authStore.setConditionalAuthActive(true);
-    console.log('🔍 Starting conditional authentication for:', event.detail.email);
+    debug('🔍 Starting conditional authentication for:', event.detail.email);
 
     const success = await authStore.startConditionalAuthentication(event.detail.email);
     if (success) {
-      console.log('✅ Conditional authentication successful');
+      debug('✅ Conditional authentication successful');
       dispatch('success', {
         user: $authStore.user,
         method: 'passkey',
@@ -192,7 +193,7 @@ async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
     }
   } catch (error) {
     // Conditional auth should fail silently - expected if no passkeys exist
-    console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
+    debug('⚠️ Conditional authentication failed (expected if no passkeys):', error);
   } finally {
     authStore.setConditionalAuthActive(false);
   }
@@ -223,12 +224,12 @@ async function handleSecondaryAction() {
       // Check if user has a valid pin first
       if ($authStore.hasValidPin) {
         // Skip sending new code, go directly to verification step
-        console.log('🔢 Secondary action: Valid pin detected, going to verification step');
+        debug('🔢 Secondary action: Valid pin detected, going to verification step');
         authStore.setLoading(false);
         authStore.notifyPinSent();
       } else {
         // Send new pin
-        console.log('📧 Secondary action: Sending new pin');
+        debug('📧 Secondary action: Sending new pin');
         await handleEmailCodeAuth();
       }
     }
@@ -260,7 +261,7 @@ async function handleSignIn() {
         const [firstName, ...rest] = $authStore.fullName.trim().split(' ');
         const lastName = rest.join(' ');
 
-        console.log('🔄 Creating account:', { email, firstName, lastName });
+        debug('🔄 Creating account:', { email, firstName, lastName });
         try {
           await authStore.createAccount({
             email: email.trim(),
@@ -282,7 +283,7 @@ async function handleSignIn() {
     }
 
     const authMethod = determineAuthMethod(userCheck);
-    console.log('🔐 Determined auth method:', authMethod);
+    debug('🔐 Determined auth method:', authMethod);
 
     switch (authMethod) {
       case 'passkey-with-fallback':
@@ -299,7 +300,7 @@ async function handleSignIn() {
         // Check if user has a valid pin first
         if ($authStore.hasValidPin) {
           // Skip sending new code, go directly to verification step
-          console.log('🔢 Valid pin detected, skipping email send and going to verification step');
+          debug('🔢 Valid pin detected, skipping email send and going to verification step');
           authStore.setLoading(false);
           authStore.notifyPinSent();
         } else {
@@ -514,7 +515,7 @@ run(() => {
   open={showPolicyModal}
   store={authStore}
   on:close={() => showPolicyModal = false}
-  on:consent={(e) => console.log('Policy consent:', e.detail)}
+  on:consent={(e) => debug('Policy consent:', e.detail)}
 />
 {/if}
 

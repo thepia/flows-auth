@@ -7,6 +7,7 @@
 
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { getAuthStoreFromContext } from '../auth-context.js';
+  import { debug } from '../../core/utils/debug.js';
   import type { SvelteAuthStore } from '@thepia/flows-auth';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '@thepia/flows-auth';
   import type {
@@ -101,14 +102,14 @@ const dispatch = createEventDispatcher<{
     supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
     platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
     
-    console.log('🔐 RegistrationForm WebAuthn Status:', {
+    debug('🔐 RegistrationForm WebAuthn Status:', {
       supportsWebAuthn,
       platformAuthenticatorAvailable,
       enablePasskeys: config.enablePasskeys
     });
     
     if (invitationTokenData) {
-      console.log('🎫 Form prefilled from invitation token:', {
+      debug('🎫 Form prefilled from invitation token:', {
         email: invitationTokenData.email,
         fieldsPopulated: {
           firstName: !!invitationTokenData.firstName,
@@ -121,9 +122,9 @@ const dispatch = createEventDispatcher<{
     }
 
     // Subscribe to auth store state changes
-    console.log('🔧 RegistrationForm subscribing to auth store in onMount');
+    debug('🔧 RegistrationForm subscribing to auth store in onMount');
     unsubscribeAuthStore = authStore.subscribe(($auth) => {
-      console.log('🔍 RegistrationForm auth state change:', {
+      debug('🔍 RegistrationForm auth state change:', {
         state: $auth.state,
         hasUser: !!$auth.user,
         registrationCompleted,
@@ -144,7 +145,7 @@ const dispatch = createEventDispatcher<{
   // point the subscription above has already fired and missed it).
   function maybeEmitAppAccess(state: string, user: User | null) {
     if (registrationCompleted && registrationResult && state === 'authenticated' && user) {
-      console.log('✅ Auth store confirmed authentication after registration - emitting appAccess');
+      debug('✅ Auth store confirmed authentication after registration - emitting appAccess');
 
       dispatch('appAccess', {
         user: registrationResult.user,
@@ -251,13 +252,13 @@ const dispatch = createEventDispatcher<{
         const currentAuthState = authStore.getState();
         maybeEmitAppAccess(currentAuthState.state, currentAuthState.user);
 
-        console.log('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
+        debug('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
 
         // Account creation completed - auth store will handle session creation and app transition
-        console.log('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
+        debug('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
 
         // Emit success event immediately (for UI feedback)
-        console.log('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
+        debug('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
         dispatch('success', { user: result.user });
       }
     } catch (err: any) {

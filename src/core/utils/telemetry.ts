@@ -10,6 +10,7 @@ import type {
   ErrorReport,
   ErrorReportPayload
 } from '../types/index.js';
+import { debug } from './debug.js';
 
 export interface SerializedError {
   name?: string;
@@ -125,7 +126,7 @@ class Telemetry {
   setApiClient(api: AuthApiClient, config: AuthConfig) {
     this.api = api;
     this.config = config;
-    console.log('📊 [Telemetry] Connected to API client');
+    debug('📊 [Telemetry] Connected to API client');
 
     // Initialize service worker if logging is enabled (fire and forget)
     if (config.errorReporting?.serviceWorkerLogging?.enabled) {
@@ -157,7 +158,7 @@ class Telemetry {
     try {
       this.serviceWorkerRegistration = await navigator.serviceWorker.ready;
       if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
-        console.log('📊 [Telemetry] Service worker ready for logging');
+        debug('📊 [Telemetry] Service worker ready for logging');
       }
     } catch (error) {
       if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
@@ -183,13 +184,13 @@ class Telemetry {
 
     if (!errorConfig?.enabled) {
       if (errorConfig?.debug) {
-        console.log('📊 [Telemetry] Event (API reporting disabled):', event);
+        debug('📊 [Telemetry] Event (API reporting disabled):', event);
       }
       return;
     }
 
     if (errorConfig?.debug) {
-      console.log('📊 [Telemetry] Reporting event:', event);
+      debug('📊 [Telemetry] Reporting event:', event);
     }
 
     try {
@@ -230,7 +231,7 @@ class Telemetry {
     });
 
     if (this.config.errorReporting?.debug) {
-      console.log('📊 [Telemetry] Event sent successfully');
+      debug('📊 [Telemetry] Event sent successfully');
     }
   }
 
@@ -280,7 +281,7 @@ class Telemetry {
       });
 
       if (swConfig.debug) {
-        console.log('📊 [Telemetry] Sent to service worker:', event);
+        debug('📊 [Telemetry] Sent to service worker:', event);
       }
     } else if (swConfig.debug) {
       console.warn('📊 [Telemetry] Service worker not available for logging');

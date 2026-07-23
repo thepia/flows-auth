@@ -7,6 +7,7 @@
 
 import type { SessionData, SessionPersistence, UserData } from '../../types/index.js';
 import { createLocalStorageAdapter } from './database.js';
+import { debug } from '../../utils/debug.js';
 
 /**
  * Message types for WebKit communication
@@ -99,7 +100,7 @@ class NativeAppBridge {
           );
         }
         thepiaHandler.postMessage(message);
-        console.log('📤 WebKit message sent:', type, requestId);
+        debug('📤 WebKit message sent:', type, requestId);
       } catch (error) {
         clearTimeout(timeout);
         this.pendingRequests.delete(requestId);
@@ -113,7 +114,7 @@ class NativeAppBridge {
    * Called by native app via window.__thepiaWebKitResponseHandler
    */
   private handleResponse(response: WebKitResponse): void {
-    console.log('📥 WebKit response received:', response.requestId);
+    debug('📥 WebKit response received:', response.requestId);
 
     const pending = this.pendingRequests.get(response.requestId);
     if (!pending) {
@@ -244,7 +245,7 @@ export function createNativeAppSessionAdapter(options?: {
 
   // Fallback to localStorage if enabled and WebKit unavailable
   if (!isAvailable && enableFallback) {
-    console.log('📱 Using localStorage fallback for WebKit session adapter');
+    debug('📱 Using localStorage fallback for WebKit session adapter');
     // Use statically-imported localStorage adapter as fallback
     return createLocalStorageAdapter();
   }
@@ -252,9 +253,9 @@ export function createNativeAppSessionAdapter(options?: {
   return {
     async saveSession(partialSession: Partial<SessionData>): Promise<SessionData> {
       try {
-        console.log('💾 WebKit: Saving session to native storage');
+        debug('💾 WebKit: Saving session to native storage');
         const result = await bridge.sendMessage<SessionData>('saveSession', partialSession);
-        console.log('✅ WebKit: Session saved successfully');
+        debug('✅ WebKit: Session saved successfully');
         return result;
       } catch (error) {
         console.error('❌ WebKit: Failed to save session:', error);
@@ -264,7 +265,7 @@ export function createNativeAppSessionAdapter(options?: {
 
     async loadSession(): Promise<SessionData | null> {
       try {
-        console.log('📖 WebKit: Loading session from native storage');
+        debug('📖 WebKit: Loading session from native storage');
         const result = await bridge.sendMessage<SessionData | null>('loadSession');
 
         if (result) {
@@ -272,13 +273,13 @@ export function createNativeAppSessionAdapter(options?: {
           // expiresAt is now an ISO string, parse it for comparison
           const expiresAtMs = result.expiresAt ? new Date(result.expiresAt).getTime() : 0;
           if (expiresAtMs < Date.now() && !result.refreshToken) {
-            console.log('🕐 WebKit: Session expired, clearing');
+            debug('🕐 WebKit: Session expired, clearing');
             await bridge.sendMessage('clearSession');
             return null;
           }
-          console.log('✅ WebKit: Session loaded successfully');
+          debug('✅ WebKit: Session loaded successfully');
         } else {
-          console.log('ℹ️ WebKit: No session found in native storage');
+          debug('ℹ️ WebKit: No session found in native storage');
         }
 
         return result;
@@ -290,9 +291,9 @@ export function createNativeAppSessionAdapter(options?: {
 
     async clearSession(): Promise<void> {
       try {
-        console.log('🗑️ WebKit: Clearing session from native storage');
+        debug('🗑️ WebKit: Clearing session from native storage');
         await bridge.sendMessage('clearSession');
-        console.log('✅ WebKit: Session cleared successfully');
+        debug('✅ WebKit: Session cleared successfully');
       } catch (error) {
         console.error('❌ WebKit: Failed to clear session:', error);
         throw error;
@@ -301,9 +302,9 @@ export function createNativeAppSessionAdapter(options?: {
 
     async saveUser(user: UserData): Promise<void> {
       try {
-        console.log('💾 WebKit: Saving user data to native storage');
+        debug('💾 WebKit: Saving user data to native storage');
         await bridge.sendMessage('saveUser', user);
-        console.log('✅ WebKit: User data saved successfully');
+        debug('✅ WebKit: User data saved successfully');
       } catch (error) {
         console.error('❌ WebKit: Failed to save user:', error);
         throw error;
@@ -312,13 +313,13 @@ export function createNativeAppSessionAdapter(options?: {
 
     async getUser(userId?: string): Promise<UserData | null> {
       try {
-        console.log('📖 WebKit: Loading user data from native storage');
+        debug('📖 WebKit: Loading user data from native storage');
         const result = await bridge.sendMessage<UserData | null>('getUser', { userId });
 
         if (result) {
-          console.log('✅ WebKit: User data loaded successfully');
+          debug('✅ WebKit: User data loaded successfully');
         } else {
-          console.log('ℹ️ WebKit: No user data found in native storage');
+          debug('ℹ️ WebKit: No user data found in native storage');
         }
 
         return result;
@@ -330,9 +331,9 @@ export function createNativeAppSessionAdapter(options?: {
 
     async clearUser(userId?: string): Promise<void> {
       try {
-        console.log('🗑️ WebKit: Clearing user data from native storage');
+        debug('🗑️ WebKit: Clearing user data from native storage');
         await bridge.sendMessage('clearUser', { userId });
-        console.log('✅ WebKit: User data cleared successfully');
+        debug('✅ WebKit: User data cleared successfully');
       } catch (error) {
         console.error('❌ WebKit: Failed to clear user:', error);
         throw error;

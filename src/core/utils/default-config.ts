@@ -6,6 +6,7 @@
  */
 
 import type { AuthConfig } from '../types/index.js';
+import { debug } from './debug.js';
 
 /**
  * Default API detection with standard fallback pattern
@@ -19,7 +20,7 @@ export async function detectDefaultApiServer(): Promise<string> {
   let apiBaseUrl = import.meta.env?.API_BASE_URL;
 
   if (apiBaseUrl) {
-    console.log('🔧 Using API base URL from environment:', apiBaseUrl);
+    debug('🔧 Using API base URL from environment:', apiBaseUrl);
     return apiBaseUrl;
   }
 
@@ -34,20 +35,20 @@ export async function detectDefaultApiServer(): Promise<string> {
 
     if (localResponse.ok) {
       apiBaseUrl = 'https://dev.thepia.com:8443';
-      console.log('🔧 Using local development API server');
+      debug('🔧 Using local development API server');
       return apiBaseUrl;
     }
   } catch (error) {
-    console.log('🔧 Local API server not available, using production');
+    debug('🔧 Local API server not available, using production');
     // Log the specific error for debugging
     if (error instanceof Error) {
-      console.log(`   Error: ${error.message}`);
+      console.warn(`   Error: ${error.message}`);
     }
   }
 
   // Fallback to production
   apiBaseUrl = 'https://api.thepia.com';
-  console.log('🔧 Using production API server');
+  debug('🔧 Using production API server');
   return apiBaseUrl;
 }
 
@@ -184,7 +185,7 @@ export async function quickAuthSetup(
     }
   });
 
-  console.log('🚀 Quick auth setup complete:', {
+  debug('🚀 Quick auth setup complete:', {
     apiBaseUrl: config.apiBaseUrl,
     domain: config.domain,
     companyName: config.branding?.companyName,

@@ -10,6 +10,7 @@ import type {
   SerializedPasskeyCredential,
   SerializedWebAuthnRegistrationResponse
 } from '../types/index.js';
+import { debug } from './debug.js';
 
 /**
  * Check if WebAuthn is supported
@@ -145,7 +146,7 @@ export async function createCredential(
   }
 
   try {
-    console.log('🔧 Processing WebAuthn registration options:', registrationOptions);
+    debug('🔧 Processing WebAuthn registration options:', registrationOptions);
 
     // Convert server format to browser format
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
@@ -169,7 +170,7 @@ export async function createCredential(
       }))
     };
 
-    console.log('🔧 Converted options for browser API:', publicKeyCredentialCreationOptions);
+    debug('🔧 Converted options for browser API:', publicKeyCredentialCreationOptions);
 
     const credential = (await navigator.credentials.create({
       publicKey: publicKeyCredentialCreationOptions
@@ -195,7 +196,7 @@ export async function createCredential(
       clientExtensionResults: credential.getClientExtensionResults()
     };
 
-    console.log('✅ WebAuthn authentication created and converted for server');
+    debug('✅ WebAuthn authentication created and converted for server');
     return credentialForServer;
   } catch (error) {
     console.error('❌ WebAuthn credential creation failed:', error);

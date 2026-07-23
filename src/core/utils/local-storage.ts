@@ -5,6 +5,8 @@
  * SPIKE: Experimental IndexedDB implementation for service worker sync
  */
 
+import { debug } from './debug.js';
+
 export interface WorkflowRecord {
   uid: string;
   workflowId: string;
@@ -54,7 +56,7 @@ export class LocalStorageDB {
       request.onsuccess = () => {
         this.db = request.result;
         this.isInitialized = true;
-        console.log('[LocalStorage] IndexedDB initialized');
+        debug('[LocalStorage] IndexedDB initialized');
         resolve();
       };
 
@@ -83,7 +85,7 @@ export class LocalStorageDB {
       db.createObjectStore('sync_metadata', { keyPath: 'id' });
     }
 
-    console.log('[LocalStorage] Database schema created');
+    debug('[LocalStorage] Database schema created');
   }
 
   /**

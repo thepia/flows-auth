@@ -7,6 +7,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { CONFIG_DEFAULTS } from '../../src/core/stores/auth-store.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -34,9 +35,8 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
   describe('GIVEN a client configured with appCode', () => {
     describe('WHEN appCode is "demo"', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'demo',
-        appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true
       });
@@ -108,7 +108,7 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
 
     describe('WHEN appCode is "app"', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'app',
         appCode: 'app',
         domain: 'app.thepia.net',
@@ -136,9 +136,8 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
   describe('HTTP Method Verification', () => {
     describe('GIVEN any client configuration', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'demo',
-        appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
       });

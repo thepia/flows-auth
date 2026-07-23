@@ -169,15 +169,15 @@ class MockMutationObserver {
 global.MutationObserver = MockMutationObserver as any;
 
 // Mock requestAnimationFrame and cancelAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
-global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16)) as any;
+global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id)) as any;
 
 // Mock getComputedStyle for layout calculations
 global.getComputedStyle = vi.fn(() => ({
   getPropertyValue: vi.fn(() => ''),
   width: '0px',
   height: '0px'
-}));
+})) as any;
 
 // Mock getBoundingClientRect for layout calculations
 Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -199,25 +199,33 @@ HTMLElement.prototype.blur = vi.fn();
 
 // Ensure window has dispatchEvent function
 if (!window.dispatchEvent || typeof window.dispatchEvent !== 'function') {
-  const eventListeners = new Map<string, Set<EventListener>>();
+  const eventListeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
 
-  window.addEventListener = vi.fn((type: string, listener: EventListener) => {
-    if (!eventListeners.has(type)) {
-      eventListeners.set(type, new Set());
+  window.addEventListener = vi.fn(
+    (type: string, listener: EventListenerOrEventListenerObject) => {
+      if (!eventListeners.has(type)) {
+        eventListeners.set(type, new Set());
+      }
+      eventListeners.get(type)?.add(listener);
     }
-    eventListeners.get(type)?.add(listener);
-  });
+  );
 
-  window.removeEventListener = vi.fn((type: string, listener: EventListener) => {
-    eventListeners.get(type)?.delete(listener);
-  });
+  window.removeEventListener = vi.fn(
+    (type: string, listener: EventListenerOrEventListenerObject) => {
+      eventListeners.get(type)?.delete(listener);
+    }
+  );
 
   window.dispatchEvent = vi.fn((event: Event) => {
     const listeners = eventListeners.get(event.type);
     if (listeners) {
       listeners.forEach((listener) => {
         try {
-          listener(event);
+          if (typeof listener === 'function') {
+            listener(event);
+          } else {
+            listener.handleEvent(event);
+          }
         } catch (e) {
           console.error('Error in event listener:', e);
         }

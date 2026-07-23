@@ -5,6 +5,8 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthConfig, AuthStore } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock browser environment
 Object.defineProperty(global, 'window', {
@@ -27,19 +29,20 @@ Object.defineProperty(global, 'window', {
 });
 
 // Mock fetch for API calls
-global.fetch = vi.fn();
+const fetchMock = vi.fn();
+global.fetch = fetchMock as unknown as typeof fetch;
 
 describe('Auth Functionality Tests', () => {
-  let createAuthStore;
-  let authConfig;
-  let authStore;
+  let createAuthStore: (config: AuthConfig) => SvelteAuthStore;
+  let authConfig: AuthConfig;
+  let authStore: SvelteAuthStore;
 
   beforeEach(async () => {
     // Clear all mocks
     vi.clearAllMocks();
 
     // Reset fetch mock
-    global.fetch.mockClear();
+    fetchMock.mockClear();
 
     // Import fresh modules
     const { createAuthStore: createBaseStore } = await import('../../src/core/stores/index.js');
@@ -55,7 +58,7 @@ describe('Auth Functionality Tests', () => {
       enablePasskeys: true,
       signInMode: 'login-or-register',
       language: 'en',
-      applicationContext: {
+      branding: {
         companyName: 'Functionality Test'
       }
     };
@@ -69,7 +72,7 @@ describe('Auth Functionality Tests', () => {
 
     // Track state changes
     const stateChanges = [];
-    const unsubscribe = authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state: AuthStore) => {
       stateChanges.push(state);
       console.log('📊 State change:', state?.state || 'undefined');
     });
@@ -97,7 +100,7 @@ describe('Auth Functionality Tests', () => {
 
     // Track state changes
     const stateChanges = [];
-    const unsubscribe = authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state: AuthStore) => {
       stateChanges.push(state);
       console.log('📊 State change:', state?.state || 'undefined');
     });
@@ -111,7 +114,7 @@ describe('Auth Functionality Tests', () => {
       await authStore.signOut();
       console.log('📊 Sign-out completed');
     } catch (error) {
-      console.log('📊 Sign-out error:', error.message);
+      console.log('📊 Sign-out error:', (error as Error).message);
     }
 
     console.log('📊 Total state changes:', stateChanges.length);
@@ -124,7 +127,7 @@ describe('Auth Functionality Tests', () => {
     console.log('🧪 Testing user check interaction...');
 
     // Mock API response for user check
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         userExists: true,
@@ -134,7 +137,7 @@ describe('Auth Functionality Tests', () => {
 
     // Track state changes
     const stateChanges = [];
-    const unsubscribe = authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state: AuthStore) => {
       stateChanges.push(state);
       console.log('📊 State change:', state?.state || 'undefined');
     });
@@ -148,13 +151,13 @@ describe('Auth Functionality Tests', () => {
       const result = await authStore.checkUser('test@example.com');
       console.log('📊 User check result:', result);
     } catch (error) {
-      console.log('📊 User check error:', error.message);
+      console.log('📊 User check error:', (error as Error).message);
     }
 
     console.log('📊 Total state changes:', stateChanges.length);
-    console.log('📊 Fetch called:', global.fetch.mock.calls.length > 0);
+    console.log('📊 Fetch called:', fetchMock.mock.calls.length > 0);
 
-    expect(global.fetch).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
 
     unsubscribe();
   });
@@ -165,7 +168,7 @@ describe('Auth Functionality Tests', () => {
     let subscriptionCallCount = 0;
     let lastState = null;
 
-    const unsubscribe = authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state: AuthStore) => {
       subscriptionCallCount++;
       lastState = state;
       console.log(`📊 Subscription call #${subscriptionCallCount}:`, state?.state || 'undefined');
@@ -181,7 +184,7 @@ describe('Auth Functionality Tests', () => {
     try {
       await authStore.reset();
     } catch (error) {
-      console.log('📊 Reset error:', error.message);
+      console.log('📊 Reset error:', (error as Error).message);
     }
 
     // Wait for final state changes
@@ -203,7 +206,7 @@ describe('Auth Functionality Tests', () => {
     let contextState = null;
     let subscriptionCount = 0;
 
-    const unsubscribe = authStore.subscribe((state) => {
+    const unsubscribe = authStore.subscribe((state: AuthStore) => {
       subscriptionCount++;
       contextState = state;
       console.log(`📊 Context subscription #${subscriptionCount}:`, state?.state || 'undefined');
@@ -216,7 +219,7 @@ describe('Auth Functionality Tests', () => {
     try {
       await authStore.checkUser('demo@example.com');
     } catch (error) {
-      console.log('📊 Demo user check error:', error.message);
+      console.log('📊 Demo user check error:', (error as Error).message);
     }
 
     // Wait for state changes

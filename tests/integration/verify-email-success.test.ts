@@ -24,7 +24,9 @@ describe('Verify Email Success - Real Server Response', () => {
     apiClient = new AuthApiClient({
       apiBaseUrl: 'https://dev.thepia.com:8443',
       domain: 'thepia.net',
-      appCode: 'demo'
+      appCode: 'demo',
+      clientId: 'test-client',
+      enablePasskeys: false
     });
   });
 

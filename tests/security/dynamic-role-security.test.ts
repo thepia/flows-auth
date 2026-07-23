@@ -27,6 +27,7 @@ const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
   clientId: 'test-client',
   domain: 'test.com',
+  appCode: 'test-app',
   enablePasskeys: true,
   branding: {
     companyName: 'Test Company',

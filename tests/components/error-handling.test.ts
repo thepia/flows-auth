@@ -24,6 +24,7 @@ import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 const defaultConfig: AuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'test-client',
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,

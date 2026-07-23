@@ -11,6 +11,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Import shared test configuration
 import { TEST_CONFIG } from '../test-setup.js';
@@ -97,7 +98,7 @@ const mockWebAuthnTimeout = () => {
 };
 
 describe('Auth Store Integration Tests', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let actualApiUrl = LOCAL_TEST_CONFIG.apiBaseUrl;
   let apiAvailable = false;
 
@@ -286,13 +287,13 @@ describe('Auth Store Integration Tests', () => {
         const duration = Date.now() - startTime;
         expect(duration).toBeLessThan(5000); // Should complete quickly
 
-        if (result.step === 'success') {
-          expect(result.user).toBeDefined();
-          expect(result.access_token).toBeDefined();
+        // signInWithPasskey() resolves with SignInData directly (throws on failure,
+        // no 'step' discriminant) - reaching here means it succeeded.
+        expect(result.user).toBeDefined();
+        expect(result.tokens.accessToken).toBeDefined();
 
-          const state = get(authStore);
-          expect(state.state).toBe('authenticated');
-        }
+        const state = authStore.getState();
+        expect(state.state).toBe('authenticated');
       } catch (error) {
         // May fail in test environment - that's ok, we're testing the flow
         console.log('WebAuthn test failed (expected in test env):', error);
@@ -353,14 +354,17 @@ describe('Auth Store Integration Tests', () => {
         expect(result.success).toBe(true);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
-        if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
+        if (
+          (error as Error).message?.includes('Endpoint not found') ||
+          (error as Error).message?.includes('404')
+        ) {
           console.log('⏭️ Skipping: Endpoint not available on API server');
           return;
         }
         throw error;
       }
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.state).toBe('unauthenticated'); // Still unauthenticated until code verified
     });
 
@@ -371,7 +375,10 @@ describe('Auth Store Integration Tests', () => {
         expect(result.success).toBe(true);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
-        if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
+        if (
+          (error as Error).message?.includes('Endpoint not found') ||
+          (error as Error).message?.includes('404')
+        ) {
           console.log('⏭️ Skipping: Endpoint not available on API server');
           return;
         }
@@ -384,7 +391,10 @@ describe('Auth Store Integration Tests', () => {
         await authStore.sendEmailCode(TEST_ACCOUNTS.existingWithoutPasskey.email);
       } catch (error) {
         // Skip test if endpoint is not implemented on API server
-        if (error.message?.includes('Endpoint not found') || error.message?.includes('404')) {
+        if (
+          (error as Error).message?.includes('Endpoint not found') ||
+          (error as Error).message?.includes('404')
+        ) {
           console.log('⏭️ Skipping: Endpoint not available on API server');
           return;
         }
@@ -392,7 +402,7 @@ describe('Auth Store Integration Tests', () => {
       }
 
       // signInStateTransitions.emailCodeSent(ui) fires after a successful send
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.signInState).toBe('pinEntry');
     });
 
@@ -494,7 +504,7 @@ describe('Auth Store Integration Tests', () => {
       // Check that session key is cleared
       expect(localStorage.getItem('thepia_auth_session')).toBeNull();
 
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(state.state).toBe('unauthenticated');
       expect(state.user).toBeNull();
     });
@@ -510,20 +520,26 @@ describe('Auth Store Integration Tests', () => {
 
     it.skip('should track state machine states correctly', () => {
       // TODO: Rewrite for new UI store architecture (authStore.ui.getState().signInState)
-      // Old stateMachine architecture has been replaced with modular stores
+      // Old stateMachine architecture has been replaced with modular stores.
+      // Kept (skipped) as documentation of intended coverage; cast to `any` since
+      // the referenced XState-era API no longer exists on the real store type.
+      const legacy: any = authStore;
+      const derivedStores: any = {};
+
       // Store starts in checkingSession but quickly transitions to sessionInvalid when no valid session exists
       // Since localStorage is cleared in beforeEach, this should be sessionInvalid
-      expect(authStore.stateMachine.currentState()).toBe('sessionInvalid');
+      expect(legacy.stateMachine.currentState()).toBe('sessionInvalid');
 
-      authStore.clickNext();
+      legacy.clickNext();
       expect(get(derivedStores.isCombinedAuth)).toBe(true);
 
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
       expect(get(derivedStores.isConditionalAuth)).toBe(true);
     });
 
     it.skip('should update derived stores when state changes', async () => {
       // TODO: Implement derived stores for auth store
+      const legacy: any = authStore;
       const userValues: any[] = [];
       const authValues: boolean[] = [];
 
@@ -534,7 +550,7 @@ describe('Auth Store Integration Tests', () => {
       expect(authValues[0]).toBe(false); // Initial auth should be false
 
       // Simulate a state change by triggering navigation
-      authStore.clickNext();
+      legacy.clickNext();
 
       // Allow time for derived store updates
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -554,7 +570,7 @@ describe('Auth Store Integration Tests', () => {
       await expect(authStore.api.checkEmail('test@example.com')).rejects.toThrow('Network error');
 
       // Store should remain in stable state
-      const state = get(authStore);
+      const state = authStore.getState();
       expect(['unauthenticated', 'error']).toContain(state.state);
     });
 
@@ -562,7 +578,7 @@ describe('Auth Store Integration Tests', () => {
       // Reset the store
       authStore.reset();
 
-      const resetState = get(authStore);
+      const resetState = authStore.getState();
       expect(resetState.state).toBe('unauthenticated');
       expect(resetState.user).toBeNull();
       expect(resetState.access_token).toBeNull();
@@ -570,27 +586,31 @@ describe('Auth Store Integration Tests', () => {
 
     it.skip('should handle state machine reset properly', async () => {
       // TODO: Rewrite for new UI store architecture
-      // Navigate to a state, then directly trigger error state that supports reset
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
 
-      expect(authStore.stateMachine.matches('conditionalMediation')).toBe(true);
+      // Navigate to a state, then directly trigger error state that supports reset
+      legacy.clickNext();
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+
+      expect(legacy.stateMachine.matches('conditionalMediation')).toBe(true);
 
       // Directly send the state machine event that puts us in userCancellation state
       const mockError = new Error('User cancelled the operation');
       mockError.name = 'NotAllowedError';
 
-      authStore.stateMachine.send({
+      legacy.stateMachine.send({
         type: 'WEBAUTHN_ERROR',
         error: mockError,
         duration: 1000 // Timing that should classify as user-cancellation
       });
 
       // Should now be in userCancellation state which supports reset
-      expect(authStore.stateMachine.matches('userCancellation')).toBe(true);
+      expect(legacy.stateMachine.matches('userCancellation')).toBe(true);
 
-      authStore.resetToAuth();
-      expect(authStore.stateMachine.matches('combinedAuth')).toBe(true);
+      legacy.resetToAuth();
+      expect(legacy.stateMachine.matches('combinedAuth')).toBe(true);
     });
   });
 
@@ -642,24 +662,27 @@ describe('Auth Store Integration Tests', () => {
 
     it.skip('should handle rapid state transitions', () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
       const transitions = 10; // Reduce for faster testing
 
       for (let i = 0; i < transitions; i++) {
-        authStore.clickNext();
-        authStore.typeEmail(`test${i}@example.com`);
+        legacy.clickNext();
+        legacy.typeEmail(`test${i}@example.com`);
         // Instead of resetToAuth from conditionalMediation, just go back to combined auth
-        authStore.clickNext(); // This should transition back or handle the flow
+        legacy.clickNext(); // This should transition back or handle the flow
       }
 
       // Should handle rapid transitions without errors
       // The final state might not be combinedAuth after all transitions, just ensure no crashes
-      expect(typeof authStore.stateMachine.currentState()).toBe('string');
+      expect(typeof legacy.stateMachine.currentState()).toBe('string');
     });
   });
 });
 
 describe('Auth Store E2E Scenarios', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
 
   beforeEach(() => {
     localStorage.clear();
@@ -675,20 +698,24 @@ describe('Auth Store E2E Scenarios', () => {
   describe('Complete User Journeys', () => {
     it.skip('should complete new user registration flow', async () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
+
       // 1. Start authentication
-      authStore.clickNext();
-      expect(authStore.stateMachine.matches('combinedAuth')).toBe(true);
+      legacy.clickNext();
+      expect(legacy.stateMachine.matches('combinedAuth')).toBe(true);
 
       // 2. Enter new user email
-      authStore.typeEmail(TEST_ACCOUNTS.newUser.email);
-      expect(authStore.stateMachine.matches('conditionalMediation')).toBe(true);
+      legacy.typeEmail(TEST_ACCOUNTS.newUser.email);
+      expect(legacy.stateMachine.matches('conditionalMediation')).toBe(true);
 
       // 3. The state machine should handle the transition automatically based on available auth methods
       // For a new user, there shouldn't be passkeys available, so it may stay in conditionalMediation
       // Let's work with whatever state we're in
       await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for any auto-transitions
 
-      const finalState = authStore.stateMachine.currentState();
+      const finalState = legacy.stateMachine.currentState();
       console.log(`State after email entry: ${finalState}`);
 
       // Test passes as long as we're in a valid state and can continue the flow
@@ -701,39 +728,47 @@ describe('Auth Store E2E Scenarios', () => {
       expect(emailCheck.exists).toBe(false);
 
       // 5. Should transition to new user registration
-      authStore.stateMachine.send({ type: 'USER_NOT_FOUND' });
-      expect(authStore.stateMachine.matches('newUserRegistration')).toBe(true);
+      legacy.stateMachine.send({ type: 'USER_NOT_FOUND' });
+      expect(legacy.stateMachine.matches('newUserRegistration')).toBe(true);
     });
 
     it.skip('should complete returning user with passkey flow', async () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
+
       // 1. Start authentication
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+      legacy.clickNext();
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
 
       // 2. Should trigger conditional mediation
-      expect(authStore.stateMachine.matches('conditionalMediation')).toBe(true);
+      expect(legacy.stateMachine.matches('conditionalMediation')).toBe(true);
 
       // 3. User selects passkey from autofill
-      authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
-      expect(authStore.stateMachine.matches('biometricPrompt')).toBe(true);
+      legacy.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
+      expect(legacy.stateMachine.matches('biometricPrompt')).toBe(true);
 
       // 4. Mock successful WebAuthn
       mockWebAuthnSuccess();
-      authStore.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} });
-      expect(authStore.stateMachine.matches('auth0WebAuthnVerify')).toBe(true);
+      legacy.stateMachine.send({ type: 'WEBAUTHN_SUCCESS', response: {} });
+      expect(legacy.stateMachine.matches('auth0WebAuthnVerify')).toBe(true);
     });
 
     it.skip('should complete returning user without passkey flow', async () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
+
       // 1. Start authentication
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithoutPasskey.email);
+      legacy.clickNext();
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithoutPasskey.email);
 
       // 2. Wait for any automatic state transitions and work with current state
       await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for any auto-transitions
 
-      const currentState = authStore.stateMachine.currentState();
+      const currentState = legacy.stateMachine.currentState();
       console.log(`State after email entry: ${currentState}`);
 
       // Test should work with whatever state we end up in
@@ -762,16 +797,20 @@ describe('Auth Store E2E Scenarios', () => {
       }
 
       // 4. Should offer passkey registration or magic link
-      authStore.stateMachine.send({ type: 'USER_EXISTS', hasPasskey: false });
-      expect(authStore.stateMachine.matches('passkeyRegistration')).toBe(true);
+      legacy.stateMachine.send({ type: 'USER_EXISTS', hasPasskey: false });
+      expect(legacy.stateMachine.matches('passkeyRegistration')).toBe(true);
     });
 
     it.skip('should handle passkey authentication failure gracefully', async () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
+
       // 1. Start passkey authentication
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
-      authStore.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
+      legacy.clickNext();
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+      legacy.stateMachine.send({ type: 'PASSKEY_SELECTED', credential: {} });
 
       // 2. Mock user cancellation
       mockWebAuthnUserCancellation();
@@ -780,18 +819,18 @@ describe('Auth Store E2E Scenarios', () => {
         await authStore.signInWithPasskey(TEST_ACCOUNTS.existingWithPasskey.email);
       } catch (error) {
         // Should classify as user cancellation
-        authStore.stateMachine.send({
+        legacy.stateMachine.send({
           type: 'WEBAUTHN_ERROR',
           error: error as any,
           timing: 1000 // Quick cancellation
         });
       }
 
-      expect(authStore.stateMachine.matches('userCancellation')).toBe(true);
+      expect(legacy.stateMachine.matches('userCancellation')).toBe(true);
 
       // 3. Should be able to retry
-      authStore.resetToAuth();
-      expect(authStore.stateMachine.matches('combinedAuth')).toBe(true);
+      legacy.resetToAuth();
+      expect(legacy.stateMachine.matches('combinedAuth')).toBe(true);
     });
   });
 
@@ -806,19 +845,23 @@ describe('Auth Store E2E Scenarios', () => {
 
         // Network errors during sign-in don't change the state to 'error'
         // The store remains in 'unauthenticated' state
-        const state = get(authStore);
+        const state = authStore.getState();
         expect(['unauthenticated', 'error']).toContain(state.state);
       }
     }, 30000); // Increase timeout for API detection
 
     it.skip('should handle browser refresh during authentication', () => {
       // TODO: Rewrite for new UI store architecture
+      // Kept (skipped) as documentation; cast since the referenced XState-era
+      // API no longer exists on the real store type.
+      const legacy: any = authStore;
+
       // Simulate browser refresh by recreating store with existing localStorage
-      authStore.clickNext();
-      authStore.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
+      legacy.clickNext();
+      legacy.typeEmail(TEST_ACCOUNTS.existingWithPasskey.email);
 
       // Create new store (simulating page refresh)
-      const refreshedStore = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
+      const refreshedStore: any = makeSvelteCompatible(createAuthStore(LOCAL_TEST_CONFIG));
 
       // Should start from initial state and quickly transition to sessionInvalid when no valid session exists
       // Since we cleared localStorage in beforeEach, there's no valid session to restore

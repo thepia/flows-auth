@@ -69,6 +69,7 @@ export const TEST_CONFIG: AuthConfig = {
   apiBaseUrl: getApiUrl(),
   clientId: process.env.TEST_CLIENT_ID || process.env.AUTH0_CLIENT_ID || 'test-flows-auth-client',
   domain: process.env.AUTH0_DOMAIN || 'thepia.eu.auth0.com',
+  appCode: process.env.TEST_APP_CODE || 'demo',
   enablePasskeys: true,
   errorReporting: {
     enabled: false, // Disable error reporting in tests to avoid fetch issues
@@ -448,7 +449,7 @@ export class PerformanceTestUtils {
 
 // Memory leak detection
 export class MemoryTestUtils {
-  static trackObjects<T>(ctor: new (...args: any[]) => T): {
+  static trackObjects<T extends object>(ctor: new (...args: any[]) => T): {
     count: () => number;
     cleanup: () => void;
   } {

@@ -236,8 +236,8 @@ export async function authenticateWithPasskey(
       rpId: challenge.rpId,
       allowCredentials: challenge.allowCredentials?.map((cred) => ({
         ...cred,
-        id: base64ToArrayBuffer(cred.id as unknown as string)
-      })) as PublicKeyCredentialDescriptor[],
+        id: base64ToArrayBuffer(cred.id)
+      })),
       userVerification: 'required',
       timeout: challenge.timeout || 60000
     }

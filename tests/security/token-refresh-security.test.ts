@@ -13,10 +13,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/auth-store.js';
-import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('Token Refresh Security & Edge Cases', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
@@ -83,7 +85,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       }
     };
 
-    authStore = createAuthStore(mockConfig, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
 
     // Set up initial authenticated state
     authStore.core.getState().updateUser(mockUser);
@@ -152,11 +154,11 @@ describe('Token Refresh Security & Edge Cases', () => {
       await authStore.refreshTokens();
 
       // Get all console log calls
-      const allLogCalls = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call));
+      const allLogCalls = consoleLogSpy.mock.calls.map((call: unknown[]) => JSON.stringify(call));
 
       // Verify full refresh token is NOT in any logs
       const fullRefreshTokenInLogs = allLogCalls.some(
-        (log) =>
+        (log: string) =>
           log.includes('super-secret-refresh-token-abc123xyz') ||
           log.includes('new-super-secret-refresh-token-xyz789')
       );
@@ -166,9 +168,9 @@ describe('Token Refresh Security & Edge Cases', () => {
       // Verify logs either contain truncated tokens OR don't log tokens at all (both are secure)
       // Not logging tokens is actually MORE secure than masking them
       const hasTruncatedToken = allLogCalls.some(
-        (log) => log.includes('refresh_token') && log.includes('...')
+        (log: string) => log.includes('refresh_token') && log.includes('...')
       );
-      const hasRefreshTokenMention = allLogCalls.some((log) => log.includes('refresh_token'));
+      const hasRefreshTokenMention = allLogCalls.some((log: string) => log.includes('refresh_token'));
 
       // Either we have masked tokens, or we don't log them at all
       expect(hasTruncatedToken || !hasRefreshTokenMention).toBe(true);
@@ -184,10 +186,10 @@ describe('Token Refresh Security & Edge Cases', () => {
 
       await authStore.refreshTokens();
 
-      const allLogCalls = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call));
+      const allLogCalls = consoleLogSpy.mock.calls.map((call: unknown[]) => JSON.stringify(call));
 
       // Full access token should not appear in logs
-      const fullAccessTokenInLogs = allLogCalls.some((log) =>
+      const fullAccessTokenInLogs = allLogCalls.some((log: string) =>
         log.includes('new-secret-access-token-full-value')
       );
 
@@ -582,7 +584,7 @@ describe('Token Refresh Security & Edge Cases', () => {
       await authStore.core.getState().updateTokens({
         access_token: 'access-token',
         refresh_token: 'refresh-token',
-        expiresAt: undefined // No expiry set
+        expiresAt: null // No expiry set
       });
 
       mockApiClient.refreshToken.mockResolvedValueOnce({

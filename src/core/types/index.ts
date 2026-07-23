@@ -33,7 +33,14 @@ export type {
   GetConsentsResponse,
   GetConsentsResponseSchema
 } from './onboarding.js';
-export type { SignInContext, SignInError, SignInEvent, SignInState, WebAuthnError };
+export type {
+  LegacySignInEvent,
+  SignInContext,
+  SignInError,
+  SignInEvent,
+  SignInState,
+  WebAuthnError
+};
 
 // User types
 export interface User {
@@ -971,7 +978,7 @@ export interface AuthStoreFunctions {
   // SignIn flow control methods
   notifyPinSent: () => void;
   notifyPinVerified: (signInData: SignInData) => void;
-  sendSignInEvent: (event: SignInEvent) => SignInState;
+  sendSignInEvent: (event: LegacySignInEvent) => SignInState;
 
   // Configuration access
   getConfig: () => AuthConfig;
@@ -980,7 +987,7 @@ export interface AuthStoreFunctions {
   // UI Configuration
   getButtonConfig: () => ButtonConfig;
   getStateMessageConfig: () => StateMessageConfig | null;
-  getExplainerConfig: (explainFeatures: boolean) => ExplainerConfig | null;
+  getExplainerConfig: (explainFeatures?: boolean) => ExplainerConfig | null;
 
   // Events
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;

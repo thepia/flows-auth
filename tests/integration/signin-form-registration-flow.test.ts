@@ -22,6 +22,8 @@ describe('SignInForm Registration Flow Regression', () => {
   const TEST_CONFIG = {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
+    domain: 'dev.thepia.net',
+    appCode: 'demo',
     enablePasskeys: true,
   };
 
@@ -151,9 +153,9 @@ describe('SignInForm Registration Flow Regression', () => {
         await apiClient.checkEmail('invalid-email');
         console.log('⚠️ Invalid email was accepted (unexpected)');
       } catch (error) {
-        console.log('✅ Invalid email correctly rejected:', error.message);
+        console.log('✅ Invalid email correctly rejected:', (error as Error).message);
         // Expect either email validation error or rate limit error
-        expect(error.message).toMatch(/(email|rate|requests)/i);
+        expect((error as Error).message).toMatch(/(email|rate|requests)/i);
       }
     });
   });
@@ -307,7 +309,7 @@ describe('SignInForm Registration Flow Regression', () => {
           await apiClient.checkEmail(testCase.email);
           console.log(`⚠️ ${testCase.description} was unexpectedly accepted`);
         } catch (error) {
-          console.log(`✅ ${testCase.description} correctly rejected:`, error.message);
+          console.log(`✅ ${testCase.description} correctly rejected:`, (error as Error).message);
         }
       }
     });

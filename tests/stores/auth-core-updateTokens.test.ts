@@ -6,6 +6,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock external dependencies
 vi.mock('../../src/core/api/auth-api', () => ({
@@ -28,7 +30,7 @@ vi.mock('../../src/core/api/auth-api', () => ({
 }));
 
 describe('auth-core updateTokens', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
 
   const testConfig: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',
@@ -41,7 +43,7 @@ describe('auth-core updateTokens', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
-    authStore = createAuthStore(testConfig);
+    authStore = makeSvelteCompatible(createAuthStore(testConfig));
   });
 
   describe('Basic Token Updates', () => {

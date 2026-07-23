@@ -24,15 +24,19 @@ import {
   isSessionValid,
   saveSession
 } from '../../src/core/utils/sessionManager.js';
+import { STORAGE_CONFIG_DEFAULTS } from '../../src/core/utils/storageManager.js';
 
 // Mock browser storage APIs
-const createMockStorage = () => ({
-  data: new Map<string, string>(),
-  getItem: vi.fn((key: string) => createMockStorage.data?.get(key) || null),
-  setItem: vi.fn((key: string, value: string) => createMockStorage.data?.set(key, value)),
-  removeItem: vi.fn((key: string) => createMockStorage.data?.delete(key)),
-  clear: vi.fn(() => createMockStorage.data?.clear())
-});
+const createMockStorage = () => {
+  const data = new Map<string, string>();
+  return {
+    data,
+    getItem: vi.fn((key: string) => data.get(key) || null),
+    setItem: vi.fn((key: string, value: string) => data.set(key, value)),
+    removeItem: vi.fn((key: string) => data.delete(key)),
+    clear: vi.fn(() => data.clear())
+  };
+};
 
 const mockSessionStorage = createMockStorage();
 const mockLocalStorage = createMockStorage();
@@ -44,6 +48,7 @@ const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
   clientId: 'test-client',
   domain: 'test.com',
+  appCode: 'test-app',
   enablePasskeys: true,
 };
 
@@ -164,18 +169,18 @@ describe('R2: Storage Configuration (SHOULD)', () => {
   describe('R2.1: Configurable Storage Type', () => {
     it('SHOULD support both sessionStorage and localStorage', () => {
       // Test sessionStorage configuration
-      configureSessionStorage({ type: 'sessionStorage', userRole: 'guest' });
+      configureSessionStorage({ ...STORAGE_CONFIG_DEFAULTS, type: 'sessionStorage', userRole: 'guest' });
       let config = getStorageConfig();
       expect(config.type).toBe('sessionStorage');
 
       // Test localStorage configuration
-      configureSessionStorage({ type: 'localStorage', userRole: 'employee' });
+      configureSessionStorage({ ...STORAGE_CONFIG_DEFAULTS, type: 'localStorage', userRole: 'employee' });
       config = getStorageConfig();
       expect(config.type).toBe('localStorage');
     });
 
     it('SHOULD default to sessionStorage for security', () => {
-      configureSessionStorage({ userRole: 'guest' }); // No type specified
+      configureSessionStorage({ ...STORAGE_CONFIG_DEFAULTS, userRole: 'guest' }); // No type specified
       const config = getStorageConfig();
       expect(config.type).toBe('sessionStorage');
     });
@@ -267,11 +272,14 @@ describe('R3: Session Validation (MUST)', () => {
     });
 
     it('MUST clear expired sessions automatically', () => {
+      // No refresh token: per getSession()'s documented contract, a session with a
+      // refresh token stays valid even past expiresAt (it's refreshable). Only a
+      // genuinely unrecoverable session (no refresh token) should be auto-cleared.
       const expiredSession: SignInData = {
         ...createTestSession(),
         tokens: {
           accessToken: 'expired-token',
-          refreshToken: 'expired-refresh',
+          refreshToken: '',
           refreshedAt: new Date().toISOString(),
           expiresAt: new Date(Date.now() - 60000).toISOString()
         }
@@ -403,7 +411,7 @@ describe('R7: Security Requirements (CRITICAL)', () => {
 
   describe('R7.1: Default Security', () => {
     it('MUST default to sessionStorage', () => {
-      configureSessionStorage({ userRole: 'guest' }); // No type specified
+      configureSessionStorage({ ...STORAGE_CONFIG_DEFAULTS, userRole: 'guest' }); // No type specified
 
       const config = getStorageConfig();
       expect(config.type).toBe('sessionStorage');

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import { CONFIG_DEFAULTS, createAuthStore } from '../../src/core/stores/auth-store.js';
 
 /**
  * Unit Test: Error Store Classification Logic
@@ -25,9 +25,8 @@ import { createAuthStore } from '../../src/core/stores/auth-store.js';
 describe('Error Store Classification', () => {
   test('should handle AuthError object from API through entire flow', () => {
     const store = createAuthStore({
-      apiBaseUrl: 'https://api.thepia.com',
+      ...CONFIG_DEFAULTS,
       domain: 'thepia.net',
-      appCode: 'demo',
       clientId: 'test-client',
       enablePasskeys: true
     });
@@ -74,9 +73,8 @@ describe('Error Store Classification', () => {
 
   test('should handle the EXACT error flow with unknown_error code', () => {
     const store = createAuthStore({
-      apiBaseUrl: 'https://api.thepia.com',
+      ...CONFIG_DEFAULTS,
       domain: 'thepia.net',
-      appCode: 'demo',
       clientId: 'test-client',
       enablePasskeys: true
     });
@@ -109,9 +107,8 @@ describe('Error Store Classification', () => {
 
   test('should handle network_error with HTTP 500 message', () => {
     const store = createAuthStore({
-      apiBaseUrl: 'https://api.thepia.com',
+      ...CONFIG_DEFAULTS,
       domain: 'thepia.net',
-      appCode: 'demo',
       clientId: 'test-client',
       enablePasskeys: true
     });
@@ -131,9 +128,8 @@ describe('Error Store Classification', () => {
 
   test('should handle rate_limit_exceeded from server', () => {
     const store = createAuthStore({
-      apiBaseUrl: 'https://api.thepia.com',
+      ...CONFIG_DEFAULTS,
       domain: 'thepia.net',
-      appCode: 'demo',
       clientId: 'test-client',
       enablePasskeys: true
     });
@@ -154,7 +150,7 @@ describe('Error Store Classification', () => {
 
   test('should handle error with nested error object in step format', () => {
     const store = createAuthStore({
-      apiBaseUrl: 'https://api.thepia.com',
+      ...CONFIG_DEFAULTS,
       domain: 'thepia.net',
       appCode: 'app',
       clientId: 'test-client',

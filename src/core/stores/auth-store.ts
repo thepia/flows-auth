@@ -15,6 +15,7 @@ import type {
   AuthConfig,
   AuthEvents,
   AuthStoreFunctions,
+  LegacySignInEvent,
   SessionData,
   SignInData,
   StorageConfigurationUpdate
@@ -67,6 +68,13 @@ export interface ComposedAuthStore extends AuthStoreFunctions {
   // Cleanup
   destroy: () => void;
 }
+
+export const CONFIG_DEFAULTS = {
+  apiBaseUrl: 'https://api.thepia.com',
+  domain: 'thepia.com',
+  appCode: 'demo',
+  enablePasskeys: false
+} satisfies Partial<AuthConfig>;
 
 /**
  * Create the composed auth store system
@@ -846,7 +854,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     },
 
     // Legacy event system for backward compatibility
-    sendSignInEvent: (event: any) => {
+    sendSignInEvent: (event: LegacySignInEvent) => {
       console.log('🔄 Processing legacy signin event:', event.type);
       const { signInState } = ui.getState();
 

@@ -5,6 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import { CONFIG_DEFAULTS } from '../../src/core/stores/auth-store.js';
 
 // Mock service worker registration
 const mockServiceWorkerRegistration = {
@@ -36,7 +37,7 @@ vi.mock('../../src/core/utils/telemetry', async () => {
 
 // Helper function to create test config
 const createTestConfig = (serviceWorkerLogging: any): AuthConfig => ({
-  apiBaseUrl: 'https://api.test.com',
+  ...CONFIG_DEFAULTS,
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,

@@ -12,6 +12,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Following thepia.com pattern - real API server detection
 const API_BASE = 'https://dev.thepia.com:8443';
@@ -22,6 +24,7 @@ const getTestConfig = (): AuthConfig => {
   return {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.net',
+    appCode: 'demo',
     clientId: 'flows-auth-integration-test',
     enablePasskeys: true,
     branding: {
@@ -32,7 +35,7 @@ const getTestConfig = (): AuthConfig => {
 };
 
 describe('Auth Store Real API Integration Tests', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let testConfig: AuthConfig;
 
   beforeAll(async () => {
@@ -58,7 +61,7 @@ describe('Auth Store Real API Integration Tests', () => {
     vi.clearAllMocks();
 
     if (apiServerRunning) {
-      authStore = createAuthStore(testConfig);
+      authStore = makeSvelteCompatible(createAuthStore(testConfig));
 
       // Wait for initial state machine setup
       await new Promise((resolve) => setTimeout(resolve, 100));

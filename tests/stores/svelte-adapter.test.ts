@@ -454,7 +454,7 @@ describe('Svelte Store Adapter', () => {
   describe('Backward Compatibility', () => {
     it('should maintain compatibility with existing component usage', () => {
       // All methods that existing components expect should be present
-      const expectedMethods = [
+      const expectedMethods: (keyof SvelteAuthStore)[] = [
         'subscribe',
         'getConfig',
         'signInWithPasskey',
@@ -475,7 +475,7 @@ describe('Svelte Store Adapter', () => {
       ];
 
       for (const method of expectedMethods) {
-        expect(typeof store[method]).toBe('function', `Missing method: ${method}`);
+        expect(typeof store[method], `Missing method: ${method}`).toBe('function');
       }
     });
   });

@@ -82,7 +82,7 @@ describe('Session Migration Integration Tests', () => {
     });
 
     it('should preserve all session data during migration', async () => {
-      const sessionData: SignInData = {
+      const sessionData = {
         auth_access_token: 'access-token-123',
         auth_refresh_token: 'refresh-token-456',
         auth_user: JSON.stringify({

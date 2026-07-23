@@ -31,6 +31,7 @@ function createTestStore(overrides: Partial<AuthConfig> = {}) {
   const config: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',
     clientId: 'test-client',
+    appCode: 'demo',
     domain: 'test.com',
     enablePasskeys: true,
     ...overrides

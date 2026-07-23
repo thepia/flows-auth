@@ -9,10 +9,11 @@
  * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
-import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import { TEST_ACCOUNTS, TestUtils, WebAuthnMocker } from '../test-setup.js';
 
 // Following thepia.com pattern - real API server detection
@@ -25,6 +26,7 @@ const getTestConfig = (): AuthConfig => {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-integration-test',
+    appCode: 'demo',
     enablePasskeys: true,
     branding: {
       companyName: 'Flows Auth Integration Test',
@@ -34,7 +36,7 @@ const getTestConfig = (): AuthConfig => {
 };
 
 describe('Auth Store Integration Tests', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let testConfig: AuthConfig;
 
   beforeAll(async () => {
@@ -60,7 +62,7 @@ describe('Auth Store Integration Tests', () => {
     vi.clearAllMocks();
 
     if (apiServerRunning) {
-      authStore = createAuthStore(testConfig);
+      authStore = makeSvelteCompatible(createAuthStore(testConfig));
 
       // Wait for initial state machine setup
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -438,6 +440,12 @@ describe('Auth Store Integration Tests', () => {
   describe.skip('CRITICAL: createAccount WebAuthn Flow', () => {
     // TODO: These tests need mock setup (mockFetch, WebAuthn mocks)
     // Contradicts file header "no mocking" - needs architectural decision
+    // Kept (skipped) as documentation of intended coverage; the mocks referenced
+    // below were never wired up, so stub them as `any` purely to satisfy the typechecker.
+    const mockFetch: any = undefined;
+    const isWebAuthnSupported: any = undefined;
+    const isPlatformAuthenticatorAvailable: any = undefined;
+
     it('should complete full WebAuthn registration flow', async () => {
       // Mock successful API responses for the complete flow
       mockFetch

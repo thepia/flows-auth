@@ -20,6 +20,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import { TestUtils } from '../test-setup.js';
 
 const API_BASE = 'https://dev.thepia.com:8443';
@@ -28,6 +30,7 @@ const getTestConfig = (): AuthConfig => {
   return {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.com',
+    appCode: 'demo',
     clientId: 'flows-auth-spam-protection-test',
     enablePasskeys: true,
     branding: {
@@ -38,7 +41,7 @@ const getTestConfig = (): AuthConfig => {
 };
 
 describe('Token Refresh Spam Protection', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let testConfig: AuthConfig;
 
   beforeEach(async () => {
@@ -47,7 +50,7 @@ describe('Token Refresh Spam Protection', () => {
     sessionStorage.clear();
     vi.clearAllMocks();
 
-    authStore = createAuthStore(testConfig);
+    authStore = makeSvelteCompatible(createAuthStore(testConfig));
     await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
@@ -269,7 +272,8 @@ describe('Token Refresh Spam Protection', () => {
       // Update tokens without explicit expiresAt
       await authStore.core.getState().updateTokens({
         access_token: 'default-token',
-        refresh_token: 'default-refresh'
+        refresh_token: 'default-refresh',
+        expiresAt: null
       });
 
       const state = authStore.core.getState();

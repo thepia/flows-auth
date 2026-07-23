@@ -65,8 +65,8 @@ describe('Build Verification', () => {
     expect(builtLib.isWebAuthnSupported).toBeDefined();
     expect(builtLib.VERSION).toBeDefined();
     // Components are NOT on the root anymore.
-    expect(builtLib.SignInForm).toBeUndefined();
-    expect(builtLib.makeSvelteCompatible).toBeUndefined();
+    expect((builtLib as any).SignInForm).toBeUndefined();
+    expect((builtLib as any).makeSvelteCompatible).toBeUndefined();
   });
 
   it('should have correct core TypeScript definitions', () => {
@@ -106,7 +106,7 @@ describe('Build Verification', () => {
       appCode: 'test-app',
       enablePasskeys: true,
     });
-    const authStore = makeSvelteCompatible(baseStore);
+    const authStore = makeSvelteCompatible(baseStore as any);
     expect(typeof authStore.subscribe).toBe('function');
   });
 

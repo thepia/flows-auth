@@ -16,6 +16,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/core/api/auth-api.js';
 import { createAuthStore } from '../../src/core/stores/auth-store.js';
 import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
@@ -34,7 +36,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
 
   beforeEach(() => {
     mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    global.fetch = mockFetch as unknown as typeof fetch;
     apiClient = new AuthApiClient(mockConfig);
   });
 
@@ -216,7 +218,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
   });
 
   describe('Store Layer: OAuth2 Token Processing', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
     let mockApiClient: any;
 
     const mockUser = {
@@ -237,7 +239,7 @@ describe('OAuth2 Token Refresh Compliance (RFC 6749)', () => {
         }
       };
 
-      authStore = createAuthStore(mockConfig, mockApiClient);
+      authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
 
       // Set up initial authenticated state
       authStore.core.getState().updateUser(mockUser);

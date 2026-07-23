@@ -335,8 +335,8 @@ describe('Onboarding Types - Zod Validation', () => {
               status: 'connected',
               progress: 100,
               steps: [],
-              firstSeen: new Date().toISOString(),
-              lastSeen: new Date().toISOString()
+              first_seen: new Date().toISOString(),
+              last_seen: new Date().toISOString()
             }
           }
         };

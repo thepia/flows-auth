@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock the API client for testing
 const mockCheckEmail = vi.fn();
@@ -35,7 +36,7 @@ vi.mock('../../src/core/utils/webauthn', () => ({
 }));
 
 describe('AuthStore UI Configuration', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
 
   beforeEach(() => {
@@ -191,7 +192,9 @@ describe('AuthStore UI Configuration', () => {
 
       it('should not show secondary button when appCode is not configured', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
-        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithoutAppCode));
+        const storeWithoutAppCode = makeSvelteCompatible(
+          createAuthStore(configWithoutAppCode as AuthConfig)
+        );
 
         // Set up store state for userChecked with passkeys
         // storeWithoutAppCode.setEmail('test@example.com');
@@ -255,7 +258,9 @@ describe('AuthStore UI Configuration', () => {
     describe('Configuration-based behavior', () => {
       it('should fallback to email code when appCode not available', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
-        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithoutAppCode));
+        const storeWithoutAppCode = makeSvelteCompatible(
+          createAuthStore(configWithoutAppCode as AuthConfig)
+        );
 
         // Set up store state for emailEntry (initial state)
         storeWithoutAppCode.setEmail('test@example.com');

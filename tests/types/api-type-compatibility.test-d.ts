@@ -109,14 +109,16 @@ describe('Type Compatibility Tests', () => {
       expires_in?: number;
     }>();
 
-    // Data uses nested structure with camelCase fields (Partial<TokenData> makes all optional)
+    // Data uses nested structure with camelCase fields (Partial<TokenData> makes all optional).
+    // expiresAt/refreshedAt/supabaseExpiresAt are ISO 8601 timestamp strings, not numbers -
+    // see the canonical timestamp contract on AuthCoreState (stores/types.ts).
     expectTypeOf<DataTokens>().toMatchTypeOf<{
       accessToken?: string;
       refreshToken?: string;
-      expiresAt?: number;
-      refreshedAt?: number;
+      expiresAt?: string;
+      refreshedAt?: string;
       supabaseToken?: string;
-      supabaseExpiresAt?: number;
+      supabaseExpiresAt?: string;
     }>();
   });
 });

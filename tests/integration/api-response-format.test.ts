@@ -118,6 +118,7 @@ describe('API Response Format Compatibility - CRITICAL', () => {
     const config: AuthConfig = {
       apiBaseUrl: 'https://test-api.example.com',
       clientId: 'test-client',
+      appCode: 'demo',
       domain: 'test.example.com',
       enablePasskeys: true,
       database: mockDatabase

@@ -105,11 +105,12 @@ describe('PinEntryStep Success Flow', () => {
         id: '123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'test-token',
-        refresh_token: 'test-refresh',
+        accessToken: 'test-token',
+        refreshToken: 'test-refresh',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
@@ -203,11 +204,12 @@ describe('PinEntryStep Success Flow', () => {
         id: 'workos|user_123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'eyJhbGci...',
-        refresh_token: 'refresh123',
+        accessToken: 'eyJhbGci...',
+        refreshToken: 'refresh123',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'

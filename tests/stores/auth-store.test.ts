@@ -7,7 +7,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
-import type { AuthConfig, SignInData, SignInResponse } from '../../src/core/types/index.js';
+import type { AuthConfig, SignInData, SignInResponse, SvelteAuthStore } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
@@ -104,7 +105,7 @@ const mockConfig: AuthConfig = {
 };
 
 describe('Composed Auth Store (New Modular Architecture)', () => {
-  let composedStore: ReturnType<typeof createAuthStore>;
+  let composedStore: SvelteAuthStore;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -113,7 +114,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
     mockStorage = {}; // Clear mock storage
 
     // Create the composed store with new architecture
-    composedStore = createAuthStore(mockConfig);
+    composedStore = makeSvelteCompatible(createAuthStore(mockConfig));
   });
 
   afterEach(() => {
@@ -411,13 +412,23 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Emit event
       composedStore.emit('sign_in_success', {
         method: 'passkey',
-        user: { id: '123', email: 'test@example.com' }
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: new Date().toISOString()
+        }
       });
 
       // Verify event received
       expect(eventReceived).toEqual({
         method: 'passkey',
-        user: { id: '123', email: 'test@example.com' }
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: expect.any(String)
+        }
       });
 
       unsubscribe();

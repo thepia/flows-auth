@@ -13,7 +13,8 @@
  */
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '@thepia/flows-auth';
+import { createAuthStore, type SvelteAuthStore } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Test configuration
 interface TestConfig {
@@ -101,16 +102,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: User Check Flow Integration', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should check user existence and return proper flows-auth format', async () => {
@@ -160,17 +161,17 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Email Authentication Flow Integration', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
     let testEmail: string;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     beforeEach(() => {
@@ -252,16 +253,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Response Structure Consumption', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should consume API responses and transform to flows-auth format correctly', async () => {
@@ -302,16 +303,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Backend-Specific Behavior Handling', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should handle WorkOS-specific response format correctly', async () => {
@@ -356,16 +357,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Error Recovery and Resilience', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
         clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should handle network timeouts gracefully', async () => {

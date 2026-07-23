@@ -20,6 +20,7 @@ const getTestConfig = (): AuthConfig => {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
+    appCode: 'test',
     enablePasskeys: true,
     branding: {
       companyName: 'Flows Auth Integration Test',
@@ -264,7 +265,7 @@ describe('Auth0Service Real API Integration Tests', () => {
       // Make multiple concurrent API calls with delays to avoid rate limiting
       const emails = ['test1@example.com', 'test2@example.com', 'test3@example.com'];
 
-      const promises = emails.map(
+      const promises: Promise<any>[] = emails.map(
         (email, index) =>
           new Promise((resolve) =>
             setTimeout(

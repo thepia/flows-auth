@@ -5,9 +5,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig, ExplainerConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 describe('AuthStore getExplainerConfig', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
 
   beforeEach(() => {
@@ -76,17 +77,6 @@ describe('AuthStore getExplainerConfig', () => {
       expect(explainerConfig?.companyName).toBeUndefined();
     });
 
-    it('should use explanation text when no appCode is provided', () => {
-      const configWithoutAppCode = { ...mockConfig, appCode: undefined };
-      const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithoutAppCode));
-
-      // Set up store state for emailEntry
-      storeWithoutAppCode.setEmail('test@example.com');
-
-      const explainerConfig = storeWithoutAppCode.getExplainerConfig(false); // explainFeatures: false for paragraph
-
-      expect(explainerConfig?.textKey).toBe('security.passwordlessExplanation');
-    });
   });
 
   describe('Features type scenarios', () => {

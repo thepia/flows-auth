@@ -6,7 +6,12 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiClient } from '../../src/core/api/auth-api.js';
-import type { AuthConfig, AuthError, SignInResponse } from '../../src/core/types/index.js';
+import type {
+  AuthConfig,
+  AuthError,
+  PasskeyCredential,
+  SignInResponse
+} from '../../src/core/types/index.js';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -42,7 +47,7 @@ describe('AuthApiClient', () => {
     };
 
     mockFetch = vi.fn(baseMockImplementation);
-    global.fetch = mockFetch;
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     apiClient = new AuthApiClient(mockConfig);
     localStorage.clear();
@@ -122,7 +127,7 @@ describe('AuthApiClient', () => {
           signature: 'c2lnbmF0dXJl',
           userHandle: 'dXNlckhhbmRsZQ=='
         },
-        type: 'public-key'
+        type: 'public-key' as const
       };
 
       const mockResponse: SignInResponse = {
@@ -404,7 +409,7 @@ describe('AuthApiClient', () => {
         json: () => Promise.resolve({})
       });
 
-      await apiClient.createPasskey(mockCredential);
+      await apiClient.createPasskey(mockCredential as unknown as PasskeyCredential);
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.test.com/test-app/passkey/create',

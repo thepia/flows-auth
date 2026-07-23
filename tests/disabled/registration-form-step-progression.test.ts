@@ -39,6 +39,7 @@ describe('RegistrationForm Step Progression Debug', () => {
     authConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
+      appCode: 'demo',
       domain: 'test.com',
       enablePasskeys: true,
       branding: {

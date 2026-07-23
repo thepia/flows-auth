@@ -4,6 +4,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { ComposedAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthCoreStore, UIStore } from '../../src/core/stores/types.js';
 
 // Mock browser environment
 Object.defineProperty(global, 'window', {
@@ -26,8 +29,8 @@ Object.defineProperty(global, 'window', {
 });
 
 describe('Auth Store Debug Tests (New Modular Architecture)', () => {
-  let createAuthStore;
-  let authConfig;
+  let createAuthStore: (config: AuthConfig) => ComposedAuthStore;
+  let authConfig: AuthConfig;
 
   beforeEach(async () => {
     // Clear all mocks
@@ -134,13 +137,13 @@ describe('Auth Store Debug Tests (New Modular Architecture)', () => {
     let lastUIState = null;
 
     // Subscribe to individual stores
-    const unsubscribeCore = composedStore.core.subscribe((state) => {
+    const unsubscribeCore = composedStore.core.subscribe((state: AuthCoreStore) => {
       coreSubscriptionCalls++;
       lastCoreState = state;
       console.log(`📊 Core subscription call #${coreSubscriptionCalls}:`, state.state);
     });
 
-    const unsubscribeUI = composedStore.ui.subscribe((state) => {
+    const unsubscribeUI = composedStore.ui.subscribe((state: UIStore) => {
       uiSubscriptionCalls++;
       lastUIState = state;
       console.log(`📊 UI subscription call #${uiSubscriptionCalls}:`, state.signInState);

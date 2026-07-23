@@ -37,7 +37,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
     authStore.ui.setState({ email: 'test@example.com' });
@@ -85,7 +87,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
     authStore.ui.setState({ email: 'test@example.com' });
@@ -125,7 +129,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     });
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
     authStore.ui.setState({ email: 'test@example.com' });
@@ -162,7 +168,9 @@ describe('SignInCore PIN Entry Button Submission', () => {
     });
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
     authStore.ui.setState({ email: 'test@example.com' });

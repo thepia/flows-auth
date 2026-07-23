@@ -4,6 +4,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/core/utils/webauthn', () => ({
@@ -28,7 +30,7 @@ vi.mock('../../src/core/utils/telemetry', () => ({
 }));
 
 describe('Auth Store RESET Event Handling', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
   let mockApiClient: any;
 
@@ -55,7 +57,7 @@ describe('Auth Store RESET Event Handling', () => {
       signInMode: 'login-only'
     };
 
-    authStore = createAuthStore(mockConfig, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
   });
 
   it('should transition from userChecked to emailEntry on RESET', () => {

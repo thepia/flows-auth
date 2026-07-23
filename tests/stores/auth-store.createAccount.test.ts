@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock WebAuthn utilities
 vi.mock('../../src/core/utils/webauthn', () => ({
@@ -33,7 +34,7 @@ const mockConfig: AuthConfig = {
 };
 
 describe('Auth Store - createAccount (without WebAuthn)', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
 
   beforeEach(async () => {
@@ -281,7 +282,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
       // Should not set error state or authenticate user automatically
       const finalState = get(authStore);
-      expect(finalState.error).toBeUndefined();
+      expect(finalState.apiError).toBeNull();
       expect(finalState.state).toBe('unauthenticated'); // Should not authenticate user
     });
 

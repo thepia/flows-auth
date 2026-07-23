@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import { CONFIG_DEFAULTS, createAuthStore } from '../../src/core/stores/auth-store.js';
 
 /**
  * Unit Test: Error Message Extraction and Classification
@@ -26,7 +26,7 @@ describe('Error Classification', () => {
   describe('Error message extraction', () => {
     test('should extract message from Error instance', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -44,7 +44,7 @@ describe('Error Classification', () => {
 
     test('should extract message from plain string', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -85,7 +85,7 @@ describe('Error Classification', () => {
 
     test('should extract message from object with error property', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -105,7 +105,7 @@ describe('Error Classification', () => {
 
     test('should JSON.stringify object if no message or error property', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -129,7 +129,7 @@ describe('Error Classification', () => {
   describe('Error code classification', () => {
     test('should classify verification code errors as error.invalidCode', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -152,7 +152,7 @@ describe('Error Classification', () => {
 
     test('should classify network errors as error.network', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -170,7 +170,7 @@ describe('Error Classification', () => {
 
     test('should classify rate limit errors as error.rateLimited', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -188,7 +188,7 @@ describe('Error Classification', () => {
 
     test('should classify service unavailable errors', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -214,7 +214,7 @@ describe('Error Classification', () => {
   describe('API response error format', () => {
     test('should handle AuthError format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -239,7 +239,7 @@ describe('Error Classification', () => {
 
     test('should handle rate limit error format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -262,7 +262,7 @@ describe('Error Classification', () => {
 
     test('should handle network error format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -286,7 +286,7 @@ describe('Error Classification', () => {
   describe('uiError vs apiError separation', () => {
     test('should set both uiError and apiError on setApiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -303,7 +303,7 @@ describe('Error Classification', () => {
 
     test('should clear only uiError with clearUiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',
@@ -320,7 +320,7 @@ describe('Error Classification', () => {
 
     test('should clear both errors with clearApiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
         appCode: 'app',
         clientId: 'test-client',

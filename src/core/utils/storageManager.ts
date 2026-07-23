@@ -8,6 +8,19 @@
 
 import type { StorageConfig } from '../types/index.js';
 
+/**
+ * Baseline storage config. Spread this at call sites that only want to override
+ * a couple of fields (e.g. `{ ...STORAGE_CONFIG_DEFAULTS, userRole: 'guest' }`) so
+ * public APIs like configureSessionStorage() can require a complete StorageConfig
+ * rather than silently accepting partial/incomplete input.
+ */
+export const STORAGE_CONFIG_DEFAULTS: StorageConfig = {
+  type: 'sessionStorage',
+  sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
+  persistentSessions: false,
+  userRole: 'guest'
+};
+
 export interface StorageAdapter {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -102,19 +115,12 @@ export class ConfigurableStorageManager {
   }
 
   private getDefaultConfig(config?: Partial<StorageConfig>): StorageConfig {
-    const defaults: StorageConfig = {
-      type: 'sessionStorage',
-      sessionTimeout: 8 * 60 * 60 * 1000, // 8 hours
-      persistentSessions: false,
-      userRole: 'guest'
-    };
-
-    if (!config) return defaults;
+    if (!config) return STORAGE_CONFIG_DEFAULTS;
 
     // Auto-configure based on user role if not explicitly set
     if (config.userRole === 'employee' && config.type === undefined) {
       return {
-        ...defaults,
+        ...STORAGE_CONFIG_DEFAULTS,
         ...config,
         type: 'localStorage', // Employees get persistent sessions by default
         persistentSessions: true,
@@ -122,7 +128,7 @@ export class ConfigurableStorageManager {
       };
     }
 
-    return { ...defaults, ...config };
+    return { ...STORAGE_CONFIG_DEFAULTS, ...config };
   }
 
   private createAdapter(): StorageAdapter {

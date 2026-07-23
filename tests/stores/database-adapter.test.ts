@@ -86,6 +86,7 @@ const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
   clientId: 'test-client',
   domain: 'test.com',
+  appCode: 'test-app',
   enablePasskeys: true,
 };
 
@@ -128,8 +129,8 @@ describe('Database Adapter Configuration', () => {
         ...mockConfig,
         storage: {
           type: 'localStorage',
-          enablePersistence: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          persistentSessions: true,
+          sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
         }
       };
 
@@ -138,8 +139,8 @@ describe('Database Adapter Configuration', () => {
       // Verify custom storage config was used
       expect(vi.mocked(configureSessionStorage)).toHaveBeenCalledWith({
         type: 'localStorage',
-        enablePersistence: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        persistentSessions: true,
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000
       });
     });
   });
@@ -181,6 +182,7 @@ describe('Database Adapter Configuration', () => {
         accessToken: 'access-token-123',
         refreshToken: 'refresh-token-123',
         expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey'
       };
 
@@ -257,6 +259,7 @@ describe('Database Adapter Configuration', () => {
         accessToken: 'expired-token',
         refreshToken: undefined, // No refresh token - session should not be restored
         expiresAt: new Date(Date.now() - 1000).toISOString(), // Expired 1 second ago
+        refreshedAt: new Date(Date.now() - 3600000).toISOString(),
         authMethod: 'email-code'
       };
 
@@ -293,7 +296,10 @@ describe('Database Adapter Configuration', () => {
       const faultyAdapter: SessionPersistence = {
         saveSession: vi.fn().mockResolvedValue(undefined),
         loadSession: vi.fn().mockRejectedValue(new Error('Database connection failed')),
-        clearSession: vi.fn().mockResolvedValue(undefined)
+        clearSession: vi.fn().mockResolvedValue(undefined),
+        saveUser: vi.fn().mockResolvedValue(undefined),
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -680,7 +686,6 @@ describe('Database Adapter Configuration', () => {
           userId: 'user-get-123',
           email: 'get@example.com',
           name: 'Get User',
-          avatar: 'https://example.com/get-avatar.jpg',
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z',
           lastLoginAt: '2024-10-15T10:00:00Z',
@@ -864,7 +869,6 @@ describe('Database Adapter Configuration', () => {
         userId: 'user-local-123',
         email: 'local@example.com',
         name: 'Local User',
-        avatar: 'https://example.com/local.jpg',
         emailVerified: true,
         createdAt: '2024-01-01T00:00:00Z',
         lastLoginAt: '2024-10-15T08:00:00Z',

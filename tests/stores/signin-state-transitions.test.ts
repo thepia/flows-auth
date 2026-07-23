@@ -8,9 +8,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig, SignInData, SignInEvent, SignInState } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 describe('SignIn State Transitions', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let config: AuthConfig;
 
   beforeEach(() => {

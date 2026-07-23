@@ -15,11 +15,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig, RegistrationRequest } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
 import {
   getAccessToken,
   getCurrentUser,
   getSession,
-  isSessionValid as isAuthenticated
+  isAuthenticated
 } from '../../src/core/utils/sessionManager.js';
 
 // Mock sessionManager (we verify calls but don't control implementation)
@@ -35,7 +36,7 @@ vi.mock('../../src/core/utils/sessionManager', () => ({
   }),
   // These are driven per-test via vi.mocked(...).mockReturnValue(...)
   getSession: vi.fn(),
-  isSessionValid: vi.fn(),
+  isAuthenticated: vi.fn(),
   getCurrentUser: vi.fn(),
   getAccessToken: vi.fn()
 }));
@@ -83,7 +84,7 @@ vi.mock('../../src/core/utils/telemetry', () => ({
 }));
 
 describe('createAccount API Contract', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
 
   const validRegistrationData: RegistrationRequest = {
@@ -99,7 +100,9 @@ describe('createAccount API Contract', () => {
 
     mockConfig = {
       apiBaseUrl: 'https://api.thepia.com',
+      clientId: 'test-client',
       domain: 'thepia.net',
+      appCode: 'test-app',
       enablePasskeys: true,
     };
 
@@ -175,8 +178,8 @@ describe('createAccount API Contract', () => {
           preferences: undefined
         },
         tokens: {
-          access_token: 'access-token',
-          refresh_token: 'refresh-token',
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
           expiresAt: new Date(Date.now() + 3600000).toISOString()
         },
         authMethod: 'passkey'

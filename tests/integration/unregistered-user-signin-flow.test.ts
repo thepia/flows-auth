@@ -31,6 +31,7 @@ describe('Unregistered User Sign-In Flow', () => {
         apiClient = new AuthApiClient({
           apiBaseUrl: LOCAL_API_URL,
           clientId: 'test-client',
+          appCode: 'demo',
           domain: 'thepia.net',
           enablePasskeys: true,
         });
@@ -53,6 +54,7 @@ describe('Unregistered User Sign-In Flow', () => {
           apiClient = new AuthApiClient({
             apiBaseUrl: PRODUCTION_API_URL,
             clientId: 'test-client',
+            appCode: 'demo',
             domain: 'thepia.net',
             enablePasskeys: true,
           });

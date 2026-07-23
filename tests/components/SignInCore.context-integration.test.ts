@@ -5,7 +5,7 @@ import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { AUTH_CONTEXT_KEY } from '../../src/core/constants/context-keys.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import { createAuthStore } from '../../src/core/stores/auth-store.js';
-import type { SvelteAuthStore } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Context provider wrapper that mimics auth-demo layout
 import { setContext } from 'svelte';
@@ -35,11 +35,11 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
       apiBaseUrl: 'https://api.thepia.com',
       clientId: 'test',
       domain: 'test.com',
+      appCode: 'test',
       enablePasskeys: false,
     });
 
     authStore = makeSvelteCompatible(zustandStore);
-    authStore._debugId = 'test-' + Date.now();
   });
 
   it('should render when store prop is passed', async () => {
@@ -79,7 +79,9 @@ describe('SignInCore - Context Integration (auth-demo pattern)', () => {
     const newZustandStore = createAuthStore({
       apiBaseUrl: 'https://api2.thepia.com',
       clientId: 'test2',
-      domain: 'test2.com'
+      domain: 'test2.com',
+      appCode: 'test2',
+      enablePasskeys: false
     });
     const newAuthStore = makeSvelteCompatible(newZustandStore);
 

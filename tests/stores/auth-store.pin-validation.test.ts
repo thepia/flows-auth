@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock the API client
 vi.mock('../../src/core/api/auth-api', () => ({
@@ -34,7 +35,7 @@ vi.mock('../../src/core/utils/webauthn', () => ({
 }));
 
 describe('Auth Store Pin Validation', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
   const mockConfig: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',

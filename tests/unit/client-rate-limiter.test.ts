@@ -3,12 +3,12 @@
  * Tests for intelligent client-side rate limiting with server response handling
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest';
 import { ClientRateLimiter } from '../../src/core/utils/client-rate-limiter.js';
 
 describe('ClientRateLimiter', () => {
   let rateLimiter: ClientRateLimiter;
-  let mockFetch: vi.MockedFunction<typeof fetch>;
+  let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
     vi.useFakeTimers();

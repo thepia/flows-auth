@@ -136,7 +136,7 @@ describe('Component Exports', () => {
 
     for (const exportName of expectedRootExports) {
       expect(authLib).toHaveProperty(exportName);
-      expect(authLib[exportName as keyof typeof authLib]).toBeDefined();
+      expect((authLib as any)[exportName]).toBeDefined();
     }
     for (const exportName of expectedSvelteExports) {
       expect(svelteLib).toHaveProperty(exportName);

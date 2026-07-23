@@ -33,7 +33,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
 
   beforeEach(() => {
     mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    global.fetch = mockFetch as unknown as typeof fetch;
     apiClient = new AuthApiClient(mockConfig);
   });
 

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthStore } from '../../src/core/stores/index.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('Auth Store Email State Reset', () => {
-  let store: ReturnType<typeof createAuthStore>;
+  let store: SvelteAuthStore;
   let config: AuthConfig;
   let mockApiClient: any;
 
@@ -28,7 +30,7 @@ describe('Auth Store Email State Reset', () => {
       signInMode: 'login-or-register',
       language: 'en'
     };
-    store = createAuthStore(config, mockApiClient);
+    store = makeSvelteCompatible(createAuthStore(config, mockApiClient));
   });
 
   describe('Email Change State Reset', () => {

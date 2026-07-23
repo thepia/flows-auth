@@ -141,8 +141,8 @@ describe('OnboardingStore - Functional Tests', () => {
             status: 'connected',
             progress: 100,
             steps: [],
-            firstSeen: new Date().toISOString(),
-            lastSeen: new Date().toISOString()
+            first_seen: new Date().toISOString(),
+            last_seen: new Date().toISOString()
           }
         }
       };
@@ -177,8 +177,8 @@ describe('OnboardingStore - Functional Tests', () => {
         status: 'connected' as const,
         progress: 100,
         steps: [],
-        firstSeen: new Date().toISOString(),
-        lastSeen: new Date().toISOString()
+        first_seen: new Date().toISOString(),
+        last_seen: new Date().toISOString()
       };
 
       expect(clientReg.status).toBe('connected');

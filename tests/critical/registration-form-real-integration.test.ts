@@ -14,16 +14,17 @@ import type { AuthConfig } from '../../src/core/types/index.js';
  */
 
 describe('CRITICAL: RegistrationForm Real Integration', () => {
+  // biome-ignore lint/correctness/noUnusedVariables: prep for real tests
   let authConfig: AuthConfig;
 
   beforeEach(() => {
     // TODO: Setup real auth config and minimal mocking
     authConfig = {
       apiBaseUrl: 'https://api.test.com',
-      appBaseUrl: 'https://app.test.com',
-      enableWebAuthn: true,
-      enableEmailAuth: false,
-      requireEmailVerification: true
+      clientId: 'test-client',
+      domain: 'test.com',
+      appCode: 'test-app',
+      enablePasskeys: true
     };
   });
 

@@ -48,6 +48,7 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     authConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
+      appCode: 'demo',
       domain: 'test.com',
       enablePasskeys: true,
       branding: {

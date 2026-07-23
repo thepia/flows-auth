@@ -9,7 +9,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../src/core/stores/auth-store.js';
+import { CONFIG_DEFAULTS, createAuthStore } from '../src/core/stores/auth-store.js';
 import type { AuthConfig } from '../src/core/types/index.js';
 import type { SessionData, SessionPersistence } from '../src/core/types/database.js';
 import { createMockSessionPersistence } from './helpers/session-persistence-mock.js';
@@ -55,10 +55,10 @@ describe('Session Restoration with Expired Token', () => {
     mockDatabase = createMockSessionPersistence({ initialSession: expiredSession });
 
     const config: AuthConfig = {
+      ...CONFIG_DEFAULTS,
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       clientId: 'test-client',
-      enablePasskeys: false,
       database: mockDatabase
     };
 
@@ -101,10 +101,10 @@ describe('Session Restoration with Expired Token', () => {
     });
 
     const config: AuthConfig = {
+      ...CONFIG_DEFAULTS,
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       clientId: 'test-client',
-      enablePasskeys: false,
       database: mockDatabase
     };
 
@@ -123,9 +123,10 @@ describe('Session Restoration with Expired Token', () => {
     );
 
     // Verify refresh endpoint was called (app-code-namespaced, per auth-api.ts's
-    // getEffectiveAppCode() - defaults to 'app' when config.appCode is unset)
+    // getEffectiveAppCode() - this config spreads CONFIG_DEFAULTS, whose appCode
+    // is 'demo', so the 'app' fallback in getEffectiveAppCode() never kicks in)
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/app/refresh'),
+      expect.stringContaining('/demo/refresh'),
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('valid_refresh_token')
@@ -171,10 +172,10 @@ describe('Session Restoration with Expired Token', () => {
     });
 
     const config: AuthConfig = {
+      ...CONFIG_DEFAULTS,
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       clientId: 'test-client',
-      enablePasskeys: false,
       database: mockDatabase
     };
 
@@ -213,6 +214,7 @@ describe('Session Restoration with Expired Token', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       clientId: 'test-client',
+      appCode: 'test-app',
       enablePasskeys: false,
       database: mockDatabase
     };

@@ -46,7 +46,7 @@ The generated `design-tokens.css` file provides CSS custom properties:
   color: var(--color-text-inverse);
   padding: var(--size-space-4);
   border-radius: var(--size-radius-md);
-  font-family: var(--typography-fontFamily-brand-primary);
+  font-family: var(--font-fontFamily-brand-body);
 }
 ```
 

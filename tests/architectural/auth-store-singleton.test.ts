@@ -7,7 +7,7 @@
 
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 describe('Auth Store Singleton Architecture', () => {
@@ -18,7 +18,6 @@ describe('Auth Store Singleton Architecture', () => {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
         enablePasskeys: true,
-        enableMagicLinks: true
       }
     });
 
@@ -32,7 +31,6 @@ describe('Auth Store Singleton Architecture', () => {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
         enablePasskeys: true,
-        enableMagicLinks: true
       }
     });
 
@@ -46,7 +44,6 @@ describe('Auth Store Singleton Architecture', () => {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
         enablePasskeys: true,
-        enableMagicLinks: true
       }
     });
 
@@ -60,7 +57,6 @@ describe('Auth Store Singleton Architecture', () => {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
         enablePasskeys: true,
-        enableMagicLinks: true
       }
     });
 
@@ -69,7 +65,6 @@ describe('Auth Store Singleton Architecture', () => {
         apiBaseUrl: 'https://api.example.com',
         appCode: 'test-app',
         enablePasskeys: true,
-        enableMagicLinks: true
       }
     });
 

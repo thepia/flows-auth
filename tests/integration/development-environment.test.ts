@@ -1,164 +1,135 @@
 /**
- * Regression Tests for Development Environment Fixes
+ * Regression Tests for Development Environment / Packaging
  *
- * These tests guard against the development environment issues we fixed:
- * 1. Svelte library build configuration
- * 2. Package.json exports structure
- * 3. Vite dependency optimization
- * 4. Component compilation and import issues
+ * Guards the 1.2.0 per-target packaging (docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md):
+ * agnostic core at `.`, Svelte UI at `./svelte`, flow-viz at `./dev`, ESM-only,
+ * built by scripts/build.mjs (tsup + svelte-package). Bundle-content assertions
+ * live in build-verification.test.ts and tests/package/*; this file focuses on
+ * the package.json contract, the build pipeline wiring, and demo config.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-describe('Development Environment Regression Tests', () => {
-  describe('Bug Fix: Package.json Exports Configuration', () => {
-    it('should have proper exports structure', () => {
-      const packageJsonPath = resolve(__dirname, '../../package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+const ROOT = resolve(__dirname, '../..');
+const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8'));
 
-      // ✅ REGRESSION TEST: Should have main export
-      expect(packageJson.exports).toBeDefined();
-      expect(packageJson.exports['.']).toBeDefined();
-
-      // ✅ Should have store exports for direct access
-      expect(packageJson.exports['./stores']).toBeDefined();
-      expect(packageJson.exports['./stores/core']).toBeDefined();
-
-      // ✅ Should have correct export order (svelte before import)
-      const mainExport = packageJson.exports['.'];
-      const exportKeys = Object.keys(mainExport);
-      const svelteIndex = exportKeys.indexOf('svelte');
-      const importIndex = exportKeys.indexOf('import');
-
-      expect(svelteIndex).toBeGreaterThan(-1);
-      expect(importIndex).toBeGreaterThan(-1);
-      expect(svelteIndex).toBeLessThan(importIndex);
+describe('Development Environment / Packaging Regression Tests', () => {
+  describe('package.json exports (post core/svelte split)', () => {
+    it('exposes the minimal ESM export surface', () => {
+      const e = pkg.exports;
+      expect(e['.']).toBeDefined();
+      expect(e['./svelte']).toBeDefined();
+      expect(e['./dev']).toBeDefined();
+      expect(e['./style.css']).toBe('./dist/flows-auth.css');
     });
 
-    it('should have consistent main entry points', () => {
-      const packageJsonPath = resolve(__dirname, '../../package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-
-      // ✅ REGRESSION TEST: Main fields should point to dist
-      expect(packageJson.main).toBe('./dist/index.js');
-      expect(packageJson.module).toBe('./dist/index.js');
-      expect(packageJson.svelte).toBe('./dist/src/index.ts'); // Source for Svelte
-      expect(packageJson.types).toBe('./dist/index.d.ts');
+    it('root `.` is framework-agnostic: types + default only, no svelte/require conditions', () => {
+      const main = pkg.exports['.'];
+      expect(main.types).toBe('./dist/index.d.ts');
+      expect(main.default).toBe('./dist/index.js');
+      expect(main.svelte).toBeUndefined();
+      expect(main.require).toBeUndefined();
+      expect(main.source).toBeUndefined();
     });
-  });
 
-  describe('Bug Fix: Vite Library Configuration', () => {
-    it('should have correct Vite build configuration', async () => {
-      // ✅ REGRESSION TEST: Vite config should exist and be importable
-      const viteConfigPath = resolve(__dirname, '../../vite.config.ts');
+    it('./svelte carries the svelte condition -> built svelte-package output', () => {
+      const s = pkg.exports['./svelte'];
+      expect(s.svelte).toBe('./dist/svelte/index.js');
+      expect(s.types).toBe('./dist/svelte/index.d.ts');
+    });
 
-      // Check file exists
-      expect(() => readFileSync(viteConfigPath, 'utf-8')).not.toThrow();
+    it('dropped the deprecated subpaths and CJS/source conditions', () => {
+      expect(pkg.exports['./stores']).toBeUndefined();
+      expect(pkg.exports['./stores/core']).toBeUndefined();
+      expect(pkg.exports['./types']).toBeUndefined();
+      expect(pkg.exports['./src']).toBeUndefined();
+      // No top-level `svelte` field pointing at raw TS source anymore.
+      expect(pkg.svelte).toBeUndefined();
+    });
 
-      const viteConfig = readFileSync(viteConfigPath, 'utf-8');
+    it('legacy entry points target the built ESM bundle', () => {
+      expect(pkg.main).toBe('./dist/index.js');
+      expect(pkg.module).toBe('./dist/index.js');
+      expect(pkg.types).toBe('./dist/index.d.ts');
+      expect(pkg.type).toBe('module');
+    });
 
-      // ✅ Should have emitCss: true
-      expect(viteConfig).toMatch(/emitCss:\s*true/);
-
-      // ✅ Should externalize svelte dependencies
-      expect(viteConfig).toMatch(/external.*svelte/);
-
-      // ✅ Should copy source files to dist/src
-      expect(viteConfig).toMatch(/copySourceFiles/);
+    it('declares svelte as a (optional) peer dependency', () => {
+      expect(pkg.peerDependencies.svelte).toBeDefined();
+      expect(pkg.peerDependenciesMeta?.svelte?.optional).toBe(true);
     });
   });
 
-  describe('Bug Fix: Library Build Output', () => {
-    it('should generate proper build artifacts', () => {
-      const distPath = resolve(__dirname, '../../dist');
+  describe('build pipeline wiring (tsup + svelte-package, no vite lib build)', () => {
+    it('build script drives scripts/build.mjs', () => {
+      expect(pkg.scripts.build).toBe('node scripts/build.mjs');
+      expect(existsSync(resolve(ROOT, 'scripts/build.mjs'))).toBe(true);
+      expect(existsSync(resolve(ROOT, 'tsup.config.ts'))).toBe(true);
+      expect(existsSync(resolve(ROOT, 'svelte.config.js'))).toBe(true);
+    });
 
-      // ✅ REGRESSION TEST: Required build files should exist
-      // Note: the CSS file is named flows-auth.css on disk; package.json's
-      // exports map aliases both "./style.css" and "./dist/style.css" to it
-      // for consumers, so there's no literal dist/style.css file to check for.
-      const requiredFiles = ['index.js', 'index.cjs', 'index.d.ts', 'flows-auth.css'];
+    it('the old vite lib build config is gone', () => {
+      expect(existsSync(resolve(ROOT, 'vite.config.ts'))).toBe(false);
+    });
+  });
 
-      for (const file of requiredFiles) {
-        const filePath = resolve(distPath, file);
-        expect(() => readFileSync(filePath, 'utf-8')).not.toThrow();
+  describe('build artifacts (per-target)', () => {
+    it('emits core + svelte + css artifacts (ESM, no CJS)', () => {
+      const dist = resolve(ROOT, 'dist');
+      for (const f of [
+        'index.js',
+        'index.d.ts',
+        'flows-auth.css',
+        'svelte/index.js',
+        'svelte/index.d.ts',
+        'svelte/dev.js'
+      ]) {
+        expect(existsSync(resolve(dist, f)), `missing dist/${f}`).toBe(true);
       }
+      // ESM-only: no CJS bundle.
+      expect(existsSync(resolve(dist, 'index.cjs'))).toBe(false);
     });
 
-    it('should not bundle svelte internals', () => {
-      const distPath = resolve(__dirname, '../../dist/index.js');
-      const buildOutput = readFileSync(distPath, 'utf-8');
-
-      // ✅ REGRESSION TEST: Should not bundle svelte internals that cause $$ errors
-      expect(buildOutput).not.toMatch(/from\s+['"]svelte\/internal['"]/);
-
-      // ✅ Should reference svelte as external
-      // Threshold covers bundled first-party deps (zod, zustand, dagre,
-      // simplewebauthn, base64url) plus inlined Paraglide i18n messages -
-      // svelte itself is confirmed external by the assertion above. Current
-      // build is ~522KB; this leaves headroom before flagging real bloat.
-      expect(buildOutput.length).toBeLessThan(600000);
+    it('core bundle does not bundle svelte internals', () => {
+      const core = readFileSync(resolve(ROOT, 'dist/index.js'), 'utf-8');
+      expect(core).not.toMatch(/from\s+['"]svelte\/internal['"]/);
+      expect(core.length).toBeLessThan(800000);
     });
   });
 
-  describe('Bug Fix: Component Import Structure', () => {
-    it('should export components correctly', async () => {
-      // ✅ REGRESSION TEST: Main exports should be importable
-      const { SignInForm, createAuthStore } = await import('../../src/index.js');
-
-      expect(SignInForm).toBeDefined();
-      expect(createAuthStore).toBeDefined();
+  describe('Component import structure (split surface)', () => {
+    it('core exports agnostic logic; svelte target exports components', async () => {
+      const { createAuthStore } = await import('@thepia/flows-auth');
+      const { SignInForm } = await import('@thepia/flows-auth/svelte');
       expect(typeof createAuthStore).toBe('function');
-    }, 30000); // Increase timeout for import initialization
+      expect(SignInForm).toBeDefined();
+    }, 30000);
 
-    it('should have proper TypeScript definitions', () => {
-      const typesPath = resolve(__dirname, '../../dist/index.d.ts');
-      const types = readFileSync(typesPath, 'utf-8');
-
-      // ✅ REGRESSION TEST: Should export main types
-      expect(types).toMatch(/export.*SignInForm/);
-      expect(types).toMatch(/export.*createAuthStore/);
-      expect(types).toMatch(/export.*AuthStore/);
+    it('TypeScript definitions are split: createAuthStore at root, SignInForm in ./svelte', () => {
+      const rootDts = readFileSync(resolve(ROOT, 'dist/index.d.ts'), 'utf-8');
+      const svelteDts = readFileSync(resolve(ROOT, 'dist/svelte/index.d.ts'), 'utf-8');
+      expect(rootDts).toMatch(/createAuthStore/);
+      expect(rootDts).not.toMatch(/SignInForm/);
+      expect(svelteDts).toMatch(/SignInForm/);
     });
   });
 
-  describe('Bug Fix: Development Documentation', () => {
-    it('should have development documentation', () => {
-      const docsPath = resolve(__dirname, '../../docs/README.md');
-
-      // ✅ REGRESSION TEST: Core documentation should exist
-      expect(() => readFileSync(docsPath, 'utf-8')).not.toThrow();
-
-      const docs = readFileSync(docsPath, 'utf-8');
+  describe('Documentation & demo configuration', () => {
+    it('has development documentation', () => {
+      const docs = readFileSync(resolve(ROOT, 'docs/README.md'), 'utf-8');
       expect(docs).toMatch(/development/i);
     });
-  });
 
-  describe('Bug Fix: Demo Configuration', () => {
-    it('should have correct demo server configuration', () => {
-      const demoConfigPath = resolve(__dirname, '../../examples/tasks-app-demo/vite.config.js');
-      const demoConfig = readFileSync(demoConfigPath, 'utf-8');
-
-      // ✅ REGRESSION TEST: Demo should have proper Vite config
+    it('tasks-app-demo has proper Vite config', () => {
+      const demoConfig = readFileSync(
+        resolve(ROOT, 'examples/tasks-app-demo/vite.config.js'),
+        'utf-8'
+      );
       expect(demoConfig).toMatch(/noExternal.*flows-auth/);
       expect(demoConfig).toMatch(/dedupe.*svelte/);
       expect(demoConfig).toMatch(/https:/);
-    });
-
-    it('should have demo page with auth configuration', () => {
-      const demoPagePath = resolve(
-        __dirname,
-        '../../examples/tasks-app-demo/src/routes/+page.svelte'
-      );
-
-      // ✅ REGRESSION TEST: Demo page should exist
-      expect(() => readFileSync(demoPagePath, 'utf-8')).not.toThrow();
-
-      const demoPage = readFileSync(demoPagePath, 'utf-8');
-
-      // ✅ Should have auth-related imports or configuration
-      expect(demoPage.length).toBeGreaterThan(0);
     });
   });
 });

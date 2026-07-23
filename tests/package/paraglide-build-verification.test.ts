@@ -1,17 +1,17 @@
 /**
  * Paraglide Build Verification Tests
  *
- * These tests ensure that Paraglide translation generation is working correctly
- * and that the build output includes properly formatted translation functions.
+ * Ensures Paraglide translation generation is working and that the build output
+ * includes properly formatted translation functions.
  *
- * Key verification points:
- * - Source translation files exist and are valid JSON
- * - Paraglide generates correct message functions in src/paraglide/
- * - Build process copies paraglide files to dist/paraglide/
- * - Generated functions follow the m[key]() pattern
- * - All translation keys from source JSON are available as functions
- * - Functions accept proper parameters (inputs, options with locale)
- * - Package.json exports are correctly configured
+ * NEW layout (flows-auth 1.2.0, see docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md):
+ *  - Committed Paraglide source lives at src/core/paraglide/** (regenerated with
+ *    `pnpm build:paraglide` -> outdir ./src/core/paraglide).
+ *  - The core bundle (dist/index.js) inlines the messages.
+ *  - scripts/build.mjs copies src/core/paraglide -> dist/paraglide (backward
+ *    compatible files; NOT exposed as package subpaths anymore).
+ *  - The removed `@thepia/flows-auth/paraglide/*` subpath exports are replaced by
+ *    importing paraglideMessages / getLocale / setLocale from the core bundle.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -20,7 +20,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 describe('Paraglide Build Verification', () => {
   const rootPath = join(__dirname, '../..');
-  const srcParaglidePath = join(rootPath, 'src/paraglide');
+  const srcParaglidePath = join(rootPath, 'src/core/paraglide');
   const distParaglidePath = join(rootPath, 'dist/paraglide');
   const messagesPath = join(rootPath, 'messages');
 
@@ -43,7 +43,6 @@ describe('Paraglide Build Verification', () => {
     try {
       const messagesIndexPath = join(srcParaglidePath, 'messages/_index.js');
       if (existsSync(messagesIndexPath)) {
-        // Dynamic import of generated messages
         const messagesModule = await import(messagesIndexPath);
         generatedMessages = messagesModule;
       }
@@ -74,11 +73,9 @@ describe('Paraglide Build Verification', () => {
       expect(enKeys.length).toBeGreaterThan(0);
       expect(daKeys.length).toBeGreaterThan(0);
 
-      // Check that all English keys have Danish translations
       const missingDanishKeys = enKeys.filter((key) => !daKeys.includes(key));
       expect(missingDanishKeys).toEqual([]);
 
-      // Check that all Danish keys have English translations
       const missingEnglishKeys = daKeys.filter((key) => !enKeys.includes(key));
       expect(missingEnglishKeys).toEqual([]);
     });
@@ -119,20 +116,21 @@ describe('Paraglide Build Verification', () => {
       expect(config['plugin.inlang.mFunctionMatcher'].functionName).toBe('m');
     });
 
-    it('should have vite plugin configured correctly', () => {
-      const viteConfigPath = join(rootPath, 'vite.config.ts');
-      expect(existsSync(viteConfigPath)).toBe(true);
+    it('should compile paraglide to src/core/paraglide via the build:paraglide script', () => {
+      const packageJson = JSON.parse(readFileSync(join(rootPath, 'package.json'), 'utf-8'));
+      // build:paraglide delegates to scripts/build-paraglide.mjs (which pins
+      // outputStructure: 'locale-modules' via the programmatic compile()).
+      expect(packageJson.scripts['build:paraglide']).toContain('build-paraglide.mjs');
 
-      const viteConfig = readFileSync(viteConfigPath, 'utf-8');
-      expect(viteConfig).toContain('paraglideVitePlugin');
-      expect(viteConfig).toContain('./project.inlang');
-      expect(viteConfig).toContain('./src/paraglide');
+      const paraglideScript = readFileSync(join(rootPath, 'scripts/build-paraglide.mjs'), 'utf-8');
+      expect(paraglideScript).toContain('./project.inlang');
+      expect(paraglideScript).toContain('./src/core/paraglide');
+      expect(paraglideScript).toContain('locale-modules');
     });
   });
 
   describe('Generated Paraglide Files', () => {
-    it('should generate paraglide files in src/paraglide/', () => {
-      // These files should exist after paraglide generation
+    it('should generate paraglide files in src/core/paraglide/', () => {
       const expectedFiles = [
         'runtime.js',
         'messages/_index.js',
@@ -142,78 +140,73 @@ describe('Paraglide Build Verification', () => {
 
       for (const file of expectedFiles) {
         const filePath = join(srcParaglidePath, file);
-        expect(existsSync(filePath)).toBe(true);
+        expect(existsSync(filePath), `missing: src/core/paraglide/${file}`).toBe(true);
       }
     });
 
     it('should have runtime.js with correct locale configuration', () => {
       const runtimePath = join(srcParaglidePath, 'runtime.js');
-      if (existsSync(runtimePath)) {
-        const runtime = readFileSync(runtimePath, 'utf-8');
-        expect(runtime).toContain('export const baseLocale = "en"');
-        expect(runtime).toContain('export const locales = /** @type {const} */ (["en", "da"])');
-      }
+      expect(existsSync(runtimePath)).toBe(true);
+      const runtime = readFileSync(runtimePath, 'utf-8');
+      expect(runtime).toContain('export const baseLocale = "en"');
+      expect(runtime).toContain('export const locales = /** @type {const} */ (["en", "da"])');
     });
 
     it('should generate message functions with correct pattern', () => {
       const messagesIndexPath = join(srcParaglidePath, 'messages/_index.js');
-      if (existsSync(messagesIndexPath)) {
-        const messagesContent = readFileSync(messagesIndexPath, 'utf-8');
+      expect(existsSync(messagesIndexPath)).toBe(true);
+      const messagesContent = readFileSync(messagesIndexPath, 'utf-8');
 
-        // Check for proper function declarations and aliased exports (new Paraglide pattern)
-        expect(messagesContent).toContain('const email_label =');
-        expect(messagesContent).toContain('export { email_label as "email.label" }');
+      // Function declarations + aliased (dot-notation) exports.
+      expect(messagesContent).toContain('const email_label =');
+      expect(messagesContent).toContain('export { email_label as "email.label" }');
+      expect(messagesContent).toMatch(/export \{ \w+ as "auth\.signIn" \}/);
 
-        // Check for aliased exports (Paraglide generates internal names and aliases them)
-        expect(messagesContent).toMatch(/export \{ \w+ as "auth\.signIn" \}/);
+      // Function signature + locale handling.
+      expect(messagesContent).toMatch(/const \w+ = \(inputs = \{\}, options = \{\}\) => \{/);
+      expect(messagesContent).toContain('const locale = options.locale ?? getLocale()');
+      expect(messagesContent).toContain('if (locale === "en")');
 
-        // Check for proper function signature
-        expect(messagesContent).toMatch(/const \w+ = \(inputs = \{\}, options = \{\}\) => \{/);
-
-        // Check for locale handling
-        expect(messagesContent).toContain('const locale = options.locale ?? getLocale()');
-        expect(messagesContent).toContain('if (locale === "en")');
-
-        // Check for proper imports
-        expect(messagesContent).toContain('import * as en from "./en.js"');
-        expect(messagesContent).toContain('import * as da from "./da.js"');
-
-        // Check for Paraglide compilation markers
-        expect(messagesContent).toContain('This function has been compiled by [Paraglide JS]');
-        expect(messagesContent).toContain('/* @__NO_SIDE_EFFECTS__ */');
-      }
+      // Imports + Paraglide compilation markers.
+      expect(messagesContent).toContain('import * as en from "./en.js"');
+      expect(messagesContent).toContain('import * as da from "./da.js"');
+      expect(messagesContent).toContain('This function has been compiled by [Paraglide JS]');
+      expect(messagesContent).toContain('/* @__NO_SIDE_EFFECTS__ */');
     });
   });
 
   describe('Build Output Verification', () => {
-    it('should copy paraglide files to dist/', () => {
-      const expectedDistFiles = ['runtime.js', 'messages.js'];
+    it('should copy paraglide files to dist/paraglide (backward compat)', () => {
+      const expectedDistFiles = ['runtime.js', 'messages.js', 'messages/_index.js'];
 
       for (const file of expectedDistFiles) {
         const filePath = join(distParaglidePath, file);
-        expect(existsSync(filePath)).toBe(true);
+        expect(existsSync(filePath), `missing: dist/paraglide/${file}`).toBe(true);
       }
     });
 
-    it('should have correct package.json exports for paraglide', () => {
-      const packageJsonPath = join(rootPath, 'package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-
-      expect(packageJson.exports).toHaveProperty('./paraglide/runtime.js');
-      expect(packageJson.exports).toHaveProperty('./paraglide/messages.js');
-      expect(packageJson.exports['./paraglide/runtime.js']).toBe('./dist/paraglide/runtime.js');
-      expect(packageJson.exports['./paraglide/messages.js']).toBe('./dist/paraglide/messages.js');
+    it('should NOT expose paraglide as package subpath exports', () => {
+      const packageJson = JSON.parse(readFileSync(join(rootPath, 'package.json'), 'utf-8'));
+      // These subpaths were removed in the packaging refactor.
+      expect(packageJson.exports['./paraglide/runtime.js']).toBeUndefined();
+      expect(packageJson.exports['./paraglide/messages.js']).toBeUndefined();
     });
 
-    it('should have dist/paraglide/messages.js with correct exports', () => {
+    it('should expose messages + locale helpers via the core bundle', async () => {
+      const core = await import('../../dist/index.js');
+      expect(core.paraglideMessages).toBeDefined();
+      expect(typeof core.getLocale).toBe('function');
+      expect(typeof core.setLocale).toBe('function');
+      // The `m` proxy used by components.
+      expect(core.m).toBeDefined();
+    });
+
+    it('should have dist/paraglide/messages.js with correct re-exports', () => {
       const messagesDistPath = join(distParaglidePath, 'messages.js');
-      if (existsSync(messagesDistPath)) {
-        const messagesContent = readFileSync(messagesDistPath, 'utf-8');
-
-        // Should export all messages and m namespace
-        expect(messagesContent).toContain("export * from './messages/_index.js'");
-        expect(messagesContent).toContain("export * as m from './messages/_index.js'");
-      }
+      expect(existsSync(messagesDistPath)).toBe(true);
+      const messagesContent = readFileSync(messagesDistPath, 'utf-8');
+      expect(messagesContent).toContain("export * from './messages/_index.js'");
+      expect(messagesContent).toContain("export * as m from './messages/_index.js'");
     });
   });
 
@@ -227,7 +220,6 @@ describe('Paraglide Build Verification', () => {
       const sourceKeys = Object.keys(sourceTranslations.en || {});
 
       for (const key of sourceKeys) {
-        // With new Paraglide pattern, functions are accessible via aliased exports (dot notation)
         expect(generatedMessages).toHaveProperty(key);
         expect(typeof generatedMessages[key]).toBe('function');
       }
@@ -239,24 +231,17 @@ describe('Paraglide Build Verification', () => {
         return;
       }
 
-      // Test a few key functions (using dot notation for aliased exports)
       const testFunctions = ['email.label', 'auth.signIn', 'error.authFailed'];
 
       for (const funcName of testFunctions) {
         if (generatedMessages[funcName]) {
           const func = generatedMessages[funcName];
 
-          // Should work with no parameters
           expect(() => func()).not.toThrow();
-
-          // Should work with empty inputs and options
           expect(() => func({}, {})).not.toThrow();
-
-          // Should work with locale option
           expect(() => func({}, { locale: 'en' })).not.toThrow();
           expect(() => func({}, { locale: 'da' })).not.toThrow();
 
-          // Should return string
           expect(typeof func()).toBe('string');
           expect(func().length).toBeGreaterThan(0);
         }
@@ -269,7 +254,6 @@ describe('Paraglide Build Verification', () => {
         return;
       }
 
-      // Test functions that should have different translations (using dot notation)
       const testFunctions = ['email.label', 'auth.signIn'];
 
       for (const funcName of testFunctions) {
@@ -284,8 +268,6 @@ describe('Paraglide Build Verification', () => {
           expect(enText.length).toBeGreaterThan(0);
           expect(daText.length).toBeGreaterThan(0);
 
-          // Translations should be different (unless they happen to be the same)
-          // This is a soft check since some translations might be identical
           if (enText === daText) {
             console.warn(`Translation for ${funcName} is identical in EN and DA: "${enText}"`);
           }
@@ -297,18 +279,15 @@ describe('Paraglide Build Verification', () => {
   describe('Integration with Library Components', () => {
     it('should be importable using the m[key]() pattern', async () => {
       try {
-        // Test the import pattern used by components
-        const messagesModule = await import('../../src/paraglide/messages.js');
+        const messagesModule = await import('../../src/core/paraglide/messages.js');
         const m = messagesModule.m || messagesModule;
 
         expect(m).toBeDefined();
         expect(typeof m).toBe('object');
 
-        // Test bracket notation access (using aliased exports)
         expect(m['email.label']).toBeDefined();
         expect(typeof m['email.label']).toBe('function');
 
-        // Test function call
         const result = m['email.label']();
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
@@ -319,30 +298,21 @@ describe('Paraglide Build Verification', () => {
   });
 
   describe('Build Process Integration', () => {
-    it('should trigger paraglide generation during build', () => {
-      // Verify that the build process includes paraglide generation
-      const viteConfigPath = join(rootPath, 'vite.config.ts');
-      const viteConfig = readFileSync(viteConfigPath, 'utf-8');
-
-      // Should have paraglide plugin configured
-      expect(viteConfig).toContain('paraglideVitePlugin');
-      expect(viteConfig).toContain('copySourceFiles');
-
-      // Should have custom plugin to copy files to dist
-      expect(viteConfig).toContain('writeBundle()');
-      expect(viteConfig).toContain('copyFileSync');
+    it('should copy paraglide into dist during the build (scripts/build.mjs)', () => {
+      const buildScript = readFileSync(join(rootPath, 'scripts/build.mjs'), 'utf-8');
+      // The orchestrator copies committed paraglide source into dist/paraglide.
+      expect(buildScript).toContain('src/core/paraglide');
+      expect(buildScript).toMatch(/dist.*paraglide|paraglide/);
+      expect(buildScript).toContain('cpSync');
     });
 
     it('should have consistent translation keys across all files', () => {
-      // This test ensures that all translation keys are properly synchronized
       const sourceKeys = Object.keys(sourceTranslations.en || {});
 
       if (Object.keys(generatedMessages).length > 0) {
-        // Check that generated functions exist for all source keys
         for (const key of sourceKeys) {
           const functionName = key.replace(/\./g, '_');
 
-          // Should have either direct export or aliased export
           const hasDirectExport = Object.prototype.hasOwnProperty.call(
             generatedMessages,
             functionName
@@ -355,16 +325,12 @@ describe('Paraglide Build Verification', () => {
     });
 
     it('should maintain proper TypeScript support for generated functions', () => {
-      // Check that TypeScript definitions are available
-      const distTypesPath = join(rootPath, 'dist');
+      const distDir = join(rootPath, 'dist');
 
-      if (existsSync(distTypesPath)) {
-        // Should have TypeScript definition files
-        expect(existsSync(join(distTypesPath, 'index.d.ts'))).toBe(true);
+      if (existsSync(distDir)) {
+        expect(existsSync(join(distDir, 'index.d.ts'))).toBe(true);
 
-        // Package.json should export types
-        const packageJsonPath = join(rootPath, 'package.json');
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        const packageJson = JSON.parse(readFileSync(join(rootPath, 'package.json'), 'utf-8'));
         expect(packageJson.types).toBe('./dist/index.d.ts');
       }
     });

@@ -7,8 +7,8 @@
   rather than relying on ErrorReportingStatus's context fallback.
 -->
 <script lang="ts">
-  import { ErrorReportingStatus } from '@thepia/flows-auth';
-  import { makeSvelteCompatible } from '@thepia/flows-auth/stores/adapters/svelte';
+  import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
+  import { makeSvelteCompatible } from '@thepia/flows-auth/svelte';
   import { sharedAuthStore } from '../lib/shared-auth-store';
 
   const auth = makeSvelteCompatible(sharedAuthStore);

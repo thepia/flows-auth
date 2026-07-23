@@ -7,16 +7,18 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Test configuration
 const testConfig: AuthConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443', // Will fall back to production if local unavailable
   clientId: 'test-flows-auth',
+  appCode: 'demo',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: false
@@ -27,7 +29,7 @@ const testConfig: AuthConfig = {
 const TEST_USER_EMAIL = 'thepia@pm.me';
 
 describe('WebAuthn Verification Behavior', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let apiBaseUrl: string;
 
   beforeAll(async () => {
@@ -36,10 +38,10 @@ describe('WebAuthn Verification Behavior', () => {
     console.log(`🧪 Testing against API server: ${apiBaseUrl}`);
 
     // Create auth store with detected server
-    authStore = createAuthStore({
+    authStore = makeSvelteCompatible(createAuthStore({
       ...testConfig,
       apiBaseUrl
-    });
+    }));
   });
 
   afterAll(() => {

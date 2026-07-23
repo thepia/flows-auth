@@ -33,7 +33,6 @@ export const authStore = createAstroAuthStore({
   apiBaseUrl: getAstroApiUrl(),
   domain: 'your-domain.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register'
 });
 ```
@@ -200,7 +199,6 @@ export const authStore = createAstroAuthStore({
   apiBaseUrl: getAstroApiUrl(),
   domain: 'your-domain.com', // Your WebAuthn RP ID
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register'
 });
 ```

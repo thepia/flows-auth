@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_API_CONFIG, detectApiServer } from '../../src/utils/api-detection.js';
+import { DEFAULT_API_CONFIG, detectApiServer } from '../../src/core/utils/api-detection.js';
 
 describe('detectApiServer', () => {
   // Mock fetch

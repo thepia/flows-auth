@@ -13,7 +13,8 @@
  */
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/index.js';
+import { createAuthStore, type SvelteAuthStore } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Test configuration
 interface TestConfig {
@@ -21,6 +22,7 @@ interface TestConfig {
   appCode: string;
   provider: 'workos' | 'auth0';
   domain: string;
+  clientId: string;
 }
 
 // Detect which API server to test against
@@ -54,7 +56,8 @@ describe('BDD: flows-auth API Consumption', () => {
       apiBaseUrl,
       appCode: 'demo', // Primary test organization
       provider: 'workos',
-      domain: 'dev.thepia.net'
+      domain: 'dev.thepia.net',
+      clientId: 'test-client'
     };
   });
 
@@ -66,8 +69,8 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false, // Disabled for WorkOS testing
-        enableMagicLinks: false
       });
 
       // Then: Auth store should be properly initialized
@@ -86,6 +89,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 
@@ -98,15 +102,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: User Check Flow Integration', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should check user existence and return proper flows-auth format', async () => {
@@ -156,16 +161,17 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Email Authentication Flow Integration', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
     let testEmail: string;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     beforeEach(() => {
@@ -228,8 +234,8 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false, // Explicitly disabled
-        enableMagicLinks: false
       });
 
       // When: Checking what auth methods are available
@@ -247,15 +253,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Response Structure Consumption', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should consume API responses and transform to flows-auth format correctly', async () => {
@@ -296,15 +303,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Backend-Specific Behavior Handling', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should handle WorkOS-specific response format correctly', async () => {
@@ -329,6 +337,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false // Matches backend capability
       });
 
@@ -348,15 +357,16 @@ describe('BDD: flows-auth API Consumption', () => {
   });
 
   describe('Feature: Error Recovery and Resilience', () => {
-    let authStore: ReturnType<typeof createAuthStore>;
+    let authStore: SvelteAuthStore;
 
     beforeAll(() => {
-      authStore = createAuthStore({
+      authStore = makeSvelteCompatible(createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
-      });
+      }));
     });
 
     it('should handle network timeouts gracefully', async () => {
@@ -385,6 +395,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: 'https://definitely-does-not-exist.invalid',
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 
@@ -409,7 +420,9 @@ describe('BDD: flows-auth API Consumption', () => {
       const authStore = createAuthStore({
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
-        domain: testConfig.domain
+        domain: testConfig.domain,
+        clientId: testConfig.clientId,
+        enablePasskeys: false
       });
 
       // When: Checking available methods
@@ -434,6 +447,7 @@ describe('BDD: flows-auth API Consumption', () => {
         apiBaseUrl: testConfig.apiBaseUrl,
         appCode: testConfig.appCode,
         domain: testConfig.domain,
+        clientId: testConfig.clientId,
         enablePasskeys: false
       });
 

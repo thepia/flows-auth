@@ -9,7 +9,7 @@ This directory contains documentation for all user-facing components in the flow
 | Component | Purpose | Documentation | Specification |
 |-----------|---------|---------------|---------------|
 | **AccountCreationForm** | Complete user registration with WebAuthn | [`AccountCreationForm.md`](./AccountCreationForm.md) | [`AccountCreationForm-spec.md`](../specifications/AccountCreationForm-spec.md) |
-| **SignInForm** | Multi-method authentication (passkey/password/magic-link) | *Coming Soon* | [`signInWithPasskey-spec.md`](../specifications/signInWithPasskey-spec.md) |
+| **SignInForm** | Multi-method authentication (passkey/email-code) | *Coming Soon* | [`signInWithPasskey-spec.md`](../specifications/signInWithPasskey-spec.md) |
 
 ### 🔧 **Utility Components**
 
@@ -24,38 +24,40 @@ This directory contains documentation for all user-facing components in the flow
 ### **Basic Authentication Flow**
 ```svelte
 <script>
-  import { AccountCreationForm, SignInForm, createAuthStore } from '@thepia/flows-auth';
-  
-  const authStore = createAuthStore({
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { AccountCreationForm, makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: 'https://api.example.com',
     clientId: 'your-client-id',
+    appCode: 'app',
     domain: 'example.com',
-    enablePasskeys: true,
-    enableMagicLinks: false,
-  });
-  
-  let showRegistration = false;
+    enablePasskeys: true
+  }));
+
+  let showRegistration = $state(false);
 
   // React to authentication state
-  $: isAuthenticated = $authStore.state === 'authenticated';
-  $: currentUser = $authStore.user;
+  let isAuthenticated = $derived($authStore.state.startsWith('authenticated'));
+  let currentUser = $derived($authStore.user);
 </script>
 
 {#if isAuthenticated}
   <h1>Welcome, {currentUser?.name || currentUser?.email}!</h1>
-  <button on:click={() => authStore.signOut()}>Sign Out</button>
+  <button onclick={() => authStore.signOut()}>Sign Out</button>
 {:else if showRegistration}
-  <AccountCreationForm 
-    {authStore}
+  <AccountCreationForm
+    store={authStore}
     on:success={(e) => console.log('Registration success:', e.detail)}
     on:appAccess={(e) => console.log('User enters app:', e.detail)}
     on:switchToSignIn={() => showRegistration = false}
   />
 {:else}
-  <SignInForm 
-    {authStore}
+  <!-- SignInForm has no built-in "switch to registration" event — drive
+       showRegistration from your own UI (e.g. a separate "Create account" link) -->
+  <SignInForm
+    store={authStore}
     on:success={(e) => console.log('Sign-in success:', e.detail)}
-    on:switchToRegister={() => showRegistration = true}
   />
 {/if}
 ```
@@ -63,14 +65,17 @@ This directory contains documentation for all user-facing components in the flow
 ### **Invitation Token Registration**
 ```svelte
 <script>
-  import { AccountCreationForm } from '@thepia/flows-auth';
-  
+  import { getAuthStoreFromContext, AccountCreationForm } from '@thepia/flows-auth/svelte';
+
+  // Auth store set up by the root layout's setupAuthContext()
+  const authStore = getAuthStoreFromContext();
+
   // Extract invitation token from URL
   const urlParams = new URLSearchParams(window.location.search);
   const invitationToken = urlParams.get('invitation');
-  
+
   let invitationTokenData = null;
-  
+
   // Process invitation token if present
   if (invitationToken) {
     // Decode and validate token (utility functions available)
@@ -83,8 +88,9 @@ This directory contains documentation for all user-facing components in the flow
   }
 </script>
 
-<AccountCreationForm 
-  config={authConfig}
+<AccountCreationForm
+  store={authStore}
+  {invitationToken}
   {invitationTokenData}
   readOnlyFields={invitationTokenData ? ['email'] : []}
   additionalFields={['company', 'phone', 'jobTitle']}
@@ -102,35 +108,26 @@ This directory contains documentation for all user-facing components in the flow
 
 ## 🎨 **Theming and Customization**
 
-All components support complete visual customization through CSS custom properties and the branding configuration system.
+Components are styled with `@thepia/branding` design tokens (an optional
+peer dependency) — import branding's stylesheets and override its CSS
+custom properties directly, no flows-auth-specific theming API needed:
 
-### **Basic Theming**
 ```css
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";
+
 :root {
-  --auth-primary-color: #your-brand-color;
-  --auth-secondary-color: #your-secondary-color;
-  --auth-font-family: 'Your Brand Font', sans-serif;
-  --auth-border-radius: 8px;
+  --color-brand-primary: #your-brand-color;
+  --color-brand-primaryHover: #your-brand-color-darker;
+  --font-fontFamily-brand-body: 'Your Brand Font', sans-serif;
+  --size-radius-4: 8px;
 }
 ```
 
-### **Component-Specific Styling**
-```css
-/* Registration form specific */
-.registration-form {
-  --form-background: #ffffff;
-  --form-border: 1px solid #e5e7eb;
-  --form-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .registration-form {
-    --form-background: #2d3748;
-    --form-border: 1px solid #4a5568;
-  }
-}
-```
+Dark mode follows branding's own convention — set `.dark`, `.dark-theme`,
+or `data-theme="dark"` on an ancestor element; branding's tokens redefine
+themselves automatically under those selectors (not via
+`@media (prefers-color-scheme: dark)`).
 
 ## 📖 **Component Architecture**
 
@@ -149,20 +146,21 @@ All components support complete visual customization through CSS custom properti
 ```svelte
 <!-- ✅ CORRECT: Use SignInForm component -->
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
 
-  const authStore = createAuthStore(config);
+  const authStore = makeSvelteCompatible(createAuthStore(config));
 
   // Subscribe to authStore state changes - NO events needed
   authStore.subscribe(($auth) => {
-    if ($auth.state === 'authenticated') {
+    if ($auth.state.startsWith('authenticated')) {
       // User signed in - authStore handles everything
       navigateToApp($auth.user);
     }
   });
 </script>
 
-<SignInForm {config} />
+<SignInForm store={authStore} />
 ```
 
 ```svelte
@@ -174,7 +172,7 @@ All components support complete visual customization through CSS custom properti
   }
 </script>
 
-<form on:submit={handleSignIn}>
+<form onsubmit={handleSignIn}>
   <input bind:value={email} />
   <button>Sign In</button>
 </form>
@@ -184,7 +182,9 @@ All components support complete visual customization through CSS custom properti
 ```svelte
 <!-- ✅ CORRECT: Registration needs event coordination -->
 <script>
-  import { AccountCreationForm } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext, AccountCreationForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = getAuthStoreFromContext();
 
   function handleAppAccess(event) {
     const { user, emailVerifiedViaInvitation } = event.detail;
@@ -205,7 +205,7 @@ All components support complete visual customization through CSS custom properti
 </script>
 
 <AccountCreationForm
-  {config}
+  store={authStore}
   on:appAccess={handleAppAccess}
   on:switchToSignIn={() => showAccountCreationForm = false}
 />
@@ -226,13 +226,13 @@ If you have custom sign-in forms (like in flows.thepia.net), **migrate to SignIn
 
 ```diff
 - <!-- Custom sign-in form -->
-- <form on:submit={handleSignIn}>
+- <form onsubmit={handleSignIn}>
 -   <input bind:value={email} />
 -   <button>Sign In</button>
 - </form>
 
 + <!-- Use flows-auth SignInForm -->
-+ <SignInForm {config} />
++ <SignInForm store={authStore} />
 ```
 
 **Benefits of using SignInForm**:
@@ -243,22 +243,24 @@ If you have custom sign-in forms (like in flows.thepia.net), **migrate to SignIn
 - ✅ Consistent UX across applications
 
 ### **Event System**
-All components follow a consistent event emission pattern:
+Each component dispatches its own event set — there's no shared base
+interface across all components. These are the real, currently-dispatched
+events (verified against source, not aspirational):
 
 ```typescript
-// Standard events emitted by all auth components
-interface AuthComponentEvents {
-  success: { user: User; method?: AuthMethod };
+// SignInForm events
+interface SignInFormEvents {
+  success: { user: User; method: AuthMethod };
   error: { error: AuthError };
-  stateChange: { state: AuthState };
+  close: {}; // Popup variant only
 }
 
-// Component-specific events
-interface AccountCreationFormEvents extends AuthComponentEvents {
-  appAccess: { user: User; emailVerifiedViaInvitation?: boolean };
-  stepChange: { step: RegistrationStep };
+// AccountCreationForm events
+interface AccountCreationFormEvents {
+  success: { user: User };
+  error: { error: AuthError };
+  appAccess: { user: User; emailVerifiedViaInvitation?: boolean; autoSignIn?: boolean };
   switchToSignIn: {};
-  terms_accepted: { terms: boolean; privacy: boolean; marketing: boolean };
 }
 ```
 
@@ -268,17 +270,18 @@ Components integrate seamlessly with the auth store:
 ```svelte
 <script>
   import { createAuthStore } from '@thepia/flows-auth';
-  
-  const authStore = createAuthStore(config);
-  
+  import { makeSvelteCompatible, AccountCreationForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore(config));
+
   // Subscribe to auth state changes
-  $: authState = $authStore;
-  $: isAuthenticated = authState.state === 'authenticated';
-  $: currentUser = authState.user;
+  let authState = $derived($authStore);
+  let isAuthenticated = $derived(authState.state.startsWith('authenticated'));
+  let currentUser = $derived(authState.user);
 </script>
 
 <!-- Components automatically sync with store state -->
-<AccountCreationForm config={authStore.config} />
+<AccountCreationForm store={authStore} />
 ```
 
 ## 🧪 **Testing Components**
@@ -293,18 +296,21 @@ Components integrate seamlessly with the auth store:
 ```typescript
 import { render, fireEvent } from '@testing-library/svelte';
 import { createAuthStore } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from '@thepia/flows-auth/svelte';
 import AccountCreationForm from './AccountCreationForm.svelte';
 
 // Test helper for component setup
 function setupAccountCreationForm(props = {}) {
-  const authStore = createAuthStore({
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: 'https://test-api.com',
+    clientId: 'test-client',
+    appCode: 'app',
     domain: 'test.com',
     enablePasskeys: true
-  });
-  
+  }));
+
   return render(AccountCreationForm, {
-    config: authStore.config,
+    store: authStore,
     ...props
   });
 }

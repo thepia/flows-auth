@@ -3,7 +3,7 @@
  *
  * SignInForm is a thin wrapper around SignInCore, which handles auth
  * entirely through one submit button: checkUser() -> determineAuthMethod()
- * -> handlePasskeyAuth() / handleEmailCodeAuth() / handleMagicLinkAuth().
+ * -> handlePasskeyAuth() / handleEmailCodeAuth().
  * There is no separate "Continue" step or "WebAuthn challenge" screen -
  * everything happens behind the single sign-in button, and outcomes show
  * up as auth store state transitions (e.g. to 'pinEntry').
@@ -14,9 +14,10 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 const mockNavigatorCredentials = {
   create: vi.fn(),
@@ -30,9 +31,9 @@ function createTestStore(overrides: Partial<AuthConfig> = {}) {
   const config: AuthConfig = {
     apiBaseUrl: 'https://api.test.com',
     clientId: 'test-client',
+    appCode: 'demo',
     domain: 'test.com',
     enablePasskeys: true,
-    enableMagicLinks: true,
     ...overrides
   };
   return makeSvelteCompatible(createAuthStore(config));
@@ -79,13 +80,13 @@ describe('WebAuthn Integration Flow', () => {
 
   it('should trigger WebAuthn flow when user has passkeys', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/auth/check-user')) {
+      if (url.includes('/app/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/auth/webauthn/authenticate')) {
+      if (url.includes('/auth/webauthn/challenge')) {
         return Promise.resolve({
           ok: true,
           json: () =>
@@ -131,11 +132,11 @@ describe('WebAuthn Integration Flow', () => {
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/check-user'),
+      expect.stringContaining('/app/check-user'),
       expect.any(Object)
     );
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/webauthn/authenticate'),
+      expect.stringContaining('/auth/webauthn/challenge'),
       expect.any(Object)
     );
     expect(mockFetch).toHaveBeenCalledWith(
@@ -158,22 +159,22 @@ describe('WebAuthn Integration Flow', () => {
   // landing a test that only passes by luck of promise resolution order.
   it.skip('should fall back to email code when WebAuthn fails', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/auth/check-user')) {
+      if (url.includes('/app/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/auth/webauthn/authenticate')) {
+      if (url.includes('/auth/webauthn/challenge')) {
         return Promise.resolve({
           ok: true,
           json: () =>
             Promise.resolve({ challenge: 'test-challenge', rpId: 'test.com', allowCredentials: [] })
         });
       }
-      // No appCode configured, so the email-code fallback routes through
-      // signInWithMagicLink() -> startPasswordlessAuthentication() internally.
-      if (url.includes('/auth/start-passwordless')) {
+      // The email-code fallback routes through sendAppEmailCode() to send
+      // the code.
+      if (url.includes('/app/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -185,10 +186,10 @@ describe('WebAuthn Integration Flow', () => {
     // WebAuthn ceremony itself fails
     mockNavigatorCredentials.get.mockRejectedValueOnce(new Error('User cancelled'));
 
-    // enableMagicLinks makes determineAuthMethod choose 'passkey-with-fallback'
-    // instead of 'passkey-only', so a failed ceremony falls back rather than
+    // determineAuthMethod() chooses 'passkey-with-fallback' when the user has
+    // a passkey, so a failed ceremony falls back to email rather than
     // surfacing as a hard error.
-    const authStore = createTestStore({ enableMagicLinks: true });
+    const authStore = createTestStore({});
     render(SignInForm, { props: { store: authStore, initialEmail: 'test@example.com' } });
 
     await clickSignIn();
@@ -205,13 +206,13 @@ describe('WebAuthn Integration Flow', () => {
 
   it('should skip WebAuthn when passkeys are disabled', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/auth/check-user')) {
+      if (url.includes('/app/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/auth/start-passwordless')) {
+      if (url.includes('/app/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -220,7 +221,7 @@ describe('WebAuthn Integration Flow', () => {
       return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     });
 
-    const authStore = createTestStore({ enablePasskeys: false, enableMagicLinks: true });
+    const authStore = createTestStore({ enablePasskeys: false });
     render(SignInForm, { props: { store: authStore, initialEmail: 'test@example.com' } });
 
     await clickSignIn();
@@ -239,13 +240,13 @@ describe('WebAuthn Integration Flow', () => {
     delete (global as any).PublicKeyCredential;
 
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/auth/check-user')) {
+      if (url.includes('/app/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/auth/start-passwordless')) {
+      if (url.includes('/app/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -254,7 +255,7 @@ describe('WebAuthn Integration Flow', () => {
       return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     });
 
-    const authStore = createTestStore({ enablePasskeys: true, enableMagicLinks: true });
+    const authStore = createTestStore({ enablePasskeys: true });
     render(SignInForm, { props: { store: authStore, initialEmail: 'test@example.com' } });
 
     await clickSignIn();

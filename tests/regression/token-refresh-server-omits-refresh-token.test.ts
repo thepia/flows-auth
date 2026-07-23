@@ -30,10 +30,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { CONFIG_DEFAULTS, createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { createSimpleMockSessionPersistence } from '../helpers/session-persistence-mock.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -61,7 +62,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 describe('REGRESSION: Server Omits refresh_token in Response', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
   let mockDatabaseAdapter: any;
   let saveSessionSpy: any;
@@ -108,12 +109,13 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
+      clientId: 'test-client',
       appCode: 'test',
       enablePasskeys: true,
       database: mockDatabaseAdapter
     };
 
-    authStore = createAuthStore(config, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(config, mockApiClient));
   });
 
   afterEach(() => {
@@ -314,9 +316,11 @@ describe('REGRESSION: Server Omits refresh_token in Response', () => {
     });
 
     const config: AuthConfig = {
+      ...CONFIG_DEFAULTS,
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       appCode: 'test',
+      clientId: 'test-client',
       enablePasskeys: true,
       database: mockDatabaseAdapter
     };

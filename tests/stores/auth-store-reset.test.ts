@@ -4,21 +4,22 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig, SignInData } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig, SignInData } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api');
+vi.mock('../../src/core/api/auth-api');
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false))
 }));
 
 describe('Auth Store reset() Method', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
   let config: AuthConfig;
 
@@ -50,12 +51,11 @@ describe('Auth Store reset() Method', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test',
       signInMode: 'login-or-register'
     };
 
-    authStore = createAuthStore(config, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(config, mockApiClient));
   });
 
   describe('reset() method behavior', () => {
@@ -121,7 +121,7 @@ describe('Auth Store reset() Method', () => {
           initials: ''
         },
         authMethod: 'email-code',
-        // authMethod: 'passkey' | 'password' | 'email-code' | 'magic-link';
+        // authMethod: 'passkey' | 'password' | 'email-code';
         // lastActivity: number;
 
         tokens: {
@@ -312,15 +312,18 @@ describe('Auth Store reset() Method', () => {
       authStore.sendSignInEvent({
         type: 'PIN_VERIFIED',
         session: {
-          access_token: 'test-token',
-          refresh_token: 'test-refresh',
           user: {
             id: 'user-123',
             email: 'test@example.com',
             name: 'Test User',
-            emailVerified: true
+            emailVerified: true,
+            initials: 'TU'
           },
-          expiresAt: new Date(Date.now() + 3600000).toISOString()
+          tokens: {
+            accessToken: 'test-token',
+            refreshToken: 'test-refresh',
+            expiresAt: new Date(Date.now() + 3600000).toISOString()
+          }
         }
       });
 
@@ -346,7 +349,7 @@ describe('Auth Store reset() Method', () => {
           name: 'NotAllowedError',
           message: 'User cancelled',
           timing: 1000,
-          type: 'user-cancelled'
+          type: 'user-cancellation'
         }
       });
 

@@ -9,12 +9,12 @@ import type {
   CompactConsentRecord,
   OnboardingMetadata,
   UserPreferences
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 
 // Mock session manager
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
   getSession: vi.fn(() => {
@@ -29,7 +29,7 @@ vi.mock('../../src/utils/sessionManager', () => ({
   })
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -45,7 +45,7 @@ vi.mock('../../src/utils/storageManager', () => ({
 }));
 
 // Mock the API client
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -141,8 +141,8 @@ describe('OnboardingStore - Functional Tests', () => {
             status: 'connected',
             progress: 100,
             steps: [],
-            firstSeen: new Date().toISOString(),
-            lastSeen: new Date().toISOString()
+            first_seen: new Date().toISOString(),
+            last_seen: new Date().toISOString()
           }
         }
       };
@@ -177,8 +177,8 @@ describe('OnboardingStore - Functional Tests', () => {
         status: 'connected' as const,
         progress: 100,
         steps: [],
-        firstSeen: new Date().toISOString(),
-        lastSeen: new Date().toISOString()
+        first_seen: new Date().toISOString(),
+        last_seen: new Date().toISOString()
       };
 
       expect(clientReg.status).toBe('connected');

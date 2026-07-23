@@ -1,0 +1,18 @@
+{
+  // Declaration-only emit for the framework-agnostic core (the `.` export).
+  // tsup emits the JS bundle (dist/index.js); this emits the .d.ts tree that
+  // dist/index.d.ts roots. Kept separate from tsup because tsc parses the
+  // committed Paraglide ES2022 string-literal exports and rollup-plugin-dts
+  // (tsup's dts engine) does not.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true,
+    "rootDir": "src/core",
+    "outDir": "dist"
+  },
+  "include": ["src/core/**/*"],
+  "exclude": ["node_modules", "dist", "examples", "tests", "**/*.test.ts"]
+}

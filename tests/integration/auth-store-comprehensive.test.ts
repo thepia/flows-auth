@@ -9,10 +9,11 @@
  * Do introduce mocking of browser APIs like WebAuthn to ensure correct switching of options.
  */
 
-import { get } from 'svelte/store';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import { TEST_ACCOUNTS, TestUtils, WebAuthnMocker } from '../test-setup.js';
 
 // Following thepia.com pattern - real API server detection
@@ -25,8 +26,8 @@ const getTestConfig = (): AuthConfig => {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.com',
     clientId: 'flows-auth-integration-test',
+    appCode: 'demo',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Flows Auth Integration Test',
       showPoweredBy: true
@@ -35,7 +36,7 @@ const getTestConfig = (): AuthConfig => {
 };
 
 describe('Auth Store Integration Tests', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let testConfig: AuthConfig;
 
   beforeAll(async () => {
@@ -61,7 +62,7 @@ describe('Auth Store Integration Tests', () => {
     vi.clearAllMocks();
 
     if (apiServerRunning) {
-      authStore = createAuthStore(testConfig);
+      authStore = makeSvelteCompatible(createAuthStore(testConfig));
 
       // Wait for initial state machine setup
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -269,7 +270,7 @@ describe('Auth Store Integration Tests', () => {
       }
     });
 
-    it('should handle magic link authentication', async () => {
+    it('should handle email code authentication', async () => {
       if (!apiServerRunning) {
         console.log('Skipping: API server not available');
         return;
@@ -278,22 +279,22 @@ describe('Auth Store Integration Tests', () => {
       const existingEmail = TEST_ACCOUNTS.existingWithoutPasskey.email;
 
       try {
-        // signInWithMagicLink() always resolves null - the magic link itself
-        // completes sign-in later when the user clicks it, not this call.
+        // sendEmailCode() only sends the code - real auth completes later
+        // when the user submits the code via verifyEmailCode(), not this call.
         // Success here is signaled by the signInState transition, not a
-        // returned step/magicLinkSent field (those belong to the raw
-        // SignInResponse API shape, not this store method's return value).
-        const result = await authStore.signInWithMagicLink(existingEmail);
+        // returned step field (that belongs to the raw SignInResponse API
+        // shape, not this store method's return value).
+        const result = await authStore.sendEmailCode(existingEmail);
 
-        expect(result).toBeNull();
+        expect(result.success).toBe(true);
 
         const state = authStore.getState();
         expect(state.signInState).toBe('pinEntry');
         expect(state.emailCodeSent).toBe(true);
-        expect(state.state).toBe('unauthenticated'); // Still waiting for magic link click
+        expect(state.state).toBe('unauthenticated'); // Still waiting for code entry
       } catch (error: any) {
-        // Magic link might not be configured in test environment
-        console.log('Magic link test failed (expected in test env):', error.message);
+        // Email code might not be configured in test environment
+        console.log('Email code test failed (expected in test env):', error.message);
         expect(error.message).toBeDefined();
       }
     });
@@ -439,6 +440,12 @@ describe('Auth Store Integration Tests', () => {
   describe.skip('CRITICAL: createAccount WebAuthn Flow', () => {
     // TODO: These tests need mock setup (mockFetch, WebAuthn mocks)
     // Contradicts file header "no mocking" - needs architectural decision
+    // Kept (skipped) as documentation of intended coverage; the mocks referenced
+    // below were never wired up, so stub them as `any` purely to satisfy the typechecker.
+    const mockFetch: any = undefined;
+    const isWebAuthnSupported: any = undefined;
+    const isPlatformAuthenticatorAvailable: any = undefined;
+
     it('should complete full WebAuthn registration flow', async () => {
       // Mock successful API responses for the complete flow
       mockFetch

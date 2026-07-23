@@ -4,18 +4,19 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, SignInResponse, StorageConfigurationUpdate } from '../../src/core/types/index.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
       signInWithPasskey: vi.fn(),
-      signInWithMagicLink: vi.fn(),
+      sendAppEmailCode: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn()
     };
@@ -26,8 +27,8 @@ const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
   clientId: 'test-client',
   domain: 'test.com',
+  appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
@@ -146,14 +147,14 @@ describe('Dynamic Role Security Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithMagicLink.mockResolvedValue(serverVerifiedResponse);
+      mockApi.sendAppEmailCode.mockResolvedValue(serverVerifiedResponse);
 
       // Mock storage configuration update
       const mockUpdateStorageConfiguration = vi.fn();
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
-      // Authenticate using magic link (passwordless)
-      await authStore.signInWithMagicLink('employee@company.com');
+      // Authenticate using email code (passwordless)
+      await authStore.sendEmailCode('employee@company.com');
 
       // Should only accept server-verified roles
       expect(serverVerifiedResponse.user?.metadata?.serverVerified).toBe(true);
@@ -187,7 +188,7 @@ describe('Dynamic Role Security Tests', () => {
       };
 
       const mockApi = authStore.api as any;
-      mockApi.signInWithMagicLink.mockResolvedValue(authResponse);
+      mockApi.sendAppEmailCode.mockResolvedValue(authResponse);
 
       // Mock storage configuration update with validation
       const mockUpdateStorageConfiguration = vi.fn().mockImplementation(async (update) => {
@@ -199,8 +200,8 @@ describe('Dynamic Role Security Tests', () => {
       });
       (authStore as any).updateStorageConfiguration = mockUpdateStorageConfiguration;
 
-      // Authenticate as guest using magic link (passwordless)
-      await authStore.signInWithMagicLink('guest@example.com');
+      // Authenticate as guest using email code (passwordless)
+      await authStore.sendEmailCode('guest@example.com');
 
       // Attempt to upgrade to employee should fail
       try {

@@ -26,13 +26,6 @@ This document defines the test data requirements for validating API contracts ac
 - **Credentials**: None
 - **Used in scenarios**: T002, T012
 
-#### **test-magic-link@thepia.net**
-- **Purpose**: User for magic link testing
-- **Auth0 User ID**: `auth0|test_magic_link_001`
-- **Status**: Active
-- **Credentials**: None
-- **Used in scenarios**: T031
-
 #### **test-suspended@thepia.net**
 - **Purpose**: Suspended user account
 - **Auth0 User ID**: `auth0|test_suspended_001`
@@ -75,6 +68,7 @@ interface Auth0TestUser {
       updated_at: string;
       
       // Per-domain credentials and settings
+      // ('magic_link' maps to the real Auth0 passwordless flow: POST /auth/start-passwordless)
       domains: {
         'thepia.com': {
           credentials: WebAuthnCredential[];
@@ -568,7 +562,6 @@ echo "🔍 Validating test data setup..."
 REQUIRED_EMAILS=(
     "test-with-passkey@thepia.net"
     "test-without-passkey@thepia.net"
-    "test-magic-link@thepia.net"
     "test-suspended@thepia.net"
 )
 

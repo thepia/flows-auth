@@ -1,21 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock the API client for testing
 const mockCheckEmail = vi.fn();
 const mockSendAppEmailCode = vi.fn();
 const mockVerifyAppEmailCode = vi.fn();
-const mockSignInWithMagicLink = vi.fn();
 const mockSignInWithPasskey = vi.fn();
 
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: mockSignInWithMagicLink,
       signInWithPasskey: mockSignInWithPasskey,
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock WebAuthn browser APIs
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true), // Enable WebAuthn for testing
@@ -36,7 +36,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 }));
 
 describe('AuthStore UI Configuration', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
 
   beforeEach(() => {
@@ -46,7 +46,6 @@ describe('AuthStore UI Configuration', () => {
       domain: 'test.com',
       appCode: 'test-app',
       enablePasskeys: true,
-      enableMagicLinks: true,
       signInMode: 'login-or-register',
       language: 'en'
     };
@@ -164,8 +163,8 @@ describe('AuthStore UI Configuration', () => {
 
         expect(buttonConfig.secondary).not.toBeNull();
         if (buttonConfig.secondary) {
-          expect(buttonConfig.secondary.method).toBe('magic-link');
-          expect(buttonConfig.secondary.textKey).toBe('auth.sendMagicLink');
+          expect(buttonConfig.secondary.method).toBe('email-code');
+          expect(buttonConfig.secondary.textKey).toBe('auth.sendPinByEmail');
         }
       });
 
@@ -186,15 +185,16 @@ describe('AuthStore UI Configuration', () => {
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.secondary).not.toBeNull();
         if (buttonConfig.secondary) {
-          expect(buttonConfig.secondary.method).toBe('magic-link');
-          expect(buttonConfig.secondary.textKey).toBe('auth.sendMagicLink');
+          expect(buttonConfig.secondary.method).toBe('email-code');
+          expect(buttonConfig.secondary.textKey).toBe('auth.sendPinByEmail');
         }
       });
 
       it('should not show secondary button when appCode is not configured', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
-        const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
-        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithMagicLinks));
+        const storeWithoutAppCode = makeSvelteCompatible(
+          createAuthStore(configWithoutAppCode as AuthConfig)
+        );
 
         // Set up store state for userChecked with passkeys
         // storeWithoutAppCode.setEmail('test@example.com');
@@ -212,7 +212,7 @@ describe('AuthStore UI Configuration', () => {
         expect(buttonConfig.primary.method).toBe('passkey');
         expect(buttonConfig.secondary).not.toBeNull();
         if (buttonConfig.secondary) {
-          expect(buttonConfig.secondary.method).toBe('magic-link');
+          expect(buttonConfig.secondary.method).toBe('email-code');
         }
       });
     });
@@ -258,8 +258,9 @@ describe('AuthStore UI Configuration', () => {
     describe('Configuration-based behavior', () => {
       it('should fallback to email code when appCode not available', () => {
         const { appCode, ...configWithoutAppCode } = mockConfig;
-        const configWithMagicLinks = { ...configWithoutAppCode, enableMagicLinks: true };
-        const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithMagicLinks));
+        const storeWithoutAppCode = makeSvelteCompatible(
+          createAuthStore(configWithoutAppCode as AuthConfig)
+        );
 
         // Set up store state for emailEntry (initial state)
         storeWithoutAppCode.setEmail('test@example.com');
@@ -322,7 +323,7 @@ describe('AuthStore UI Configuration', () => {
               hasValidPin: false
             });
           }
-          // For email-code and magic-link, emailEntry state is fine
+          // For email-code, emailEntry state is fine
 
           const buttonConfig = store.getButtonConfig();
 

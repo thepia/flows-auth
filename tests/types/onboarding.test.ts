@@ -16,12 +16,12 @@ import {
   getConsentedUrls,
   hasConsentForUrl,
   parseOnboardingMetadata
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 import type {
   CompactConsentRecord,
   ConfirmConsentRequest,
   OnboardingMetadata
-} from '../../src/types/onboarding.js';
+} from '../../src/core/types/onboarding.js';
 
 describe('Onboarding Types - Zod Validation', () => {
   describe('CompactConsentRecordSchema', () => {
@@ -335,8 +335,8 @@ describe('Onboarding Types - Zod Validation', () => {
               status: 'connected',
               progress: 100,
               steps: [],
-              firstSeen: new Date().toISOString(),
-              lastSeen: new Date().toISOString()
+              first_seen: new Date().toISOString(),
+              last_seen: new Date().toISOString()
             }
           }
         };

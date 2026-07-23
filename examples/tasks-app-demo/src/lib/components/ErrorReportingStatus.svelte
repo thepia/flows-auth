@@ -1,7 +1,9 @@
 <script>
 	import { browser } from '$app/environment';
-	import { getAuthStoreFromContext } from '@thepia/flows-auth';
+	import { getTelemetryQueueSize } from '@thepia/flows-auth';
+	import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 	import { onMount } from 'svelte';
+	import { flushTasksErrorReports, getErrorReportingConfig } from '../config/errorReporting.js';
 
 	console.log('[ErrorReportingStatus] Component script loading...');
 
@@ -38,7 +40,6 @@
 
 		try {
 			console.log('[ErrorReportingStatus] Importing error reporting config...');
-			const { getErrorReportingConfig } = await import('../config/errorReporting.js');
 			console.log('[ErrorReportingStatus] Config import successful, calling getErrorReportingConfig()...');
 			config = await getErrorReportingConfig();
 			console.log('[ErrorReportingStatus] Config loaded:', $state.snapshot(config));
@@ -91,7 +92,6 @@
 		if (!browser) return;
 
 		try {
-			const { getTelemetryQueueSize } = await import('@thepia/flows-auth');
 			queueSize = await getTelemetryQueueSize();
 		} catch (error) {
 			// Silently fail - error reporter may not be initialized yet
@@ -121,7 +121,6 @@
 		
 		isReporting = true;
 		try {
-			const { flushTasksErrorReports } = await import('../config/errorReporting.js');
 			await flushTasksErrorReports();
 			await updateQueueStatus();
 		} catch (error) {

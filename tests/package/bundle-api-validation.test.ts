@@ -1,25 +1,21 @@
 /**
  * Bundle API Validation Tests
  *
- * Comprehensive integration tests that validate the full API being exported
- * in the built bundles. This ensures the published package exports all
- * intended functionality correctly.
+ * Validates the full API surface of the built per-target bundles (flows-auth 1.2.0).
  *
- * Test Categories:
- * - Package.json export configuration validation
- * - ESM bundle validation (importing and testing all exports)
- * - CJS bundle validation
- * - TypeScript definitions validation
- * - Bundle integrity checks
- * - Functional API validation (creating actual instances)
- * - Development components validation
- * - Internationalization exports validation
- * - Invitation and token utilities validation
- * - Context and auth utilities validation
+ * NEW package shape (see docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md, Phase 1):
+ *  - "."        -> dist/index.js      framework-agnostic CORE (ESM-only)
+ *  - "./svelte" -> dist/svelte/index.js  Svelte components + adapters + context
+ *  - "./dev"    -> dist/svelte/dev.js     flow-viz components (@xyflow/svelte)
+ *  - "./style.css" -> dist/flows-auth.css
+ *
+ * There is NO CJS build anymore (the `require` condition and dist/index.cjs are
+ * gone), so all CJS-bundle and ESM/CJS-consistency tests have been removed.
+ * The old `./dist/src/**`, `./stores`, `./types` subpath exports are also gone.
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 // Test setup - NO mocking for integration tests
@@ -29,94 +25,107 @@ describe('Bundle API Validation (Integration)', () => {
   const ROOT_PATH = join(__dirname, '../..');
   const DIST_PATH = join(ROOT_PATH, 'dist');
   const DIST_ESM_PATH = join(DIST_PATH, 'index.js');
-  const DIST_CJS_PATH = join(DIST_PATH, 'index.cjs');
   const DIST_TYPES_PATH = join(DIST_PATH, 'index.d.ts');
+  const DIST_SVELTE_PATH = join(DIST_PATH, 'svelte', 'index.js');
   const PACKAGE_JSON_PATH = join(ROOT_PATH, 'package.json');
+
+  // Built entry points (import the actual dist output — the point of these tests).
+  const CORE = '../../dist/index.js';
+  const SVELTE = '../../dist/svelte/index.js';
 
   let packageJson: any;
 
   beforeAll(() => {
-    // Load package.json for validation
     packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf-8'));
   });
 
   describe('Package.json Export Configuration', () => {
-    it('should have correct export paths in package.json', () => {
+    it('should have the new per-target export map', () => {
       expect(packageJson.exports).toBeDefined();
-      expect(packageJson.exports['.']).toBeDefined();
 
-      const mainExport = packageJson.exports['.'];
-      expect(mainExport.types).toBe('./dist/index.d.ts');
-      expect(mainExport.svelte).toBe('./dist/src/index.ts'); // Svelte source import
-      expect(mainExport.import).toBe('./dist/index.js');
-      expect(mainExport.require).toBe('./dist/index.cjs');
+      // Core (ESM-only, no `require`, no `svelte` source condition)
+      const core = packageJson.exports['.'];
+      expect(core).toBeDefined();
+      expect(core.types).toBe('./dist/index.d.ts');
+      expect(core.default).toBe('./dist/index.js');
+      expect(core.require).toBeUndefined();
+      expect(core.svelte).toBeUndefined();
 
-      // Verify all export paths exist on filesystem
-      expect(existsSync(join(ROOT_PATH, mainExport.types))).toBe(true);
-      expect(existsSync(join(ROOT_PATH, mainExport.svelte))).toBe(true);
-      expect(existsSync(join(ROOT_PATH, mainExport.import))).toBe(true);
-      expect(existsSync(join(ROOT_PATH, mainExport.require))).toBe(true);
+      // Svelte target
+      const svelte = packageJson.exports['./svelte'];
+      expect(svelte).toBeDefined();
+      expect(svelte.types).toBe('./dist/svelte/index.d.ts');
+      expect(svelte.svelte).toBe('./dist/svelte/index.js');
+      expect(svelte.default).toBe('./dist/svelte/index.js');
+
+      // Dev target (same conditional shape as ./svelte)
+      const dev = packageJson.exports['./dev'];
+      expect(dev).toBeDefined();
+      expect(dev.types).toBe('./dist/svelte/dev.d.ts');
+      expect(dev.svelte).toBe('./dist/svelte/dev.js');
+      expect(dev.default).toBe('./dist/svelte/dev.js');
+
+      // CSS + package.json passthrough
+      expect(packageJson.exports['./style.css']).toBe('./dist/flows-auth.css');
+      expect(packageJson.exports['./package.json']).toBe('./package.json');
+
+      // Every referenced file must exist on disk
+      expect(existsSync(join(ROOT_PATH, core.types))).toBe(true);
+      expect(existsSync(join(ROOT_PATH, core.default))).toBe(true);
+      expect(existsSync(join(ROOT_PATH, svelte.types))).toBe(true);
+      expect(existsSync(join(ROOT_PATH, svelte.svelte))).toBe(true);
+      expect(existsSync(join(ROOT_PATH, dev.default))).toBe(true);
+      expect(existsSync(join(ROOT_PATH, packageJson.exports['./style.css']))).toBe(true);
     });
 
-    it('should have correct legacy fields', () => {
+    it('should NOT expose removed subpath exports', () => {
+      // These were all removed in the packaging refactor.
+      expect(packageJson.exports['./stores']).toBeUndefined();
+      expect(packageJson.exports['./types']).toBeUndefined();
+      expect(packageJson.exports['./src']).toBeUndefined();
+      expect(packageJson.exports['./paraglide/runtime.js']).toBeUndefined();
+      expect(packageJson.exports['./paraglide/messages.js']).toBeUndefined();
+    });
+
+    it('should have correct legacy fields (ESM-only)', () => {
       expect(packageJson.main).toBe('./dist/index.js');
       expect(packageJson.module).toBe('./dist/index.js');
       expect(packageJson.types).toBe('./dist/index.d.ts');
-      expect(packageJson.svelte).toBe('./dist/src/index.ts'); // Svelte source import
+      // Top-level `svelte` field pointing at dist/src was removed.
+      expect(packageJson.svelte).toBeUndefined();
 
-      // Verify legacy fields point to existing files
       expect(existsSync(join(ROOT_PATH, packageJson.main))).toBe(true);
-      expect(existsSync(join(ROOT_PATH, packageJson.module))).toBe(true);
       expect(existsSync(join(ROOT_PATH, packageJson.types))).toBe(true);
-      expect(existsSync(join(ROOT_PATH, packageJson.svelte))).toBe(true);
     });
   });
 
-  describe('ESM Bundle Validation', () => {
-    it('should import successfully from ESM bundle', async () => {
+  describe('Core ESM Bundle Validation', () => {
+    it('should import successfully from the core bundle', async () => {
       expect(existsSync(DIST_ESM_PATH)).toBe(true);
-
-      // Test actual import
-      const esmBundle = await import(DIST_ESM_PATH);
-      expect(esmBundle).toBeDefined();
-      expect(typeof esmBundle).toBe('object');
+      const core = await import(CORE);
+      expect(core).toBeDefined();
+      expect(typeof core).toBe('object');
     });
 
-    it('should export all core components from ESM bundle', async () => {
-      const {
-        SignInForm,
-        AccountCreationForm,
-        SignInCore,
-        EmailInput,
-        AuthButton,
-        AuthStateMessage
-      } = await import(DIST_ESM_PATH);
-
-      expect(SignInForm).toBeDefined();
-      expect(AccountCreationForm).toBeDefined();
-      expect(SignInCore).toBeDefined();
-      expect(EmailInput).toBeDefined();
-      expect(AuthButton).toBeDefined();
-      expect(AuthStateMessage).toBeDefined();
+    it('should NOT export Svelte components or makeSvelteCompatible from core', async () => {
+      const core = await import(CORE);
+      expect(core.SignInForm).toBeUndefined();
+      expect(core.AccountCreationForm).toBeUndefined();
+      expect(core.makeSvelteCompatible).toBeUndefined();
     });
 
-    it('should export all API clients from ESM bundle', async () => {
-      const { AuthApiClient, SyncApiClient } = await import(DIST_ESM_PATH);
-
-      expect(AuthApiClient).toBeDefined();
+    it('should export all API clients from core', async () => {
+      const { AuthApiClient, SyncApiClient } = await import(CORE);
       expect(typeof AuthApiClient).toBe('function');
-      expect(SyncApiClient).toBeDefined();
       expect(typeof SyncApiClient).toBe('function');
     });
 
-    it('should export all store functions from ESM bundle', async () => {
-      const { createAuthStore } = await import(DIST_ESM_PATH);
-
-      expect(createAuthStore).toBeDefined();
+    it('should export the auth store factory from core', async () => {
+      const { createAuthStore } = await import(CORE);
       expect(typeof createAuthStore).toBe('function');
     });
 
-    it('should export all WebAuthn utilities from ESM bundle', async () => {
+    it('should export all WebAuthn utilities from core', async () => {
       const {
         isWebAuthnSupported,
         isPlatformAuthenticatorAvailable,
@@ -126,193 +135,179 @@ describe('Bundle API Validation (Integration)', () => {
         generatePasskeyName,
         createCredential,
         isConditionalMediationSupported
-      } = await import(DIST_ESM_PATH);
+      } = await import(CORE);
 
-      expect(isWebAuthnSupported).toBeDefined();
-      expect(typeof isWebAuthnSupported).toBe('function');
-      expect(isPlatformAuthenticatorAvailable).toBeDefined();
-      expect(typeof isPlatformAuthenticatorAvailable).toBe('function');
-      expect(authenticateWithPasskey).toBeDefined();
-      expect(typeof authenticateWithPasskey).toBe('function');
-      expect(createPasskey).toBeDefined();
-      expect(typeof createPasskey).toBe('function');
-      expect(serializeCredential).toBeDefined();
-      expect(typeof serializeCredential).toBe('function');
-      expect(generatePasskeyName).toBeDefined();
-      expect(typeof generatePasskeyName).toBe('function');
-      expect(createCredential).toBeDefined();
-      expect(typeof createCredential).toBe('function');
-      expect(isConditionalMediationSupported).toBeDefined();
-      expect(typeof isConditionalMediationSupported).toBe('function');
+      for (const fn of [
+        isWebAuthnSupported,
+        isPlatformAuthenticatorAvailable,
+        authenticateWithPasskey,
+        createPasskey,
+        serializeCredential,
+        generatePasskeyName,
+        createCredential,
+        isConditionalMediationSupported
+      ]) {
+        expect(typeof fn).toBe('function');
+      }
     });
 
-    it('should export all session management utilities from ESM bundle', async () => {
-      const {
-        saveSession,
-        getSession,
-        clearSession,
-        isSessionValid,
-        configureSessionStorage,
-        migrateSessionSafely
-      } = await import(DIST_ESM_PATH);
-
-      expect(isSessionValid).toBeDefined();
+    it('should export session management utilities from core', async () => {
+      const { isSessionValid, configureSessionStorage, migrateSessionSafely } = await import(CORE);
       expect(typeof isSessionValid).toBe('function');
-      expect(configureSessionStorage).toBeDefined();
       expect(typeof configureSessionStorage).toBe('function');
-      expect(migrateSessionSafely).toBeDefined();
       expect(typeof migrateSessionSafely).toBe('function');
     });
 
-    it('should export VERSION and configuration utilities from ESM bundle', async () => {
+    it('should export VERSION and configuration utilities from core', async () => {
       const { VERSION, createDefaultConfig, detectApiServer, createDefaultAuthConfig } =
-        await import(DIST_ESM_PATH);
+        await import(CORE);
 
-      expect(VERSION).toBeDefined();
       expect(typeof VERSION).toBe('string');
       expect(VERSION.length).toBeGreaterThan(0);
-      expect(createDefaultConfig).toBeDefined();
       expect(typeof createDefaultConfig).toBe('function');
-      expect(detectApiServer).toBeDefined();
       expect(typeof detectApiServer).toBe('function');
-      expect(createDefaultAuthConfig).toBeDefined();
       expect(typeof createDefaultAuthConfig).toBe('function');
     });
 
-    it('should not export undefined values from ESM bundle', async () => {
-      const esmBundle = await import(DIST_ESM_PATH);
-
-      // Check that no exports are undefined
-      for (const [key, value] of Object.entries(esmBundle)) {
-        expect(value).toBeDefined();
-        expect(value).not.toBeNull();
+    it('should not export undefined values from core', async () => {
+      const core = await import(CORE);
+      for (const [, value] of Object.entries(core)) {
         expect(value).not.toBeUndefined();
+        expect(value).not.toBeNull();
       }
     });
   });
 
-  describe('CJS Bundle Validation', () => {
-    it('should require successfully from CJS bundle', async () => {
-      expect(existsSync(DIST_CJS_PATH)).toBe(true);
+  describe('Svelte Bundle Validation', () => {
+    it('should export all components from ./svelte', async () => {
+      const {
+        SignInForm,
+        AccountCreationForm,
+        EmailVerificationBanner,
+        EmailVerificationPrompt,
+        ErrorReportingStatus,
+        SignInCore,
+        EmailInput,
+        AuthButton,
+        AuthStateMessage,
+        PolicyViewer,
+        Icon
+      } = await import(SVELTE);
 
-      // Test actual require (using dynamic import for CJS)
-      const cjsBundle = await import(DIST_CJS_PATH);
-      expect(cjsBundle).toBeDefined();
-      expect(typeof cjsBundle).toBe('object');
+      for (const c of [
+        SignInForm,
+        AccountCreationForm,
+        EmailVerificationBanner,
+        EmailVerificationPrompt,
+        ErrorReportingStatus,
+        SignInCore,
+        EmailInput,
+        AuthButton,
+        AuthStateMessage,
+        PolicyViewer,
+        Icon
+      ]) {
+        expect(c).toBeDefined();
+      }
     });
 
-    it('should export core components from CJS bundle', async () => {
-      const cjsBundle = await import(DIST_CJS_PATH);
+    it('should export makeSvelteCompatible + context helpers from ./svelte', async () => {
+      const {
+        makeSvelteCompatible,
+        setupAuthContext,
+        getAuthStoreFromContext,
+        createAuthContext,
+        assertAuthConfig,
+        resetGlobalAuthStore,
+        createParaglideI18n
+      } = await import(SVELTE);
 
-      expect(cjsBundle.SignInForm).toBeDefined();
-      expect(cjsBundle.createAuthStore).toBeDefined();
-      expect(cjsBundle.AuthApiClient).toBeDefined();
-      expect(cjsBundle.isWebAuthnSupported).toBeDefined();
-      expect(cjsBundle.VERSION).toBeDefined();
+      for (const fn of [
+        makeSvelteCompatible,
+        setupAuthContext,
+        getAuthStoreFromContext,
+        createAuthContext,
+        assertAuthConfig,
+        resetGlobalAuthStore,
+        createParaglideI18n
+      ]) {
+        expect(typeof fn).toBe('function');
+      }
+    });
+
+    it('should NOT export Flow components from ./svelte (they live in ./dev)', async () => {
+      const svelte = await import(SVELTE);
+      expect(svelte.TestFlow).toBeUndefined();
+      expect(svelte.SessionStateMachineFlow).toBeUndefined();
+      expect(svelte.SignInStateMachineFlow).toBeUndefined();
     });
   });
 
   describe('TypeScript Definitions Validation', () => {
-    it('should have TypeScript definition file', () => {
+    it('should have a core TypeScript definition file', () => {
       expect(existsSync(DIST_TYPES_PATH)).toBe(true);
-
-      const dtsContent = readFileSync(DIST_TYPES_PATH, 'utf-8');
-      expect(dtsContent.length).toBeGreaterThan(0);
-      expect(dtsContent).toContain('export');
+      const dts = readFileSync(DIST_TYPES_PATH, 'utf-8');
+      expect(dts.length).toBeGreaterThan(0);
+      expect(dts).toContain('export');
     });
 
-    it('should export type definitions for main interfaces', () => {
-      const dtsContent = readFileSync(DIST_TYPES_PATH, 'utf-8');
+    it('should re-export core types and reference siblings via plain .js specifiers', () => {
+      const dts = readFileSync(DIST_TYPES_PATH, 'utf-8');
 
-      // Check for key type exports
-      expect(dtsContent).toMatch(/export.*AuthConfig/);
-      expect(dtsContent).toMatch(/export.*AuthState/);
+      expect(dts).toMatch(/export.*AuthApiClient/);
+      expect(dts).toMatch(/export type \* from/);
 
-      // SignInState is exported via wildcard: export type * from './types'
-      // The generated .d.ts may reference './types.d.ts' or './types/index.d.ts'
-      // Check that types are exported from somewhere
-      expect(dtsContent).toMatch(/export type \* from/);
+      // The old fixDtsImports `.d.ts`-extension rewrite was REMOVED — sibling
+      // declaration imports now use plain `.js` specifiers (tsc default),
+      // never `.d.ts`.
+      expect(dts).toMatch(/from '\.\/utils\/webauthn\.js'/);
+      expect(dts).not.toMatch(/from '[^']*\.d\.ts'/);
+    });
 
-      // Verify the types directory exists and contains SignInState
-      const typesPath = join(dirname(DIST_TYPES_PATH), 'types', 'index.d.ts');
-      const typesContent = readFileSync(typesPath, 'utf-8');
-      expect(typesContent).toMatch(/export type.*SignInState/);
-
-      expect(dtsContent).toMatch(/export.*AuthApiClient/);
+    it('should have a Svelte definitions entry', () => {
+      const svelteDts = join(DIST_PATH, 'svelte', 'index.d.ts');
+      expect(existsSync(svelteDts)).toBe(true);
     });
   });
 
   describe('Bundle Integrity', () => {
-    it('should have consistent exports between ESM and CJS', async () => {
-      const esmBundle = await import(DIST_ESM_PATH);
-      const cjsBundle = await import(DIST_CJS_PATH);
-
-      // Get export keys (excluding default export)
-      const esmKeys = Object.keys(esmBundle)
-        .filter((key) => key !== 'default')
-        .sort();
-      const cjsKeys = Object.keys(cjsBundle)
-        .filter((key) => key !== 'default')
-        .sort();
-
-      // Should have same exports (allowing for some differences in bundling)
-      const commonKeys = esmKeys.filter((key) => cjsKeys.includes(key));
-      expect(commonKeys.length).toBeGreaterThan(20); // Should have substantial overlap
+    it('should have a reasonable core bundle size', () => {
+      const stats = statSync(DIST_ESM_PATH);
+      expect(stats.size).toBeGreaterThan(50 * 1024); // > 50KB
+      expect(stats.size).toBeLessThan(5 * 1024 * 1024); // < 5MB
     });
 
-    it('should have reasonable bundle sizes', () => {
-      const esmStats = statSync(DIST_ESM_PATH);
-      const cjsStats = statSync(DIST_CJS_PATH);
-
-      // Bundle sizes should be reasonable (100KB - 5MB range)
-      expect(esmStats.size).toBeGreaterThan(100 * 1024); // > 100KB
-      expect(esmStats.size).toBeLessThan(5 * 1024 * 1024); // < 5MB
-      expect(cjsStats.size).toBeGreaterThan(100 * 1024); // > 100KB
-      expect(cjsStats.size).toBeLessThan(5 * 1024 * 1024); // < 5MB
+    it('should have a Svelte entry bundle', () => {
+      expect(existsSync(DIST_SVELTE_PATH)).toBe(true);
+      expect(statSync(DIST_SVELTE_PATH).size).toBeGreaterThan(0);
     });
   });
 
   describe('Functional API Validation', () => {
-    it('should be able to create auth store from built bundle', async () => {
-      const { createAuthStore } = await import(DIST_ESM_PATH);
+    const config = {
+      apiBaseUrl: 'https://api.test.com',
+      clientId: 'test-client',
+      domain: 'test.com',
+      enablePasskeys: true,
+      appCode: 'test-app'
+    };
 
-      const config = {
-        apiBaseUrl: 'https://api.test.com',
-        clientId: 'test-client',
-        domain: 'test.com',
-        enablePasskeys: true,
-        enableMagicLinks: false,
-        appCode: 'test-app'
-      };
-
+    it('should be able to create an auth store from the core bundle', async () => {
+      const { createAuthStore } = await import(CORE);
       const authStore = createAuthStore(config);
 
       expect(authStore).toBeDefined();
-
-      // New modular store interface
       expect(authStore.api).toBeDefined();
       expect(typeof authStore.signInWithPasskey).toBe('function');
       expect(typeof authStore.checkUser).toBe('function');
       expect(typeof authStore.isAuthenticated).toBe('function');
-
-      // Store access
       expect(authStore.core).toBeDefined();
       expect(authStore.ui).toBeDefined();
       expect(typeof authStore.destroy).toBe('function');
     });
 
-    it('should be able to create API client from built bundle', async () => {
-      const { AuthApiClient } = await import(DIST_ESM_PATH);
-
-      const config = {
-        apiBaseUrl: 'https://api.test.com',
-        clientId: 'test-client',
-        domain: 'test.com',
-        enablePasskeys: true,
-        enableMagicLinks: false,
-        appCode: 'test-app'
-      };
-
+    it('should be able to create an API client from the core bundle', async () => {
+      const { AuthApiClient } = await import(CORE);
       const apiClient = new AuthApiClient(config);
 
       expect(apiClient).toBeDefined();
@@ -322,69 +317,57 @@ describe('Bundle API Validation (Integration)', () => {
     });
 
     it('should export working WebAuthn utilities', async () => {
-      const { isWebAuthnSupported, isPlatformAuthenticatorAvailable } = await import(DIST_ESM_PATH);
-
-      // These should be callable without errors
+      const { isWebAuthnSupported, isPlatformAuthenticatorAvailable } = await import(CORE);
       expect(() => isWebAuthnSupported()).not.toThrow();
       expect(() => isPlatformAuthenticatorAvailable()).not.toThrow();
     });
 
     it('should export working session utilities', async () => {
-      const { configureSessionStorage, getStorageConfig } = await import(DIST_ESM_PATH);
-
-      // These should be callable without errors
+      const { configureSessionStorage, getStorageConfig } = await import(CORE);
       expect(() => configureSessionStorage()).not.toThrow();
       expect(() => getStorageConfig()).not.toThrow();
     });
   });
 
   describe('Development Components Validation', () => {
-    it('should export ErrorReportingStatus from main bundle', async () => {
-      const { ErrorReportingStatus } = await import(DIST_ESM_PATH);
+    it('should export ErrorReportingStatus from ./svelte', async () => {
+      const { ErrorReportingStatus } = await import(SVELTE);
       expect(ErrorReportingStatus).toBeDefined();
     });
 
-    it('should NOT export Flow components from main bundle (avoid @xyflow/svelte dependency)', async () => {
-      const bundle = await import(DIST_ESM_PATH);
-
-      // Flow components should NOT be in main bundle
-      expect(bundle.TestFlow).toBeUndefined();
-      expect(bundle.SessionStateMachineFlow).toBeUndefined();
-      expect(bundle.SignInStateMachineFlow).toBeUndefined();
+    it('should NOT export Flow components from core (avoid @xyflow/svelte dependency)', async () => {
+      const core = await import(CORE);
+      expect(core.TestFlow).toBeUndefined();
+      expect(core.SessionStateMachineFlow).toBeUndefined();
+      expect(core.SignInStateMachineFlow).toBeUndefined();
     });
   });
 
   describe('/dev Export Validation', () => {
-    const DEV_EXPORT_PATH = join(ROOT_PATH, 'dist/src/dev.ts');
-    const DEV_TYPES_PATH = join(ROOT_PATH, 'dist/dev.d.ts');
+    const DEV_JS_PATH = join(ROOT_PATH, 'dist/svelte/dev.js');
+    const DEV_TYPES_PATH = join(ROOT_PATH, 'dist/svelte/dev.d.ts');
 
     it('should have /dev export configured in package.json', () => {
-      expect(packageJson.exports['./dev']).toBeDefined();
-
-      const devExport = packageJson.exports['./dev'];
-      expect(devExport.types).toBe('./dist/dev.d.ts');
-      expect(devExport.svelte).toBe('./dist/src/dev.ts');
-      expect(devExport.import).toBe('./dist/src/dev.ts');
-      expect(devExport.default).toBe('./dist/src/dev.ts');
+      const dev = packageJson.exports['./dev'];
+      expect(dev.types).toBe('./dist/svelte/dev.d.ts');
+      expect(dev.svelte).toBe('./dist/svelte/dev.js');
+      expect(dev.default).toBe('./dist/svelte/dev.js');
     });
 
     it('should have /dev export files on filesystem', () => {
-      expect(existsSync(DEV_EXPORT_PATH)).toBe(true);
+      expect(existsSync(DEV_JS_PATH)).toBe(true);
       expect(existsSync(DEV_TYPES_PATH)).toBe(true);
     });
 
-    it('should export Flow components from /dev (source import)', async () => {
-      // Import from source since /dev points to dist/src/dev.ts
-      const devExports = await import('../../src/dev.js');
-
-      expect(devExports.SessionStateMachineFlow).toBeDefined();
-      expect(devExports.SignInStateMachineFlow).toBeDefined();
-      expect(devExports.TestFlow).toBeDefined();
-    }, 30000); // Increase timeout for Flow component imports
+    it('should export Flow components from ./dev', async () => {
+      const dev = await import('../../dist/svelte/dev.js');
+      expect(dev.SessionStateMachineFlow).toBeDefined();
+      expect(dev.SignInStateMachineFlow).toBeDefined();
+      expect(dev.TestFlow).toBeDefined();
+    }, 30000);
 
     it('should have correct TypeScript definitions for /dev export', () => {
       const devDts = readFileSync(DEV_TYPES_PATH, 'utf-8');
-
       expect(devDts).toContain('SessionStateMachineFlow');
       expect(devDts).toContain('SignInStateMachineFlow');
       expect(devDts).toContain('TestFlow');
@@ -392,193 +375,48 @@ describe('Bundle API Validation (Integration)', () => {
   });
 
   describe('Internationalization Exports', () => {
-    it('should export i18n utilities', async () => {
-      const { createParaglideI18n } = await import(DIST_ESM_PATH);
+    it('should export the i18n message proxy and locale helpers from core', async () => {
+      const { m, setI18nMessages, paraglideMessages, getLocale, setLocale } = await import(CORE);
+      expect(m).toBeDefined();
+      expect(typeof setI18nMessages).toBe('function');
+      expect(paraglideMessages).toBeDefined();
+      expect(typeof getLocale).toBe('function');
+      expect(typeof setLocale).toBe('function');
+    });
 
-      expect(createParaglideI18n).toBeDefined();
+    it('should export createParaglideI18n from ./svelte', async () => {
+      const { createParaglideI18n } = await import(SVELTE);
       expect(typeof createParaglideI18n).toBe('function');
     });
   });
 
   describe('Invitation and Token Utilities', () => {
-    it('should export invitation processing utilities', async () => {
-      const { processInvitationToken, extractRegistrationDataFromToken } = await import(
-        DIST_ESM_PATH
-      );
-
-      expect(processInvitationToken).toBeDefined();
+    it('should export invitation processing utilities from core', async () => {
+      const { processInvitationToken, extractRegistrationDataFromToken } = await import(CORE);
       expect(typeof processInvitationToken).toBe('function');
-      expect(extractRegistrationDataFromToken).toBeDefined();
       expect(typeof extractRegistrationDataFromToken).toBe('function');
     });
 
-    it('should export invitation token utilities', async () => {
+    it('should export invitation token utilities from core', async () => {
       const { decodeInvitationToken, extractRegistrationData, validateInvitationToken } =
-        await import(DIST_ESM_PATH);
-
-      expect(decodeInvitationToken).toBeDefined();
+        await import(CORE);
       expect(typeof decodeInvitationToken).toBe('function');
-      expect(extractRegistrationData).toBeDefined();
       expect(typeof extractRegistrationData).toBe('function');
-      expect(validateInvitationToken).toBeDefined();
       expect(typeof validateInvitationToken).toBe('function');
     });
   });
 
   describe('Context and Auth Utilities', () => {
-    it('should export auth context utilities', async () => {
-      const { setupAuthContext, getAuthStoreFromContext } = await import(DIST_ESM_PATH);
-
-      // Auth context utilities
-      expect(setupAuthContext).toBeDefined();
+    it('should export auth context helpers from ./svelte', async () => {
+      const { setupAuthContext, getAuthStoreFromContext } = await import(SVELTE);
       expect(typeof setupAuthContext).toBe('function');
-
-      // Context functions
-      expect(getAuthStoreFromContext).toBeDefined();
       expect(typeof getAuthStoreFromContext).toBe('function');
     });
 
-    it('should export context constants', async () => {
-      const { CONTEXT_KEYS, AUTH_CONTEXT_KEY } = await import(DIST_ESM_PATH);
-
-      expect(CONTEXT_KEYS).toBeDefined();
+    it('should export context constants from core', async () => {
+      const { CONTEXT_KEYS, AUTH_CONTEXT_KEY } = await import(CORE);
       expect(typeof CONTEXT_KEYS).toBe('object');
-      expect(AUTH_CONTEXT_KEY).toBeDefined();
       expect(typeof AUTH_CONTEXT_KEY).toBe('string');
-    });
-  });
-
-  describe('Subpath Exports - ./types', () => {
-    const TYPES_EXPORT_PATH = './types';
-    const TYPES_DTS_PATH = join(DIST_PATH, 'types', 'index.d.ts');
-
-    it('should have ./types export configured in package.json', () => {
-      expect(packageJson.exports[TYPES_EXPORT_PATH]).toBeDefined();
-
-      const typesExport = packageJson.exports[TYPES_EXPORT_PATH];
-      expect(typesExport.types).toBe('./dist/types/index.d.ts');
-      expect(typesExport.import).toBe('./dist/types/index.ts');
-      expect(typesExport.default).toBe('./dist/types/index.ts');
-
-      console.log('✅ ./types export configured correctly in package.json');
-    });
-
-    it('should have ./types export files on filesystem', () => {
-      expect(existsSync(TYPES_DTS_PATH)).toBe(true);
-
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-      expect(typesContent.length).toBeGreaterThan(0);
-
-      console.log(`✅ ./types/index.d.ts exists (${typesContent.length} bytes)`);
-    });
-
-    it('should export UserMetadata type from ./types', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Check for UserMetadata export
-      expect(typesContent).toMatch(/export.*UserMetadata/);
-      expect(typesContent).toMatch(/from ['"]\.\/metadata-schema/);
-
-      console.log('✅ UserMetadata type exported from ./types');
-    });
-
-    it('should export core REST endpoint types from ./types', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Check for key REST endpoint types
-      const requiredTypes = [
-        'User',
-        'SignInResponse',
-        'CreateUserData',
-        'EmailVerificationResult',
-        'CheckUserResponse',
-        'ActiveInvitation',
-        'ClientRegistration',
-        'ConsentData',
-        'ConsentRecord'
-      ];
-
-      for (const type of requiredTypes) {
-        expect(typesContent).toMatch(new RegExp(`export.*${type}`));
-      }
-
-      console.log(`✅ All ${requiredTypes.length} core REST endpoint types exported`);
-    });
-
-    it('should export authentication configuration types from ./types', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Check for auth configuration types
-      const configTypes = ['AuthConfig', 'AuthState', 'SignInStep', 'AuthMethod'];
-
-      for (const type of configTypes) {
-        expect(typesContent).toMatch(new RegExp(`export.*${type}`));
-      }
-
-      console.log(`✅ All ${configTypes.length} auth configuration types exported`);
-    });
-
-    it('should export invitation and onboarding types from ./types', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Check for invitation types
-      expect(typesContent).toMatch(/export.*ActiveInvitation/);
-      expect(typesContent).toMatch(/export.*ClientRegistration/);
-
-      // Check for onboarding types
-      expect(typesContent).toMatch(/export.*ConfirmConsentRequest/);
-      expect(typesContent).toMatch(/export.*ConfirmConsentResponse/);
-
-      console.log('✅ Invitation and onboarding types exported');
-    });
-
-    it('should have valid TypeScript definitions in ./types', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Check for proper TypeScript syntax
-      expect(typesContent).toMatch(/^import/m); // Should have imports
-      expect(typesContent).toMatch(/export/); // Should have exports
-      expect(typesContent).not.toMatch(/undefined/); // Should not have undefined types
-
-      // Check for interface/type definitions
-      expect(typesContent).toMatch(/interface|type/);
-
-      console.log('✅ Valid TypeScript definitions in ./types');
-    });
-
-    it('should not have circular dependencies in ./types exports', () => {
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Parse imports to check for obvious circular patterns
-      const imports = typesContent.match(/from ['"]\.\/[^'"]+['"]/g) || [];
-      const importedModules = imports
-        .map((imp) => {
-          const match = imp.match(/from ['"](.+?)['"]/);
-          return match ? match[1] : null;
-        })
-        .filter((mod): mod is string => mod !== null);
-
-      // Check that we're not importing from index.d.ts itself
-      expect(importedModules).not.toContain('./index.d.ts');
-
-      console.log(`✅ No circular dependencies detected (${importedModules.length} imports)`);
-    });
-
-    it('should be importable as @thepia/flows-auth/types in consuming projects', async () => {
-      // This test validates the export path works by checking the structure
-      // In actual consuming projects, they would do:
-      // import type { UserMetadata } from '@thepia/flows-auth/types'
-
-      const typesContent = readFileSync(TYPES_DTS_PATH, 'utf-8');
-
-      // Verify the types file is structured correctly for subpath imports
-      expect(typesContent).toContain('export');
-      expect(typesContent.length).toBeGreaterThan(1000); // Should be substantial
-
-      // Check that it re-exports from metadata-schema
-      expect(typesContent).toMatch(/export.*from ['"]\.\/metadata-schema/);
-
-      console.log('✅ ./types export structure valid for subpath imports');
     });
   });
 });

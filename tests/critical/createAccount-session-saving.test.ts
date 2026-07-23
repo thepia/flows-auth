@@ -12,19 +12,21 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, RegistrationRequest } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, RegistrationRequest } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '@thepia/flows-auth';
 import {
   getAccessToken,
   getCurrentUser,
   getSession,
-  isSessionValid as isAuthenticated
-} from '../../src/utils/sessionManager.js';
+  isAuthenticated
+} from '../../src/core/utils/sessionManager.js';
 
 // Mock sessionManager (we verify calls but don't control implementation)
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn().mockReturnValue({
     type: 'sessionStorage',
@@ -34,12 +36,12 @@ vi.mock('../../src/utils/sessionManager', () => ({
   }),
   // These are driven per-test via vi.mocked(...).mockReturnValue(...)
   getSession: vi.fn(),
-  isSessionValid: vi.fn(),
+  isAuthenticated: vi.fn(),
   getCurrentUser: vi.fn(),
   getAccessToken: vi.fn()
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -56,7 +58,7 @@ vi.mock('../../src/utils/storageManager', () => ({
   }))
 }));
 
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn().mockReturnValue(true),
   isPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
   isConditionalMediationSupported: vi.fn().mockResolvedValue(true),
@@ -67,7 +69,7 @@ vi.mock('../../src/utils/webauthn', () => ({
   generatePasskeyName: vi.fn().mockReturnValue('Test Device')
 }));
 
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
@@ -82,7 +84,7 @@ vi.mock('../../src/utils/telemetry', () => ({
 }));
 
 describe('createAccount API Contract', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
 
   const validRegistrationData: RegistrationRequest = {
@@ -98,9 +100,10 @@ describe('createAccount API Contract', () => {
 
     mockConfig = {
       apiBaseUrl: 'https://api.thepia.com',
+      clientId: 'test-client',
       domain: 'thepia.net',
+      appCode: 'test-app',
       enablePasskeys: true,
-      enableMagicLinks: false
     };
 
     authStore = makeSvelteCompatible(createAuthStore(mockConfig));
@@ -175,8 +178,8 @@ describe('createAccount API Contract', () => {
           preferences: undefined
         },
         tokens: {
-          access_token: 'access-token',
-          refresh_token: 'refresh-token',
+          accessToken: 'access-token',
+          refreshToken: 'refresh-token',
           expiresAt: new Date(Date.now() + 3600000).toISOString()
         },
         authMethod: 'passkey'

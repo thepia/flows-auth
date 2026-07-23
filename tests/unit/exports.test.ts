@@ -7,13 +7,13 @@ import { describe, expect, it } from 'vitest';
 describe('Library Exports', () => {
   describe('API Clients', () => {
     it('should export AuthApiClient', async () => {
-      const { AuthApiClient } = await import('../../src/index.js');
+      const { AuthApiClient } = await import('@thepia/flows-auth');
       expect(AuthApiClient).toBeDefined();
       expect(typeof AuthApiClient).toBe('function');
     });
 
     it('should export SyncApiClient', async () => {
-      const { SyncApiClient } = await import('../../src/index.js');
+      const { SyncApiClient } = await import('@thepia/flows-auth');
       expect(SyncApiClient).toBeDefined();
       expect(typeof SyncApiClient).toBe('function');
     });
@@ -21,51 +21,51 @@ describe('Library Exports', () => {
 
   describe('Svelte Components', () => {
     it('should export AccountCreationForm', async () => {
-      const { AccountCreationForm } = await import('../../src/index.js');
+      const { AccountCreationForm } = await import('@thepia/flows-auth/svelte');
       expect(AccountCreationForm).toBeDefined();
     });
 
     it('should export EmailVerificationBanner', async () => {
-      const { EmailVerificationBanner } = await import('../../src/index.js');
+      const { EmailVerificationBanner } = await import('@thepia/flows-auth/svelte');
       expect(EmailVerificationBanner).toBeDefined();
     });
 
     it('should export EmailVerificationPrompt', async () => {
-      const { EmailVerificationPrompt } = await import('../../src/index.js');
+      const { EmailVerificationPrompt } = await import('@thepia/flows-auth/svelte');
       expect(EmailVerificationPrompt).toBeDefined();
     });
 
     it('should export SignInForm', async () => {
-      const { SignInForm } = await import('../../src/index.js');
+      const { SignInForm } = await import('@thepia/flows-auth/svelte');
       expect(SignInForm).toBeDefined();
     });
   });
 
   describe('Core Components', () => {
     it('should export EmailInput', async () => {
-      const { EmailInput } = await import('../../src/index.js');
+      const { EmailInput } = await import('@thepia/flows-auth/svelte');
       expect(EmailInput).toBeDefined();
     });
 
     it('should export AuthButton', async () => {
-      const { AuthButton } = await import('../../src/index.js');
+      const { AuthButton } = await import('@thepia/flows-auth/svelte');
       expect(AuthButton).toBeDefined();
     });
 
     it('should export AuthStateMessage', async () => {
-      const { AuthStateMessage } = await import('../../src/index.js');
+      const { AuthStateMessage } = await import('@thepia/flows-auth/svelte');
       expect(AuthStateMessage).toBeDefined();
     });
 
     it('should export SignInCore', async () => {
-      const { SignInCore } = await import('../../src/index.js');
+      const { SignInCore } = await import('@thepia/flows-auth/svelte');
       expect(SignInCore).toBeDefined();
     });
   });
 
   describe('Store Functions', () => {
     it('should export createAuthStore', async () => {
-      const { createAuthStore } = await import('../../src/index.js');
+      const { createAuthStore } = await import('@thepia/flows-auth');
       expect(createAuthStore).toBeDefined();
       expect(typeof createAuthStore).toBe('function');
     });
@@ -73,13 +73,13 @@ describe('Library Exports', () => {
 
   describe('API Detection', () => {
     it('should export DEFAULT_API_CONFIG', async () => {
-      const { DEFAULT_API_CONFIG } = await import('../../src/index.js');
+      const { DEFAULT_API_CONFIG } = await import('@thepia/flows-auth');
       expect(DEFAULT_API_CONFIG).toBeDefined();
       expect(typeof DEFAULT_API_CONFIG).toBe('object');
     });
 
     it('should export detectApiServer', async () => {
-      const { detectApiServer } = await import('../../src/index.js');
+      const { detectApiServer } = await import('@thepia/flows-auth');
       expect(detectApiServer).toBeDefined();
       expect(typeof detectApiServer).toBe('function');
     });
@@ -87,49 +87,49 @@ describe('Library Exports', () => {
 
   describe('WebAuthn Utilities', () => {
     it('should export isWebAuthnSupported', async () => {
-      const { isWebAuthnSupported } = await import('../../src/index.js');
+      const { isWebAuthnSupported } = await import('@thepia/flows-auth');
       expect(isWebAuthnSupported).toBeDefined();
       expect(typeof isWebAuthnSupported).toBe('function');
     });
 
     it('should export isPlatformAuthenticatorAvailable', async () => {
-      const { isPlatformAuthenticatorAvailable } = await import('../../src/index.js');
+      const { isPlatformAuthenticatorAvailable } = await import('@thepia/flows-auth');
       expect(isPlatformAuthenticatorAvailable).toBeDefined();
       expect(typeof isPlatformAuthenticatorAvailable).toBe('function');
     });
 
     it('should export createPasskey', async () => {
-      const { createPasskey } = await import('../../src/index.js');
+      const { createPasskey } = await import('@thepia/flows-auth');
       expect(createPasskey).toBeDefined();
       expect(typeof createPasskey).toBe('function');
     });
 
     it('should export createCredential', async () => {
-      const { createCredential } = await import('../../src/index.js');
+      const { createCredential } = await import('@thepia/flows-auth');
       expect(createCredential).toBeDefined();
       expect(typeof createCredential).toBe('function');
     });
 
     it('should export isConditionalMediationSupported', async () => {
-      const { isConditionalMediationSupported } = await import('../../src/index.js');
+      const { isConditionalMediationSupported } = await import('@thepia/flows-auth');
       expect(isConditionalMediationSupported).toBeDefined();
       expect(typeof isConditionalMediationSupported).toBe('function');
     });
 
     it('should export authenticateWithPasskey', async () => {
-      const { authenticateWithPasskey } = await import('../../src/index.js');
+      const { authenticateWithPasskey } = await import('@thepia/flows-auth');
       expect(authenticateWithPasskey).toBeDefined();
       expect(typeof authenticateWithPasskey).toBe('function');
     });
 
     it('should export serializeCredential', async () => {
-      const { serializeCredential } = await import('../../src/index.js');
+      const { serializeCredential } = await import('@thepia/flows-auth');
       expect(serializeCredential).toBeDefined();
       expect(typeof serializeCredential).toBe('function');
     });
 
     it('should export generatePasskeyName', async () => {
-      const { generatePasskeyName } = await import('../../src/index.js');
+      const { generatePasskeyName } = await import('@thepia/flows-auth');
       expect(generatePasskeyName).toBeDefined();
       expect(typeof generatePasskeyName).toBe('function');
     });
@@ -137,49 +137,49 @@ describe('Library Exports', () => {
 
   describe('Session Management', () => {
     it('should export configureSessionStorage', async () => {
-      const { configureSessionStorage } = await import('../../src/index.js');
+      const { configureSessionStorage } = await import('@thepia/flows-auth');
       expect(configureSessionStorage).toBeDefined();
       expect(typeof configureSessionStorage).toBe('function');
     });
 
     it('should export getAccessTokenFromSession', async () => {
-      const { getAccessTokenFromSession } = await import('../../src/index.js');
+      const { getAccessTokenFromSession } = await import('@thepia/flows-auth');
       expect(getAccessTokenFromSession).toBeDefined();
       expect(typeof getAccessTokenFromSession).toBe('function');
     });
 
     it('should export getCurrentUserFromSession', async () => {
-      const { getCurrentUserFromSession } = await import('../../src/index.js');
+      const { getCurrentUserFromSession } = await import('@thepia/flows-auth');
       expect(getCurrentUserFromSession).toBeDefined();
       expect(typeof getCurrentUserFromSession).toBe('function');
     });
 
     it('should export getOptimalSessionConfig', async () => {
-      const { getOptimalSessionConfig } = await import('../../src/index.js');
+      const { getOptimalSessionConfig } = await import('@thepia/flows-auth');
       expect(getOptimalSessionConfig).toBeDefined();
       expect(typeof getOptimalSessionConfig).toBe('function');
     });
 
     it('should export getStorageConfig', async () => {
-      const { getStorageConfig } = await import('../../src/index.js');
+      const { getStorageConfig } = await import('@thepia/flows-auth');
       expect(getStorageConfig).toBeDefined();
       expect(typeof getStorageConfig).toBe('function');
     });
 
     it('should export isAuthenticatedFromSession', async () => {
-      const { isAuthenticatedFromSession } = await import('../../src/index.js');
+      const { isAuthenticatedFromSession } = await import('@thepia/flows-auth');
       expect(isAuthenticatedFromSession).toBeDefined();
       expect(typeof isAuthenticatedFromSession).toBe('function');
     });
 
     it('should export isSessionValid', async () => {
-      const { isSessionValid } = await import('../../src/index.js');
+      const { isSessionValid } = await import('@thepia/flows-auth');
       expect(isSessionValid).toBeDefined();
       expect(typeof isSessionValid).toBe('function');
     });
 
     it('should export supportsPersistentSessions', async () => {
-      const { supportsPersistentSessions } = await import('../../src/index.js');
+      const { supportsPersistentSessions } = await import('@thepia/flows-auth');
       expect(supportsPersistentSessions).toBeDefined();
       expect(typeof supportsPersistentSessions).toBe('function');
     });
@@ -187,13 +187,13 @@ describe('Library Exports', () => {
 
   describe('Invitation Processing', () => {
     it('should export extractRegistrationDataFromToken', async () => {
-      const { extractRegistrationDataFromToken } = await import('../../src/index.js');
+      const { extractRegistrationDataFromToken } = await import('@thepia/flows-auth');
       expect(extractRegistrationDataFromToken).toBeDefined();
       expect(typeof extractRegistrationDataFromToken).toBe('function');
     });
 
     it('should export processInvitationToken', async () => {
-      const { processInvitationToken } = await import('../../src/index.js');
+      const { processInvitationToken } = await import('@thepia/flows-auth');
       expect(processInvitationToken).toBeDefined();
       expect(typeof processInvitationToken).toBe('function');
     });
@@ -201,25 +201,25 @@ describe('Library Exports', () => {
 
   describe('Invitation Tokens', () => {
     it('should export decodeInvitationToken', async () => {
-      const { decodeInvitationToken } = await import('../../src/index.js');
+      const { decodeInvitationToken } = await import('@thepia/flows-auth');
       expect(decodeInvitationToken).toBeDefined();
       expect(typeof decodeInvitationToken).toBe('function');
     });
 
     it('should export extractRegistrationData', async () => {
-      const { extractRegistrationData } = await import('../../src/index.js');
+      const { extractRegistrationData } = await import('@thepia/flows-auth');
       expect(extractRegistrationData).toBeDefined();
       expect(typeof extractRegistrationData).toBe('function');
     });
 
     it('should export hashInvitationToken', async () => {
-      const { hashInvitationToken } = await import('../../src/index.js');
+      const { hashInvitationToken } = await import('@thepia/flows-auth');
       expect(hashInvitationToken).toBeDefined();
       expect(typeof hashInvitationToken).toBe('function');
     });
 
     it('should export validateInvitationToken', async () => {
-      const { validateInvitationToken } = await import('../../src/index.js');
+      const { validateInvitationToken } = await import('@thepia/flows-auth');
       expect(validateInvitationToken).toBeDefined();
       expect(typeof validateInvitationToken).toBe('function');
     });
@@ -227,37 +227,37 @@ describe('Library Exports', () => {
 
   describe('Session Migration', () => {
     it('should export getRoleBasedStorageConfig', async () => {
-      const { getRoleBasedStorageConfig } = await import('../../src/index.js');
+      const { getRoleBasedStorageConfig } = await import('@thepia/flows-auth');
       expect(getRoleBasedStorageConfig).toBeDefined();
       expect(typeof getRoleBasedStorageConfig).toBe('function');
     });
 
     it('should export migrateForRole', async () => {
-      const { migrateForRole } = await import('../../src/index.js');
+      const { migrateForRole } = await import('@thepia/flows-auth');
       expect(migrateForRole).toBeDefined();
       expect(typeof migrateForRole).toBe('function');
     });
 
     it('should export migrateSessionSafely', async () => {
-      const { migrateSessionSafely } = await import('../../src/index.js');
+      const { migrateSessionSafely } = await import('@thepia/flows-auth');
       expect(migrateSessionSafely).toBeDefined();
       expect(typeof migrateSessionSafely).toBe('function');
     });
 
     it('should export SessionMigrator', async () => {
-      const { SessionMigrator } = await import('../../src/index.js');
+      const { SessionMigrator } = await import('@thepia/flows-auth');
       expect(SessionMigrator).toBeDefined();
       expect(typeof SessionMigrator).toBe('function');
     });
 
     it('should export sessionMigrator', async () => {
-      const { sessionMigrator } = await import('../../src/index.js');
+      const { sessionMigrator } = await import('@thepia/flows-auth');
       expect(sessionMigrator).toBeDefined();
       expect(typeof sessionMigrator).toBe('object');
     });
 
     it('should export shouldMigrateSession', async () => {
-      const { shouldMigrateSession } = await import('../../src/index.js');
+      const { shouldMigrateSession } = await import('@thepia/flows-auth');
       expect(shouldMigrateSession).toBeDefined();
       expect(typeof shouldMigrateSession).toBe('function');
     });
@@ -265,13 +265,13 @@ describe('Library Exports', () => {
 
   describe('Configuration', () => {
     it('should export createDefaultConfig', async () => {
-      const { createDefaultConfig } = await import('../../src/index.js');
+      const { createDefaultConfig } = await import('@thepia/flows-auth');
       expect(createDefaultConfig).toBeDefined();
       expect(typeof createDefaultConfig).toBe('function');
     });
 
     it('should export VERSION', async () => {
-      const { VERSION } = await import('../../src/index.js');
+      const { VERSION } = await import('@thepia/flows-auth');
       expect(VERSION).toBeDefined();
       expect(typeof VERSION).toBe('string');
       expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/);

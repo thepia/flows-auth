@@ -8,20 +8,23 @@
  * cause SyntaxErrors in WebKit/Safari and bypass the i18n fallback proxy.
  * All components must go through `m['key']()` instead.
  *
- * Also verifies that dist/src/ is in sync with src/ so the consuming app
- * doesn't silently receive stale built components. Note dist/src is the
- * *preprocessed* form of src (TS stripped, lang="ts" removed), so "in sync"
- * means dist === preprocessSvelteSource(src), not a verbatim copy.
+ * The old "dist/src in sync with preprocessed src" concept is GONE — there is
+ * no more dist/src. Instead we verify the built Svelte target under
+ * dist/svelte/**:
+ *   - every shipped .svelte is TS-free (no lang="ts", no `import type`, no
+ *     `interface`) so consumers can compile it without a TS preprocessor, and
+ *   - every src component has a corresponding built component.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { preprocessSvelteSource } from '../../scripts/preprocess-svelte';
 
 const ROOT = join(__dirname, '../..');
-const SRC_DIR = join(ROOT, 'src');
-const DIST_SRC_DIR = join(ROOT, 'dist/src');
+const SRC_SVELTE_DIR = join(ROOT, 'src/svelte');
+const SRC_COMPONENTS_DIR = join(ROOT, 'src/svelte/components');
+const DIST_SVELTE_DIR = join(ROOT, 'dist/svelte');
+const DIST_COMPONENTS_DIR = join(ROOT, 'dist/svelte/components');
 
 function walkSvelte(dir: string): string[] {
   if (!existsSync(dir)) return [];
@@ -42,7 +45,7 @@ const STRING_LITERAL_IMPORT_RE = /import\s*\{[^}]*"[^"]+"\s*(as\s+\w+)?\s*[^}]*\
 
 describe('Component i18n Pattern', () => {
   describe('Source files — no string-literal paraglide imports', () => {
-    const svelteFiles = walkSvelte(SRC_DIR);
+    const svelteFiles = walkSvelte(SRC_SVELTE_DIR);
 
     it('should have Svelte component source files to check', () => {
       expect(svelteFiles.length).toBeGreaterThan(0);
@@ -70,24 +73,55 @@ describe('Component i18n Pattern', () => {
     }
   });
 
-  describe('dist/src — in sync with source', () => {
-    it('should have a built dist/src directory (run pnpm build if missing)', () => {
-      expect(existsSync(DIST_SRC_DIR)).toBe(true);
+  describe('dist/svelte — TS-free preprocessed components', () => {
+    it('should have a built dist/svelte directory (run pnpm build if missing)', () => {
+      expect(existsSync(DIST_SVELTE_DIR)).toBe(true);
     });
 
-    const svelteFiles = walkSvelte(SRC_DIR);
+    const distSvelteFiles = walkSvelte(DIST_SVELTE_DIR);
 
-    for (const srcFile of svelteFiles) {
-      const rel = relative(SRC_DIR, srcFile);
-      const distFile = join(DIST_SRC_DIR, rel);
-      it(`dist/src/${rel} must match preprocessed src/${rel}`, async () => {
-        if (!existsSync(DIST_SRC_DIR)) return; // skip if no build yet
-        expect(existsSync(distFile), `dist/src/${rel} is missing — run pnpm build`).toBe(true);
-        const srcContent = readFileSync(srcFile, 'utf-8');
-        const distContent = readFileSync(distFile, 'utf-8');
-        // dist/src ships the preprocessed (TS-stripped) form, not a verbatim copy.
-        const expected = await preprocessSvelteSource(srcContent, srcFile);
-        expect(distContent, `dist/src/${rel} is stale — run pnpm build`).toBe(expected);
+    it('should have built .svelte files', () => {
+      expect(distSvelteFiles.length).toBeGreaterThan(0);
+    });
+
+    for (const distFile of distSvelteFiles) {
+      const rel = relative(DIST_SVELTE_DIR, distFile);
+      it(`dist/svelte/${rel} must be TS-free`, () => {
+        const content = readFileSync(distFile, 'utf-8');
+        // Shipped components must compile without a consumer-side TS preprocessor.
+        expect(content, `dist/svelte/${rel} still has lang="ts"`).not.toMatch(
+          /<script[^>]*\slang=["']ts["']/
+        );
+        expect(content, `dist/svelte/${rel} still has 'import type'`).not.toMatch(
+          /\bimport\s+type\b/
+        );
+        expect(content, `dist/svelte/${rel} still has an 'interface' declaration`).not.toMatch(
+          /\binterface\s+\w/
+        );
+      });
+    }
+  });
+
+  describe('dist/svelte/components — mirrors src components', () => {
+    const srcComponents = walkSvelte(SRC_COMPONENTS_DIR);
+
+    it('should have source components to check', () => {
+      expect(srcComponents.length).toBeGreaterThan(0);
+    });
+
+    for (const srcFile of srcComponents) {
+      const rel = relative(SRC_COMPONENTS_DIR, srcFile);
+      const distFile = join(DIST_COMPONENTS_DIR, rel);
+      it(`dist/svelte/components/${rel} must exist (built from source)`, () => {
+        expect(
+          existsSync(distFile),
+          `dist/svelte/components/${rel} is missing — run pnpm build`
+        ).toBe(true);
+        // Each built component ships a sibling .svelte.d.ts.
+        expect(
+          existsSync(`${distFile}.d.ts`),
+          `dist/svelte/components/${rel}.d.ts is missing — run pnpm build`
+        ).toBe(true);
       });
     }
   });

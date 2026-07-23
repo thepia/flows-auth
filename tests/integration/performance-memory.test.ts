@@ -7,9 +7,14 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { PerformanceTestUtils, TEST_ACCOUNTS, TEST_CONFIG, TestUtils } from '../test-setup.js';
+
+// Chrome/V8-specific extension of the Performance API, not part of the standard lib.dom types.
+interface PerformanceWithMemory extends Performance {
+  memory?: { usedJSHeapSize: number };
+}
 
 // Test configuration with API fallback
 const getTestConfig = (): AuthConfig => {
@@ -128,7 +133,7 @@ describe('Performance and Memory Tests', () => {
 
   describe('Memory Management', () => {
     it('should not leak memory with multiple store creations', async () => {
-      const initialMemory = performance.memory?.usedJSHeapSize || 0;
+      const initialMemory = (performance as PerformanceWithMemory).memory?.usedJSHeapSize || 0;
 
       // Create and destroy 20 auth stores
       const stores = [];
@@ -155,7 +160,7 @@ describe('Performance and Memory Tests', () => {
       // Wait for cleanup
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const finalMemory = performance.memory?.usedJSHeapSize || 0;
+      const finalMemory = (performance as PerformanceWithMemory).memory?.usedJSHeapSize || 0;
 
       // Memory should not increase significantly (allow 10MB increase)
       const memoryIncrease = finalMemory - initialMemory;
@@ -279,7 +284,7 @@ describe('Performance and Memory Tests', () => {
             await authStore.api.checkEmail('test@example.com');
           } catch (error) {
             // Expected to timeout
-            expect(error.message).toMatch(/timeout|network|fetch/i);
+            expect((error as Error).message).toMatch(/timeout|network|fetch/i);
           }
         }
       );

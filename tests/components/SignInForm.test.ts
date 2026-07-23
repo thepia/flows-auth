@@ -4,7 +4,7 @@
  */
 
 // Mock WebAuthn dependencies BEFORE any imports
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
   isWebAuthnSupported: vi.fn(() => true),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
@@ -13,8 +13,8 @@ vi.mock('../../src/utils/webauthn', () => ({
 import { fireEvent, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import type { AuthConfig } from '../../src/types/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 const mockConfig: AuthConfig = {
@@ -23,7 +23,6 @@ const mockConfig: AuthConfig = {
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: true,
   branding: {
     companyName: 'Test Company',
     logoUrl: 'https://example.com/logo.svg',

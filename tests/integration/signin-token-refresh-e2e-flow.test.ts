@@ -12,9 +12,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
 
 describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
   let apiClient: AuthApiClient;
@@ -26,7 +26,6 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }
@@ -34,7 +33,7 @@ describe('E2E: SignIn and Token Refresh Flow (Backend Mock)', () => {
 
   beforeEach(() => {
     mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    global.fetch = mockFetch as unknown as typeof fetch;
     apiClient = new AuthApiClient(mockConfig);
   });
 

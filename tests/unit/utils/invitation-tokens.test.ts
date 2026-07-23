@@ -9,7 +9,7 @@ import {
   extractRegistrationData,
   hashInvitationToken,
   validateInvitationToken
-} from '../../../src/utils/invitation-tokens.js';
+} from '../../../src/core/utils/invitation-tokens.js';
 
 describe('invitation token utilities', () => {
   // Sample valid JWT for testing (not a real token)

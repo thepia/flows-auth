@@ -18,11 +18,9 @@
 
   "auth.sendPinByEmail": "Send pin via e-mail",
   "auth.sendPinToEmail": "Send pin til e-mail",
-  "auth.sendMagicLink": "Send Magisk Link",
   "auth.loading": "Indlæser...",
   "auth.signingIn": "Logger ind...",
   "auth.sendingPin": "Sender pin...",
-  "auth.sendingMagicLink": "Sender magisk link...",
   "auth.authenticating": "Godkender...",
 
   "code.label": "Indtast bekræftelseskode",
@@ -39,7 +37,6 @@
   "status.pinDirectAction": "Indtast pin her",
   "status.pinDetected": "Gyldig pin fundet",
   "status.signInSuccess": "Velkommen tilbage!",
-  "status.magicLinkSent": "Vi sendte et sikkert login link til",
 
   "error.network": "Netværksfejl.",
   "error.userNotFound": "Ingen konto fundet med denne e-mail adresse",
@@ -54,7 +51,6 @@
   "error.invalidInput": "Ugyldigt input.",
   "error.unknownError": "Der opstod en uventet fejl.",
 
-  "error.magicLinkFailed": "Kunne ikke sende magisk link.",
   "error.noAuthMethods": "Ingen godkendelsesmetoder tilgængelige for denne e-mail.",
   "error.noPasskeyFound": "Ingen passkey fundet for denne e-mail.",
   "error.passkeyNotSupported": "Passkey godkendelse understøttes ikke på denne enhed.",
@@ -95,10 +91,6 @@
   "signIn.subtitle": "Indtast din e-mail for at fortsætte til {companyName}",
   "signIn.subtitleGeneric": "Indtast din e-mail for at fortsætte til din konto",
   "signIn.webAuthnIndicator": "🔐 WebAuthn klar - Touch ID/Face ID vises automatisk",
-
-  "magicLink.title": "Tjek din e-mail",
-  "magicLink.description": "Vi sendte et sikkert login link til",
-  "magicLink.differentEmail": "Brug en anden e-mail",
 
   "registration.termsTitle": "Vilkår og Privatliv",
   "registration.termsDescription": "Gennemgå og accepter venligst vores vilkår for at oprette din konto",

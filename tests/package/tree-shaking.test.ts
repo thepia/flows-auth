@@ -1,181 +1,122 @@
 /**
  * Tree-Shaking Tests for Built Package
  *
- * Verifies that the modular store architecture allows for proper tree-shaking
- * when the built package is used in other projects. This tests the actual
- * dist output that would be consumed by bundlers.
+ * Verifies that the per-target build (flows-auth 1.2.0) is structured so
+ * consuming bundlers can tree-shake effectively:
+ *   - the CORE entry ("."; dist/index.js) is ESM-only with named exports,
+ *   - Svelte components live behind "./svelte" (dist/svelte/index.js), and
+ *   - heavy flow-viz components live behind "./dev" (dist/svelte/dev.js),
+ *     so importing core never pulls in @xyflow/svelte.
+ *
+ * The old per-store subpath exports (./stores, ./stores/core, ...) were REMOVED
+ * in the packaging refactor, so the deep-import assertions that targeted them
+ * are gone.
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+const ROOT = resolve(__dirname, '../..');
+
 describe('Tree-Shaking Support (Built Package)', () => {
-  it('should support selective imports from main entry point', async () => {
+  it('should support selective imports from the core entry point', async () => {
     // Simulates: import { createAuthStore } from '@thepia/flows-auth'
-    const mainModule = await import('../../dist/index.js');
+    const core = await import('../../dist/index.js');
 
-    expect(mainModule.createAuthStore).toBeDefined();
-    expect(typeof mainModule.createAuthStore).toBe('function');
+    expect(core.createAuthStore).toBeDefined();
+    expect(typeof core.createAuthStore).toBe('function');
   });
 
-  it('should support modular imports via package.json exports', async () => {
-    // Test the exports structure defined in package.json (now using src files for tree-shaking)
-    const storeExports = {
-      './stores': '../../src/stores/index.ts',
-      './stores/core': '../../src/stores/core/index.ts',
-      './stores/auth-methods': '../../src/stores/auth-methods/index.ts',
-      './stores/ui': '../../src/stores/ui/index.ts',
-      './stores/adapters': '../../src/stores/adapters/index.ts'
-    };
+  it('should ship core as ESM with named exports (statically analysable)', async () => {
+    // Named exports (not a single default blob) are what let bundlers drop
+    // unused code. Core must NOT drag in Svelte components either.
+    const core = await import('../../dist/index.js');
+    const names = Object.keys(core);
 
-    // Verify each export path exists and works
-    for (const [exportPath, actualPath] of Object.entries(storeExports)) {
-      try {
-        const module = await import(actualPath);
-        expect(module).toBeDefined();
+    expect(names.length).toBeGreaterThan(10);
+    expect(names).toContain('createAuthStore');
+    expect(names).toContain('AuthApiClient');
 
-        // Each module should export at least one create function
-        const exportNames = Object.keys(module);
-        const createFunctions = exportNames.filter(
-          (name) => typeof module[name] === 'function' && name.startsWith('create')
-        );
-
-        expect(createFunctions.length).toBeGreaterThan(0);
-        console.log(
-          `✅ Export ${exportPath} has ${createFunctions.length} create functions:`,
-          createFunctions
-        );
-      } catch (error) {
-        console.error(`❌ Failed to import ${exportPath} (${actualPath}):`, error);
-        throw error;
-      }
-    }
+    // No Svelte components / makeSvelteCompatible in core.
+    expect(names).not.toContain('SignInForm');
+    expect(names).not.toContain('makeSvelteCompatible');
   });
 
-  it('should demonstrate bundle size benefits through selective imports', async () => {
-    // Simulates a project that only needs passkey authentication
-    // This would result in smaller bundle size compared to importing everything
+  it('should keep flow-viz (@xyflow/svelte) out of core and behind ./dev', async () => {
+    const core = await import('../../dist/index.js');
 
-    // Full import (larger bundle)
-    const fullModule = await import('../../dist/index.js');
-    const fullStore = fullModule.createAuthStore({
+    // Flow components are only reachable via ./dev, so importing core stays light.
+    expect('TestFlow' in core).toBe(false);
+    expect('SessionStateMachineFlow' in core).toBe(false);
+    expect('SignInStateMachineFlow' in core).toBe(false);
+
+    const dev = await import('../../dist/svelte/dev.js');
+    expect(dev.TestFlow).toBeDefined();
+    expect(dev.SessionStateMachineFlow).toBeDefined();
+    expect(dev.SignInStateMachineFlow).toBeDefined();
+  }, 30000);
+
+  it('should expose Svelte components behind the ./svelte entry only', async () => {
+    // Simulates: import { SignInForm } from '@thepia/flows-auth/svelte'
+    const svelte = await import('../../dist/svelte/index.js');
+
+    expect(svelte.SignInForm).toBeDefined();
+    expect(svelte.AccountCreationForm).toBeDefined();
+    expect(typeof svelte.makeSvelteCompatible).toBe('function');
+  });
+
+  it('should be able to create a working auth store from the core bundle', async () => {
+    const core = await import('../../dist/index.js');
+    const store = core.createAuthStore({
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
       domain: 'test.com',
+      appCode: 'test-app',
       enablePasskeys: true
     });
 
-    expect(fullStore).toBeDefined();
-    expect(fullStore.api.signInWithPasskey).toBeDefined();
-    expect(fullStore.api.sendEmailSignin).toBeDefined(); // Includes email auth too
-
-    // Selective import (would be smaller in real bundling scenario)
-    const { createPasskeyStore } = await import('../../src/stores/auth-methods/index.js');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
-
-    // Create minimal setup with only needed stores
-    const coreStore = createAuthCoreStore({
-      config: {
-        apiBaseUrl: 'https://api.test.com',
-        clientId: 'test-client',
-        domain: 'test.com',
-        enablePasskeys: true
-      },
-      devtools: false,
-      name: 'minimal-core'
-    });
-
-    const passkeyStore = createPasskeyStore({
-      config: {
-        apiBaseUrl: 'https://api.test.com',
-        clientId: 'test-client',
-        domain: 'test.com',
-        enablePasskeys: true
-      },
-      devtools: false,
-      name: 'minimal-passkey'
-    });
-
-    expect(coreStore.getState().isAuthenticated).toBeDefined();
-    expect(passkeyStore.getState().signIn).toBeDefined();
-
-    // This demonstrates that individual stores work independently
-    // In a real bundler, unused stores (email, UI, etc.) would be tree-shaken out
+    expect(store).toBeDefined();
+    expect(typeof store.signInWithPasskey).toBe('function');
+    expect(typeof store.sendEmailCode).toBe('function'); // email auth included in the full store
   });
 
-  it('should support framework-specific imports without cross-contamination', async () => {
-    // Simulates importing only Svelte adapter without React dependencies
-    const { createSvelteAdapter } = await import('../../src/stores/adapters/index.js');
-    const { createAuthCoreStore } = await import('../../src/stores/core/index.js');
+  it('should verify the built entry points referenced by package.json exports exist', async () => {
+    const packageJson = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8'));
 
-    expect(typeof createSvelteAdapter).toBe('function');
-    expect(typeof createAuthCoreStore).toBe('function');
-
-    // Should work without React being present
-    const coreStore = createAuthCoreStore({
-      config: {
-        apiBaseUrl: 'https://api.test.com',
-        clientId: 'test-client',
-        domain: 'test.com'
-      },
-      devtools: false,
-      name: 'adapter-test'
-    });
-
-    const svelteStore = createSvelteAdapter(coreStore);
-
-    expect(svelteStore.subscribe).toBeDefined();
-    expect(typeof svelteStore.subscribe).toBe('function');
-  });
-
-  it('should verify dist files structure matches package.json exports', async () => {
-    // Verify that all export paths in package.json actually exist in dist
-    const fs = await import('fs');
-    const path = await import('path');
-
-    const expectedPaths = [
-      'dist/index.js',
-      'src/stores/index.ts',
-      'src/stores/core/index.ts',
-      'src/stores/auth-methods/index.ts',
-      'src/stores/ui/index.ts',
-      'src/stores/adapters/index.ts'
+    // Every non-passthrough export target must exist on disk.
+    const targets = [
+      packageJson.exports['.'].default,
+      packageJson.exports['./svelte'].default,
+      packageJson.exports['./dev'].default,
+      packageJson.exports['./style.css']
     ];
 
-    for (const expectedPath of expectedPaths) {
-      const fullPath = path.resolve(expectedPath);
-      const exists = fs.existsSync(fullPath);
-
-      if (!exists) {
-        console.error(`❌ Missing dist file: ${expectedPath}`);
-      }
-
-      expect(exists).toBe(true);
+    for (const target of targets) {
+      const fullPath = resolve(ROOT, target);
+      expect(existsSync(fullPath), `Missing export target: ${target}`).toBe(true);
     }
 
-    console.log('✅ All package export paths exist in dist');
+    // The removed store subpaths must not be present.
+    expect(packageJson.exports['./stores']).toBeUndefined();
+    expect(packageJson.exports['./stores/core']).toBeUndefined();
   });
 
-  it('should demonstrate real-world usage patterns for tree-shaking', () => {
-    // Document how consuming projects should import for optimal tree-shaking
-
+  it('should document real-world usage patterns for optimal tree-shaking', () => {
+    // Consuming projects import from the three public entry points; unused
+    // exports within each are tree-shaken by the bundler.
     const usageExamples = {
-      'Full auth system': `import { createAuthStore } from '@thepia/flows-auth'`,
-      'Only passkey auth': `import { createPasskeyStore } from '@thepia/flows-auth/stores/auth-methods'`,
-      'Only core auth state': `import { createAuthCoreStore } from '@thepia/flows-auth/stores/core'`,
-      'Svelte adapter only': `import { createSvelteAdapter } from '@thepia/flows-auth/stores/adapters'`,
-      'UI state only': `import { createUIStore } from '@thepia/flows-auth/stores/ui'`
+      'Core auth (agnostic)': `import { createAuthStore } from '@thepia/flows-auth'`,
+      'Svelte components': `import { SignInForm } from '@thepia/flows-auth/svelte'`,
+      'Dev/flow-viz components': `import { TestFlow } from '@thepia/flows-auth/dev'`,
+      'Bundled styles': `import '@thepia/flows-auth/style.css'`
     };
 
-    // Verify these patterns are supported by checking exports
-    expect(typeof usageExamples).toBe('object');
-    expect(Object.keys(usageExamples).length).toBe(5);
+    expect(Object.keys(usageExamples).length).toBe(4);
 
     console.log('📚 Tree-shaking usage patterns:');
     for (const [description, importStatement] of Object.entries(usageExamples)) {
       console.log(`  ${description}: ${importStatement}`);
     }
-
-    // This test documents the intended usage patterns for optimal bundle sizes
-    expect(true).toBe(true);
   });
 });

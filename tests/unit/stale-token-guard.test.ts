@@ -8,8 +8,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthCoreStore } from '../../src/stores/core/auth-core.js';
-import type { AuthConfig, StoreOptions } from '../../src/stores/types.js';
+import { createAuthCoreStore } from '../../src/core/stores/core/auth-core.js';
+import type { AuthConfig, StoreOptions } from '../../src/core/stores/types.js';
+import { CONFIG_DEFAULTS } from '../../src/core/stores/auth-store.js';
 
 describe('Stale Token Overwrite Protection', () => {
   let authCore: ReturnType<typeof createAuthCoreStore>;
@@ -54,9 +55,10 @@ describe('Stale Token Overwrite Protection', () => {
     };
 
     const config: AuthConfig = {
-      apiBaseUrl: 'https://api.test.com',
+      ...CONFIG_DEFAULTS,
       domain: 'test.com',
       appCode: 'test',
+      clientId: 'test-client',
       enablePasskeys: true
     };
 

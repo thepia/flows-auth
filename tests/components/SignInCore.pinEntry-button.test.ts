@@ -5,11 +5,11 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { renderWithStoreProp, setupPinEntryState } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
@@ -26,8 +26,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
       authConfig: {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
-        enablePasskeys: false,
-        enableMagicLinks: true
+        enablePasskeys: false
       }
     });
 
@@ -38,10 +37,12 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -52,7 +53,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.setEmailCode('123456');
 
     await waitFor(() => {
-      expect(authStore.getState().emailCode).toBe('123456');
+      expect(authStore.ui.getState().emailCode).toBe('123456');
     });
 
     // Find the verify button and its form
@@ -76,7 +77,6 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
@@ -87,10 +87,12 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.verifyEmailCode = verifyMock;
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -101,7 +103,7 @@ describe('SignInCore PIN Entry Button Submission', () => {
     authStore.setEmailCode('123456');
 
     await waitFor(() => {
-      expect(authStore.getState().emailCode).toBe('123456');
+      expect(authStore.ui.getState().emailCode).toBe('123456');
     });
 
     const input = screen.getByRole('textbox', { name: /code/i });
@@ -123,15 +125,16 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -161,15 +164,16 @@ describe('SignInCore PIN Entry Button Submission', () => {
         apiBaseUrl: 'https://api.test.com',
         appCode: 'test-app',
         enablePasskeys: false,
-        enableMagicLinks: true
       }
     });
 
     // Mock checkUser to prevent automatic state transitions
-    const checkUserSpy = vi.spyOn(authStore, 'checkUser').mockResolvedValue(undefined);
+    const checkUserSpy = vi
+      .spyOn(authStore, 'checkUser')
+      .mockResolvedValue({ exists: false, hasWebAuthn: false });
 
     // Set email and transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {

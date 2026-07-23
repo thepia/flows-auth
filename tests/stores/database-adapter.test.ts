@@ -9,18 +9,18 @@
  * 5. Separation of session tokens and user profile data
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import { createLocalStorageAdapter } from '../../src/stores/core/database.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { createLocalStorageAdapter } from '../../src/core/stores/core/database.js';
 import type {
   AuthConfig,
   SessionData,
   SessionPersistence,
   SignInData,
   UserData
-} from '../../src/types/index.js';
+} from '../../src/core/types/index.js';
 
 // Mock API client
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -33,7 +33,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock telemetry
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
@@ -50,7 +50,7 @@ vi.mock('../../src/utils/telemetry', () => ({
 let mockStorage: Record<string, string> = {};
 
 // Mock session manager utilities (used by localStorage adapter)
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
   getSession: vi.fn(),
@@ -59,7 +59,7 @@ vi.mock('../../src/utils/sessionManager', () => ({
   isSessionValid: vi.fn()
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -77,7 +77,7 @@ vi.mock('../../src/utils/storageManager', () => ({
 }));
 
 // Mock date helpers
-vi.mock('../../src/utils/date-helpers', () => ({
+vi.mock('../../src/core/utils/date-helpers', () => ({
   isOlderThan: vi.fn(() => false), // Default: not expired
   nowISO: vi.fn(() => '2024-10-15T14:22:00.000Z')
 }));
@@ -86,8 +86,8 @@ const mockConfig: AuthConfig = {
   apiBaseUrl: 'https://api.test.com',
   clientId: 'test-client',
   domain: 'test.com',
+  appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: true
 };
 
 describe('Database Adapter Configuration', () => {
@@ -112,7 +112,7 @@ describe('Database Adapter Configuration', () => {
 
     it('should configure session storage using optimal defaults', async () => {
       const { configureSessionStorage, getOptimalSessionConfig } = await import(
-        '../../src/utils/sessionManager.js'
+        '../../src/core/utils/sessionManager.js'
       );
 
       createAuthStore(mockConfig);
@@ -123,14 +123,14 @@ describe('Database Adapter Configuration', () => {
     });
 
     it('should use custom storage config if provided in AuthConfig', async () => {
-      const { configureSessionStorage } = await import('../../src/utils/sessionManager.js');
+      const { configureSessionStorage } = await import('../../src/core/utils/sessionManager.js');
 
       const configWithStorage: AuthConfig = {
         ...mockConfig,
         storage: {
           type: 'localStorage',
-          enablePersistence: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          persistentSessions: true,
+          sessionTimeout: 7 * 24 * 60 * 60 * 1000 // 7 days
         }
       };
 
@@ -139,8 +139,8 @@ describe('Database Adapter Configuration', () => {
       // Verify custom storage config was used
       expect(vi.mocked(configureSessionStorage)).toHaveBeenCalledWith({
         type: 'localStorage',
-        enablePersistence: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        persistentSessions: true,
+        sessionTimeout: 7 * 24 * 60 * 60 * 1000
       });
     });
   });
@@ -182,6 +182,7 @@ describe('Database Adapter Configuration', () => {
         accessToken: 'access-token-123',
         refreshToken: 'refresh-token-123',
         expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+        refreshedAt: new Date().toISOString(),
         authMethod: 'passkey'
       };
 
@@ -258,6 +259,7 @@ describe('Database Adapter Configuration', () => {
         accessToken: 'expired-token',
         refreshToken: undefined, // No refresh token - session should not be restored
         expiresAt: new Date(Date.now() - 1000).toISOString(), // Expired 1 second ago
+        refreshedAt: new Date(Date.now() - 3600000).toISOString(),
         authMethod: 'email-code'
       };
 
@@ -294,7 +296,10 @@ describe('Database Adapter Configuration', () => {
       const faultyAdapter: SessionPersistence = {
         saveSession: vi.fn().mockResolvedValue(undefined),
         loadSession: vi.fn().mockRejectedValue(new Error('Database connection failed')),
-        clearSession: vi.fn().mockResolvedValue(undefined)
+        clearSession: vi.fn().mockResolvedValue(undefined),
+        saveUser: vi.fn().mockResolvedValue(undefined),
+        getUser: vi.fn().mockResolvedValue(null),
+        clearUser: vi.fn().mockResolvedValue(undefined)
       };
 
       const configWithDb: AuthConfig = {
@@ -440,7 +445,7 @@ describe('Database Adapter Configuration', () => {
         refreshToken: 'save-refresh',
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
         refreshedAt: new Date().toISOString(),
-        authMethod: 'magic-link'
+        authMethod: 'email-code'
       };
 
       await adapter.saveSession(sessionData);
@@ -460,7 +465,7 @@ describe('Database Adapter Configuration', () => {
           accessToken: 'save-token',
           refreshToken: 'save-refresh'
         },
-        authMethod: 'magic-link'
+        authMethod: 'email-code'
       });
     });
 
@@ -681,7 +686,6 @@ describe('Database Adapter Configuration', () => {
           userId: 'user-get-123',
           email: 'get@example.com',
           name: 'Get User',
-          avatar: 'https://example.com/get-avatar.jpg',
           emailVerified: true,
           createdAt: '2024-01-01T00:00:00Z',
           lastLoginAt: '2024-10-15T10:00:00Z',
@@ -865,7 +869,6 @@ describe('Database Adapter Configuration', () => {
         userId: 'user-local-123',
         email: 'local@example.com',
         name: 'Local User',
-        avatar: 'https://example.com/local.jpg',
         emailVerified: true,
         createdAt: '2024-01-01T00:00:00Z',
         lastLoginAt: '2024-10-15T08:00:00Z',
@@ -909,7 +912,7 @@ describe('Database Adapter Configuration', () => {
     });
 
     it('should return null if user is expired (>30 days)', async () => {
-      const { isOlderThan } = await import('../../src/utils/date-helpers.js');
+      const { isOlderThan } = await import('../../src/core/utils/date-helpers.js');
 
       // Mock isOlderThan to return true (expired)
       vi.mocked(isOlderThan).mockReturnValueOnce(true);

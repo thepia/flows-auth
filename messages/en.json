@@ -18,11 +18,9 @@
 
   "auth.sendPinByEmail": "Send pin by email",
   "auth.sendPinToEmail": "Send pin to email",
-  "auth.sendMagicLink": "Send Magic Link",
   "auth.loading": "Loading...",
   "auth.signingIn": "Signing in...",
   "auth.sendingPin": "Sending pin...",
-  "auth.sendingMagicLink": "Sending magic link...",
   "auth.authenticating": "Authenticating...",
 
   "code.label": "Enter verification code",
@@ -41,7 +39,6 @@
   "status.pinDirectAction": "Enter pin here",
   "status.pinDetected": "Valid pin detected",
   "status.signInSuccess": "Welcome back!",
-  "status.magicLinkSent": "We sent a secure login link to",
 
   "error.network": "Networking error.",
   "error.userNotFound": "No account found with this email address",
@@ -53,7 +50,6 @@
   "error.authCancelled": "Authentication was cancelled.",
   "error.authFailed": "Authentication failed.",
 
-  "error.magicLinkFailed": "Failed to send magic link.",
   "error.noAuthMethods": "No authentication methods available for this email.",
   "error.noPasskeyFound": "No passkey found for this email.",
   "error.passkeyNotSupported": "Passkey authentication is not supported on this device.",
@@ -96,10 +92,6 @@
   "signIn.subtitle": "Enter your email to continue to {companyName}",
   "signIn.subtitleGeneric": "Enter your email to continue to your account",
   "signIn.webAuthnIndicator": "🔐 WebAuthn ready - Touch ID/Face ID will appear automatically",
-
-  "magicLink.title": "Check your email",
-  "magicLink.description": "We sent a secure login link to",
-  "magicLink.differentEmail": "Use a different email",
 
   "registration.termsTitle": "Terms & Privacy",
   "registration.termsDescription": "Please review and accept our terms to create your account",

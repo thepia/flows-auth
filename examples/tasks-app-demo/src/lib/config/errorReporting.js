@@ -3,6 +3,7 @@
  */
 
 import { browser } from '$app/environment';
+import { flushTelemetry, reportApiError, reportWebAuthnError } from '@thepia/flows-auth';
 
 /**
  * Error reporting endpoints for different environments
@@ -217,8 +218,6 @@ export async function reportTaskError(operation, error, context = {}) {
   if (!browser) return;
 
   try {
-    const { reportApiError } = await import('@thepia/flows-auth');
-
     await reportApiError(
       context.url || 'tasks-app',
       context.method || 'TASK_OPERATION',
@@ -242,8 +241,6 @@ export async function reportSyncError(operation, error, context = {}) {
   if (!browser) return;
 
   try {
-    const { reportApiError } = await import('@thepia/flows-auth');
-
     await reportApiError(
       context.url || 'service-worker-sync',
       context.method || 'SYNC_OPERATION',
@@ -268,8 +265,6 @@ export async function reportTasksAuthError(operation, error, context = {}) {
   if (!browser) return;
 
   try {
-    const { reportWebAuthnError } = await import('@thepia/flows-auth');
-
     await reportWebAuthnError(operation, error, {
       taskApp: true,
       ...context
@@ -286,7 +281,6 @@ export async function flushTasksErrorReports() {
   if (!browser) return;
 
   try {
-    const { flushTelemetry } = await import('@thepia/flows-auth');
     await flushTelemetry();
   } catch (error) {
     console.error('[Tasks App] Failed to flush error reports:', error);

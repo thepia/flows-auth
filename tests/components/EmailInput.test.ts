@@ -7,7 +7,7 @@
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import EmailInput from '../../src/components/core/EmailInput.svelte';
+import EmailInput from '../../src/svelte/components/core/EmailInput.svelte';
 
 describe('EmailInput Component', () => {
   beforeEach(() => {

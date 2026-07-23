@@ -9,14 +9,14 @@
 import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
-import { AUTH_CONTEXT_KEY } from '../../src/constants/context-keys.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
+import { AUTH_CONTEXT_KEY } from '../../src/core/constants/context-keys.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock dependencies
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
@@ -37,7 +37,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true
         },
         props: {
           initialEmail: 'test@example.com'
@@ -57,7 +56,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true,
           branding: {
             logoUrl: 'https://example.com/logo.png',
             companyName: 'Test Company'
@@ -170,7 +168,6 @@ describe('Auth Context Integration', () => {
           apiBaseUrl: 'https://api.test.com',
           appCode: 'test-app',
           enablePasskeys: true,
-          enableMagicLinks: true
         },
         props: {
           showLogo: true,

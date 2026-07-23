@@ -6,7 +6,7 @@
  */
 
 import { beforeAll, describe, expect, test } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
 
 const LOCAL_API_URL = 'https://dev.thepia.com:8443';
 const PRODUCTION_API_URL = 'https://api.thepia.com';
@@ -31,9 +31,9 @@ describe('Unregistered User Sign-In Flow', () => {
         apiClient = new AuthApiClient({
           apiBaseUrl: LOCAL_API_URL,
           clientId: 'test-client',
+          appCode: 'demo',
           domain: 'thepia.net',
           enablePasskeys: true,
-          enableMagicLinks: false
         });
         console.log('✅ Using local API server for testing');
       }
@@ -54,9 +54,9 @@ describe('Unregistered User Sign-In Flow', () => {
           apiClient = new AuthApiClient({
             apiBaseUrl: PRODUCTION_API_URL,
             clientId: 'test-client',
+            appCode: 'demo',
             domain: 'thepia.net',
             enablePasskeys: true,
-            enableMagicLinks: false
           });
           console.log('✅ Using production API server for testing');
         }
@@ -191,8 +191,8 @@ describe('Unregistered User Sign-In Flow', () => {
           expectedStep = 'passkey-auth';
           expectedAction = 'Try passkey authentication';
         } else if (userExists) {
-          expectedStep = 'magic-link';
-          expectedAction = 'Send magic link';
+          expectedStep = 'email-code';
+          expectedAction = 'Send email code';
         } else if (!userExists) {
           expectedStep = 'registration-terms';
           expectedAction = 'Switch to registration flow';

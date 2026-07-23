@@ -113,7 +113,6 @@ graph LR
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net'
   };
   
@@ -160,7 +159,6 @@ graph LR
 const flowsAuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net',
 
   // Privacy-first settings (default)
@@ -191,7 +189,6 @@ const flowsAuthConfig = {
 const enterpriseFlowsConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net',
 
   // Enterprise authentication requirements

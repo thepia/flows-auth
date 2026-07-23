@@ -22,7 +22,6 @@ export const authStore = createAstroAuthStore({
   apiBaseUrl: getAstroApiUrl(),
   domain: 'your-domain.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register'
 });
 ```

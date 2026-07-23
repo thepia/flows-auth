@@ -10,7 +10,7 @@
  */
 
 // Mock WebAuthn dependencies BEFORE any imports
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true)),
   isWebAuthnSupported: vi.fn(() => true),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(true))
@@ -18,16 +18,16 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 import { fireEvent, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import type { AuthConfig } from '../../src/types/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import type { AuthConfig } from '../../src/core/types/index.js';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 const defaultConfig: AuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
+  clientId: 'test-client',
   domain: 'test.com',
   appCode: 'test-app',
   enablePasskeys: true,
-  enableMagicLinks: true,
   branding: {
     companyName: 'Test Company'
   }
@@ -156,8 +156,8 @@ describe('Error Handling Regression Tests', () => {
 
     it('should NOT show unhelpful error messages for missing passkeys', async () => {
       const { authStore } = renderWithStoreProp(SignInForm, {
-        authConfig: { ...defaultConfig, enableMagicLinks: true },
-        props: { config: { ...defaultConfig, enableMagicLinks: true } },
+        authConfig: { ...defaultConfig },
+        props: { config: { ...defaultConfig } },
         mockUserCheck: {
           exists: true,
           hasPasskey: false,
@@ -178,7 +178,6 @@ describe('Error Handling Regression Tests', () => {
 
         // ✅ Should either auto-transition or provide clear action
         const hasActionableFlow =
-          screen.queryByText(/magic link/i) ||
           screen.queryByText(/Terms of Service/i) ||
           screen.queryByText(/check.*email/i);
         expect(hasActionableFlow).toBeTruthy();

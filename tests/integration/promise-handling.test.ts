@@ -14,7 +14,7 @@
 
 import { fireEvent, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
 import { renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 describe('Promise Handling', () => {
@@ -420,7 +420,9 @@ describe('Promise Handling', () => {
         .mockRejectedValueOnce(new Error('Temporary error'))
         .mockResolvedValue({
           success: true,
-          message: 'Code sent'
+          step: 'code_sent',
+          message: 'Code sent',
+          timestamp: Date.now()
         });
 
       const emailInput = getByLabelText('Email address');

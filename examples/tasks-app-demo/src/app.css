@@ -1,3 +1,6 @@
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";
+
 /* Reset and base styles */
 *,
 *::before,
@@ -6,15 +9,15 @@
 }
 
 html {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
-    "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-fontFamily-brand-body, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif);
   line-height: 1.6;
 }
 
 body {
   margin: 0;
-  background-color: #f8f9fa;
-  color: #333;
+  background-color: var(--color-bg-secondary, #f8f9fa);
+  color: var(--color-text-primary, #333);
 }
 
 /* Typography */
@@ -46,9 +49,9 @@ input,
 textarea,
 select {
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
+  border: 1px solid var(--color-border-default, #ddd);
+  border-radius: var(--size-radius-3, 6px);
+  background: var(--color-bg-primary, white);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -56,23 +59,23 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: var(--color-brand-primary, #007bff);
+  box-shadow: var(--shadow-input-focus, 0 0 0 3px rgba(0, 123, 255, 0.1));
 }
 
 button {
   padding: 0.75rem 1.5rem;
-  background: #007bff;
-  color: white;
+  background: var(--color-brand-primary, #007bff);
+  color: var(--color-text-inverse, white);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--size-radius-3, 6px);
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s, transform 0.1s;
 }
 
 button:hover:not(:disabled) {
-  background: #0056b3;
+  background: var(--color-brand-primaryHover, #0056b3);
 }
 
 button:active:not(:disabled) {
@@ -80,25 +83,25 @@ button:active:not(:disabled) {
 }
 
 button:disabled {
-  background: #6c757d;
+  background: var(--color-palette-neutral-9, #6c757d);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 button.secondary {
-  background: #6c757d;
+  background: var(--color-palette-neutral-9, #6c757d);
 }
 
 button.secondary:hover:not(:disabled) {
-  background: #545b62;
+  background: var(--color-palette-neutral-11, #545b62);
 }
 
 button.danger {
-  background: #dc3545;
+  background: var(--color-palette-error-9, #dc3545);
 }
 
 button.danger:hover:not(:disabled) {
-  background: #c82333;
+  background: var(--color-palette-error-10, #c82333);
 }
 
 /* Utility classes */
@@ -107,7 +110,7 @@ button.danger:hover:not(:disabled) {
 }
 
 .text-muted {
-  color: #6c757d;
+  color: var(--color-text-secondary, #6c757d);
 }
 
 .mb-0 {
@@ -144,8 +147,9 @@ button.danger:hover:not(:disabled) {
 }
 
 .card {
-  background: white;
-  border-radius: 8px;
+  background: var(--color-bg-primary, white);
+  border-radius: var(--size-radius-4, 8px);
+  /* branding has no elevation-shadow scale yet (only --shadow-input-focus / --shadow-error) */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -182,8 +186,8 @@ button.danger:hover:not(:disabled) {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007bff;
+  border: 2px solid var(--color-border-subtle, #f3f3f3);
+  border-top: 2px solid var(--color-brand-primary, #007bff);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

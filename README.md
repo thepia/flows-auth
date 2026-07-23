@@ -6,7 +6,7 @@ A comprehensive Svelte authentication library with WebAuthn/passkey support, des
 
 - 🔐 **WebAuthn/Passkey Support** - Secure, passwordless authentication
 - 🎨 **Whitelabel Ready** - Complete branding and theming system
-- 🔄 **Multi-step Flow** - Email → Passkey/Magic Link
+- 🔄 **Multi-step Flow** - Email → Passkey/Email Code
 - 📱 **Mobile Optimized** - Works seamlessly on all devices
 - 🧪 **Fully Tested** - Comprehensive test coverage
 - 📦 **Tree Shakeable** - Import only what you need
@@ -106,7 +106,6 @@ Set up once in your root layout, access anywhere with `getAuthStoreFromContext()
     clientId: 'your-client-id',
     domain: 'yourapp.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Your Company',
       logoUrl: '/logo.svg',
@@ -159,7 +158,6 @@ export const authStore = createAstroAuthStore({
   apiBaseUrl: getAstroApiUrl(),
   domain: 'yourapp.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register'
 });
 ```
@@ -238,8 +236,7 @@ For single-page apps or when you don't need context:
     apiBaseUrl: 'https://api.yourapp.com',
     clientId: 'your-client-id',
     domain: 'yourapp.com',
-    enablePasskeys: true,
-    enableMagicLinks: false
+    enablePasskeys: true
   };
 
   const auth = createAuthStore(authConfig);
@@ -333,8 +330,7 @@ You can also use individual step components for custom flows:
 ```svelte
 import { 
   EmailStep,
-  PasskeyStep, 
-  MagicLinkStep 
+  PasskeyStep
 } from '@thepia/flows-auth/components';
 ```
 
@@ -401,7 +397,7 @@ auth.subscribe($auth => {
 // Sign in methods
 await auth.signIn('user@example.com');
 await auth.signInWithPasskey('user@example.com');
-await auth.signInWithMagicLink('user@example.com');
+await auth.sendEmailCode('user@example.com');
 
 // Other methods
 await auth.signOut();
@@ -421,7 +417,6 @@ interface AuthConfig {
   
   // Feature flags
   enablePasskeys: boolean;
-  enableMagicLinks: boolean;
   
   // Optional
   redirectUri?: string;
@@ -464,7 +459,6 @@ flows-auth uses a `SessionPersistence` interface for all session persistence. By
     clientId: 'demo',
     domain: 'thepia.net',
     enablePasskeys: true,
-    enableMagicLinks: false,
     // Automatic session persistence via flows-client service worker
     database: flowsDB.session
   };
@@ -531,22 +525,19 @@ When configured, the auth store will automatically:
 
 ## Whitelabel Theming
 
-The library supports complete visual customization through CSS custom properties:
+Components are styled with `@thepia/branding` design tokens (an optional
+peer dependency) — override them directly, no flows-auth-specific theming
+API needed:
 
 ```css
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";
+
 :root {
-  /* Brand colors */
-  --auth-primary-color: #your-brand-color;
-  --auth-secondary-color: #your-secondary-color;
-  --auth-accent-color: #your-accent-color;
-  
-  /* Typography */
-  --auth-font-family: 'Your Brand Font', sans-serif;
-  --auth-border-radius: 8px;
-  
-  /* Spacing */
-  --auth-padding: 24px;
-  --auth-gap: 16px;
+  --color-brand-primary: #your-brand-color;
+  --color-brand-primaryHover: #your-brand-color-darker;
+  --font-fontFamily-brand-body: 'Your Brand Font', sans-serif;
+  --size-radius-4: 8px;
 }
 ```
 
@@ -585,7 +576,6 @@ Currently receives placeholder tokens from thepia.com API (`"webauthn-verified"`
 
 ### 📋 Planned Features (API Not Ready)
 - Token refresh functionality (logic implemented, waiting for API)
-- Magic link authentication (fallback method)
 
 See [API Integration Status](./docs/auth/api-integration-status.md) for complete technical details.
 
@@ -659,7 +649,7 @@ The following documents are the **single source of truth** for their respective 
 A comprehensive demo application is included in `src/demo-app/` that showcases all features of the flows-auth library. The demo includes:
 
 - **Live Authentication Flow**: Complete sign-in/sign-out functionality
-- **Feature Showcase**: Demonstrates WebAuthn and magic link authentication
+- **Feature Showcase**: Demonstrates WebAuthn and email code authentication
 - **Configuration Examples**: Shows different branding and configuration options
 - **Responsive Design**: Works on desktop and mobile devices
 
@@ -688,21 +678,22 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
 ```svelte
 <!-- examples/basic/App.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  
-  const config = {
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: 'https://api.example.com',
     clientId: 'demo-client',
+    appCode: 'app',
     domain: 'example.com',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Demo Company'
     }
-  };
+  }));
 </script>
 
-<SignInForm {config} />
+<SignInForm store={authStore} />
 ```
 
 ### Whitelabel Example
@@ -710,11 +701,13 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
 ```svelte
 <!-- examples/whitelabel/App.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  
-  const config = {
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInForm } from '@thepia/flows-auth/svelte';
+
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: process.env.VITE_API_URL,
     clientId: process.env.VITE_CLIENT_ID,
+    appCode: 'app',
     domain: process.env.VITE_DOMAIN,
     enablePasskeys: true,
     branding: {
@@ -723,16 +716,15 @@ The demo app is also deployed automatically to GitHub Pages: [View Live Demo](ht
       primaryColor: process.env.VITE_PRIMARY_COLOR,
       customCSS: `
         .auth-form {
-          --auth-border-radius: 0;
-          --auth-shadow: none;
-          border: 2px solid var(--auth-primary-color);
+          --size-radius-4: 0;
+          border: 2px solid var(--color-brand-primary);
         }
       `
     }
-  };
+  }));
 </script>
 
-<SignInForm {config} compact />
+<SignInForm store={authStore} compact />
 ```
 
 ## Testing

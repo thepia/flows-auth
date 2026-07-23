@@ -7,8 +7,9 @@ import { onMount, getContext } from 'svelte';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 
-import { CaretRight, User, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
-import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { CaretRight, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
+import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 // Get authStore from context (setupAuthContext in layout sets the actual store)
@@ -29,8 +30,6 @@ let authConfig = $state(null);
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = $state(null);
 let SignInStateMachineComponent = $state(null);
-let SignInFormComponent = null;
-let SignInCoreComponent = null;
 
 // Demo controls
 let selectedDemo = 'overview';
@@ -52,7 +51,6 @@ let signInMode = 'login-or-register'; // 'login-only' or 'login-or-register'
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = false;
-let enableMagicLinks = true;
 
 // New size and variant options
 let formSize = 'medium'; // 'small', 'medium', 'large', 'full'
@@ -163,10 +161,6 @@ onMount(async () => {
   console.log('🎯 Demo page initializing...');
   
   try {
-    // Import main components from main package
-    const authModule = await import('@thepia/flows-auth');
-    const { SignInForm, SignInCore } = authModule;
-
     // Import Flow components from dev export (avoids @xyflow/svelte in main bundle)
     const devModule = await import('@thepia/flows-auth/dev');
     const { SessionStateMachineFlow, SignInStateMachineFlow } = devModule;
@@ -174,10 +168,8 @@ onMount(async () => {
     // Set component variables
     SessionStateMachineComponent = SessionStateMachineFlow;
     SignInStateMachineComponent = SignInStateMachineFlow;
-    SignInFormComponent = SignInForm;
-    SignInCoreComponent = SignInCore;
 
-    console.log('✅ Auth components loaded dynamically');
+    console.log('✅ Flow visualization components loaded dynamically');
     
     // Use auth store passed from layout (explicit prop passing pattern per ADR 0004)
     if (authStore) {
@@ -521,7 +513,6 @@ run(() => {
     if (authStore && authStore.updateConfig) {
     authStore.updateConfig({
       enablePasskeys,
-      enableMagicLinks,
       signInMode,
       language: selectedLanguage,
       fallbackLanguage: 'en',
@@ -536,7 +527,6 @@ run(() => {
 let dynamicAuthConfig = $derived(authConfig ? {
   ...authConfig,
   enablePasskeys,
-  enableMagicLinks,
   signInMode,
   // i18n configuration
   language: selectedLanguage,
@@ -571,12 +561,6 @@ let dynamicAuthConfig = $derived(authConfig ? {
             <h3>{m["overview.features.passkeys.title"]()}</h3>
             <p>{m["overview.features.passkeys.description"]()}</p>
             <a href="/signin" class="feature-link">{m["overview.try_signin"]()}</a>
-          </div>
-          <div class="feature-card">
-            <User size={48} weight="regular" class="feature-icon" />
-            <h3>{m["overview.features.magic_links.title"]()}</h3>
-            <p>{m["overview.features.magic_links.description"]()}</p>
-            <a href="/register" class="feature-link">{m["overview.try_register"]()}</a>
           </div>
           <div class="feature-card">
             <Pulse size={48} weight="bold" class="feature-icon" />

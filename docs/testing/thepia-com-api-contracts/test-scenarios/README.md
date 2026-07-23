@@ -354,122 +354,9 @@ Each test scenario includes:
 
 ---
 
-## Magic Link Scenarios (T031-T040)
-
-**Endpoint**: `POST /auth/signin/magic-link`
-
-### **T031: Valid magic link request**
-**Description**: Send magic link to valid email
-**Preconditions**: 
-- User `test-magic-link@thepia.net` exists or will be created
-**Input**:
-```json
-{
-  "email": "test-magic-link@thepia.net",
-  "redirectUrl": "https://app.thepia.net/dashboard"
-}
-```
-**Expected Output**:
-```json
-{
-  "status": 200,
-  "body": {
-    "success": true,
-    "message": "Magic link sent to your email",
-    "expiresAt": "2024-01-15T10:45:00Z"
-  }
-}
-```
-
-### **T032: Magic link for user with passkey**
-**Description**: Magic link request for user who has passkey option
-**Preconditions**: 
-- User `test-with-passkey@thepia.net` exists with registered passkey
-**Input**:
-```json
-{
-  "email": "test-with-passkey@thepia.net",
-  "redirectUrl": "https://app.thepia.net/dashboard"
-}
-```
-**Expected Output**:
-```json
-{
-  "status": 200,
-  "body": {
-    "success": true,
-    "message": "Magic link sent. You can also use your passkey to sign in.",
-    "expiresAt": "2024-01-15T10:45:00Z"
-  }
-}
-```
-
-### **T033: Rate limited magic link request**
-**Description**: Too many magic link requests for same email
-**Preconditions**: 
-- 3 magic link requests sent to same email in last 5 minutes
-**Input**:
-```json
-{
-  "email": "test-magic-link@thepia.net"
-}
-```
-**Expected Output**:
-```json
-{
-  "status": 429,
-  "body": {
-    "error": "rate_limited",
-    "message": "Too many magic link requests",
-    "details": { "retryAfter": 300 }
-  }
-}
-```
-
-### **T034: Invalid email format**
-**Description**: Email validation for magic link
-**Preconditions**: None
-**Input**:
-```json
-{
-  "email": "invalid-email-format"
-}
-```
-**Expected Output**:
-```json
-{
-  "status": 400,
-  "body": {
-    "error": "invalid_email",
-    "message": "Invalid email format",
-    "details": { "field": "email" }
-  }
-}
-```
-
-### **T035: Invalid redirect URL**
-**Description**: Redirect URL validation failure
-**Preconditions**: None
-**Input**:
-```json
-{
-  "email": "test@thepia.net",
-  "redirectUrl": "http://insecure-site.com"
-}
-```
-**Expected Output**:
-```json
-{
-  "status": 400,
-  "body": {
-    "error": "invalid_redirect_url",
-    "message": "Invalid redirect URL format",
-    "details": { "reason": "https_required" }
-  }
-}
-```
-
----
+> **Note**: Scenarios T031-T040 (Magic Link via `POST /auth/signin/magic-link`) were removed —
+> that endpoint was never implemented. The real magic-link flow is `POST /auth/start-passwordless`
+> + `POST /auth/passwordless-callback`.
 
 ## Health & Status Scenarios (T041-T050)
 
@@ -558,11 +445,6 @@ Each test scenario includes:
   },
   "test-without-passkey@thepia.net": {
     "userId": "usr_test_without_passkey",
-    "hasPasskey": false,
-    "credentials": []
-  },
-  "test-magic-link@thepia.net": {
-    "userId": "usr_test_magic_link",
     "hasPasskey": false,
     "credentials": []
   }

@@ -11,8 +11,8 @@ import {
   convertSessionUserToUser,
   convertUserToSessionUser,
   createSessionData
-} from '../../../src/stores/core/session.js';
-import type { SignInData, User } from '../../../src/types/index.js';
+} from '../../../src/core/stores/core/session.js';
+import type { SignInData, User } from '../../../src/core/types/index.js';
 
 describe('Session Conversion Functions', () => {
   describe('createSessionData', () => {
@@ -144,12 +144,6 @@ describe('Session Conversion Functions', () => {
         const result = createSessionData(mockUser, { access_token: 'token' }, 'email-code');
 
         expect(result.authMethod).toBe('email-code');
-      });
-
-      it('should set authMethod to "magic-link"', () => {
-        const result = createSessionData(mockUser, { access_token: 'token' }, 'magic-link');
-
-        expect(result.authMethod).toBe('magic-link');
       });
 
       it('should set authMethod to "password"', () => {

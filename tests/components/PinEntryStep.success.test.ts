@@ -5,12 +5,12 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PinEntryStep from '../../src/components/core/PinEntryStep.svelte';
-import type { SignInData } from '../../src/types/index.js';
+import PinEntryStep from '../../src/svelte/components/core/PinEntryStep.svelte';
+import type { SignInData } from '../../src/core/types/index.js';
 import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
@@ -28,7 +28,7 @@ describe('PinEntryStep Success Flow', () => {
     });
 
     // Set email then transition to pinEntry state
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -41,11 +41,12 @@ describe('PinEntryStep Success Flow', () => {
         id: '123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'test-access-token',
-        refresh_token: 'test-refresh-token',
+        accessToken: 'test-access-token',
+        refreshToken: 'test-refresh-token',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
@@ -91,7 +92,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -104,11 +105,12 @@ describe('PinEntryStep Success Flow', () => {
         id: '123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'test-token',
-        refresh_token: 'test-refresh',
+        accessToken: 'test-token',
+        refreshToken: 'test-refresh',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'
@@ -141,7 +143,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -189,7 +191,7 @@ describe('PinEntryStep Success Flow', () => {
       appCode: 'test-app'
     });
 
-    authStore.core.setState({ email: 'test@example.com' });
+    authStore.ui.setState({ email: 'test@example.com' });
     setupPinEntryState(authStore);
 
     await waitFor(() => {
@@ -202,11 +204,12 @@ describe('PinEntryStep Success Flow', () => {
         id: 'workos|user_123',
         email: 'test@example.com',
         name: 'Test User',
-        emailVerified: true
+        emailVerified: true,
+        initials: 'TU'
       },
       tokens: {
-        access_token: 'eyJhbGci...',
-        refresh_token: 'refresh123',
+        accessToken: 'eyJhbGci...',
+        refreshToken: 'refresh123',
         expiresAt: new Date(Date.now() + 3600000).toISOString()
       },
       authMethod: 'email-code'

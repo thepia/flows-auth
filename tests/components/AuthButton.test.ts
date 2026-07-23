@@ -13,7 +13,7 @@
 
 import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AuthButton from '../../src/components/core/AuthButton.svelte';
+import AuthButton from '../../src/svelte/components/core/AuthButton.svelte';
 
 // No mocking of Paraglide functions - use real functions to test actual integration
 
@@ -75,23 +75,6 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
-    });
-
-    it('should use Paraglide for magic link method', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          }
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Send Magic Link');
     });
   });
 
@@ -178,24 +161,6 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Send pin by email');
-    });
-
-    it('should display magic link text when method is email and AppCode is disabled', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'email',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          },
-          isAppCodeBased: false
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Send Magic Link');
     });
 
     it('should display Touch ID text for continue-touchid method', () => {
@@ -299,8 +264,8 @@ describe('AuthButton Component', () => {
       const button = getByRole('button');
       expect(button.textContent).toContain('Signing in...');
 
-      // Check for spinner (uses animate-spin Tailwind class)
-      const spinner = container.querySelector('.animate-spin');
+      // Check for spinner
+      const spinner = container.querySelector('.auth-btn-spinner');
       expect(spinner).toBeTruthy();
     });
 
@@ -320,24 +285,6 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button');
       expect(button.textContent).toContain('Sending pin...');
-    });
-
-    it('should show magic link loading text when loading magic-link method', () => {
-      const { getByRole } = render(AuthButton, {
-        props: {
-          buttonConfig: {
-            method: 'magic-link',
-            textKey: 'auth.sendMagicLink',
-            loadingTextKey: 'auth.sendingMagicLink',
-            supportsWebAuthn: false,
-            disabled: false
-          },
-          loading: true
-        }
-      });
-
-      const button = getByRole('button');
-      expect(button.textContent).toContain('Sending magic link...');
     });
 
     it('should use buttonConfig loading text when loading', () => {
@@ -475,9 +422,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-3');
-      expect(button.className).toContain('py-1.5');
-      expect(button.className).toContain('text-sm');
+      expect(button.className).toContain('auth-btn-size-sm');
     });
 
     it('should apply medium size classes', () => {
@@ -495,9 +440,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-4');
-      expect(button.className).toContain('py-2');
-      expect(button.className).toContain('text-base');
+      expect(button.className).toContain('auth-btn-size-md');
     });
 
     it('should apply large size classes', () => {
@@ -515,9 +458,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('px-5');
-      expect(button.className).toContain('py-3');
-      expect(button.className).toContain('text-lg');
+      expect(button.className).toContain('auth-btn-size-lg');
     });
   });
 
@@ -537,8 +478,8 @@ describe('AuthButton Component', () => {
 
       const button = getByRole('button') as HTMLButtonElement;
       expect(button.disabled).toBe(true);
-      expect(button.className).toContain('cursor-not-allowed');
-      expect(button.className).toContain('opacity-50');
+      // Disabled visuals (cursor/opacity) come from the native `button:disabled`
+      // CSS rule, not a class - the disabled attribute above is what matters here.
     });
 
     it('should be disabled when loading', () => {
@@ -556,8 +497,9 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button') as HTMLButtonElement;
-      expect(button.className).toContain('cursor-not-allowed');
-      expect(button.className).toContain('opacity-50');
+      expect(button.disabled).toBe(true);
+      // Disabled visuals (cursor/opacity) come from the native `button:disabled`
+      // CSS rule, not a class - the disabled attribute above is what matters here.
     });
 
     it('should apply full width class when fullWidth is true', () => {
@@ -575,7 +517,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).toContain('w-full');
+      expect(button.className).toContain('auth-btn-full');
     });
 
     it('should not apply full width class when fullWidth is false', () => {
@@ -593,7 +535,7 @@ describe('AuthButton Component', () => {
       });
 
       const button = getByRole('button');
-      expect(button.className).not.toContain('w-full');
+      expect(button.className).not.toContain('auth-btn-full');
     });
   });
 

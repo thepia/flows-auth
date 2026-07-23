@@ -31,7 +31,8 @@ For real authentication, always use:
 ```svelte
 <!-- ✅ CORRECT: Real authentication -->
 <script>
-  import { SignInForm, createAuthStore } from '@thepia/flows-auth';
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { SignInForm } from '@thepia/flows-auth/svelte';
   
   const authStore = createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
@@ -40,7 +41,7 @@ For real authentication, always use:
   });
 </script>
 
-<SignInForm {authStore} on:success={handleSuccess} />
+<SignInForm store={authStore} on:success={handleSuccess} />
 ```
 
 ```svelte

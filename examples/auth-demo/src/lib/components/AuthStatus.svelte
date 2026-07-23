@@ -3,7 +3,7 @@
   This component doesn't create its own auth store - it gets it from context
 -->
 <script>
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   // Get the auth store from context using the library's helper
   const auth = getAuthStoreFromContext();

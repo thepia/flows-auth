@@ -225,13 +225,6 @@ export function createEmailAuthStore(options: StoreOptions) {
       const hasValidPin = checkForValidPin(result);
       const pinRemainingMinutes = getRemainingPinMinutes(result);
 
-      console.log('✅ User check completed:', {
-        exists: result.exists,
-        hasWebAuthn: result.hasWebAuthn,
-        hasValidPin,
-        pinRemainingMinutes
-      });
-
       return {
         exists: result.exists,
         hasWebAuthn: result.hasWebAuthn || false,

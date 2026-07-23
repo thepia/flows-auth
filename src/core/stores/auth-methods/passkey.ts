@@ -286,12 +286,6 @@ export function createPasskeyStore(options: StoreOptions) {
         isPlatformAvailable,
         isConditionalSupported
       });
-
-      console.log('🔍 Passkey capabilities detected:', {
-        isSupported,
-        isPlatformAvailable,
-        isConditionalSupported
-      });
     },
 
     // State management

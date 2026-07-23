@@ -123,7 +123,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
   db.loadSession()
     .then(async (sessionData) => {
       if (!sessionData) {
-        console.log('ℹ️ No existing session found');
         return;
       }
 
@@ -181,7 +180,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         session.getState().updateLastActivity();
       } else if (hasRefreshToken) {
         // Access token expired but we have a refresh token - restore and refresh
-        console.log('🔄 Restoring expired session with refresh token, triggering refresh...');
 
         // First restore the session with expired token
         const user = {
@@ -213,14 +211,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         // Immediately trigger token refresh
         try {
           await core.getState().refreshTokens();
-          console.log('✅ Token refresh successful after session restore');
         } catch (error) {
           console.error('❌ Token refresh failed after session restore:', error);
           // If refresh fails, sign out
           core.getState().signOut();
         }
       } else {
-        console.log('ℹ️ Session expired with no refresh token - clearing');
         await db.clearSession();
       }
     })

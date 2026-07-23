@@ -6,10 +6,10 @@ on:
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'src/stores/**'
-      - 'src/utils/sessionManager.ts'
-      - 'src/api/auth-api.ts'
-      - 'src/types/index.ts'
+      - 'src/core/stores/**'
+      - 'src/core/utils/sessionManager.ts'
+      - 'src/core/api/auth-api.ts'
+      - 'src/core/types/index.ts'
       - 'tests/**'
 
 env:
@@ -99,13 +99,13 @@ jobs:
         echo "Checking API response format compatibility..."
         
         # Check if signInWithPasskey handles both response formats
-        if ! grep -q "response.step === 'success'" src/stores/auth-store.ts; then
+        if ! grep -q "response.step === 'success'" src/core/stores/auth-store.ts; then
           echo "❌ CRITICAL: Legacy response format support missing!"
           echo "   signInWithPasskey must handle {step: 'success', ...} format"
           exit 1
         fi
-        
-        if ! grep -q "response.*success" src/stores/auth-store.ts; then
+
+        if ! grep -q "response.*success" src/core/stores/auth-store.ts; then
           echo "❌ CRITICAL: New response format support missing!"
           echo "   signInWithPasskey must handle {success: true, ...} format"
           exit 1
@@ -120,14 +120,14 @@ jobs:
         # Verify sessionManager uses the main storage key
         STORAGE_KEY="thepia_auth_session"
 
-        if ! grep -q "$STORAGE_KEY" src/utils/sessionManager.ts; then
+        if ! grep -q "$STORAGE_KEY" src/core/utils/sessionManager.ts; then
           echo "❌ CRITICAL: sessionManager not using consistent storage key!"
           exit 1
         fi
 
         # Verify the legacy 'auth_access_token' key is still handled for backward
         # compatibility. It moved out of the (now-removed) auth-state-machine into the
-        # API client (src/api/auth-api.ts, src/api/sync-api.ts), so search across src/.
+        # API client (src/core/api/auth-api.ts, src/core/api/sync-api.ts), so search across src/.
         if ! grep -rq "auth_access_token" src/; then
           echo "❌ CRITICAL: legacy 'auth_access_token' storage key no longer handled!"
           exit 1

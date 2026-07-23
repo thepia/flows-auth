@@ -25,8 +25,10 @@ export type { ApiError, AuthConfig, SignInState, User };
 /**
  * Core authentication store state
  *
- * All timestamps use ISO 8601 strings for consistency with SessionData and TokenData.
- * This ensures seamless conversion between store state and database persistence.
+ * expiresAt/refreshedAt/supabase_expires_at are always ISO 8601 absolute-timestamp
+ * strings (or null) here - NOT the `expires_in` relative-seconds format the identity
+ * provider sends on the wire (see SignInResponse in types/index.ts). The conversion
+ * happens at the auth-core.ts boundary (refreshTokens/updateTokens).
  */
 export interface AuthCoreState {
   // Authentication state

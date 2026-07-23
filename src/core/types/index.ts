@@ -489,11 +489,23 @@ export interface EmailVerificationResponse {
 }
 
 // WebAuthn types
+
+/**
+ * Credential descriptor as sent over the wire (JSON), before
+ * authenticateWithPasskey() base64-decodes `id` into an ArrayBuffer for the
+ * native PublicKeyCredentialDescriptor passed to navigator.credentials.get().
+ */
+export interface SerializedCredentialDescriptor {
+  id: string; // base64-encoded credential ID
+  type: 'public-key';
+  transports?: AuthenticatorTransport[];
+}
+
 export interface PasskeyChallenge {
   challenge: string;
   rpId: string;
   userHandle?: string;
-  allowCredentials?: PublicKeyCredentialDescriptor[];
+  allowCredentials?: SerializedCredentialDescriptor[];
   timeout?: number;
 }
 
@@ -868,7 +880,7 @@ export interface AuthStore {
   user: User | null;
   access_token: string | null;
   refresh_token: string | null;
-  expiresAt: string | null; // ISO 8601 timestamp string (e.g., "2024-11-28T14:30:00.000Z")
+  expiresAt: string | null; // ISO 8601 absolute timestamp, not `expires_in` (see AuthCoreState in stores/types.ts)
   supabase_token: string | null; // Supabase JWT for database access with RLS
   supabase_expires_at: string | null; // ISO 8601 timestamp string - Supabase token expiration
   apiError: ApiError | null; // Centralized API error management

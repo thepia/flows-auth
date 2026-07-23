@@ -165,26 +165,34 @@ jobs:
       run: pnpm build
 
     - name: Verify exports
+      # Package is ESM-only ("type": "module", no "require" condition in
+      # package.json's exports map) - dist/index.cjs has never existed under
+      # the current tsup-based build. Load the real dist/index.js via
+      # dynamic import() instead of require().
       run: |
         echo "Verifying critical exports are available..."
         node -e "
-          const flowsAuth = require('./dist/index.cjs');
-          const requiredExports = [
-            'createAuthStore',
-            'configureSessionStorage', 
-            'getOptimalSessionConfig',
-            'isAuthenticatedFromSession',
-            'getCurrentUserFromSession'
-          ];
-          
-          for (const exportName of requiredExports) {
-            if (!flowsAuth[exportName]) {
-              console.error(\`❌ CRITICAL: Missing export \${exportName}\`);
-              process.exit(1);
+          import('./dist/index.js').then((flowsAuth) => {
+            const requiredExports = [
+              'createAuthStore',
+              'configureSessionStorage',
+              'getOptimalSessionConfig',
+              'isAuthenticatedFromSession',
+              'getCurrentUserFromSession'
+            ];
+
+            for (const exportName of requiredExports) {
+              if (!flowsAuth[exportName]) {
+                console.error(\`❌ CRITICAL: Missing export \${exportName}\`);
+                process.exit(1);
+              }
             }
-          }
-          
-          console.log('✅ All critical exports verified');
+
+            console.log('✅ All critical exports verified');
+          }).catch((err) => {
+            console.error('❌ CRITICAL: Failed to import dist/index.js:', err);
+            process.exit(1);
+          });
         "
 
     - name: Integration test with flows.thepia.net

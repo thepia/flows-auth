@@ -97,7 +97,7 @@ async function checkUserForEmail(emailValue: string) {
 
       await authStore.checkUser(trimmedEmail);
 
-    } catch (err) {
+    } catch {
       // Error handling is now managed by AuthStore
     }
   }, 400); // 400ms debounce to avoid too many API calls while typing

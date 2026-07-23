@@ -523,6 +523,34 @@ When configured, the auth store will automatically:
 - Load sessions on initialization
 - Clear sessions when users sign out
 
+### Debug Logging
+
+flows-auth's internal diagnostic logging (session/token flow tracing, etc. — see `debug()` in `src/core/utils/debug.ts`) is **off by default**, including in dev servers and test runs, and is guaranteed to be stripped out of production bundles.
+
+It's gated on a single `import.meta.env.DEBUG` check, which Vite-family bundlers (Vite, Astro, SvelteKit, Vitest) statically replace at build time. A production build never has `DEBUG` set, so the branch — and any arguments passed to it, including anything sensitive — is a dead branch and gets dead-code-eliminated entirely, not just silenced at runtime.
+
+To turn it on in your own dev server or tests, opt `DEBUG` into Vite's `envPrefix` (by default only `VITE_`-prefixed vars are exposed to `import.meta.env`) and set it:
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  envPrefix: ['VITE_', 'DEBUG'],
+  // ...
+});
+```
+
+```bash
+# .env.local, or inline in the shell
+DEBUG=true
+```
+
+Within this repo, flows-auth's own `vitest.config.ts` already has `envPrefix` configured, so you can run:
+
+```bash
+pnpm test:debug        # single run, with debug logging
+pnpm test:watch:debug  # watch mode, with debug logging
+```
+
 ## Whitelabel Theming
 
 Components are styled with `@thepia/branding` design tokens (an optional

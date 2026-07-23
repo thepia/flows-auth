@@ -56,6 +56,28 @@ jobs:
         # `exports` map, which points at dist/svelte/index.d.ts.
         run: pnpm run typecheck
 
+      - name: Verify build artifacts
+        # Mirrors publish.yml's check so a broken/missing dist output fails here
+        # on every push instead of only being caught on a tag-triggered publish.
+        # ESM-only package (no "require" condition in package.json's exports
+        # map) - dist/index.cjs is never produced by scripts/build.mjs.
+        run: |
+          ls -la dist/
+          test -f dist/index.js
+          test -f dist/index.d.ts
+          test -f dist/svelte/index.js
+          test -f dist/svelte/index.d.ts
+          test -f dist/flows-auth.css
+
+      - name: Publish dry run
+        # Exercises the same packing/exports-resolution path `publish.yml` uses
+        # for the real `pnpm publish`, without pushing anything. Catches broken
+        # `files`/`exports` map entries, missing dist output, or bad package.json
+        # metadata on every push instead of only on a tag push.
+        run: pnpm publish --dry-run --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run unit tests
         run: pnpm run test:unit
 

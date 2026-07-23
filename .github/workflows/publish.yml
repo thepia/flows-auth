@@ -43,14 +43,16 @@ jobs:
       - name: Lint with Biome
         run: pnpm run check
 
-      - name: Type check
-        run: pnpm run typecheck
-
-      # Build BEFORE tests: the package/bundle suites read from dist/, and many
-      # unit tests import the built entry (dist/index.js). Running tests first
-      # fails with dist/* ENOENT.
+      # Build BEFORE typecheck and tests: several test files resolve
+      # `../../dist/**` directly or self-reference `@thepia/flows-auth/svelte`
+      # through package.json's `exports` map (-> dist/svelte/index.d.ts), and
+      # the package/bundle suites read from dist/ too. Running typecheck or
+      # tests first fails with dist/* ENOENT / TS2307.
       - name: Build library
         run: pnpm run build
+
+      - name: Type check
+        run: pnpm run typecheck
 
       # CI-safe scope only. `pnpm run test` runs the whole suite, including
       # tests/integration/** which require the live API (dev.thepia.com:8443)
@@ -62,11 +64,16 @@ jobs:
           pnpm run test:package
 
       - name: Verify build artifacts
+        # ESM-only package (no "require" condition in package.json's exports
+        # map) - dist/index.cjs is never produced by scripts/build.mjs, so
+        # don't check for it. Verify the actual per-target outputs instead.
         run: |
           ls -la dist/
           test -f dist/index.js
-          test -f dist/index.cjs
           test -f dist/index.d.ts
+          test -f dist/svelte/index.js
+          test -f dist/svelte/index.d.ts
+          test -f dist/flows-auth.css
 
       - name: Configure pnpm authentication
         run: |

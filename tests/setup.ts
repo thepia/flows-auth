@@ -257,8 +257,28 @@ beforeAll(async () => {
 });
 
 // Cleanup after each test
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   localStorageMock.clear();
   vi.clearAllMocks();
+
+  // Give fire-and-forget async work started during the test (e.g. passkey
+  // capability detection on store creation, the background checkUser() call
+  // from setEmail()) a chance to settle before Vitest can tear down this
+  // file's worker. Without this, a trailing console.log from one of those
+  // chains can fire after teardown starts, racing the RPC channel and
+  // producing "EnvironmentTeardownError: Closing rpc while onUserConsoleLog
+  // was pending" - especially likely on slower/more contended CI runners.
+  //
+  // Deliberately microtask-only (chained Promise.resolve(), not setTimeout):
+  // some test files call vi.useFakeTimers() without a matching
+  // vi.useRealTimers() cleanup, which would fake setTimeout here too and
+  // hang this hook forever. Native promise resolution is never faked by
+  // vi.useFakeTimers(), only macrotasks are - so this is safe regardless of
+  // any test's timer state. The chains this targets are plain
+  // async/await (no setTimeout of their own), so a handful of microtask
+  // hops is enough to drain them.
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve();
+  }
 });

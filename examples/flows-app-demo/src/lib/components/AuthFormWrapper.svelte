@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { browser } from '$app/environment';
-  import { SignInForm } from '@thepia/flows-auth';
+  import { SignInForm } from '@thepia/flows-auth/svelte';
 
   interface Props {
     config: any;

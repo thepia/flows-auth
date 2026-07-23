@@ -1,8 +1,9 @@
 <script lang="ts">
   import './app.css';
-  import '../branding/design-tokens.css';
+  import '../branding/dist/css/tokens.css';
+  import '../branding/scenario-themes.css';
   import { browser, dev } from '$app/environment';
-  import { setupAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth/svelte';
   interface Props {
     children?: import('svelte').Snippet;
   }
@@ -20,7 +21,6 @@
     clientId: 'demo',
     domain: 'dev.thepia.net',
     enablePasskeys: true,
-    enableMagicLinks: false,
     privacyPolicyUrl: 'https://thepia.com/app/privacy',
     acceptableUseUrl: 'https://thepia.com/app/acceptable',
     errorReporting: {

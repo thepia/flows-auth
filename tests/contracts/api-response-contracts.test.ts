@@ -190,42 +190,6 @@ describe('API Response Contracts - IMMUTABLE', () => {
     });
   });
 
-  describe('sendMagicLinkEmail Response Contract', () => {
-    test('MUST support sendMagicLinkEmail response format: {success: true, message: string}', () => {
-      // This is the EXACT format the sendMagicLinkEmail API returns
-      const magicLinkResponse = {
-        success: true,
-        message: 'Check your email for a verification link'
-      };
-
-      // Contract validation
-      expect(magicLinkResponse).toHaveProperty('success', true);
-      expect(magicLinkResponse).toHaveProperty('message');
-
-      // Type validation
-      expect(typeof magicLinkResponse.success).toBe('boolean');
-      expect(typeof magicLinkResponse.message).toBe('string');
-      expect(magicLinkResponse.message.length).toBeGreaterThan(0);
-    });
-
-    test('MUST handle sendMagicLinkEmail failure responses', () => {
-      const failureResponse = {
-        success: false,
-        error: 'Invalid email address',
-        message: 'Please check your email address and try again'
-      };
-
-      // Contract validation
-      expect(failureResponse).toHaveProperty('success', false);
-      expect(failureResponse).toHaveProperty('error');
-      expect(failureResponse).toHaveProperty('message');
-
-      // Type validation
-      expect(typeof failureResponse.success).toBe('boolean');
-      expect(typeof failureResponse.error).toBe('string');
-      expect(typeof failureResponse.message).toBe('string');
-    });
-  });
 
   describe('Passwordless Authentication Response Contract', () => {
     test('MUST support startPasswordlessAuthentication response format', () => {

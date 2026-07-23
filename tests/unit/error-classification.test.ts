@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store.js';
+import { CONFIG_DEFAULTS, createAuthStore } from '../../src/core/stores/auth-store.js';
 
 /**
  * Unit Test: Error Message Extraction and Classification
@@ -26,9 +26,11 @@ describe('Error Classification', () => {
   describe('Error message extraction', () => {
     test('should extract message from Error instance', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const error = new Error('Invalid or expired verification code');
@@ -42,9 +44,11 @@ describe('Error Classification', () => {
 
     test('should extract message from plain string', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const error = 'Network connection failed';
@@ -60,7 +64,9 @@ describe('Error Classification', () => {
       const store = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const error = {
@@ -79,9 +85,11 @@ describe('Error Classification', () => {
 
     test('should extract message from object with error property', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const error = {
@@ -97,9 +105,11 @@ describe('Error Classification', () => {
 
     test('should JSON.stringify object if no message or error property', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const error = {
@@ -119,9 +129,11 @@ describe('Error Classification', () => {
   describe('Error code classification', () => {
     test('should classify verification code errors as error.invalidCode', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const testCases = [
@@ -140,9 +152,11 @@ describe('Error Classification', () => {
 
     test('should classify network errors as error.network', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const testCases = ['Failed to fetch', 'Network error occurred', 'fetch failed'];
@@ -156,9 +170,11 @@ describe('Error Classification', () => {
 
     test('should classify rate limit errors as error.rateLimited', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const testCases = ['Rate limit exceeded', 'Too many requests', '429 Too Many Requests'];
@@ -172,9 +188,11 @@ describe('Error Classification', () => {
 
     test('should classify service unavailable errors', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const testCases = [
@@ -196,9 +214,11 @@ describe('Error Classification', () => {
   describe('API response error format', () => {
     test('should handle AuthError format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       // This is the exact format returned by auth-api.ts handleErrorResponse()
@@ -219,9 +239,11 @@ describe('Error Classification', () => {
 
     test('should handle rate limit error format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const authError = {
@@ -240,9 +262,11 @@ describe('Error Classification', () => {
 
     test('should handle network error format from handleErrorResponse', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       const authError = {
@@ -262,9 +286,11 @@ describe('Error Classification', () => {
   describe('uiError vs apiError separation', () => {
     test('should set both uiError and apiError on setApiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       store.setApiError('Test error');
@@ -277,9 +303,11 @@ describe('Error Classification', () => {
 
     test('should clear only uiError with clearUiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       store.setApiError('Test error');
@@ -292,9 +320,11 @@ describe('Error Classification', () => {
 
     test('should clear both errors with clearApiError', () => {
       const store = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         domain: 'thepia.net',
-        appCode: 'app'
+        appCode: 'app',
+        clientId: 'test-client',
+        enablePasskeys: true
       });
 
       store.setApiError('Test error');

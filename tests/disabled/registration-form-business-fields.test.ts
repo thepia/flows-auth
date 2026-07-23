@@ -11,8 +11,8 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
-import type { AuthConfig, InvitationTokenData } from '../../src/types/index.js';
+import RegistrationForm from '../../src/svelte/components/RegistrationForm.svelte';
+import type { AuthConfig, InvitationTokenData } from '../../src/core/types/index.js';
 
 // Mock WebAuthn API
 const mockWebAuthnCredential = {
@@ -48,9 +48,9 @@ describe('RegistrationForm Business Fields Regression Test', () => {
     authConfig = {
       apiBaseUrl: 'https://api.test.com',
       clientId: 'test-client',
+      appCode: 'demo',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company',
         logoUrl: '/logo.svg',

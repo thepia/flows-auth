@@ -30,7 +30,6 @@ export const sharedAuthStore = createAuthStore({
   clientId: 'astro-demo',
   domain: 'thepia.net', // Use thepia.net for WebAuthn RP ID
   enablePasskeys: true,
-  enableMagicLinks: false,
   signInMode: 'login-or-register',
   appCode: 'app', // Use app-based endpoints for PIN authentication
   enableDevtools: import.meta.env.DEV // Enable devtools in development

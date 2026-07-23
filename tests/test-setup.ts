@@ -4,7 +4,7 @@
  */
 
 import { vi } from 'vitest';
-import type { AuthConfig } from '../src/types/index.js';
+import type { AuthConfig } from '../src/core/types/index.js';
 
 /**
  * API Server Selection Strategy for Testing
@@ -69,8 +69,8 @@ export const TEST_CONFIG: AuthConfig = {
   apiBaseUrl: getApiUrl(),
   clientId: process.env.TEST_CLIENT_ID || process.env.AUTH0_CLIENT_ID || 'test-flows-auth-client',
   domain: process.env.AUTH0_DOMAIN || 'thepia.eu.auth0.com',
+  appCode: process.env.TEST_APP_CODE || 'demo',
   enablePasskeys: true,
-  enableMagicLinks: false,
   errorReporting: {
     enabled: false, // Disable error reporting in tests to avoid fetch issues
     debug: false,
@@ -449,7 +449,7 @@ export class PerformanceTestUtils {
 
 // Memory leak detection
 export class MemoryTestUtils {
-  static trackObjects<T>(ctor: new (...args: any[]) => T): {
+  static trackObjects<T extends object>(ctor: new (...args: any[]) => T): {
     count: () => number;
     cleanup: () => void;
   } {

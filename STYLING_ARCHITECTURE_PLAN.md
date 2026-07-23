@@ -1,482 +1,172 @@
-# Flows-Auth Styling Architecture Plan
+# Flows-Auth Styling Architecture
 
-## Problem Analysis
+Last rewritten: 2026-07-21, replacing an earlier plan whose recommended strategy
+(bundle Tailwind + branding into flows-auth's own build) was superseded by the
+decision below. This doc now reflects the actual architecture and tracks the
+real, verified state of every example — not a hypothetical ecosystem audit.
 
-The current flows-auth library has fundamental styling architecture issues that cause broken styling across the entire Thepia ecosystem:
+## Architecture Decision: `@thepia/branding` is a peer dependency
 
-### Ecosystem Analysis
+flows-auth does **not** bundle `@thepia/branding`'s CSS into its own build
+output. Instead:
 
-**✅ flows.thepia.net (Astro)**: WORKING
-- Has `@thepia/branding` and `tailwindcss` dependencies
-- Imports `@thepia/flows-auth/style.css` in global.css
-- Proper @thepia/branding token integration
-- **Result**: Components render with proper styling
+- `@thepia/branding` is an **optional peerDependency** (`^1.5.5`) of
+  `@thepia/flows-auth` (see `package.json`).
+- Every component references branding's CSS custom properties directly —
+  `var(--color-brand-primary, #988ACA)` — with a **hardcoded hex fallback**,
+  so components render sensibly even if a consumer never loads branding's CSS
+  at all.
+- The consuming app is responsible for importing branding's stylesheets
+  itself:
+  ```css
+  @import "@thepia/branding/css";            /* design tokens (custom properties) */
+  @import "@thepia/branding/css/components"; /* .btn-brand, .input-brand, etc. */
+  ```
+- Rejected alternative: bundling Tailwind + branding tokens into flows-auth's
+  own build (the old plan's "Strategy 1"). This would make the library
+  opinionated about the consumer's CSS tooling and duplicate branding's
+  output across every consumer's bundle. Peer-dependency + fallback chains
+  keeps the library framework-and-tooling-agnostic.
 
-**❌ auth-demo (SvelteKit)**: BROKEN  
-- Missing `@thepia/branding` and `tailwindcss` dependencies
-- Was NOT importing `@thepia/flows-auth/style.css` (fixed in this session)
-- Had manual CSS duplication attempts
-- **Result**: Components had no styling until manually fixed
+### Why fallback chains, not a hard requirement
 
-**❌ app.thepia.net (SvelteKit)**: LIKELY BROKEN
-- Has `@thepia/branding` and `tailwindcss` dependencies  
-- Imports `@thepia/branding/css` but NOT `@thepia/flows-auth/style.css`
-- **Result**: flows-auth components probably unstyled
-
-### Current Issues
-1. **Inconsistent CSS Import**: Some projects import flows-auth styles, others don't
-2. **Missing Peer Dependencies**: flows-auth doesn't declare @thepia/branding or tailwindcss as peers
-3. **Fragmented Integration**: Each project handles styling differently
-4. **No Standard Pattern**: No canonical way to integrate flows-auth styling
-5. **Silent Failures**: Components render but look broken with no clear error
-
-### Root Cause
-flows-auth was built assuming consumers would have complete styling setup, but:
-- flows-auth doesn't enforce or guide proper CSS imports
-- Missing peer dependency declarations
-- No validation that required styles are loaded
-- Documentation assumes knowledge of complex setup
-
-## Proposed Solution: Standardized CSS Architecture
-
-### Primary Strategy: Self-Contained CSS Bundle + Clear Integration Pattern
-
-Create a bulletproof styling system that works consistently across all projects in the Thepia ecosystem.
-
-#### Goals:
-1. **Zero Configuration**: Works out of the box with single import
-2. **Ecosystem Consistency**: Same integration pattern for all projects  
-3. **Development Experience**: Clear errors when styling isn't loaded
-4. **Flexibility**: Allow customization while providing sensible defaults
-
-**Implementation:**
-```typescript
-// vite.config.ts
-export default defineConfig({
-  plugins: [
-    svelte({ emitCss: true }),
-    // Add CSS processing
-  ],
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@import '@thepia/branding/build/outputs/scss/tokens.scss';`
-      }
-    },
-    postcss: {
-      plugins: [
-        require('tailwindcss')({
-          // Include only the utilities used by flows-auth components
-          content: ['./src/**/*.svelte'],
-          presets: [require('@thepia/branding/build/outputs/tailwind/thepia-preset.js')]
-        }),
-        require('autoprefixer')
-      ]
-    }
-  }
-})
-```
-
-**Benefits:**
-- Zero configuration for consumers
-- Self-contained styling
-- No external dependencies required
-- Works in any environment
-
-### Strategy 2: Peer Dependencies (Alternative)
-Declare styling dependencies explicitly and provide integration guides.
-
-**Implementation:**
-```json
-// package.json
-{
-  "peerDependencies": {
-    "svelte": "^4.0.0 || ^5.0.0",
-    "@thepia/branding": "^1.0.0",
-    "tailwindcss": "^3.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@thepia/branding": { "optional": false },
-    "tailwindcss": { "optional": false }
-  }
-}
-```
-
-## Detailed Implementation Plan
-
-### Phase 1: Audit Component Dependencies
-```bash
-# Create comprehensive audit of all CSS classes used
-grep -r "class=" src/components/ > css-audit.txt
-grep -r "btn-\|input-\|text-\|bg-\|border-" src/components/ > utility-audit.txt
-```
-
-**Expected Findings:**
-- Tailwind utility classes: `w-full`, `text-center`, `font-mono`, etc.
-- Branding component classes: `btn-brand`, `input-brand`
-- Custom CSS variables: `--auth-*`, `--color-*`
-
-### Phase 2: Create Complete CSS Bundle
-
-#### 2.1: Add Build Dependencies
-```bash
-cd /Volumes/Projects/Thepia/flows-auth
-pnpm add -D tailwindcss autoprefixer @tailwindcss/forms
-pnpm add @thepia/branding
-```
-
-#### 2.2: Configure Tailwind for Library
-```javascript
-// tailwind.config.js
-module.exports = {
-  content: ['./src/**/*.svelte'],
-  presets: [
-    require('@thepia/branding/build/outputs/tailwind/thepia-preset.js')
-  ],
-  // Only include utilities actually used by components
-  safelist: [
-    // Explicitly list all classes used by flows-auth components
-    'w-full', 'text-center', 'font-mono', 'tracking-widest',
-    'space-y-2', 'block', 'text-sm', 'font-medium',
-    // Add all classes found in audit
-  ],
-  theme: {
-    extend: {
-      // Include only CSS variables needed by components
-      colors: {
-        'auth': {
-          'text-primary': 'var(--auth-text-primary)',
-          'text-secondary': 'var(--auth-text-secondary)',
-          'error': 'var(--auth-error)',
-          'success': 'var(--auth-success)',
-        }
-      }
-    }
-  }
-}
-```
-
-#### 2.3: Update Build Configuration
-```typescript
-// vite.config.ts
-import { defineConfig } from 'vite';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { resolve } from 'node:path';
-
-export default defineConfig({
-  plugins: [
-    svelte({
-      emitCss: true,
-      compilerOptions: { dev: false }
-    })
-  ],
-  css: {
-    postcss: {
-      plugins: [
-        require('tailwindcss'),
-        require('autoprefixer')
-      ]
-    }
-  },
-  build: {
-    lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-        // Add CSS entry point
-        styles: resolve(__dirname, 'src/styles/index.css')
-      }
-    },
-    rollupOptions: {
-      external: ['svelte', 'svelte/store'],
-      output: [
-        {
-          format: 'es',
-          entryFileNames: '[name].js',
-          assetFileNames: '[name].[ext]'
-        },
-        {
-          format: 'cjs', 
-          entryFileNames: '[name].cjs',
-          assetFileNames: '[name].[ext]'
-        }
-      ]
-    }
-  }
-});
-```
-
-#### 2.4: Create Comprehensive CSS Entry Point
+A component author writes:
 ```css
-/* src/styles/index.css */
-
-/* Import Thepia branding CSS variables */
-@import '@thepia/branding/build/outputs/css/tokens.css';
-
-/* Import Tailwind with our configuration */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Component-specific CSS layers */
-@layer components {
-  /* Branding component classes referenced by our components */
-  .btn-brand {
-    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg;
-    @apply px-4 py-2 text-base transition-all duration-200;
-    @apply bg-brand-primary text-white border border-brand-primary;
-    @apply hover:bg-brand-primaryHover hover:border-brand-primaryHover;
-    @apply focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    min-height: 2.75rem;
-  }
-  
-  .input-brand {
-    @apply w-full px-3 py-2 text-base border rounded-lg transition-all duration-200;
-    @apply border-border-default bg-background-primary text-text-primary;
-    @apply focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20;
-    @apply disabled:bg-neutral-50 disabled:cursor-not-allowed;
-  }
-  
-  .input-brand.error {
-    @apply border-border-error focus:border-border-error focus:ring-error/20;
-  }
-}
-
-/* Auth-specific CSS variables for theming */
-:root {
-  --auth-text-primary: var(--color-text-primary, #18181b);
-  --auth-text-secondary: var(--color-text-secondary, #52525b);
-  --auth-border-radius: var(--size-radius-md, 0.5rem);
-  --auth-error-bg: #fef2f2;
-  --auth-error-border: #fecaca;
-  --auth-error-text: #dc2626;
-  --auth-success-bg: #f0f9ff;
-  --auth-success-border: #bae6fd;
-  --auth-success-text: #0284c7;
-  --auth-info-bg: #f0f9ff;
-  --auth-info-border: #bae6fd;
-  --auth-info-text: #0284c7;
-  --auth-warning-bg: #fffbeb;
-  --auth-warning-border: #fed7aa;
-  --auth-warning-text: #d97706;
-}
+color: var(--color-brand-primary, #988ACA);
 ```
+If the consumer has loaded branding's `tokens.css`, the real token wins. If
+not, the component still renders with a reasonable default instead of
+`unset`/transparent. This is why `getRequiredCssOrThrow()`-style runtime
+validation (proposed in the old plan) isn't needed — the fallback chain *is*
+the validation-free safety net.
 
-### Phase 3: Update Package Configuration
+## Real branding tokens (verified against `@thepia/branding` v1.5.5 source)
 
-#### 3.1: Add Dependency Declarations
-```json
-// package.json
-{
-  "dependencies": {
-    "@simplewebauthn/browser": "^13.1.2",
-    "base64url": "^3.0.1",
-    "@thepia/branding": "^1.0.0"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.js"
-    },
-    "./styles": "./dist/styles.css",
-    "./dist/styles.css": "./dist/styles.css",
-    "./package.json": "./package.json"
-  }
-}
-```
+Do not invent token names — cross-check against
+`node_modules/@thepia/branding/dist/css/tokens.css` before using one. Names
+that come up most often in this codebase:
 
-#### 3.2: Create Integration Documentation
-```markdown
-<!-- STYLING_INTEGRATION.md -->
-# Styling Integration Guide
+| Concept | Token |
+|---|---|
+| Primary brand color (+ hover/active/subtle/muted) | `--color-brand-primary`, `--color-brand-primaryHover`, `--color-brand-primaryActive`, `--color-brand-primarySubtle`, `--color-brand-primaryMuted` |
+| Accent color (+ hover/active) | `--color-accent`, `--color-accent-hover`, `--color-accent-active` |
+| Text | `--color-text-primary`, `--color-text-secondary`, `--color-text-inverse`, `--color-text-error`, `--color-text-success`, `--color-text-warning`, `--color-text-info`, `--color-disabled-text` |
+| Backgrounds | `--color-bg-primary`, `--color-bg-secondary`, `--color-bg-muted`, `--color-bg-secondary-hover`, `--color-bg-disabled-input`, `--color-bg-disabled-primary` |
+| Borders | `--color-border-default`, `--color-border-subtle`, `--color-border-brand`, `--color-border-error` |
+| Neutral palette scale | `--color-palette-neutral-1` … `-12` (and `-50`…`-950` Tailwind-style aliases) |
+| Radius scale | `--size-radius-0/1/2/3/4/6/8/12/full` (note: `--size-radius-*`, **not** `--radius-*`) |
+| Shadows | `--shadow-input-focus`, `--shadow-error` (no generic elevation/`shadow-lg` scale exists yet — a real gap, see below) |
+| Typography | `--font-fontFamily-brand-body`, `--font-fontFamily-brand-lead`, `--font-fontFamily-brand-mono` |
+| Component classes (from `@thepia/branding/css/components`) | `.btn-brand`, `.btn-brand-outline`, `.btn-secondary`, `.card-brand` (+`-body`/`-header`/`-footer`), `.alert-brand-{error,info,success,warning}`, `.input-brand`, `.form-error`, `.dialog-brand`, `.popover-brand` |
 
-## Quick Start (Recommended)
+**Known gaps in branding** (confirmed absent, not just unused): no elevation
+shadow scale (`shadow-sm/md/lg`), no solid "danger/destructive" action token
+(only `--color-text-error`/`--color-border-error`/`--color-bg-error`, all
+subtle/alert-style, not a solid button fill). Where an example needs these,
+use a documented literal value with a comment, don't invent a token name.
 
-Import the complete CSS bundle:
+## `--auth-*` legacy variable migration
 
-```javascript
-// In your app's main CSS or layout file
-import '@thepia/flows-auth/styles';
-```
+### Background
 
-## Advanced Integration
-
-### With Existing Tailwind Setup
-If you already use Tailwind, add the flows-auth preset:
-
-```javascript
-// tailwind.config.js
-module.exports = {
-  presets: [
-    require('@thepia/branding/build/outputs/tailwind/thepia-preset.js')
-  ],
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    './node_modules/@thepia/flows-auth/dist/**/*.{js,svelte}'
-  ]
-}
-```
-
-### CSS Variables for Theming
-Override auth component appearance:
-
+Every flows-auth component historically wrote three-tier fallback chains:
 ```css
-:root {
-  --auth-text-primary: #your-color;
-  --auth-border-radius: 0.375rem;
-  --auth-error-text: #your-error-color;
-}
+color: var(--color-brand-primary, var(--auth-primary-color, #988ACA));
 ```
-```
+with a hand-written `@media (prefers-color-scheme: dark)` block per component
+resolving a `-dark` sibling (`--auth-primary-color-dark`, etc.).
 
-### Phase 4: Consumer Integration Patterns
+### Verified findings
 
-#### 4.1: SvelteKit Integration
-```javascript
-// app.html or layout file
-import '@thepia/flows-auth/styles';
-```
+- **51 distinct `--auth-*` names, ~137 references**, across 11 component
+  files (`AccountCreationForm`, `SignInForm`, `UserManagement`, `AuthButton`,
+  `AuthExplainer`, `AuthNewUserInfo`, `AuthStateMessage`, `CodeInput`,
+  `EmailInput`, `PolicyViewer`) plus `PolicyViewer.example.md`.
+- **Zero real consumers set any `--auth-*` variable**, anywhere in the
+  Thepia workspace (`thepia.com`, `flows.thepia.net`, `flows-client` all
+  grepped clean). The middle tier of every fallback chain has always been
+  dead code.
+- Branding's own dark-mode mechanism (`tokens.css`, `.dark, .dark-theme,
+  [data-theme="dark"]` selectors) is **class/attribute-driven only** — it
+  never has `@media (prefers-color-scheme: dark)` anywhere. This differs
+  from flows-auth's current per-component media queries, which respond to OS
+  preference automatically with no app cooperation needed.
 
-#### 4.2: Astro Integration
-```astro
----
-// layouts/Layout.astro
-import '@thepia/flows-auth/styles';
----
-```
+### Decisions (made 2026-07-21)
 
-#### 4.3: Vite Integration
-```javascript
-// main.js or app entry point
-import '@thepia/flows-auth/styles';
-```
+1. **Drop the `--auth-*` middle tier entirely.** New shape:
+   `var(--branding-token, #hex-fallback)` — two tiers, not three.
+2. **Drop the manual `@media (prefers-color-scheme: dark)` blocks per
+   component.** Accepted behavior change: dark mode will only activate going
+   forward when the consuming app explicitly sets `.dark`/`data-theme="dark"`
+   on an ancestor, matching branding's own mechanism — not automatically from
+   OS preference. (Status: **decided, not yet executed** — see Remaining
+   Work.)
 
-### Phase 5: Testing Strategy
+### Mapping table
 
-#### 5.1: Visual Regression Tests
-```javascript
-// tests/visual-regression/
-describe('Component Styling', () => {
-  it('should render SignInCore with proper branding', () => {
-    render(SignInCore, { config: testConfig });
-    expect(screen.getByRole('button')).toHaveClass('btn-brand');
-  });
-});
-```
+| `--auth-*` name(s) | Real branding token |
+|---|---|
+| `-primary-color`, `-primary-hover`, `-primary-active`, `-primary-dark`, `-primary-light` | `--color-brand-primary`, `--color-brand-primaryHover`, `--color-brand-primaryActive`, `--color-brand-primaryMuted`/`Subtle` |
+| `-accent-color`, `-accent-hover` | `--color-accent`, `--color-accent-hover` |
+| `-text-primary/-secondary/-tertiary/-text`, `-label-text(-dark)`, `-input-text(-dark)`, `-input-disabled-text(-dark)` | `--color-text-primary`/`-secondary`/`-3`, `--color-disabled-text` |
+| `-error/-success/-warning/-info-text(-dark)` | `--color-text-error`/`-success`/`-warning`/`-info` |
+| `-background`, `-background-muted`, `-hover-background`, `-card-bg`, `-input-bg(-dark)`, `-input-disabled-bg(-dark)` | `--color-bg-primary`/`-muted`/`-secondary-hover`, `--color-bg-disabled-input` |
+| `-border-color`, `-border`, `-border-subtle`, `-input-border(-dark)`, `-input-focus-border(-dark)`, `-error-border(-dark)` | `--color-border-default`/`-subtle`, `--color-border-brand`, `--color-border-error` |
+| `-button-secondary-{bg,text,border,hover-bg,hover-border}` | `--color-bg-primary`, `--color-text-secondary`, `--color-border-default`, `--color-bg-secondary-hover` |
+| `-input-focus-shadow(-dark)`, `-error-shadow(-dark)` | `--shadow-input-focus`, `--shadow-error` (exact existing matches) |
+| `-font-family` | `--font-fontFamily-brand-body` |
 
-#### 5.2: CSS Integration Tests
-```javascript
-// tests/css-integration.test.js
-it('should include all required CSS classes', async () => {
-  const cssContent = await fs.readFile('dist/styles.css', 'utf8');
-  expect(cssContent).toContain('.btn-brand');
-  expect(cssContent).toContain('.input-brand');
-  expect(cssContent).toContain('--auth-text-primary');
-});
-```
+### Rollout order (by reference count, not yet executed)
 
-## Migration Strategy
+`AccountCreationForm.svelte` → `SignInForm.svelte`/`UserManagement.svelte` →
+`core/` components (`AuthButton`, `AuthNewUserInfo`, `AuthStateMessage`,
+`AuthExplainer`, `CodeInput`, `EmailInput`, `PolicyViewer`) → update
+`PolicyViewer.example.md` to stop telling consumers to override `--auth-*`.
+Verify with `pnpm build` after each file, plus a full `pnpm build` +
+`pnpm test:unit` + manual visual check in `examples/auth-demo` at the end.
 
-### For Existing Implementations
+## Per-example status (verified 2026-07-21, not a hypothetical audit)
 
-1. **Remove manual CSS additions**
-2. **Add flows-auth styles import**
-3. **Remove @thepia/branding direct imports** (now bundled)
-4. **Remove custom Tailwind configuration** for flows-auth classes
+| Example | Branding CSS wired? | Uses real tokens? | Other status |
+|---|---|---|---|
+| `auth-demo` | Yes, via Tailwind `@theme` mapping to real tokens | Yes | Was importing Svelte components from the wrong (bare) package path on 4 routes — silently rendered nothing; a nonexistent `getGlobalAuthStore()` call; a phantom `config` prop; a phantom `stepChange` listener on `SignInCore`. **All fixed and verified** (`pnpm build` passes). Also had unnecessary dynamic imports of SSR-safe components — **converted to static**, except the one page whose whole purpose is smoke-testing the dynamic import path (kept, with a comment explaining why). |
+| `astro-demo` | Yes, via Tailwind `@theme` | Yes | Clean — imports/props/events all correct. Thin: only exercises `SignInForm` (without wiring its events) and `ErrorReportingStatus`. No fixes needed. |
+| `flows-app-demo` | Yes (`@import "@thepia/branding/css"` + `/css/components`, added this session — previously had the dependency but never imported it) | **Fixed this session** — `.btn`/`.card` utility classes referenced `var(--primary)`, `var(--white)`, `var(--gray-700)`, `var(--radius-md)`, `var(--shadow-lg)`, none of which exist in branding; now reference `--color-brand-primary`, `--color-text-inverse`, `--color-text-secondary`, `--size-radius-4`/`-6`, `--color-border-default`/`-subtle` | A `config` prop threaded from a dev sidebar down to a wrapper that never actually passes it to `SignInForm` (misleading, not yet fixed). Its own `README-MOCK-AUTH.md` shows the wrong prop name (`authStore` instead of `store`, not yet fixed). Had 2 unnecessary dynamic imports — **converted to static**; 4 dev-gated console-bridge dynamic imports confirmed legitimate, left as-is. |
+| `tasks-app-demo` | Yes (added this session, same gap as flows-app-demo) | **Not yet fixed** — `app.css` has zero `var(--...)` usages, 100% hardcoded hex. Concrete mapping identified (body bg/text, input/button colors and radii, focus ring → `--shadow-input-focus` exact match, `.card` → real tokens, disabled/secondary/danger button grays → `--color-palette-neutral-8/9` and branding's danger-token gap) but not yet applied. | `EmailVerificationBanner`/`EmailVerificationPrompt` were stubbed out as placeholder `<div>`s since the file's original commit — **fixed**, now real components. Had 14 unnecessary dynamic imports (error-reporting helpers, a stale duplicate `ErrorReportingStatus.svelte`) — **all converted to static**. A phantom `on:stateChange` listener (real event is `stepChange`) — **fixed**. |
+| `angular-demo` | No | N/A | No working `@thepia/flows-auth` integration at all — the one auth import is commented out, references `useAuthStore` (never existed; real export is `createAuthStore`), and the "sign-in" is a hardcoded `setTimeout` fake. **Explicitly deferred** — fixing it means building a real Angular integration, not a quick fix; revisit separately. |
 
-### Breaking Changes Notice
+## Library-internal build correctness (found & fixed this session)
 
-This will be a major version update (v2.0.0) due to:
-- New required import: `@thepia/flows-auth/styles`
-- Changed CSS class behavior
-- Dependency changes
+Two issues unrelated to CSS but discovered while auditing "why does this
+component need a dynamic import" — worth tracking here since they affect
+every consumer:
 
-## Success Metrics
+- **9 of 10 dynamic `await import(...)` calls in `src/core`/`src/svelte`
+  were unnecessary** and have been converted to static imports (verified
+  safe: none had top-level side effects, several were re-importing a module
+  the same file already statically imports elsewhere). Only the
+  Paraglide-generated `async_hooks` import (edge-runtime compatibility) is
+  genuine and was left alone.
+- **`biome.json`'s file-exclusion glob was stale**: `!**/src/paraglide`
+  referred to the pre-split path; the generated Paraglide output actually
+  lives at `src/core/paraglide` since the core/svelte packaging split. This
+  meant `pnpm check:fix` was linting and reformatting auto-generated,
+  committed source (regenerated via `pnpm build:paraglide`, never
+  hand-edited) — including flagging intentional empty `catch {}` blocks in
+  generated code as errors, which blocked `check:fix` from succeeding at
+  all. **Fixed**: glob updated to `!**/src/core/paraglide`.
 
-- ✅ Zero configuration styling for new consumers
-- ✅ Consistent styling across all implementations  
-- ✅ Self-contained CSS bundle
-- ✅ Proper dependency management
-- ✅ Clear documentation and migration path
+## Remaining work
 
-### Immediate Actions Required
-
-#### 1. Fix app.thepia.net (Critical)
-```css
-/* Add to thepia-all/apps/app.thepia.net/src/app.css */
-@import "tailwindcss";
-@import "@thepia/branding/css";
-@import "@thepia/flows-auth/dist/style.css"; /* ADD THIS LINE */
-@import "konsta/theme.css";
-```
-
-#### 2. Validate auth-demo Fix
-Confirm the fix I applied works by testing the auth components render properly.
-
-#### 3. Update flows-auth Package Dependencies
-```json
-{
-  "peerDependencies": {
-    "svelte": "^4.0.0 || ^5.0.0",
-    "@thepia/branding": "^1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@thepia/branding": { 
-      "optional": false
-    }
-  }
-}
-```
-
-## Long-term Implementation Plan
-
-### Phase 1: Ecosystem Standardization (Week 1)
-1. **Audit all implementations**:
-   - flows.thepia.net ✅ (working)  
-   - auth-demo ✅ (fixed in this session)
-   - app.thepia.net ❌ (needs fix)
-   - Any other flows-auth consumers
-
-2. **Create standard integration guide**
-3. **Add peer dependency validation**
-
-### Phase 2: Enhanced CSS Bundle (Week 2-3)
-1. **Self-contained CSS generation**
-2. **Runtime style validation**
-3. **Development mode warnings**
-4. **Customization API**
-
-### Phase 3: Ecosystem Migration (Week 4)
-1. **Update all consuming projects**
-2. **Documentation and examples**
-3. **Testing and validation**
-
-## Success Metrics
-
-- ✅ Zero-import styling failures across all projects
-- ✅ Consistent visual appearance in all implementations  
-- ✅ Clear error messages when styling is missing
-- ✅ Single canonical integration pattern
-- ✅ Comprehensive documentation with copy-paste examples
-
-## Implementation Priority
-
-**IMMEDIATE (Today)**:
-1. Fix app.thepia.net CSS import
-2. Test auth-demo fix
-3. Document the canonical pattern
-
-**SHORT TERM (This Week)**:
-1. Add peer dependencies to flows-auth
-2. Create integration validation
-3. Update all ecosystem projects
-
-**LONG TERM (Next 2-4 weeks)**:
-1. Enhanced self-contained CSS bundle
-2. Runtime validation system  
-3. Advanced customization options
-
-This approach ensures the entire Thepia ecosystem has consistent, working authentication components while providing a clear migration path for enhanced features.
+1. Execute the `--auth-*` → branding-token migration (mapping table above),
+   file by file, dropping the manual dark-mode media queries.
+2. Wire `tasks-app-demo/src/app.css` to real branding tokens (mapping
+   identified above, not yet applied).
+3. Fix `flows-app-demo`'s dead `config` prop threading and its
+   `README-MOCK-AUTH.md`'s wrong `store` prop name.
+4. Decide `angular-demo`'s fate (build a real integration, or remove it).
+5. Confirm whether to revert the 7 `src/core/paraglide/*` files that got
+   cosmetically reformatted by a `check:fix` run before the biome exclusion
+   fix landed (pending — paused for user confirmation before any `git
+   checkout`).

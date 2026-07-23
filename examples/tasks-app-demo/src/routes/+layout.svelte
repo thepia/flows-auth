@@ -1,6 +1,6 @@
 <script lang="ts">
-import { setupAuthContext } from '@thepia/flows-auth';
-import type { User } from '@thepia/flows-auth/types';
+import { setupAuthContext } from '@thepia/flows-auth/svelte';
+import type { User } from '@thepia/flows-auth';
 import ErrorReportingStatus from '../lib/components/ErrorReportingStatus.svelte';
 import '../app.css';
 
@@ -16,7 +16,6 @@ const authConfig = {
   clientId: 'tasks-app-demo',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: true,
   errorReporting: {
     enabled: true,
     debug: true

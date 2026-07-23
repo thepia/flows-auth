@@ -102,17 +102,6 @@ await initializeTasksErrorReportingProduction();
 
 **Note**: Frontend error reporting is currently a development-only feature. Production frontend error reporting is intentionally not implemented as it requires careful design for throttling and protection. PostHog is used for server/service monitoring, not frontend errors.
 
-### Dynamic Imports for SSR Compatibility
-```javascript
-// Avoid SSR issues with WebAuthn APIs
-onMount(async () => {
-  if (!browser) return;
-  
-  const { getAuthStore } = await import('@thepia/flows-auth');
-  authStore = getAuthStore();
-});
-```
-
 ### Service Worker Registration
 ```javascript
 // Automatic registration in app.html

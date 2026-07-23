@@ -5,11 +5,11 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PinEntryStep from '../../src/components/core/PinEntryStep.svelte';
+import PinEntryStep from '../../src/svelte/components/core/PinEntryStep.svelte';
 import { createTestAuthStore, setupPinEntryState } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utils
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isWebAuthnSupported: vi.fn(() => false),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))
@@ -28,7 +28,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -51,7 +51,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -74,7 +74,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -99,7 +99,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -121,7 +121,7 @@ describe('PinEntryStep Component', () => {
       authStore.setEmailCode('123456');
 
       // EmailCode should be set in store
-      expect(authStore.getState().emailCode).toBe('123456');
+      expect(authStore.ui.getState().emailCode).toBe('123456');
     });
 
     it('should enable verify button when 6 digits entered', async () => {
@@ -131,7 +131,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -162,7 +162,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -194,7 +194,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -231,7 +231,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -270,7 +270,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -305,7 +305,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -352,7 +352,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -380,7 +380,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -415,7 +415,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -438,7 +438,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store
@@ -489,7 +489,7 @@ describe('PinEntryStep Component', () => {
       });
 
       // Set email then transition to pinEntry state
-      authStore.core.setState({ email: 'test@example.com' });
+      authStore.ui.setState({ email: 'test@example.com' });
       setupPinEntryState(authStore);
 
       // Wait for state to propagate to composed store

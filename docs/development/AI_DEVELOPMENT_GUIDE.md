@@ -105,8 +105,7 @@ AccountCreationForm and SignInForm are the primary authentication components.
       authStore = createAuthStore({
         apiBaseUrl: 'https://api.thepia.com',
         domain: 'thepia.net',
-        enablePasskeys: true,
-        enableMagicLinks: false
+        enablePasskeys: true
       });
     } catch (error) {
       console.error('Failed to load auth:', error);

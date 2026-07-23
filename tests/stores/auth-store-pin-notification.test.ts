@@ -4,15 +4,16 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig, SignInData, SignInResponse } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig, SignInData, SignInResponse } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock the API client
-vi.mock('../../src/api/auth-api');
+vi.mock('../../src/core/api/auth-api');
 
 describe('Auth Store PIN Notification', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
   let config: AuthConfig;
 
@@ -54,11 +55,10 @@ describe('Auth Store PIN Notification', () => {
       clientId: 'test',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test'
     };
 
-    authStore = createAuthStore(config, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(config, mockApiClient));
   });
 
   describe('notifyPinSent method', () => {

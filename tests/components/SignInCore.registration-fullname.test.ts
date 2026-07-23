@@ -4,11 +4,11 @@ import { fireEvent, waitFor } from '@testing-library/svelte';
  * Ensures sign-in button is properly disabled when fullName is invalid for new users
  */
 import { describe, expect, it, vi } from 'vitest';
-import SignInCore from '../../src/components/core/SignInCore.svelte';
+import SignInCore from '../../src/svelte/components/core/SignInCore.svelte';
 import { TEST_AUTH_CONFIGS, renderWithStoreProp } from '../helpers/component-test-setup.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   isConditionalMediationSupported: vi.fn(() => Promise.resolve(false))

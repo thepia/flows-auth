@@ -7,6 +7,7 @@
  */
 
 import { browser } from '$app/environment';
+import { flushTelemetry, reportWebAuthnError } from '@thepia/flows-auth';
 
 /**
  * Error reporting endpoints for different environments
@@ -171,8 +172,6 @@ export async function reportFlowsAuthError(operation, error, context = {}) {
   if (!browser) return;
 
   try {
-    const { reportWebAuthnError } = await import('@thepia/flows-auth');
-
     await reportWebAuthnError(operation, error, {
       flowsApp: true,
       ...context
@@ -189,7 +188,6 @@ export async function flushFlowsErrorReports() {
   if (!browser) return;
 
   try {
-    const { flushTelemetry } = await import('@thepia/flows-auth');
     await flushTelemetry();
   } catch (error) {
     console.error('[Flows App] Failed to flush error reports:', error);

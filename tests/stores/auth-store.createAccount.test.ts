@@ -4,11 +4,13 @@ import { get } from 'svelte/store';
  * Ensures basic account creation works without passkey requirements
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, SignInResponse } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, SignInResponse } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => false),
@@ -26,14 +28,13 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: false,
-  enableMagicLinks: true,
   appCode: 'test-app',
   signInMode: 'login-or-register',
   invitationToken: 'test-invitation-token'
 };
 
 describe('Auth Store - createAccount (without WebAuthn)', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockApiClient: any;
 
   beforeEach(async () => {
@@ -45,7 +46,6 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -282,7 +282,7 @@ describe('Auth Store - createAccount (without WebAuthn)', () => {
 
       // Should not set error state or authenticate user automatically
       const finalState = get(authStore);
-      expect(finalState.error).toBeUndefined();
+      expect(finalState.apiError).toBeNull();
       expect(finalState.state).toBe('unauthenticated'); // Should not authenticate user
     });
 

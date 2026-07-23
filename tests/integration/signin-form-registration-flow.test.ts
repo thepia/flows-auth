@@ -9,8 +9,9 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('SignInForm Registration Flow Regression', () => {
   let authStore: any;
@@ -21,8 +22,9 @@ describe('SignInForm Registration Flow Regression', () => {
   const TEST_CONFIG = {
     apiBaseUrl: API_BASE,
     clientId: 'flows-auth-demo',
+    domain: 'dev.thepia.net',
+    appCode: 'demo',
     enablePasskeys: true,
-    enableMagicLinks: false
   };
 
   beforeAll(async () => {
@@ -151,9 +153,9 @@ describe('SignInForm Registration Flow Regression', () => {
         await apiClient.checkEmail('invalid-email');
         console.log('⚠️ Invalid email was accepted (unexpected)');
       } catch (error) {
-        console.log('✅ Invalid email correctly rejected:', error.message);
+        console.log('✅ Invalid email correctly rejected:', (error as Error).message);
         // Expect either email validation error or rate limit error
-        expect(error.message).toMatch(/(email|rate|requests)/i);
+        expect((error as Error).message).toMatch(/(email|rate|requests)/i);
       }
     });
   });
@@ -232,9 +234,9 @@ describe('SignInForm Registration Flow Regression', () => {
         if (hasPasskeys) {
           expectedStep = 'passkey-auth';
           console.log('🔐 Expected flow: Passkey authentication');
-        } else if (userExists && TEST_CONFIG.enableMagicLinks) {
-          expectedStep = 'magic-link';
-          console.log('📧 Expected flow: Magic link authentication');
+        } else if (userExists) {
+          expectedStep = 'email-code';
+          console.log('📧 Expected flow: Email code authentication');
         } else if (!userExists) {
           expectedStep = 'registration-terms';
           console.log('📝 Expected flow: Registration (NEW USER)');
@@ -251,7 +253,7 @@ describe('SignInForm Registration Flow Regression', () => {
           expect(expectedStep).toBe('registration-terms');
         } else {
           console.log('✅ EXISTING USER DETECTED - Authentication flow should be triggered');
-          expect(['passkey-auth', 'magic-link']).toContain(expectedStep);
+          expect(['passkey-auth', 'email-code']).toContain(expectedStep);
         }
       } catch (error) {
         console.error('❌ Email submission simulation failed:', error);
@@ -307,7 +309,7 @@ describe('SignInForm Registration Flow Regression', () => {
           await apiClient.checkEmail(testCase.email);
           console.log(`⚠️ ${testCase.description} was unexpectedly accepted`);
         } catch (error) {
-          console.log(`✅ ${testCase.description} correctly rejected:`, error.message);
+          console.log(`✅ ${testCase.description} correctly rejected:`, (error as Error).message);
         }
       }
     });

@@ -10,11 +10,16 @@
 
 import { get } from 'svelte/store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+// Imported via the package self-reference (not a relative path) so this resolves
+// to the exact same module identity makeSvelteCompatible() uses internally -
+// otherwise structurally-identical AuthStore/SvelteAuthStore types from two
+// different import paths are treated as nominally distinct (private field branding).
+import type { AuthConfig, AuthStore, SvelteAuthStore } from '@thepia/flows-auth';
 
 // Mock external dependencies
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
@@ -48,7 +53,7 @@ vi.mock('../../src/api/auth-api', () => ({
   })
 }));
 
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true),
@@ -58,12 +63,12 @@ vi.mock('../../src/utils/webauthn', () => ({
 
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' }))
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -85,12 +90,11 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app'
 };
 
 describe('Svelte Store Adapter', () => {
-  let store: any;
+  let store: SvelteAuthStore;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -117,10 +121,10 @@ describe('Svelte Store Adapter', () => {
     it('should implement proper Svelte store contract for component usage', async () => {
       // Test that the store can be used exactly like Svelte components expect
       let subscriptionCallCount = 0;
-      let lastReceivedState: any = null;
+      let lastReceivedState!: AuthStore; // subscribe() below fires synchronously with initial state (Svelte contract)
 
       // Subscribe like a Svelte component would
-      const unsubscribe = store.subscribe((state: any) => {
+      const unsubscribe = store.subscribe((state: AuthStore) => {
         subscriptionCallCount++;
         lastReceivedState = state;
       });
@@ -155,8 +159,8 @@ describe('Svelte Store Adapter', () => {
     });
 
     it('should be reactive when state changes', () => {
-      let capturedState: any;
-      const unsubscribe = store.subscribe((state: any) => {
+      let capturedState!: AuthStore; // subscribe() below fires synchronously with initial state
+      const unsubscribe = store.subscribe((state: AuthStore) => {
         capturedState = state;
       });
 
@@ -173,13 +177,13 @@ describe('Svelte Store Adapter', () => {
     });
 
     it('should support multiple subscribers', () => {
-      let state1: any;
-      let state2: any;
+      let state1!: AuthStore; // subscribe() below fires synchronously with initial state
+      let state2!: AuthStore; // subscribe() below fires synchronously with initial state
 
-      const unsub1 = store.subscribe((s: any) => {
+      const unsub1 = store.subscribe((s: AuthStore) => {
         state1 = s;
       });
-      const unsub2 = store.subscribe((s: any) => {
+      const unsub2 = store.subscribe((s: AuthStore) => {
         state2 = s;
       });
 
@@ -450,7 +454,7 @@ describe('Svelte Store Adapter', () => {
   describe('Backward Compatibility', () => {
     it('should maintain compatibility with existing component usage', () => {
       // All methods that existing components expect should be present
-      const expectedMethods = [
+      const expectedMethods: (keyof SvelteAuthStore)[] = [
         'subscribe',
         'getConfig',
         'signInWithPasskey',
@@ -471,7 +475,7 @@ describe('Svelte Store Adapter', () => {
       ];
 
       for (const method of expectedMethods) {
-        expect(typeof store[method]).toBe('function', `Missing method: ${method}`);
+        expect(typeof store[method], `Missing method: ${method}`).toBe('function');
       }
     });
   });

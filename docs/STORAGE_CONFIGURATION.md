@@ -119,7 +119,6 @@ const authStore = createAuthStore({
   clientId: 'my-app',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   // storage config is optional - defaults to localStorage
 });
 ```
@@ -132,7 +131,6 @@ const authStore = createAuthStore({
   clientId: 'employee-portal',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   storage: {
     type: 'localStorage',
     sessionTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -155,7 +153,6 @@ const authStore = createAuthStore({
   clientId: 'my-app',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   storage: storageConfig
 });
 ```
@@ -202,7 +199,6 @@ function getAuthConfig(userRole: string) {
     clientId: 'my-app',
     domain: 'thepia.net',
     enablePasskeys: true,
-    enableMagicLinks: false,
   };
 
   if (userRole === 'employee' || userRole === 'admin') {
@@ -232,7 +228,6 @@ const authStore = createAuthStore({
   clientId: 'my-app',
   domain: 'thepia.net',
   enablePasskeys: true,
-  enableMagicLinks: false,
   storage: {
     type: 'localStorage', // Default is now localStorage for better UX
     sessionTimeout: isDevelopment ? 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000,

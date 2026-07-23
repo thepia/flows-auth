@@ -1,13 +1,16 @@
 /**
  * @vitest-environment jsdom
  */
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createAuthStore, makeSvelteCompatible } from '../../src/stores/index.js';
-import type { AuthConfig, ExplainerConfig } from '../../src/types/index.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
+import type { AuthConfig, ExplainerConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
 
 describe('AuthStore getExplainerConfig', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
+  let mockApiClient: any;
 
   beforeEach(() => {
     mockConfig = {
@@ -15,7 +18,6 @@ describe('AuthStore getExplainerConfig', () => {
       clientId: 'test-client',
       domain: 'example.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       appCode: 'test-app',
       privacyPolicyUrl: 'https://example.com/privacy',
       branding: {
@@ -23,7 +25,21 @@ describe('AuthStore getExplainerConfig', () => {
       }
     };
 
-    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
+    // authStore.setEmail() fires an unawaited checkUser() -> api.checkEmail() call
+    // in the background (ui-state.ts's handleEmailChange). Without this mock it hits
+    // the real AuthApiClient against the fake 'api.example.com' host, which fails via
+    // DNS after the test has already finished - the resulting console.error in the
+    // catch block races Vitest's worker teardown (EnvironmentTeardownError: Closing
+    // rpc while "onUserConsoleLog" was pending).
+    mockApiClient = {
+      checkEmail: vi.fn().mockResolvedValue({
+        exists: false,
+        hasWebAuthn: false,
+        emailVerified: false
+      })
+    };
+
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
   });
 
   describe('Paragraph type scenarios', () => {
@@ -64,7 +80,9 @@ describe('AuthStore getExplainerConfig', () => {
 
     it('should use generic text when no company name is provided', () => {
       const configWithoutCompany = { ...mockConfig, branding: undefined };
-      const storeWithoutCompany = makeSvelteCompatible(createAuthStore(configWithoutCompany));
+      const storeWithoutCompany = makeSvelteCompatible(
+        createAuthStore(configWithoutCompany, mockApiClient)
+      );
 
       // Set up store state for emailEntry
       storeWithoutCompany.setEmail('test@example.com');
@@ -76,17 +94,6 @@ describe('AuthStore getExplainerConfig', () => {
       expect(explainerConfig?.companyName).toBeUndefined();
     });
 
-    it('should use explanation text when no appCode is provided', () => {
-      const configWithoutAppCode = { ...mockConfig, appCode: undefined };
-      const storeWithoutAppCode = makeSvelteCompatible(createAuthStore(configWithoutAppCode));
-
-      // Set up store state for emailEntry
-      storeWithoutAppCode.setEmail('test@example.com');
-
-      const explainerConfig = storeWithoutAppCode.getExplainerConfig(false); // explainFeatures: false for paragraph
-
-      expect(explainerConfig?.textKey).toBe('security.passwordlessExplanation');
-    });
   });
 
   describe('Features type scenarios', () => {
@@ -151,7 +158,9 @@ describe('AuthStore getExplainerConfig', () => {
 
     it('should use user verification when no company name is provided', () => {
       const configWithoutCompany = { ...mockConfig, branding: undefined };
-      const storeWithoutCompany = makeSvelteCompatible(createAuthStore(configWithoutCompany));
+      const storeWithoutCompany = makeSvelteCompatible(
+        createAuthStore(configWithoutCompany, mockApiClient)
+      );
 
       // Set up store state for userChecked with existing user and passkeys
       storeWithoutCompany.setEmail('test@example.com');

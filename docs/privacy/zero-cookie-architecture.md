@@ -160,41 +160,6 @@ class CookieFreeSessions {
 }
 ```
 
-### Magic Link Implementation
-
-```typescript
-// Cookie-free magic link authentication
-class MagicLinkAuth {
-  static async sendMagicLink(email: string) {
-    // Generate stateless token (no server session)
-    const response = await fetch('/auth/magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    
-    // Email contains self-contained JWT token
-    // No server-side session storage needed
-  }
-  
-  static async verifyMagicLink(token: string) {
-    // Verify JWT token (stateless)
-    const response = await fetch('/auth/verify-magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    });
-    
-    const { user, access_token, refresh_token } = await response.json();
-    
-    // Store in browser only
-    sessionStorage.setItem('thepia_auth_session', JSON.stringify({
-      user, access_token, refresh_token
-    }));
-  }
-}
-```
-
 ## Privacy Policy Simplification
 
 With zero cookies, your privacy policy can be dramatically simplified:
@@ -263,7 +228,6 @@ This application doesn't use any cookies. Instead, we use:
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net',
 
   // Privacy settings (optimal defaults)
@@ -283,7 +247,6 @@ const authConfig = {
 const enterpriseAuthConfig = {
   apiBaseUrl: 'https://api.thepia.com',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net',
 
   // Enterprise authentication options

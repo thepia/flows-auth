@@ -37,7 +37,6 @@ interface SignInResponse {
   expires_in?: number;
   requiresPasskey?: boolean;
   requiresPassword?: boolean;
-  magicLinkSent?: boolean;
   challengeId?: string;
 }
 ```

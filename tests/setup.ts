@@ -8,7 +8,7 @@ import '@testing-library/jest-dom';
 import '@testing-library/svelte/vitest';
 
 // Mock the error reporter module before it's imported anywhere else
-vi.mock('../src/utils/telemetry', () => ({
+vi.mock('../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
@@ -169,15 +169,15 @@ class MockMutationObserver {
 global.MutationObserver = MockMutationObserver as any;
 
 // Mock requestAnimationFrame and cancelAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
-global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16)) as any;
+global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id)) as any;
 
 // Mock getComputedStyle for layout calculations
 global.getComputedStyle = vi.fn(() => ({
   getPropertyValue: vi.fn(() => ''),
   width: '0px',
   height: '0px'
-}));
+})) as any;
 
 // Mock getBoundingClientRect for layout calculations
 Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -199,25 +199,33 @@ HTMLElement.prototype.blur = vi.fn();
 
 // Ensure window has dispatchEvent function
 if (!window.dispatchEvent || typeof window.dispatchEvent !== 'function') {
-  const eventListeners = new Map<string, Set<EventListener>>();
+  const eventListeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
 
-  window.addEventListener = vi.fn((type: string, listener: EventListener) => {
-    if (!eventListeners.has(type)) {
-      eventListeners.set(type, new Set());
+  window.addEventListener = vi.fn(
+    (type: string, listener: EventListenerOrEventListenerObject) => {
+      if (!eventListeners.has(type)) {
+        eventListeners.set(type, new Set());
+      }
+      eventListeners.get(type)?.add(listener);
     }
-    eventListeners.get(type)?.add(listener);
-  });
+  );
 
-  window.removeEventListener = vi.fn((type: string, listener: EventListener) => {
-    eventListeners.get(type)?.delete(listener);
-  });
+  window.removeEventListener = vi.fn(
+    (type: string, listener: EventListenerOrEventListenerObject) => {
+      eventListeners.get(type)?.delete(listener);
+    }
+  );
 
   window.dispatchEvent = vi.fn((event: Event) => {
     const listeners = eventListeners.get(event.type);
     if (listeners) {
       listeners.forEach((listener) => {
         try {
-          listener(event);
+          if (typeof listener === 'function') {
+            listener(event);
+          } else {
+            listener.handleEvent(event);
+          }
         } catch (e) {
           console.error('Error in event listener:', e);
         }
@@ -249,8 +257,28 @@ beforeAll(async () => {
 });
 
 // Cleanup after each test
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   localStorageMock.clear();
   vi.clearAllMocks();
+
+  // Give fire-and-forget async work started during the test (e.g. passkey
+  // capability detection on store creation, the background checkUser() call
+  // from setEmail()) a chance to settle before Vitest can tear down this
+  // file's worker. Without this, a trailing console.log from one of those
+  // chains can fire after teardown starts, racing the RPC channel and
+  // producing "EnvironmentTeardownError: Closing rpc while onUserConsoleLog
+  // was pending" - especially likely on slower/more contended CI runners.
+  //
+  // Deliberately microtask-only (chained Promise.resolve(), not setTimeout):
+  // some test files call vi.useFakeTimers() without a matching
+  // vi.useRealTimers() cleanup, which would fake setTimeout here too and
+  // hang this hook forever. Native promise resolution is never faked by
+  // vi.useFakeTimers(), only macrotasks are - so this is safe regardless of
+  // any test's timer state. The chains this targets are plain
+  // async/await (no setTimeout of their own), so a handful of microtask
+  // hops is enough to drain them.
+  for (let i = 0; i < 10; i++) {
+    await Promise.resolve();
+  }
 });

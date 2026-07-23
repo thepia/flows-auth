@@ -153,13 +153,6 @@ ctx.response.body = {
 - ✅ **Counter updates**: Update credential counter
 - ✅ **Security checks**: Proper origin validation
 
-#### **POST /auth/signin/magic-link**
-- ✅ **Email sending**: Integration with email service
-- ✅ **Token generation**: Secure magic link token
-- ✅ **Rate limiting**: 3 requests per 5 minutes per email
-- ✅ **Template rendering**: Professional email template
-- ✅ **Expiration handling**: 15-minute link expiration
-
 #### **GET /health**
 - ✅ **Service checks**: Database, Auth0, email service
 - ✅ **Performance metrics**: Response time, uptime
@@ -351,14 +344,6 @@ const schemas = {
       }),
       type: z.literal('public-key')
     })
-  }),
-  
-  magicLink: z.object({
-    email: z.string().email().max(254),
-    redirectUrl: z.string().url().max(2048).optional().refine(
-      (url) => !url || url.startsWith('https://'),
-      { message: 'Redirect URL must use HTTPS' }
-    )
   })
 };
 ```
@@ -430,10 +415,6 @@ const rateLimitMiddleware = (limit: number, windowMs: number, keyFn: (ctx: Conte
 // Usage examples
 const authRateLimit = rateLimitMiddleware(10, 60 * 1000, (ctx) => 
   ctx.request.ip || 'unknown'
-);
-
-const magicLinkRateLimit = rateLimitMiddleware(3, 5 * 60 * 1000, (ctx) => 
-  ctx.request.body?.email || ctx.request.ip
 );
 ```
 
@@ -555,55 +536,6 @@ async function verifyCredential(credentialResponse, challengeId) {
   
   return verification;
 }
-```
-
----
-
-## Email Service Integration
-
-### **Magic Link Email Template**
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Sign in to Thepia</title>
-</head>
-<body>
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1>Sign in to Thepia</h1>
-        <p>Click the link below to sign in to your account:</p>
-        
-        <a href="{{magic_link_url}}" 
-           style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;">
-            Sign In
-        </a>
-        
-        <p>This link will expire in 15 minutes.</p>
-        
-        <p>If you didn't request this, please ignore this email.</p>
-    </div>
-</body>
-</html>
-```
-
-### **Email Service Configuration**
-```javascript
-const emailConfig = {
-  from: 'noreply@thepia.com',
-  templates: {
-    magicLink: 'magic-link-template.html'
-  },
-  
-  // Provider-specific configuration
-  sendgrid: {
-    apiKey: process.env.SENDGRID_API_KEY
-  },
-  
-  // Rate limiting
-  maxEmailsPerHour: 100,
-  maxEmailsPerDay: 1000
-};
 ```
 
 ---

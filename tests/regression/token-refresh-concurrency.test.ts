@@ -27,29 +27,36 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('Regression: Token Refresh Concurrency Protection', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockRefreshToken: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
+    sessionStorage.clear();
     mockRefreshToken = vi.fn();
 
     const config: AuthConfig = {
       apiBaseUrl: 'https://api.test.com',
+      clientId: 'test-client',
+      domain: 'test.auth0.com',
       appCode: 'test-app',
-      origin: 'http://localhost:3000',
       enablePasskeys: true,
-      enableMagicLinks: true,
-      sessionTimeout: 8 * 60 * 60 * 1000
+      storage: {
+        type: 'sessionStorage',
+        sessionTimeout: 8 * 60 * 60 * 1000
+      }
     };
 
-    authStore = createAuthStore(config, {
+    authStore = makeSvelteCompatible(createAuthStore(config, {
       refreshToken: mockRefreshToken
-    } as any);
+    } as any));
   });
 
   afterEach(() => {
@@ -64,11 +71,12 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       user: {
         id: 'user-123',
         email: 'test@example.com',
-        emailVerified: true
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00.000Z'
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
     });
 
     // Mock refresh response (no delay to avoid scheduled refresh firing)
@@ -101,13 +109,14 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
 
   it('should handle auto-refresh during manual refresh', async () => {
     // Setup: Authenticated state with tokens expiring in 4 minutes
-    const expiresAt = Date.now() + 4 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + 4 * 60 * 1000).toISOString();
     authStore.core.setState({
       state: 'authenticated',
       user: {
         id: 'user-123',
         email: 'test@example.com',
-        emailVerified: true
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00.000Z'
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
@@ -141,11 +150,12 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       user: {
         id: 'user-123',
         email: 'test@example.com',
-        emailVerified: true
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00.000Z'
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
     });
 
     let callCount = 0;
@@ -191,11 +201,12 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       user: {
         id: 'user-123',
         email: 'test@example.com',
-        emailVerified: true
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00.000Z'
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
     });
 
     // First refresh fails with a permanent error (400 Bad Request)
@@ -229,11 +240,12 @@ describe('Regression: Token Refresh Concurrency Protection', () => {
       user: {
         id: 'user-123',
         email: 'test@example.com',
-        emailVerified: true
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00.000Z'
       },
       access_token: 'access-v1',
       refresh_token: 'stale-refresh-token',
-      expiresAt: new Date(Date.now() + 60).toISOString() * 60 * 1000
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
     });
 
     // Simulate "already exchanged" error from WorkOS

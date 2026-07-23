@@ -8,8 +8,9 @@
 
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SignInForm from '../../src/components/SignInForm.svelte';
-import { createAuthStore } from '../../src/stores/index.js';
+import SignInForm from '../../src/svelte/components/SignInForm.svelte';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { CONFIG_DEFAULTS } from '../../src/core/stores/auth-store.js';
 
 // Mock fetch to avoid real API calls
 const mockFetch = vi.fn();
@@ -39,7 +40,7 @@ describe('Integration Regression Tests (Safe)', () => {
       });
 
       const authStore = createAuthStore({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'test-client',
         domain: 'test.com'
       });
@@ -251,7 +252,9 @@ describe('Integration Regression Tests (Safe)', () => {
         const authStore = createAuthStore({
           apiBaseUrl: 'https://api.thepia.com',
           clientId: 'test-client',
-          domain: 'test.com'
+          appCode: 'demo',
+          domain: 'test.com',
+          enablePasskeys: false
         });
 
         const { getByText, getByPlaceholderText, queryByText } = render(SignInForm, {

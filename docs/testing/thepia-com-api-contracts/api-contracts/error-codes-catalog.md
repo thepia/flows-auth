@@ -509,9 +509,6 @@ const ERROR_MESSAGES = {
 | T025 | `unknown_credential` | 400 | Unknown credential ID |
 | T026 | `invalid_session` | 401 | Invalid session token |
 | T027 | `session_required` | 401 | Missing authentication |
-| T033 | `rate_limited` | 429 | Magic link rate limited |
-| T034 | `invalid_email` | 400 | Invalid email in magic link |
-| T035 | `invalid_redirect_url` | 400 | Invalid redirect URL |
 | T043 | `service_unavailable` | 503 | API unhealthy |
 | T044 | `endpoint_not_found` | 404 | Invalid endpoint |
 | T045 | `internal_error` | 500 | Server error |

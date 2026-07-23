@@ -6,14 +6,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { CONFIG_DEFAULTS } from '../../src/core/stores/auth-store.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // Mock the API detection to prevent localhost detection
-vi.mock('../../src/utils/api-detection', () => ({
+vi.mock('../../src/core/utils/api-detection', () => ({
   detectApiServer: vi.fn().mockResolvedValue({
     url: 'https://api.thepia.com',
     type: 'production',
@@ -34,12 +35,10 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
   describe('GIVEN a client configured with appCode', () => {
     describe('WHEN appCode is "demo"', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'demo',
-        appCode: 'demo',
         domain: 'example.com',
-        enablePasskeys: true,
-        enableMagicLinks: false
+        enablePasskeys: true
       });
 
       it('THEN checkEmail should call /demo/check-user endpoint', async () => {
@@ -109,12 +108,11 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
 
     describe('WHEN appCode is "app"', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'app',
         appCode: 'app',
         domain: 'app.thepia.net',
-        enablePasskeys: true,
-        enableMagicLinks: false
+        enablePasskeys: true
       });
 
       it('THEN endpoints should use /app/ prefix', async () => {
@@ -138,12 +136,10 @@ describe('AppCode-based Endpoint Routing (BDD)', () => {
   describe('HTTP Method Verification', () => {
     describe('GIVEN any client configuration', () => {
       const client = new AuthApiClient({
-        apiBaseUrl: 'https://api.thepia.com',
+        ...CONFIG_DEFAULTS,
         clientId: 'demo',
-        appCode: 'demo',
         domain: 'example.com',
         enablePasskeys: true,
-        enableMagicLinks: false
       });
 
       it('THEN checkEmail should use GET method (not POST)', async () => {

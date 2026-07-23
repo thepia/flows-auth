@@ -24,11 +24,13 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/auth-store.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/auth-store.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 describe('Regression: Token Refresh Retry Logic', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockFetch: ReturnType<typeof vi.fn>;
 
   const mockConfig: AuthConfig = {
@@ -37,7 +39,6 @@ describe('Regression: Token Refresh Retry Logic', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Test Company'
     }
@@ -48,7 +49,7 @@ describe('Regression: Token Refresh Retry Logic', () => {
     mockFetch = vi.fn();
     global.fetch = mockFetch as any;
 
-    authStore = createAuthStore(mockConfig);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig));
   });
 
   afterEach(() => {
@@ -69,8 +70,8 @@ describe('Regression: Token Refresh Retry Logic', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: now + 3600000, // Expires in 1 hour
-      refreshedAt: now
+      expiresAt: new Date(now + 3600000).toISOString(), // Expires in 1 hour
+      refreshedAt: new Date(now).toISOString()
     });
 
     // Spy on console to verify retry messages
@@ -196,8 +197,8 @@ describe('Regression: Token Refresh Retry Logic', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: now + 3600000,
-      refreshedAt: now
+      expiresAt: new Date(now + 3600000).toISOString(),
+      refreshedAt: new Date(now).toISOString()
     });
 
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
@@ -267,8 +268,8 @@ describe('Regression: Token Refresh Retry Logic', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'invalid-refresh-token',
-      expiresAt: now + 3600000,
-      refreshedAt: now
+      expiresAt: new Date(now + 3600000).toISOString(),
+      refreshedAt: new Date(now).toISOString()
     });
 
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
@@ -328,8 +329,8 @@ describe('Regression: Token Refresh Retry Logic', () => {
       },
       access_token: 'access-v1',
       refresh_token: 'refresh-v1',
-      expiresAt: now + 3600000,
-      refreshedAt: now
+      expiresAt: new Date(now + 3600000).toISOString(),
+      refreshedAt: new Date(now).toISOString()
     });
 
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {

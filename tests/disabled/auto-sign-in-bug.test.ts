@@ -18,8 +18,8 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import RegistrationForm from '../../src/components/RegistrationForm.svelte';
-import type { AuthConfig } from '../../src/types/index.js';
+import RegistrationForm from '../../src/svelte/components/RegistrationForm.svelte';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 // Mock WebAuthn API
 const mockWebAuthnCredential = {
@@ -41,7 +41,7 @@ Object.defineProperty(navigator, 'credentials', {
 });
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => true),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(true))
 }));
@@ -74,7 +74,6 @@ describe('Auto-Sign-In Bug Regression Tests', () => {
       apiBaseUrl: 'https://api.test.com',
       domain: 'test.com',
       enablePasskeys: true,
-      enableMagicLinks: false,
       branding: {
         companyName: 'Test Company'
       }

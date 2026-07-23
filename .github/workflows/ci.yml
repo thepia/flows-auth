@@ -47,11 +47,14 @@ jobs:
       - name: Lint with Biome
         run: pnpm run check
 
-      - name: Type check
-        run: pnpm run typecheck
-
       - name: Build library
         run: pnpm run build
+
+      - name: Type check
+        # Must run AFTER build: several test files resolve `../../dist/**` directly
+        # or self-reference `@thepia/flows-auth/svelte` through package.json's
+        # `exports` map, which points at dist/svelte/index.d.ts.
+        run: pnpm run typecheck
 
       - name: Run unit tests
         run: pnpm run test:unit

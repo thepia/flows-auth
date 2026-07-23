@@ -59,7 +59,6 @@ export async function getAuthConfig() {
     clientId: 'tasks-app-demo',
     domain: 'dev.thepia.net',
     enablePasskeys: true,
-    enableMagicLinks: false,
     branding: {
       companyName: 'Assignment Management System',
       showPoweredBy: true,

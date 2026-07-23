@@ -1,0 +1,29 @@
+/**
+ * Dev-scenario brand overrides for the DevSidebar scenario switcher
+ * (see src/lib/dev/scenarios.ts). These simulate OTHER customers' brandings on
+ * top of Demo Company's own generated tokens (src/branding/dist/css/tokens.css)
+ * - hand-authored, not generated, since they're one-off demo fixtures rather
+ * than a real brand's token set.
+ */
+
+.brand-demo {
+  /* Default Demo Company branding - no override needed */
+}
+
+.brand-emerald {
+  --color-brand-primary: #059669;
+  --color-brand-primaryHover: #047857;
+  --color-brand-primarySubtle: #d1fae5;
+}
+
+.brand-purple {
+  --color-brand-primary: #7c3aed;
+  --color-brand-primaryHover: #6d28d9;
+  --color-brand-primarySubtle: #ede9fe;
+}
+
+.brand-rose {
+  --color-brand-primary: #e11d48;
+  --color-brand-primaryHover: #be185d;
+  --color-brand-primarySubtle: #ffe4e6;
+}

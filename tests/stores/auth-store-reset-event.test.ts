@@ -2,18 +2,20 @@
  * Test RESET event handling in auth store state machine
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock WebAuthn utilities
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   isWebAuthnSupported: vi.fn(() => false),
   isPlatformAuthenticatorAvailable: vi.fn(() => Promise.resolve(false)),
   startConditionalAuthentication: vi.fn(() => Promise.resolve())
 }));
 
 // Mock telemetry
-vi.mock('../../src/utils/telemetry', () => ({
+vi.mock('../../src/core/utils/telemetry', () => ({
   initializeTelemetry: vi.fn(),
   updateErrorReporterConfig: vi.fn(),
   reportAuthState: vi.fn(),
@@ -28,7 +30,7 @@ vi.mock('../../src/utils/telemetry', () => ({
 }));
 
 describe('Auth Store RESET Event Handling', () => {
-  let authStore: ReturnType<typeof createAuthStore>;
+  let authStore: SvelteAuthStore;
   let mockConfig: AuthConfig;
   let mockApiClient: any;
 
@@ -38,7 +40,6 @@ describe('Auth Store RESET Event Handling', () => {
     mockApiClient = {
       registerUser: vi.fn(),
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -52,12 +53,11 @@ describe('Auth Store RESET Event Handling', () => {
       clientId: 'test-client',
       domain: 'test.com',
       enablePasskeys: false,
-      enableMagicLinks: false,
       appCode: 'test',
       signInMode: 'login-only'
     };
 
-    authStore = createAuthStore(mockConfig, mockApiClient);
+    authStore = makeSvelteCompatible(createAuthStore(mockConfig, mockApiClient));
   });
 
   it('should transition from userChecked to emailEntry on RESET', () => {

@@ -147,7 +147,7 @@ The app's generated Paraglide messages will be used instead of the library's:
 <!-- This will show "Demo Sign In" instead of "Sign In" -->
 <h1>{getDisplayText('signIn.title')}</h1>
 
-<SignInForm {config} />
+<SignInForm config={config} />
 ```
 
 ## 🔄 **Migration Benefits**

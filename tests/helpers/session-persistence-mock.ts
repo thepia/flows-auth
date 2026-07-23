@@ -21,7 +21,7 @@
  */
 
 import { vi } from 'vitest';
-import type { SessionData, SessionPersistence, UserData } from '../../src/types/index.js';
+import type { SessionData, SessionPersistence, UserData } from '../../src/core/types/index.js';
 
 export interface MockSessionPersistence extends SessionPersistence {
   // Expose the vi.Mock types for easy spy assertions

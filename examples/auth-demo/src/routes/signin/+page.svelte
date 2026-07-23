@@ -3,7 +3,8 @@
 
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
-import { ErrorReportingStatus, AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
+import { ErrorReportingStatus, SignInCore, SignInForm } from '@thepia/flows-auth/svelte';
 
 // Paraglide i18n setup
 import * as m from '../../paraglide/messages';
@@ -39,8 +40,6 @@ let stateMachineContext = null;
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = $state(null);
 let SignInStateMachineComponent = $state(null);
-let SignInFormComponent = $state(null);
-let SignInCoreComponent = $state(null);
 
 // Demo controls
 let emailInput = $state('');
@@ -53,7 +52,6 @@ let signInMode = $state('login-or-register'); // 'login-only' or 'login-or-regis
 // TODO: Set enablePasskeys back to true by default once WorkOS implements passkey/WebAuthn support
 // Currently disabled to prevent 404 errors on /auth/webauthn/authenticate endpoint
 let enablePasskeys = $state(false);
-let enableMagicLinks = $state(true);
 
 // New size and variant options
 let formSize = $state('medium'); // 'small', 'medium', 'large', 'full'
@@ -249,28 +247,21 @@ function handleSignInStateClick(clickedState) {
   }
 }
 
-// Dynamic component loading
+// Dynamic component loading (Flow visualizers only — they pull in @xyflow/svelte,
+// which we don't want in the main bundle. SignInForm/SignInCore are statically
+// imported above since they're SSR-safe and always needed on this page.)
 onMount(async () => {
   if (browser) {
     try {
-      // Import main components
-      const authModule = await import('@thepia/flows-auth');
-      const { SignInForm, SignInCore } = authModule;
-
-      // Import dev-only Flow visualization components
       const devModule = await import('@thepia/flows-auth/dev');
       const { SessionStateMachineFlow, SignInStateMachineFlow } = devModule;
 
       SessionStateMachineComponent = SessionStateMachineFlow;
       SignInStateMachineComponent = SignInStateMachineFlow;
-      SignInFormComponent = SignInForm;
-      SignInCoreComponent = SignInCore;
 
-      // Note: Using demo-specific Paraglide setup, not library i18n
-
-      console.log('✅ Auth components loaded successfully');
+      console.log('✅ Flow visualization components loaded successfully');
     } catch (error) {
-      console.error('❌ Failed to load auth components:', error);
+      console.error('❌ Failed to load flow visualization components:', error);
     }
   }
 });
@@ -537,14 +528,9 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
           <div class="config-label">Authentication Methods:</div>
           <div class="checkbox-group">
             <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enablePasskeys} 
+              <input type="checkbox" bind:checked={enablePasskeys}
                      onchange={() => authStore?.updateConfig?.({ enablePasskeys })} />
               <span>Enable Passkeys</span>
-            </label>
-            <label class="checkbox-option">
-              <input type="checkbox" bind:checked={enableMagicLinks}
-                     onchange={() => authStore?.updateConfig?.({ enableMagicLinks })} />
-              <span>Enable Magic Links</span>
             </label>
           </div>
         </div>
@@ -557,12 +543,12 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
       {#if authStore}
         <!-- Debug: Log what should be shown -->
         {#if browser}
-          {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, useSignInForm, formVariant, SignInCoreComponent: !!SignInCoreComponent })}
+          {console.log('🔍 SignIn demo conditions:', { authStore: !!authStore, useSignInForm, formVariant })}
         {/if}
         {#if useSignInForm && formVariant === 'popup'}
           <!-- Popup SignInForm - no card wrapper to avoid double borders -->
-          {#if browser && SignInFormComponent}
-            <SignInFormComponent
+          {#if browser}
+            <SignInForm
               store={authStore}
               initialEmail={emailInput}
               size={formSize}
@@ -584,8 +570,8 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
           <!-- Inline components with card wrapper -->
 
               {#if useSignInForm}
-                {#if browser && SignInFormComponent}
-                  <SignInFormComponent
+                {#if browser}
+                  <SignInForm
                     store={authStore}
                     initialEmail={emailInput}
                     size={formSize}
@@ -617,9 +603,9 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
               </p>
             </div>
             <div class="card-body">
-              {#if browser && authStore && SignInCoreComponent}
+              {#if browser && authStore}
 
-                  <SignInCoreComponent
+                  <SignInCore
                     store={authStore}
                     initialEmail={emailInput}
                     className="demo-signin-form {signInCoreLayout === 'hero-centered' ? 'hero-style' : ''}"
@@ -627,7 +613,6 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
 
                     on:success={(e) => handleSignInSuccess(e.detail)}
                     on:error={(e) => handleSignInError(e.detail)}
-                    on:stepChange={(e) => handleStepChange(e.detail)}
                   />
               {:else}
                 <div class="signin-loading">

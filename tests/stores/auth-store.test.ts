@@ -6,18 +6,18 @@
  * with the new Zustand-based modular architecture.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import type { AuthConfig, SignInData, SignInResponse } from '../../src/types/index.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import type { AuthConfig, SignInData, SignInResponse, SvelteAuthStore } from '@thepia/flows-auth';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Only mock external dependencies that we can't test in isolation
 // Mock the API client - external network calls
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not lambda, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock WebAuthn browser APIs - require real browser interaction
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true), // Enable for testing
@@ -43,7 +43,7 @@ vi.mock('../../src/utils/webauthn', () => ({
 // Mock session manager
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' })),
   getSession: vi.fn(() => {
@@ -65,7 +65,7 @@ vi.mock('../../src/utils/sessionManager', () => ({
   })
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -97,7 +97,6 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app',
   branding: {
     companyName: 'Test Company',
@@ -106,7 +105,7 @@ const mockConfig: AuthConfig = {
 };
 
 describe('Composed Auth Store (New Modular Architecture)', () => {
-  let composedStore: ReturnType<typeof createAuthStore>;
+  let composedStore: SvelteAuthStore;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -115,7 +114,7 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
     mockStorage = {}; // Clear mock storage
 
     // Create the composed store with new architecture
-    composedStore = createAuthStore(mockConfig);
+    composedStore = makeSvelteCompatible(createAuthStore(mockConfig));
   });
 
   afterEach(() => {
@@ -413,13 +412,23 @@ describe('Composed Auth Store (New Modular Architecture)', () => {
       // Emit event
       composedStore.emit('sign_in_success', {
         method: 'passkey',
-        user: { id: '123', email: 'test@example.com' }
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: new Date().toISOString()
+        }
       });
 
       // Verify event received
       expect(eventReceived).toEqual({
         method: 'passkey',
-        user: { id: '123', email: 'test@example.com' }
+        user: {
+          id: '123',
+          email: 'test@example.com',
+          emailVerified: true,
+          createdAt: expect.any(String)
+        }
       });
 
       unsubscribe();

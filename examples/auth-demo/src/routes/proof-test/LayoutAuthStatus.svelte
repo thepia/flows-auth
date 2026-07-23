@@ -4,7 +4,7 @@
 -->
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   let authState = $state(null);
   let storeId = Math.random().toString(36).substring(2, 11);
@@ -42,7 +42,7 @@
   function testSignIn() {
     if (authStore) {
       console.log(`🔄 Layout component (${storeId}): Testing sign-in...`);
-      authStore.signInWithMagicLink('test@example.com');
+      authStore.sendEmailCode('test@example.com');
     }
   }
   

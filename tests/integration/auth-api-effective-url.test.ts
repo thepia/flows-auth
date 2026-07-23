@@ -14,8 +14,8 @@
  * https://api.thepia.com.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
 
 describe('AuthApiClient effective base URL', () => {
   const mockFetch = vi.fn();
@@ -27,7 +27,6 @@ describe('AuthApiClient effective base URL', () => {
     domain: 'test.com',
     appCode: 'test-app',
     enablePasskeys: true,
-    enableMagicLinks: false
   };
 
   beforeEach(() => {

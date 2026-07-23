@@ -7,21 +7,24 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthStore } from '../../src/stores/index.js';
-import { createEmailAuthStore } from '../../src/stores/auth-methods/email-auth.js';
-import { createPasskeyStore } from '../../src/stores/auth-methods/passkey.js';
-import { createAuthCoreStore } from '../../src/stores/core/auth-core.js';
-import { createUIStore, signInStateTransitions } from '../../src/stores/ui/ui-state.js';
-import type { AuthConfig } from '../../src/types/index.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import { createAuthStore } from '../../src/core/stores/index.js';
+import { createEmailAuthStore } from '../../src/core/stores/auth-methods/email-auth.js';
+import { createPasskeyStore } from '../../src/core/stores/auth-methods/passkey.js';
+import { createAuthCoreStore } from '../../src/core/stores/core/auth-core.js';
+import { createUIStore, signInStateTransitions } from '../../src/core/stores/ui/ui-state.js';
+import type { StoreOptions } from '../../src/core/stores/types.js';
+import type { AuthConfig, SessionPersistence } from '../../src/core/types/index.js';
+import type { SvelteAuthStore } from '../../src/core/types/svelte.js';
+import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 
 // Mock external dependencies
-vi.mock('../../src/api/auth-api', () => ({
+vi.mock('../../src/core/api/auth-api', () => ({
   // NOTE: must be a real `function`, not an arrow, so `new AuthApiClient()` works
   // under Vitest 4's stricter mock-constructor semantics (arrow functions are not constructible).
   AuthApiClient: vi.fn().mockImplementation(function () {
     return {
       signIn: vi.fn(),
-      signInWithMagicLink: vi.fn(),
       signInWithPasskey: vi.fn(),
       refresh_token: vi.fn(),
       signOut: vi.fn(),
@@ -36,7 +39,7 @@ vi.mock('../../src/api/auth-api', () => ({
 }));
 
 // Mock WebAuthn APIs
-vi.mock('../../src/utils/webauthn', () => ({
+vi.mock('../../src/core/utils/webauthn', () => ({
   authenticateWithPasskey: vi.fn(),
   serializeCredential: vi.fn(),
   isWebAuthnSupported: vi.fn(() => true), // Enable for testing
@@ -47,12 +50,12 @@ vi.mock('../../src/utils/webauthn', () => ({
 // Mock session manager
 let mockStorage: Record<string, string> = {};
 
-vi.mock('../../src/utils/sessionManager', () => ({
+vi.mock('../../src/core/utils/sessionManager', () => ({
   configureSessionStorage: vi.fn(),
   getOptimalSessionConfig: vi.fn(() => ({ type: 'sessionStorage' }))
 }));
 
-vi.mock('../../src/utils/storageManager', () => ({
+vi.mock('../../src/core/utils/storageManager', () => ({
   getStorageManager: vi.fn(() => ({
     getItem: vi.fn((key: string) => mockStorage[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -84,12 +87,29 @@ const mockConfig: AuthConfig = {
   clientId: 'test-client',
   domain: 'test.com',
   enablePasskeys: true,
-  enableMagicLinks: true,
   appCode: 'test-app',
   branding: {
     companyName: 'Test Company',
     showPoweredBy: true
   }
+};
+
+// Fresh StoreOptions per call so each individual store test gets isolated mocks
+const createStoreOptions = (): StoreOptions => {
+  const mockDb: SessionPersistence = {
+    saveSession: vi.fn().mockResolvedValue(undefined),
+    loadSession: vi.fn().mockResolvedValue(null),
+    clearSession: vi.fn().mockResolvedValue(undefined),
+    saveUser: vi.fn().mockResolvedValue(undefined),
+    getUser: vi.fn().mockResolvedValue(null),
+    clearUser: vi.fn().mockResolvedValue(undefined)
+  };
+
+  return {
+    config: mockConfig,
+    api: new AuthApiClient(mockConfig),
+    db: mockDb
+  };
 };
 
 describe('New Modular Auth Store Architecture', () => {
@@ -98,7 +118,7 @@ describe('New Modular Auth Store Architecture', () => {
       let authCore: ReturnType<typeof createAuthCoreStore>;
 
       beforeEach(() => {
-        authCore = createAuthCoreStore({ config: mockConfig });
+        authCore = createAuthCoreStore(createStoreOptions());
       });
 
       it('should initialize with unauthenticated state', () => {
@@ -138,7 +158,7 @@ describe('New Modular Auth Store Architecture', () => {
       let uiStore: ReturnType<typeof createUIStore>;
 
       beforeEach(() => {
-        uiStore = createUIStore({ config: mockConfig });
+        uiStore = createUIStore(createStoreOptions());
       });
 
       it('should initialize with emailEntry state', () => {
@@ -209,7 +229,7 @@ describe('New Modular Auth Store Architecture', () => {
       let passkeyStore: ReturnType<typeof createPasskeyStore>;
 
       beforeEach(async () => {
-        passkeyStore = createPasskeyStore({ config: mockConfig });
+        passkeyStore = createPasskeyStore(createStoreOptions());
         // Wait for async capability detection to complete
         await passkeyStore.getState().checkCapabilities();
       });
@@ -241,7 +261,7 @@ describe('New Modular Auth Store Architecture', () => {
       let emailStore: ReturnType<typeof createEmailAuthStore>;
 
       beforeEach(() => {
-        emailStore = createEmailAuthStore({ config: mockConfig });
+        emailStore = createEmailAuthStore(createStoreOptions());
       });
 
       it('should initialize with email auth state', () => {
@@ -268,13 +288,13 @@ describe('New Modular Auth Store Architecture', () => {
   });
 
   describe('Composed Store Tests', () => {
-    let composedStore: ReturnType<typeof createAuthStore>;
+    let composedStore: SvelteAuthStore;
 
     beforeEach(() => {
       vi.clearAllMocks();
       localStorage.clear();
       sessionStorage.clear();
-      composedStore = createAuthStore(mockConfig);
+      composedStore = makeSvelteCompatible(createAuthStore(mockConfig));
     });
 
     afterEach(() => {
@@ -293,7 +313,6 @@ describe('New Modular Auth Store Architecture', () => {
 
     it('should provide unified API', () => {
       expect(composedStore.signInWithPasskey).toBeInstanceOf(Function);
-      expect(composedStore.signInWithMagicLink).toBeInstanceOf(Function);
       expect(composedStore.sendEmailCode).toBeInstanceOf(Function);
       expect(composedStore.verifyEmailCode).toBeInstanceOf(Function);
       expect(composedStore.checkUser).toBeInstanceOf(Function);
@@ -325,13 +344,14 @@ describe('New Modular Auth Store Architecture', () => {
       expect(composedStore.passkey.getState().isAuthenticating).toBe(true);
     });
 
-    it('should handle cross-store events', (done) => {
+    it('should handle cross-store events', () => {
       // Listen for sign-in success event
+      let handlerCalled = false;
       const unsubscribe = composedStore.on('sign_in_success', (data) => {
+        handlerCalled = true;
         expect(data.method).toBe('passkey');
         expect(data.user).toBeDefined();
         unsubscribe();
-        done();
       });
 
       // Emit sign-in success event (through events store)
@@ -344,6 +364,8 @@ describe('New Modular Auth Store Architecture', () => {
           createdAt: new Date().toISOString()
         }
       });
+
+      expect(handlerCalled).toBe(true);
     });
 
     it('should maintain state separation and composition', () => {
@@ -393,10 +415,10 @@ describe('New Modular Auth Store Architecture', () => {
   });
 
   describe('Migration Compatibility', () => {
-    let composedStore: ReturnType<typeof createAuthStore>;
+    let composedStore: SvelteAuthStore;
 
     beforeEach(() => {
-      composedStore = createAuthStore(mockConfig);
+      composedStore = makeSvelteCompatible(createAuthStore(mockConfig));
     });
 
     afterEach(() => {

@@ -77,13 +77,6 @@ sequenceDiagram
 |------------------|--------------|--------|-------|
 | `refreshToken()` | `POST /auth/refresh` | 📋 API not implemented | flows-auth ready for real refresh tokens |
 
-### 📋 Planned but Not Implemented
-
-| flows-auth Method | API Endpoint | Status | Notes |
-|------------------|--------------|--------|-------|
-| `signInWithMagicLink()` | `POST /auth/start-passwordless` | ✅ Working (via startPasswordlessAuthentication) | Passwordless authentication method |
-| `verifyMagicLink()` | `POST /auth/verify-magic-link` | 📋 API not implemented | Magic link verification |
-
 ### ❌ Not Supported (By Design)
 
 | flows-auth Method | Status | Reason |

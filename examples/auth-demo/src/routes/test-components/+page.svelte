@@ -24,9 +24,14 @@
     try {
       // Test component imports
       addResult('Import Test', true, 'Starting component import...');
-      
-      const authModule = await import('@thepia/flows-auth');
-      addResult('Auth Module', true, 'Successfully imported @thepia/flows-auth');
+
+      // Intentionally dynamic (unlike the other example routes, which now
+      // static-import SignInForm/SignInCore): this page's whole purpose is to
+      // smoke-test that '@thepia/flows-auth/svelte' resolves and exposes
+      // SignInCore at runtime, so it must actually perform the import here
+      // rather than let a static import (and its build-time check) stand in.
+      const authModule = await import('@thepia/flows-auth/svelte');
+      addResult('Auth Module', true, 'Successfully imported @thepia/flows-auth/svelte');
 
       const { SignInCore } = authModule;
 
@@ -104,17 +109,7 @@
         <div class="component-test">
           <h3>SignInCore (without auth context - should show fallback)</h3>
           <div class="component-container">
-            <SignInCoreComponent
-              config={{
-                apiBaseUrl: 'https://api.thepia.com',
-                clientId: 'test',
-                domain: 'thepia.net',
-                enablePasskeys: false,
-                enableMagicLinks: true,
-                branding: { companyName: 'Test' }
-              }}
-              initialEmail=""
-            />
+            <SignInCoreComponent initialEmail="" />
           </div>
         </div>
       {/if}

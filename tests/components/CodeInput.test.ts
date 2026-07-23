@@ -5,7 +5,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import CodeInput from '../../src/components/core/CodeInput.svelte';
+import CodeInput from '../../src/svelte/components/core/CodeInput.svelte';
 
 describe('CodeInput Component', () => {
   beforeEach(() => {

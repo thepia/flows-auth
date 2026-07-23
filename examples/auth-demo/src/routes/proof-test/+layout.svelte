@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { setupAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth/svelte';
 
   // Layout component that will show auth state
   import LayoutAuthStatus from './LayoutAuthStatus.svelte';

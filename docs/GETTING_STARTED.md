@@ -17,13 +17,14 @@ pnpm add @thepia/flows-auth
 ```svelte
 <!-- +layout.svelte - Root layout ONLY -->
 <script>
-  import { setupAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth/svelte';
 
   // Configure for your domain
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'your-app',
+    appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net' // or 'thepia.com'
   };
 
@@ -46,8 +47,7 @@ Components access the auth store using `getAuthStoreFromContext()` - they never 
 ```svelte
 <!-- YourComponent.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   // ✅ Get auth store from context (DO NOT call setupAuthContext here)
   const authStore = getAuthStoreFromContext();
@@ -62,14 +62,14 @@ Components access the auth store using `getAuthStoreFromContext()` - they never 
   }
 
   // Subscribe to auth state
-  $: currentUser = $authStore.user;
-  $: isAuthenticated = !!currentUser;
+  let currentUser = $derived($authStore.user);
+  let isAuthenticated = $derived(!!currentUser);
 </script>
 
 {#if isAuthenticated}
   <div class="authenticated-content">
     <h1>Welcome, {currentUser.name}!</h1>
-    <button on:click={() => authStore.signOut()}>Sign Out</button>
+    <button onclick={() => authStore.signOut()}>Sign Out</button>
 
     <!-- Your app content -->
     <slot />
@@ -94,21 +94,20 @@ Components access the auth store using `getAuthStoreFromContext()` - they never 
 ```svelte
 <!-- YourComponent.svelte -->
 <script>
-  import { SignInForm } from '@thepia/flows-auth';
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { SignInForm, getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   // ✅ Get auth store from context for local use
   const authStore = getAuthStoreFromContext();
 
   // Subscribe to auth state
-  $: currentUser = $authStore.user;
-  $: isAuthenticated = !!currentUser;
+  let currentUser = $derived($authStore.user);
+  let isAuthenticated = $derived(!!currentUser);
 </script>
 
 {#if isAuthenticated}
   <div class="authenticated-content">
     <h1>Welcome, {currentUser.name}!</h1>
-    <button on:click={() => authStore.signOut()}>Sign Out</button>
+    <button onclick={() => authStore.signOut()}>Sign Out</button>
 
     <!-- Your app content -->
     <slot />
@@ -131,13 +130,14 @@ The flows-auth library is designed as a **client-only** solution that works in t
 ```svelte
 <!-- +layout.svelte - Root layout with auth initialization -->
 <script>
-  import { setupAuthContext } from '@thepia/flows-auth';
+  import { setupAuthContext } from '@thepia/flows-auth/svelte';
 
   // Initialize auth store in root layout (runs once)
   const authConfig = {
     apiBaseUrl: 'https://api.thepia.com',
+    clientId: 'your-app',
+    appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net'
   };
 
@@ -152,18 +152,18 @@ The flows-auth library is designed as a **client-only** solution that works in t
 ```svelte
 <!-- YourComponent.svelte - Any child component -->
 <script>
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   // Get auth store from context (no creation, no prop drilling)
   const authStore = getAuthStoreFromContext();
 
   // Subscribe to auth state
-  $: isAuthenticated = !!$authStore.user;
+  let isAuthenticated = $derived(!!$authStore.user);
 </script>
 
 {#if isAuthenticated}
   <p>Welcome, {$authStore.user.email}!</p>
-  <button on:click={() => authStore.signOut()}>Sign Out</button>
+  <button onclick={() => authStore.signOut()}>Sign Out</button>
 {:else}
   <p>Please sign in</p>
 {/if}
@@ -203,8 +203,9 @@ The flows-auth library connects to the Thepia authentication API server. **Impor
 // Production configuration - connects to api.thepia.com
 const authConfig = {
   apiBaseUrl: 'https://api.thepia.com',  // Production API server
+  clientId: 'your-app',
+  appCode: 'app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -215,8 +216,9 @@ const authConfig = {
 // Local development - connects to local API server
 const authConfig = {
   apiBaseUrl: 'https://dev.thepia.com:8443',  // Local development API
+  clientId: 'your-app',
+  appCode: 'app',
   enablePasskeys: true,
-  enableMagicLinks: false,
   domain: 'thepia.net'
 };
 ```
@@ -224,10 +226,13 @@ const authConfig = {
 #### Required Configuration Interface
 
 ```typescript
+// Simplified — see the full AuthConfig interface in src/core/types/index.ts
+// for optional fields (branding, errorReporting, signInMode, storage, etc.)
 interface AuthConfig {
   apiBaseUrl: string;           // API server URL
+  clientId: string;             // Required — identifies your app to the API
+  appCode: string;              // Required — app-specific endpoint routing
   enablePasskeys?: boolean;     // Enable WebAuthn passkeys (default: true)
-  enableMagicLinks?: boolean;   // Enable magic link fallback (default: true)
   domain?: string;              // Domain for storage scope (thepia.com or thepia.net)
 }
 ```
@@ -246,7 +251,6 @@ The library supports **passwordless-only** authentication:
 ```typescript
 {
   enablePasskeys: true,        // WebAuthn/passkey authentication (recommended)
-  enableMagicLinks: false,      // Email-based fallback for unsupported devices
 
   // Enterprise options (when required by customers)
   enterprise: {
@@ -266,7 +270,7 @@ The library implements a **cookie-free**, passwordless authentication flow:
 2. **Method Detection** - Server determines available auth methods
 3. **Authentication** - User completes authentication via:
    - **Passkey (WebAuthn)** - Primary method using biometrics
-   - **Magic link** - Email-based fallback for unsupported devices
+   - **Email code** - Numeric PIN fallback for unsupported devices
 4. **Success** - User is signed in with tokens stored in browser storage
 
 ### 🍪 Privacy-First Approach
@@ -290,12 +294,15 @@ The auth store provides reactive authentication state for client-side applicatio
 ### Auth Store Properties
 
 ```typescript
+// Simplified — see the full AuthStore interface in src/core/types/index.ts
+// for the complete state shape (signInState, loading, passkeysEnabled, etc.)
 interface AuthStore {
-  state: 'authenticated' | 'unauthenticated' | 'authenticating' | 'error';
+  state: 'unauthenticated' | 'authenticated-unconfirmed' | 'authenticated-confirmed' | 'authenticated' | 'error';
+  loading: boolean;           // Component loading state — not a `state` value
   user: User | null;
   access_token: string | null;
   refresh_token: string | null;
-  expiresAt: number | null;
+  expiresAt: string | null;   // ISO 8601 timestamp string
   apiError: ApiError | null;
 }
 
@@ -317,15 +324,18 @@ interface ApiError {
 ```svelte
 <script>
   import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible } from '@thepia/flows-auth/svelte';
   import { m } from '../paraglide/messages.js';
 
-  const authStore = createAuthStore(config);
+  // createAuthStore() returns a plain Zustand store — wrap it with
+  // makeSvelteCompatible() to get Svelte's $store auto-subscription
+  const authStore = makeSvelteCompatible(createAuthStore(config));
 
   // Reactive statements automatically update when auth state changes
-  $: user = $authStore.user;
-  $: isAuthenticated = $authStore.state === 'authenticated';
-  $: isLoading = $authStore.state === 'authenticating';
-  $: apiError = $authStore.apiError;
+  let user = $derived($authStore.user);
+  let isAuthenticated = $derived($authStore.state.startsWith('authenticated'));
+  let isLoading = $derived($authStore.loading);
+  let apiError = $derived($authStore.apiError);
 </script>
 
 {#if isLoading}
@@ -334,7 +344,7 @@ interface ApiError {
   <div class="error" role="alert">
     {m[apiError.code]()}
     {#if apiError.retryable}
-      <button on:click={() => authStore.retryLastFailedRequest()}>Try Again</button>
+      <button onclick={() => authStore.retryLastFailedRequest()}>Try Again</button>
     {/if}
   </div>
 {:else if isAuthenticated}
@@ -353,14 +363,14 @@ try {
   // User is now authenticated
 } catch (error) {
   console.error('Passkey auth failed:', error);
-  // Fallback to magic link
+  // Fallback to email code
 }
 
 try {
-  await authStore.signInWithMagicLink(email);   // Email-based authentication
-  // User will receive email with login link
+  await authStore.sendEmailCode(email);         // Email-based authentication
+  // User will receive email with a numeric code
 } catch (error) {
-  console.error('Magic link failed:', error);
+  console.error('Email code failed:', error);
 }
 
 // Session management
@@ -380,22 +390,25 @@ The library uses a centralized **ApiError architecture** with translation-based 
 
 ```svelte
 <script>
-  import { createAuthStore, SignInCore } from '@thepia/flows-auth';
+  import { createAuthStore } from '@thepia/flows-auth';
+  import { makeSvelteCompatible, SignInCore } from '@thepia/flows-auth/svelte';
   import { m } from '../paraglide/messages.js';
 
-  const authStore = createAuthStore({
+  const authStore = makeSvelteCompatible(createAuthStore({
     apiBaseUrl: 'https://api.thepia.com',
     clientId: 'your-client-id',
+    appCode: 'app',
     enablePasskeys: true,
-    enableMagicLinks: false,
     domain: 'thepia.net'
-  });
+  }));
 
   // React to centralized API errors
-  $: apiError = $authStore.apiError;
-  $: if (apiError) {
-    handleApiError(apiError);
-  }
+  let apiError = $derived($authStore.apiError);
+  $effect(() => {
+    if (apiError) {
+      handleApiError(apiError);
+    }
+  });
 
   function handleApiError(error) {
     console.error('API Error:', {
@@ -439,15 +452,15 @@ The library uses a centralized **ApiError architecture** with translation-based 
     <p>{m[apiError.code]()}</p>
     <div class="error-actions">
       {#if apiError.retryable}
-        <button on:click={retryLastOperation}>Try Again</button>
+        <button onclick={retryLastOperation}>Try Again</button>
       {/if}
-      <button on:click={clearError}>Dismiss</button>
+      <button onclick={clearError}>Dismiss</button>
     </div>
   </div>
 {/if}
 
 <!-- SignInCore automatically displays apiError with translations -->
-<SignInCore {config} {authStore} />
+<SignInCore store={authStore} />
 ```
 
 ### Error Types and Translation Keys
@@ -480,33 +493,53 @@ Components no longer need error handling - errors are managed centrally:
 
 ## Styling and Theming
 
-The library uses CSS custom properties for theming:
+flows-auth components are styled with `@thepia/branding` design tokens.
+`@thepia/branding` is an **optional peer dependency** — components reference
+its CSS custom properties with hardcoded fallbacks (e.g.
+`var(--color-brand-primary, #988ACA)`), so they render sensibly even if you
+never load branding's CSS. To get real, on-brand styling, import branding's
+stylesheets in your app:
+
+```css
+/* your app's global CSS */
+@import "@thepia/branding/css";            /* design tokens (custom properties) */
+@import "@thepia/branding/css/components"; /* .btn-brand, .input-brand, etc. */
+```
+
+```bash
+pnpm add @thepia/branding
+```
+
+### Available tokens
+
+Don't invent token names — these are the real ones components reference
+(see `@thepia/branding`'s `tokens.css` for the complete list):
+
+| Concept | Token |
+|---|---|
+| Primary brand color | `--color-brand-primary`, `--color-brand-primaryHover`, `--color-brand-primaryActive` |
+| Text | `--color-text-primary`, `--color-text-secondary`, `--color-text-inverse`, `--color-text-error` |
+| Backgrounds | `--color-bg-primary`, `--color-bg-secondary`, `--color-bg-muted` |
+| Borders | `--color-border-default`, `--color-border-subtle`, `--color-border-error` |
+| Radius scale | `--size-radius-0` through `-12`, and `-full` (note: `--size-radius-*`, not `--radius-*`) |
+| Typography | `--font-fontFamily-brand-body`, `--font-fontFamily-brand-lead` |
+
+### Overriding without forking branding
+
+Since branding is just CSS custom properties, override them in your own
+app's CSS after importing branding's tokens — no flows-auth-specific
+theming API needed:
 
 ```css
 :root {
-  /* Brand colors */
-  --auth-primary-color: #0066cc;
-  --auth-secondary-color: #e6f3ff;
-  --auth-error-color: #dc3545;
-  --auth-success-color: #28a745;
-  
-  /* Typography */
-  --auth-font-family: 'Your Brand Font', sans-serif;
-  --auth-font-size-base: 16px;
-  --auth-font-weight-normal: 400;
-  --auth-font-weight-medium: 500;
-  --auth-font-weight-bold: 700;
-  
-  /* Layout */
-  --auth-border-radius: 8px;
-  --auth-padding: 24px;
-  --auth-gap: 16px;
-  
-  /* Shadows */
-  --auth-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --auth-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --color-brand-primary: #your-brand-color;
+  --color-brand-primaryHover: #your-brand-color-darker;
 }
 ```
+
+Dark mode follows branding's own convention — set `.dark`, `.dark-theme`,
+or `data-theme="dark"` on an ancestor element; branding's tokens redefine
+themselves automatically under those selectors.
 
 ## Examples
 
@@ -580,7 +613,7 @@ The development scripts automatically detect and configure the appropriate API s
 1. **WebAuthn not working**: Ensure HTTPS is enabled (required for WebAuthn)
 2. **CORS errors**: Verify your domain is configured in the API server
 3. **Token refresh failing**: Check localStorage for stored tokens
-4. **Magic links not working**: Verify email service configuration
+4. **Email codes not working**: Verify email service configuration
 
 ### Getting Help
 

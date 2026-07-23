@@ -8,7 +8,7 @@
 import { render } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import TestFlow from '../../src/components/TestFlow.svelte';
+import TestFlow from '../../src/svelte/components/TestFlow.svelte';
 
 // Mock SvelteFlow stores to prevent initialization issues
 vi.mock('@xyflow/svelte', async () => {
@@ -165,9 +165,9 @@ describe('Svelte Flow Integration', () => {
 
       // Look for any error patterns in console
       const errorCalls = (console.error as any).mock.calls;
-      const nanPatternErrors = errorCalls.filter((call) =>
+      const nanPatternErrors = errorCalls.filter((call: any[]) =>
         call.some(
-          (arg) => typeof arg === 'string' && arg.includes('pattern') && arg.includes('NaN')
+          (arg: any) => typeof arg === 'string' && arg.includes('pattern') && arg.includes('NaN')
         )
       );
 
@@ -181,9 +181,9 @@ describe('Svelte Flow Integration', () => {
 
       // Check for store-related errors
       const errorCalls = (console.error as any).mock.calls;
-      const storeErrors = errorCalls.filter((call) =>
+      const storeErrors = errorCalls.filter((call: any[]) =>
         call.some(
-          (arg) =>
+          (arg: any) =>
             typeof arg === 'string' &&
             (arg.includes('userNodesStore') || arg.includes('syncNodeStores'))
         )

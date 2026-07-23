@@ -1,15 +1,11 @@
 {
   "overview": {
     "title": "Thepia Flows Autentificering",
-    "subtitle": "Passwordløs autentificering med WebAuthn passkeys og magiske links",
+    "subtitle": "Passwordløs autentificering med WebAuthn passkeys og e-mail koder",
     "features": {
       "passkeys": {
         "title": "WebAuthn Passkeys",
         "description": "Sikker, passwordløs autentificering ved hjælp af biometri eller sikkerhedsnøgler"
-      },
-      "magic_links": {
-        "title": "Magiske Links",
-        "description": "Et-klik autentificering via sikre e-mail links"
       },
       "state_machine": {
         "title": "Tilstandsmaskine",

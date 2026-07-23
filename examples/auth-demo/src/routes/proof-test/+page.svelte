@@ -3,7 +3,7 @@
   Multiple components that should all use the SAME auth store from layout
 -->
 <script>
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   // Page components that will show auth state
   import PageAuthComponent from './PageAuthComponent.svelte';

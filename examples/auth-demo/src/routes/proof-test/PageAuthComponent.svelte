@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { getAuthStoreFromContext } from '@thepia/flows-auth';
+  import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
 
   let { title } = $props();
 
@@ -48,7 +48,7 @@
   function testSignIn() {
     if (authStore) {
       console.log(`🔄 ${title} (${storeId}): Testing sign-in...`);
-      authStore.signInWithMagicLink(`test-${storeId}@example.com`);
+      authStore.sendEmailCode(`test-${storeId}@example.com`);
     }
   }
   

@@ -25,7 +25,7 @@ Sign-in is a **simple, direct operation**: user provides credentials → authSto
   });
 </script>
 
-<SignInForm {config} />
+<SignInForm config={config} />
 ```
 
 ### Why No Events?
@@ -134,7 +134,7 @@ Registration is **complex coordination**: form validation → API calls → UI u
 - </form>
 
 + <!-- Use flows-auth component -->
-+ <SignInForm {config} />
++ <SignInForm config={config} />
 ```
 
 ### Benefits of Migration

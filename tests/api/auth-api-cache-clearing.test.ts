@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthApiClient } from '../../src/api/auth-api.js';
-import type { AuthConfig } from '../../src/types/index.js';
-import { globalUserCache } from '../../src/utils/user-cache.js';
+import { AuthApiClient } from '../../src/core/api/auth-api.js';
+import type { AuthConfig } from '../../src/core/types/index.js';
+import { globalUserCache } from '../../src/core/utils/user-cache.js';
 
 // Mock fetch for API calls
 global.fetch = vi.fn();
@@ -16,9 +16,10 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
 
     mockConfig = {
       apiBaseUrl: 'https://api.test.com',
+      clientId: 'test-client',
+      domain: 'test.thepia.net',
       appCode: 'test-app',
       enablePasskeys: true,
-      enableMagicLinks: false
     };
 
     apiClient = new AuthApiClient(mockConfig);
@@ -90,7 +91,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
       // Simulate existing user in cache
       globalUserCache.set(email, {
         exists: true,
-        hasPasskey: true
+        hasWebAuthn: true
       });
 
       // Verify cache contains the entry
@@ -129,7 +130,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
       // Set up cache entry
       globalUserCache.set(email, {
         exists: false,
-        hasPasskey: false
+        hasWebAuthn: false
       });
 
       // Mock failed verification response
@@ -155,7 +156,7 @@ describe('AuthApiClient - Cache Clearing on Pin Verification', () => {
       // Set up cache entry
       globalUserCache.set(email, {
         exists: true,
-        hasPasskey: false
+        hasWebAuthn: false
       });
 
       // Mock network error

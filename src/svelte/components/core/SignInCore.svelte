@@ -57,11 +57,6 @@ const dispatch = createEventDispatcher<{
   navigate: { section: 'passkeys' | 'profile' | 'privacy' | 'terms' };
 }>();
 
-// Debug logging to see what's happening
-run(() => {
-    console.log('🔍 SignInCore: authStore =', !!authStore, authStore);
-  });
-
 // Component state (minimal - most state now in store)
 let email = $state(initialEmail);
 // emailCode is now in the store, not local state
@@ -88,7 +83,6 @@ async function checkUserForEmail(emailValue: string) {
   emailCheckTimeout = setTimeout(async () => {
     try {
       const trimmedEmail = emailValue.trim();
-      console.log('🔍 Reactive email pin check for:', trimmedEmail);
 
       if (!trimmedEmail) {
         authStore.setEmail('');
@@ -98,14 +92,12 @@ async function checkUserForEmail(emailValue: string) {
       // Validate email format before making API call
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(trimmedEmail)) {
-        console.log('⚠️ Invalid email format, skipping check-user API call');
         return;
       }
 
       await authStore.checkUser(trimmedEmail);
 
     } catch (err) {
-      console.error('check-user error:', err);
       // Error handling is now managed by AuthStore
     }
   }, 400); // 400ms debounce to avoid too many API calls while typing

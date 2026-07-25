@@ -117,7 +117,8 @@ export class UserCache {
     }
 
     if (expiredKeys.length > 0) {
-      debug(`🧹 Cleaned up ${expiredKeys.length} expired cache entries`);
+      const count = expiredKeys.length;
+      debug(`🧹 Cleaned up ${count} expired cache entries`);
     }
   }
 }

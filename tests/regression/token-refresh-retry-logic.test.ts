@@ -78,9 +78,6 @@ describe('Regression: Token Refresh Retry Logic', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
       // Intentionally empty - suppressing console output during tests
     });
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {
-      // Intentionally empty - suppressing console output during tests
-    });
 
     // Mock refresh responses:
     // Attempts 1-3: Transient errors (500, 503, Network)
@@ -168,9 +165,6 @@ describe('Regression: Token Refresh Retry Logic', () => {
       expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
-    // Verify success message
-    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Retrying token refresh'));
-
     // Wait for promise to resolve
     await expect(refreshPromise).resolves.toBeUndefined();
 
@@ -181,7 +175,6 @@ describe('Regression: Token Refresh Retry Logic', () => {
     expect(state.state).toBe('authenticated');
 
     consoleWarnSpy.mockRestore();
-    consoleLogSpy.mockRestore();
   });
 
   it('should exhaust all retries after 3 transient failures and give up', async () => {

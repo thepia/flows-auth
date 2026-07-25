@@ -11,7 +11,7 @@ import type { SvelteAuthStore } from '@thepia/flows-auth';
 import type { AuthError, AuthMethod, User } from '@thepia/flows-auth';
 import { getAuthStoreFromContext } from '../../auth-context.js';
 import { m } from '@thepia/flows-auth';
-import { debug } from '../../../core/utils/debug.js';
+import { debug } from '../../utils/debug.js';
 
 import AuthButton from './AuthButton.svelte';
 import AuthExplainer from './AuthExplainer.svelte';
@@ -112,10 +112,13 @@ async function initializeComponent() {
     return;
   }
 
+  const passkeysEnabled = $authStore.passkeysEnabled;
+  const enablePasskeys = authConfig.enablePasskeys;
+  const signInMode = authConfig.signInMode;
   debug('🔐 SignInCore Authentication Methods:', {
-    passkeysEnabled: $authStore.passkeysEnabled,
-    enablePasskeys: authConfig.enablePasskeys,
-    signInMode: authConfig.signInMode,
+    passkeysEnabled,
+    enablePasskeys,
+    signInMode,
   });
 
   // If initial email is provided, check for existing pins and trigger conditional auth
@@ -167,25 +170,40 @@ async function handleEmailChange(event: CustomEvent<{value: string}>) {
   email = event.detail.value;
   // Error clearing is now handled by AuthStore
 
+  const newEmail = event.detail.value;
+  const emailLength = newEmail.length;
+  const emailTrim = newEmail.trim();
+  const emailTrimLength = emailTrim.length;
+  const authLoading = $authStore.loading;
   debug('📝 Email changed:', {
-    newEmail: event.detail.value,
-    emailLength: event.detail.value.length,
-    emailTrim: event.detail.value.trim(),
-    emailTrimLength: event.detail.value.trim().length,
-    buttonShouldBeEnabled: !$authStore.loading && !!event.detail.value.trim()
+    newEmail,
+    emailLength,
+    emailTrim,
+    emailTrimLength,
+    buttonShouldBeEnabled: !authLoading && !!emailTrim
   });
 }
 
 async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
   if ($authStore.conditionalAuthActive || $authStore.loading) return;
 
+  const conditionalAuthEmail = event.detail.email;
+  debug('🔍 Starting conditional authentication for:', conditionalAuthEmail);
+
+  // Whether conditional auth succeeded is only known once the try below
+  // resolves. The debug() call reporting success is deferred until after
+  // the try/catch/finally so it doesn't sit inside the try body, which
+  // would block dead-code elimination of the call in production builds.
+  // (The catch-block debug() call below is unaffected by that rule and is
+  // left where it is.)
+  let conditionalAuthSucceeded = false;
+
   try {
     authStore.setConditionalAuthActive(true);
-    debug('🔍 Starting conditional authentication for:', event.detail.email);
 
     const success = await authStore.startConditionalAuthentication(event.detail.email);
     if (success) {
-      debug('✅ Conditional authentication successful');
+      conditionalAuthSucceeded = true;
       dispatch('success', {
         user: $authStore.user,
         method: 'passkey',
@@ -196,6 +214,10 @@ async function handleConditionalAuth(event: CustomEvent<{email: string}>) {
     debug('⚠️ Conditional authentication failed (expected if no passkeys):', error);
   } finally {
     authStore.setConditionalAuthActive(false);
+  }
+
+  if (conditionalAuthSucceeded) {
+    debug('✅ Conditional authentication successful');
   }
 }
 
@@ -217,6 +239,12 @@ async function handleSecondaryAction() {
 
   authStore.setLoading(true);
 
+  // Which branch below fires is only known once inside the try. The
+  // corresponding debug() call is deferred until after the try/catch so it
+  // doesn't sit inside the try body, which would block dead-code
+  // elimination of the call in production builds.
+  let secondaryPinBranch: 'existing' | 'new' | undefined;
+
   try {
     const secondaryMethod = buttonConfig.secondary.method;
 
@@ -224,12 +252,12 @@ async function handleSecondaryAction() {
       // Check if user has a valid pin first
       if ($authStore.hasValidPin) {
         // Skip sending new code, go directly to verification step
-        debug('🔢 Secondary action: Valid pin detected, going to verification step');
+        secondaryPinBranch = 'existing';
         authStore.setLoading(false);
         authStore.notifyPinSent();
       } else {
         // Send new pin
-        debug('📧 Secondary action: Sending new pin');
+        secondaryPinBranch = 'new';
         await handleEmailCodeAuth();
       }
     }
@@ -238,6 +266,12 @@ async function handleSecondaryAction() {
     console.error('Secondary authentication error:', err);
     // Error handling is now managed by AuthStore
   }
+
+  if (secondaryPinBranch === 'existing') {
+    debug('🔢 Secondary action: Valid pin detected, going to verification step');
+  } else if (secondaryPinBranch === 'new') {
+    debug('📧 Secondary action: Sending new pin');
+  }
 }
 
 // Handle primary sign in action
@@ -245,6 +279,15 @@ async function handleSignIn() {
   if (!email.trim()) return;
 
   authStore.setLoading(true);
+
+  // The values below are only known once computed inside the try. Their
+  // debug() calls are deferred until after the try/catch so they don't sit
+  // inside the try body, which would block dead-code elimination of the
+  // calls in production builds. (The early-account-creation debug() call
+  // further down is left in place: it's followed by a `return` before the
+  // end of the try, so deferring it would skip code that must still run.)
+  let determinedAuthMethod: 'passkey-with-fallback' | 'email-code' | undefined;
+  let validPinDetected = false;
 
   try {
     // Check what auth methods are available for this email (the user check is a bit redundant here)
@@ -283,7 +326,7 @@ async function handleSignIn() {
     }
 
     const authMethod = determineAuthMethod(userCheck);
-    debug('🔐 Determined auth method:', authMethod);
+    determinedAuthMethod = authMethod;
 
     switch (authMethod) {
       case 'passkey-with-fallback':
@@ -300,7 +343,7 @@ async function handleSignIn() {
         // Check if user has a valid pin first
         if ($authStore.hasValidPin) {
           // Skip sending new code, go directly to verification step
-          debug('🔢 Valid pin detected, skipping email send and going to verification step');
+          validPinDetected = true;
           authStore.setLoading(false);
           authStore.notifyPinSent();
         } else {
@@ -313,6 +356,13 @@ async function handleSignIn() {
     authStore.setLoading(false);
     console.error('Authentication error:', err);
     // Error handling is now managed by AuthStore
+  }
+
+  if (determinedAuthMethod) {
+    debug('🔐 Determined auth method:', determinedAuthMethod);
+  }
+  if (validPinDetected) {
+    debug('🔢 Valid pin detected, skipping email send and going to verification step');
   }
 }
 
@@ -515,7 +565,10 @@ run(() => {
   open={showPolicyModal}
   store={authStore}
   on:close={() => showPolicyModal = false}
-  on:consent={(e) => debug('Policy consent:', e.detail)}
+  on:consent={(e) => {
+    const consentDetail = e.detail;
+    debug('Policy consent:', consentDetail);
+  }}
 />
 {/if}
 

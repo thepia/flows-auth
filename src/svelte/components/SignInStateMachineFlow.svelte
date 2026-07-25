@@ -8,7 +8,7 @@
   import { writable } from 'svelte/store';
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
-  import { debug } from '../../core/utils/debug.js';
+  import { debug } from '../utils/debug.js';
 
   interface Props {
     currentSignInState?: string;
@@ -83,7 +83,8 @@
         const isCurrentState = stateName === currentSignInState;
         
         if (stateName === 'emailEntry') {
-          debug(`  Node ${stateName}: isCurrentState=${isCurrentState}, color=${isCurrentState ? categoryInfo.color : categoryInfo.color + '99'}`);
+          const nodeColor = categoryInfo.color;
+          debug(`  Node ${stateName}: isCurrentState=${isCurrentState}, color=${isCurrentState ? nodeColor : nodeColor + '99'}`);
         }
         
         const col = index % 3;

@@ -11,7 +11,7 @@ import type { SvelteAuthStore } from '@thepia/flows-auth';
 import CodeInput from './CodeInput.svelte';
 import AuthButton from './AuthButton.svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
-import { debug } from '../../../core/utils/debug.js';
+import { debug } from '../../utils/debug.js';
 
   interface Props {
     authStore: SvelteAuthStore;
@@ -37,7 +37,8 @@ let buttonConfig = $derived((() => {
 let stateMessage = $derived(authStore && ($authStore.signInState || $authStore.apiError !== undefined) ? authStore.getStateMessageConfig() : null);
 
 async function handleEmailCodeVerification() {
-  debug('🔐 handleEmailCodeVerification called', { emailCode: $authStore.emailCode });
+  const debugEmailCode = $authStore.emailCode;
+  debug('🔐 handleEmailCodeVerification called', { emailCode: debugEmailCode });
   const code = $authStore.emailCode || '';
   if (!code.trim()) {
     debug('❌ No code to verify');

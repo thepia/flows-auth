@@ -155,16 +155,20 @@ class Telemetry {
 
     this.serviceWorkerInitialized = true;
 
+    let serviceWorkerReady = false;
+
     try {
       this.serviceWorkerRegistration = await navigator.serviceWorker.ready;
-      if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
-        debug('📊 [Telemetry] Service worker ready for logging');
-      }
+      serviceWorkerReady = true;
     } catch (error) {
       if (this.config?.errorReporting?.serviceWorkerLogging?.debug) {
         console.warn('📊 [Telemetry] Service worker not available:', error);
       }
       this.serviceWorkerRegistration = null;
+    }
+
+    if (serviceWorkerReady && this.config?.errorReporting?.serviceWorkerLogging?.debug) {
+      debug('📊 [Telemetry] Service worker ready for logging');
     }
   }
 

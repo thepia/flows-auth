@@ -185,11 +185,12 @@ export async function quickAuthSetup(
     }
   });
 
+  const isDev = isDevelopmentEnvironment();
   debug('🚀 Quick auth setup complete:', {
     apiBaseUrl: config.apiBaseUrl,
     domain: config.domain,
     companyName: config.branding?.companyName,
-    isDev: isDevelopmentEnvironment()
+    isDev
   });
 
   return config;

@@ -63,19 +63,20 @@ export async function detectApiServer(
     (currentLocation.hostname.includes('ngrok') ||
       currentLocation.hostname.includes('ngrok-free.app'))
   ) {
-    debug(`🔗 ngrok domain detected: ${currentLocation.hostname} - trying local API first`);
+    const hostname = currentLocation.hostname;
+    debug(`🔗 ngrok domain detected: ${hostname} - trying local API first`);
     // Continue to local server detection below
   }
   // Check for localhost - treat as development and try local server first
   else if (currentLocation?.hostname === 'localhost') {
-    debug(`🏠 localhost detected: ${currentLocation.hostname} - trying local API first`);
+    const hostname = currentLocation.hostname;
+    debug(`🏠 localhost detected: ${hostname} - trying local API first`);
     // Continue to local server detection below
   }
   // Check for production domains - skip local server check for performance
   else if (currentLocation?.hostname && !currentLocation.hostname.startsWith('dev.')) {
-    debug(
-      `🌐 Using production API server for ${currentLocation.hostname}: ${config.productionUrl}`
-    );
+    const hostname = currentLocation.hostname;
+    debug(`🌐 Using production API server for ${hostname}: ${config.productionUrl}`);
     return {
       url: config.productionUrl,
       type: 'production',

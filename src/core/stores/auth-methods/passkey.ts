@@ -11,6 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { SignInData } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import { reportWebAuthnError } from '../../utils/telemetry.js';
 import {
   authenticateWithPasskey,
@@ -22,7 +23,6 @@ import {
 } from '../../utils/webauthn.js';
 import { createSessionData } from '../core/session.js';
 import type { StoreOptions } from '../types.js';
-import { debug } from '../../utils/debug.js';
 
 /**
  * Passkey store state
@@ -120,10 +120,10 @@ export function createPasskeyStore(options: StoreOptions) {
         throw new Error('Invalid email format');
       }
 
+      debug('🔍 Passkey signIn called:', { email, conditional });
+
       try {
         set({ isAuthenticating: true, lastError: null });
-
-        debug('🔍 Passkey signIn called:', { email, conditional });
 
         // Get userId from email (mirrors thepia.com pattern)
         const userCheck = await api.checkEmail(email);
@@ -221,10 +221,10 @@ export function createPasskeyStore(options: StoreOptions) {
         throw new Error('Passkey registration not supported on this device');
       }
 
+      debug('🔄 Starting passkey registration:', { email, userId });
+
       try {
         set({ isRegistering: true, lastError: null });
-
-        debug('🔄 Starting passkey registration:', { email, userId });
 
         // Get WebAuthn registration options from server
         const registrationOptions = await api.getWebAuthnRegistrationOptions({
@@ -250,10 +250,6 @@ export function createPasskeyStore(options: StoreOptions) {
           lastRegistrationTime: Date.now(),
           lastError: null
         });
-
-        debug('✅ Passkey registration successful');
-
-        return true;
       } catch (error) {
         const regError = error as Error;
 
@@ -270,6 +266,9 @@ export function createPasskeyStore(options: StoreOptions) {
         console.error('❌ Passkey registration failed:', regError);
         throw error;
       }
+
+      debug('✅ Passkey registration successful');
+      return true;
     },
 
     // Capability detection

@@ -3,13 +3,13 @@
  * Handles invitation token validation and user status checking
  */
 
+import { debug } from './debug.js';
 import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens.js';
 import {
   decodeInvitationToken,
   hashInvitationToken,
   validateInvitationToken
 } from './invitation-tokens.js';
-import { debug } from './debug.js';
 
 /**
  * Result of invitation token processing
@@ -92,12 +92,17 @@ export async function processInvitationToken(
 
     if (enableDebugLogging) {
       debug('User exists, checking passkey status:', userCheck);
+      const userCheckKeys = Object.keys(userCheck);
+      const userCheckHasPasskey = userCheck.hasPasskey;
+      const userCheckHasWebAuthn = userCheck.hasWebAuthn;
+      const userCheckInvitationTokenHash = userCheck.invitationTokenHash;
+      const userCheckInvitationTokenHashExists = !!userCheck.invitationTokenHash;
       debug('🔍 DEBUG: userCheck properties:', {
-        keys: Object.keys(userCheck),
-        hasPasskey: userCheck.hasPasskey,
-        hasWebAuthn: userCheck.hasWebAuthn,
-        invitationTokenHash: userCheck.invitationTokenHash,
-        invitationTokenHashExists: !!userCheck.invitationTokenHash
+        keys: userCheckKeys,
+        hasPasskey: userCheckHasPasskey,
+        hasWebAuthn: userCheckHasWebAuthn,
+        invitationTokenHash: userCheckInvitationTokenHash,
+        invitationTokenHashExists: userCheckInvitationTokenHashExists
       });
     }
 
@@ -129,9 +134,11 @@ export async function processInvitationToken(
           tokenHashMatches = currentTokenHash === userCheck.invitationTokenHash;
 
           if (enableDebugLogging) {
+            const storedHashPreviewForDebug = `${userCheck.invitationTokenHash?.substring(0, 8)}...`;
+            const currentHashPreviewForDebug = `${currentTokenHash?.substring(0, 8)}...`;
             debug('Token hash verification:', {
-              stored: `${userCheck.invitationTokenHash?.substring(0, 8)}...`,
-              current: `${currentTokenHash?.substring(0, 8)}...`,
+              stored: storedHashPreviewForDebug,
+              current: currentHashPreviewForDebug,
               matches: tokenHashMatches
             });
           }

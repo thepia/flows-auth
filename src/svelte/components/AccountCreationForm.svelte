@@ -7,7 +7,7 @@
 
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { getAuthStoreFromContext } from '../auth-context.js';
-  import { debug } from '../../core/utils/debug.js';
+  import { debug } from '../utils/debug.js';
   import type { SvelteAuthStore } from '@thepia/flows-auth';
   import { isWebAuthnSupported, isPlatformAuthenticatorAvailable } from '@thepia/flows-auth';
   import type {
@@ -102,31 +102,36 @@ const dispatch = createEventDispatcher<{
     supportsWebAuthn = isWebAuthnSupported() && config.enablePasskeys;
     platformAuthenticatorAvailable = await isPlatformAuthenticatorAvailable();
     
+    const enablePasskeys = config.enablePasskeys;
     debug('🔐 RegistrationForm WebAuthn Status:', {
       supportsWebAuthn,
       platformAuthenticatorAvailable,
-      enablePasskeys: config.enablePasskeys
+      enablePasskeys
     });
-    
+
     if (invitationTokenData) {
+      const prefillEmail = invitationTokenData.email;
+      const fieldsPopulated = {
+        firstName: !!invitationTokenData.firstName,
+        lastName: !!invitationTokenData.lastName,
+        company: !!invitationTokenData.company,
+        phone: !!invitationTokenData.phone,
+        jobTitle: !!invitationTokenData.jobTitle
+      };
       debug('🎫 Form prefilled from invitation token:', {
-        email: invitationTokenData.email,
-        fieldsPopulated: {
-          firstName: !!invitationTokenData.firstName,
-          lastName: !!invitationTokenData.lastName,
-          company: !!invitationTokenData.company,
-          phone: !!invitationTokenData.phone,
-          jobTitle: !!invitationTokenData.jobTitle
-        }
+        email: prefillEmail,
+        fieldsPopulated
       });
     }
 
     // Subscribe to auth store state changes
     debug('🔧 RegistrationForm subscribing to auth store in onMount');
     unsubscribeAuthStore = authStore.subscribe(($auth) => {
+      const authState = $auth.state;
+      const hasUser = !!$auth.user;
       debug('🔍 RegistrationForm auth state change:', {
-        state: $auth.state,
-        hasUser: !!$auth.user,
+        state: authState,
+        hasUser,
         registrationCompleted,
         hasRegistrationResult: !!registrationResult
       });
@@ -210,6 +215,8 @@ const dispatch = createEventDispatcher<{
     loading = true;
     error = null;
 
+    let registrationSuccessUser: User | null = null;
+
     try {
       // Check if user already exists
       const emailCheck = await authStore.api.checkEmail(email);
@@ -252,19 +259,26 @@ const dispatch = createEventDispatcher<{
         const currentAuthState = authStore.getState();
         maybeEmitAppAccess(currentAuthState.state, currentAuthState.user);
 
-        debug('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
-
-        // Account creation completed - auth store will handle session creation and app transition
-        debug('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
+        // Debug logging for this success path is deferred until after the
+        // try/catch below (see registrationSuccessUser) so the debug() calls
+        // don't sit inside the try body, which would block dead-code
+        // elimination of the calls in production builds.
+        registrationSuccessUser = result.user;
 
         // Emit success event immediately (for UI feedback)
-        debug('🚀 DISPATCHING SUCCESS EVENT:', { user: result.user });
         dispatch('success', { user: result.user });
       }
     } catch (err: any) {
       loading = false;
       error = err.message || 'Registration failed';
       dispatch('error', { error: { code: 'registration_failed', message: error } });
+    }
+
+    if (registrationSuccessUser) {
+      debug('🎉 Registration API call successful - waiting for auth store to confirm session persistence');
+      // Account creation completed - auth store will handle session creation and app transition
+      debug('🎉 Account creation API call successful - waiting for auth store to confirm session persistence');
+      debug('🚀 DISPATCHING SUCCESS EVENT:', { user: registrationSuccessUser });
     }
   }
 

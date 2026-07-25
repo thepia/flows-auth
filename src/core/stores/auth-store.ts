@@ -20,6 +20,7 @@ import type {
   SignInData,
   StorageConfigurationUpdate
 } from '../types/index.js';
+import { debug } from '../utils/debug.js';
 import { configureSessionStorage } from '../utils/sessionManager.js';
 // Telemetry
 import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry.js';
@@ -40,7 +41,6 @@ import { createOnboardingStore } from './onboarding-store.js';
 import type { AuthEventData, AuthEventType, StoreOptions } from './types.js';
 // UI stores
 import { createUIEventHandlers, createUIStore, signInStateTransitions } from './ui/ui-state.js';
-import { debug } from '../utils/debug.js';
 
 /**
  * Composed auth store interface - provides unified API
@@ -814,12 +814,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         };
 
         configureSessionStorage(newStorageConfig);
-
-        debug('✅ Storage configuration updated successfully');
       } catch (error: unknown) {
         console.error('❌ Storage configuration update failed:', error);
         throw error;
       }
+
+      debug('✅ Storage configuration updated successfully');
     },
 
     // SignIn flow control methods
@@ -852,7 +852,8 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     // Legacy event system for backward compatibility
     sendSignInEvent: (event: LegacySignInEvent) => {
-      debug('🔄 Processing legacy signin event:', event.type);
+      const eventType = event.type;
+      debug('🔄 Processing legacy signin event:', eventType);
       const { signInState } = ui.getState();
 
       switch (event.type) {

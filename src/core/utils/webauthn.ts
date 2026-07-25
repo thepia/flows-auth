@@ -145,9 +145,11 @@ export async function createCredential(
     throw new Error('WebAuthn is not supported on this device');
   }
 
-  try {
-    debug('🔧 Processing WebAuthn registration options:', registrationOptions);
+  debug('🔧 Processing WebAuthn registration options:', registrationOptions);
 
+  let credentialForServer: SerializedWebAuthnRegistrationResponse;
+
+  try {
     // Convert server format to browser format
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
       challenge: base64ToArrayBuffer(registrationOptions.challenge),
@@ -183,7 +185,7 @@ export async function createCredential(
     const response = credential.response as AuthenticatorAttestationResponse;
 
     // Convert credential to format expected by server
-    const credentialForServer = {
+    credentialForServer = {
       id: credential.id,
       rawId: arrayBufferToBase64Url(credential.rawId),
       response: {
@@ -195,13 +197,13 @@ export async function createCredential(
       type: credential.type,
       clientExtensionResults: credential.getClientExtensionResults()
     };
-
-    debug('✅ WebAuthn authentication created and converted for server');
-    return credentialForServer;
   } catch (error) {
     console.error('❌ WebAuthn credential creation failed:', error);
     throw mapWebAuthnError(error);
   }
+
+  debug('✅ WebAuthn authentication created and converted for server');
+  return credentialForServer;
 }
 
 /**

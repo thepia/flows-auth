@@ -30,9 +30,9 @@ import type {
 } from '../types/onboarding.js';
 import { detectApiServer } from '../utils/api-detection.js';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter.js';
+import { debug } from '../utils/debug.js';
 import { reportApiError } from '../utils/telemetry.js';
 import { globalUserCache } from '../utils/user-cache.js';
-import { debug } from '../utils/debug.js';
 
 export class AuthApiClient {
   readonly config: AuthConfig;
@@ -57,14 +57,23 @@ export class AuthApiClient {
   private async detectEffectiveBaseUrl(): Promise<string> {
     // If running in browser and config allows detection
     if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
+      let detectedUrl: string | undefined;
+      let debugMessage: string | undefined;
       try {
         // Try to use the detection utility if available
         const apiServer = await detectApiServer();
-        debug(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
-        return apiServer.url.replace(/\/$/, '');
+        debugMessage = `🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`;
+        detectedUrl = apiServer.url.replace(/\/$/, '');
       } catch (_error) {
         // Fall back to configured URL if detection fails
-        debug('🌐 AuthApiClient: Using configured API:', this.baseUrl);
+        const baseUrl = this.baseUrl;
+        debug('🌐 AuthApiClient: Using configured API:', baseUrl);
+      }
+      if (debugMessage) {
+        debug(debugMessage);
+      }
+      if (detectedUrl !== undefined) {
+        return detectedUrl;
       }
     }
 
@@ -306,14 +315,16 @@ export class AuthApiClient {
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
+    const requestKeys = Object.keys(request);
+    const fullRequest = JSON.stringify(request, null, 2);
     debug('🔍 signInWithPasskey called with:', {
-      requestKeys: Object.keys(request),
+      requestKeys,
       hasUserId: 'userId' in request,
       hasAuthResponse: 'authResponse' in request,
       hasEmail: 'email' in request,
       hasChallengeId: 'challengeId' in request,
       hasCredential: 'credential' in request,
-      fullRequest: JSON.stringify(request, null, 2)
+      fullRequest
     });
 
     return this.request<SignInResponse>('/auth/webauthn/verify', {
@@ -403,14 +414,17 @@ export class AuthApiClient {
     const endpoint = `/${this.getEffectiveAppCode()}/check-user`;
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
+    const baseUrl = this.baseUrl;
+    const appCode = this.config.appCode;
+    const timestamp = new Date().toISOString();
     debug('[AuthApiClient] Making check-user request:', {
       email,
       requestUrl,
-      baseUrl: this.baseUrl,
+      baseUrl,
       endpoint,
-      appCode: this.config.appCode,
+      appCode,
       origin,
-      timestamp: new Date().toISOString()
+      timestamp
     });
 
     // Use rate-limited request with Origin header for RPID determination
@@ -425,11 +439,12 @@ export class AuthApiClient {
       }
     );
 
+    const rawResponseTimestamp = new Date().toISOString();
     debug('[AuthApiClient] Raw API response:', {
       email,
       requestUrl,
       response: response,
-      timestamp: new Date().toISOString()
+      timestamp: rawResponseTimestamp
     });
 
     // Return the response directly since it's already in CheckUserResponse format
@@ -634,10 +649,12 @@ export class AuthApiClient {
       id: string;
     };
   }> {
+    const clientId = this.config.clientId;
+    const apiBaseUrl = this.config.apiBaseUrl;
     debug('🔗 Starting passwordless authentication:', {
       email,
-      clientId: this.config.clientId,
-      apiBaseUrl: this.config.apiBaseUrl,
+      clientId,
+      apiBaseUrl,
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
 
@@ -689,11 +706,12 @@ export class AuthApiClient {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = `/${effectiveAppCode}/send-email`;
 
+    const clientId = this.config.clientId;
     debug('📧 Sending email signin:', {
       email,
       endpoint,
       appCode: effectiveAppCode,
-      clientId: this.config.clientId,
+      clientId,
       hasOptions: !!options
     });
 
@@ -762,10 +780,11 @@ export class AuthApiClient {
   async sendAppEmailCode(email: string): Promise<EmailCodeSendResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
+    const apiBaseUrl = this.config.apiBaseUrl;
     debug('📧 Sending app email code:', {
       email,
       appCode: effectiveAppCode,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     return this.request<EmailCodeSendResponse>(`/${effectiveAppCode}/send-email`, {
@@ -783,11 +802,12 @@ export class AuthApiClient {
   async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
+    const apiBaseUrl = this.config.apiBaseUrl;
     debug('🔍 Verifying app email code:', {
       email,
       appCode: effectiveAppCode,
       hasCode: !!code,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     const response = await this.request<SignInResponse>(`/${effectiveAppCode}/verify-email`, {
@@ -868,11 +888,12 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
+    const apiBaseUrl = this.config.apiBaseUrl;
     debug('👤 Creating app user:', {
       email: userData.email,
       appCode: effectiveAppCode,
       hasInvitation: !!userData.invitationToken,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     return this.request<{

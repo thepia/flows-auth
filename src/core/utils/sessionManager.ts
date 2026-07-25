@@ -12,12 +12,12 @@
  */
 
 import type { SignInData, StorageConfig } from '../types/index.js';
+import { debug } from './debug.js';
 import {
   getOptimalStorageConfig,
   getStorageManager,
   initializeStorageManager
 } from './storageManager.js';
-import { debug } from './debug.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const EMAIL_PREFILL_KEY = 'thepia_email_prefill';
@@ -49,6 +49,8 @@ export function getSession(): SignInData | null {
 }
 
 export function saveSession(sessionData: SignInData): void {
+  let storageType: string | undefined;
+
   try {
     const storage = getStorageManager();
     storage.setItem(SESSION_KEY, JSON.stringify(sessionData));
@@ -62,18 +64,19 @@ export function saveSession(sessionData: SignInData): void {
       );
     }
 
-    debug(
-      '💾 Session saved to',
-      storage.getConfig().type,
-      'for user:',
-      sessionData.user.email
-    );
+    storageType = storage.getConfig().type;
   } catch (error) {
     console.error('Failed to save session:', error);
+  }
+
+  if (storageType !== undefined) {
+    debug('💾 Session saved to', storageType, 'for user:', sessionData.user.email);
   }
 }
 
 export function clearSession(): void {
+  let storageType: string | undefined;
+
   try {
     const storage = getStorageManager();
     storage.removeItem(SESSION_KEY);
@@ -87,9 +90,13 @@ export function clearSession(): void {
       );
     }
 
-    debug('🗑️ Session cleared from', storage.getConfig().type);
+    storageType = storage.getConfig().type;
   } catch (error) {
     console.error('Failed to clear session:', error);
+  }
+
+  if (storageType !== undefined) {
+    debug('🗑️ Session cleared from', storageType);
   }
 }
 

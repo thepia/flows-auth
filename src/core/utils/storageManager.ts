@@ -107,11 +107,12 @@ export class ConfigurableStorageManager {
     this.config = this.getDefaultConfig(config);
     this.adapter = this.createAdapter();
 
+    const { type, sessionTimeout, persistentSessions, userRole } = this.config;
     debug('🗄️ Storage manager initialized:', {
-      type: this.config.type,
-      sessionTimeout: this.config.sessionTimeout,
-      persistentSessions: this.config.persistentSessions,
-      userRole: this.config.userRole
+      type,
+      sessionTimeout,
+      persistentSessions,
+      userRole
     });
   }
 
@@ -197,7 +198,8 @@ export class ConfigurableStorageManager {
     // If storage type changed, create new adapter
     if (this.config.type !== oldType) {
       this.adapter = this.createAdapter();
-      debug('🔄 Storage adapter changed:', oldType, '->', this.config.type);
+      const newType = this.config.type;
+      debug('🔄 Storage adapter changed:', oldType, '->', newType);
     }
   }
 

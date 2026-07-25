@@ -8,7 +8,7 @@
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { createEventDispatcher } from 'svelte';
-  import { debug } from '../../core/utils/debug.js';
+  import { debug } from '../utils/debug.js';
 
   interface Props {
     authState?: string;

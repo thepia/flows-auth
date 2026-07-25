@@ -1,8 +1,8 @@
 import type { AuthConfig, SessionData, SessionPersistence, UserData } from '../../types/index.js';
 import { isOlderThan } from '../../utils/date-helpers.js';
+import { debug } from '../../utils/debug.js';
 import { configureSessionStorage, getOptimalSessionConfig } from '../../utils/sessionManager.js';
 import { getStorageManager } from '../../utils/storageManager.js';
-import { debug } from '../../utils/debug.js';
 
 const SESSION_KEY = 'thepia_auth_session';
 const LAST_USER_KEY = 'thepia_last_user';
@@ -32,6 +32,9 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
         // Return session for SSR context (won't be persisted)
         return partialSession as SessionData;
       }
+
+      let mergedSession: SessionData;
+      let storageType: string;
 
       try {
         const storage = getStorageManager();
@@ -71,7 +74,7 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
         }
 
         // Merge partial update with existing session
-        const mergedSession: SessionData = existingSession
+        mergedSession = existingSession
           ? { ...existingSession, ...partialSession }
           : (partialSession as SessionData);
 
@@ -107,19 +110,16 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
           });
         }
 
-        debug(
-          '💾 Session saved to',
-          storage.getConfig().type,
-          'for user:',
-          mergedSession.email
-        );
-
-        // Return merged session so caller knows what was actually persisted
-        return mergedSession;
+        storageType = storage.getConfig().type;
       } catch (error) {
         console.error('Failed to save session:', error);
         throw error;
       }
+
+      debug('💾 Session saved to', storageType, 'for user:', mergedSession.email);
+
+      // Return merged session so caller knows what was actually persisted
+      return mergedSession;
     },
 
     async loadSession(): Promise<SessionData | null> {
@@ -191,6 +191,8 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
     async clearSession(): Promise<void> {
       if (typeof window === 'undefined') return;
 
+      let storageType: string | undefined;
+
       try {
         const storage = getStorageManager();
         storage.removeItem(SESSION_KEY);
@@ -203,9 +205,13 @@ export function createLocalStorageAdapter(config?: AuthConfig): SessionPersisten
           });
         }
 
-        debug('🗑️ Session cleared from', storage.getConfig().type);
+        storageType = storage.getConfig().type;
       } catch (error) {
         console.error('Failed to clear session:', error);
+      }
+
+      if (storageType !== undefined) {
+        debug('🗑️ Session cleared from', storageType);
       }
     },
 

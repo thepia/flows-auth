@@ -18,8 +18,8 @@ import type {
   SignInState,
   StateMessageConfig
 } from '../../types/index.js';
-import type { StoreOptions, UIState, UIStore } from '../types.js';
 import { debug } from '../../utils/debug.js';
+import type { StoreOptions, UIState, UIStore } from '../types.js';
 
 /**
  * Initial state for the UI store

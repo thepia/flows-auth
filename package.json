@@ -21,6 +21,10 @@
       "svelte": "./dist/svelte/dev.js",
       "default": "./dist/svelte/dev.js"
     },
+    "./vite-preset": {
+      "types": "./dist/vite-preset.d.ts",
+      "default": "./dist/vite-preset.js"
+    },
     "./style.css": "./dist/flows-auth.css",
     "./package.json": "./package.json"
   },

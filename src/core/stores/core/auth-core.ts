@@ -332,7 +332,10 @@ export function createAuthCoreStore(options: StoreOptions) {
           debug('🔄 Token refresh response received:', tokenRefreshDebugPayload);
         }
         if (tokensUpdatedDebugMessage !== undefined) {
-          debug('✅ Tokens updated successfully, new refresh token saved:', tokensUpdatedDebugMessage);
+          debug(
+            '✅ Tokens updated successfully, new refresh token saved:',
+            tokensUpdatedDebugMessage
+          );
         }
       })();
 

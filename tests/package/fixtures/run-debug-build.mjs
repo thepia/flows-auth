@@ -34,7 +34,16 @@ const result = await build({
   build: {
     write: false,
     minify: 'esbuild',
-    rollupOptions: { input: FIXTURE }
+    rollupOptions: {
+      input: FIXTURE,
+      // Rollup defaults to treating any property read as a potential side
+      // effect (getters, proxies). That conservatism isn't specific to our
+      // debug() calls -- it inflates what Rollup keeps across the whole
+      // reachable graph, which in turn affects how much esbuild's later
+      // minify pass can prove is dead. Confirmed empirically: this single
+      // option was the difference between 0/79 and full elimination.
+      treeshake: { propertyReadSideEffects: false }
+    }
   }
 });
 

@@ -1,6 +1,7 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { flowsAuthTreeshake } from '@thepia/flows-auth/vite-preset';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => ({
@@ -54,7 +55,8 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: undefined // Prevent aggressive caching
-      }
+      },
+      treeshake: flowsAuthTreeshake
     }
   }
 }));

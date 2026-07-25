@@ -80,7 +80,7 @@ describe('WebAuthn Integration Flow', () => {
 
   it('should trigger WebAuthn flow when user has passkeys', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/app/check-user')) {
+      if (url.includes('/demo/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
@@ -132,7 +132,7 @@ describe('WebAuthn Integration Flow', () => {
     );
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/app/check-user'),
+      expect.stringContaining('/demo/check-user'),
       expect.any(Object)
     );
     expect(mockFetch).toHaveBeenCalledWith(
@@ -159,7 +159,7 @@ describe('WebAuthn Integration Flow', () => {
   // landing a test that only passes by luck of promise resolution order.
   it.skip('should fall back to email code when WebAuthn fails', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/app/check-user')) {
+      if (url.includes('/demo/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
@@ -174,7 +174,7 @@ describe('WebAuthn Integration Flow', () => {
       }
       // The email-code fallback routes through sendAppEmailCode() to send
       // the code.
-      if (url.includes('/app/send-email')) {
+      if (url.includes('/demo/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -206,13 +206,13 @@ describe('WebAuthn Integration Flow', () => {
 
   it('should skip WebAuthn when passkeys are disabled', async () => {
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/app/check-user')) {
+      if (url.includes('/demo/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/app/send-email')) {
+      if (url.includes('/demo/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -240,13 +240,13 @@ describe('WebAuthn Integration Flow', () => {
     delete (global as any).PublicKeyCredential;
 
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('/app/check-user')) {
+      if (url.includes('/demo/check-user')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
         });
       }
-      if (url.includes('/app/send-email')) {
+      if (url.includes('/demo/send-email')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true, message: 'Check your email' })

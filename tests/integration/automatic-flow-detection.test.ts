@@ -101,7 +101,7 @@ describe('Automatic Flow Detection', () => {
   describe('Existing user routing', () => {
     it('should route to passkey sign-in as the primary action when the user has a passkey', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/app/check-user')) {
+        if (url.includes('/demo/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: true, userId: 'user-123' })
@@ -120,13 +120,13 @@ describe('Automatic Flow Detection', () => {
 
     it('should send an email code automatically for an existing user without a passkey (email-only)', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/app/check-user')) {
+        if (url.includes('/demo/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: false, userId: 'user-456' })
           });
         }
-        if (url.includes('/app/send-email')) {
+        if (url.includes('/demo/send-email')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ success: true, message: 'Check your email' })
@@ -260,7 +260,7 @@ describe('Automatic Flow Detection', () => {
   describe('Form state management', () => {
     it('should reflect only the final email after rapid changes, with no stale overwrite', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (url.includes('/app/check-user')) {
+        if (url.includes('/demo/check-user')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ exists: true, hasWebAuthn: false })

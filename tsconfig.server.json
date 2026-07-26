@@ -1,0 +1,28 @@
+{
+  // Deno-native server target ("./server" export) - real JS + .d.ts emit via
+  // plain tsc, no tsup/bundler. Each source file's .js/.d.ts pair mirrors its
+  // own path directly (src/server/foo.ts -> dist/server/foo.js + .d.ts), so
+  // there's no bundler-vs-declaration path mismatch to work around here.
+  // See docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md - src/server is deliberately
+  // outside src/core/ and not part of the "." barrel.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "rootDir": "src/server",
+    "outDir": "dist/server",
+    // Override the base config's dev-time source alias: resolving
+    // @thepia/flows-auth/telemetry to src/core/telemetry.ts would pull that
+    // file (and its own src/core/telemetry/** dependencies) into THIS
+    // project, which tsc rejects since they fall outside rootDir. Blanking
+    // `paths` here falls through to plain Node self-reference resolution
+    // (moduleResolution: nodenext already supports a package importing its
+    // own name via its package.json `exports` map) - the same path a real
+    // external consumer resolves through, so it requires core to be built
+    // (dist/telemetry.d.ts to exist) before this project builds.
+    "paths": {}
+  },
+  "include": ["src/server/**/*"],
+  "exclude": ["node_modules", "dist", "examples", "tests", "**/*.test.ts"]
+}

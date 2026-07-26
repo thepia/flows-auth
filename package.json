@@ -1,6 +1,6 @@
 {
   "name": "@thepia/flows-auth",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Svelte authentication library with WebAuthn/passkey support for Thepia Flow applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -32,6 +32,10 @@
     "./telemetry-otlp": {
       "types": "./dist/telemetry-otlp.d.ts",
       "default": "./dist/telemetry-otlp.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
     },
     "./style.css": "./dist/flows-auth.css",
     "./package.json": "./package.json"

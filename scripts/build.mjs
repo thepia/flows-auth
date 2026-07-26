@@ -4,13 +4,17 @@
  *
  *   core   -> tsup           -> dist/index.js (+ .d.ts)     => "."
  *   svelte -> svelte-package -> dist/svelte/**              => "./svelte"
+ *   server -> tsc (no bundler)-> dist/server/** (+ .d.ts)    => "./server"
  *   css    -> vite (css-only)-> dist/flows-auth.css         => "./style.css" (transitional)
  *
  * Paraglide output under src/core/paraglide is COMMITTED source (regenerate with
  * `pnpm build:paraglide` when messages change); it is bundled into core by tsup
  * and also copied verbatim to dist/paraglide for backward-compatible subpaths.
  *
- * src/server (Deno target) is intentionally NOT built here.
+ * src/server is deliberately outside src/core/ and not part of the "." barrel
+ * (see docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md) - it's Deno-native server code
+ * with no UI framework dependency, built by plain tsc (no tsup/bundler) so
+ * each file's .js/.d.ts pair mirrors its own source path directly.
  */
 import { execSync } from 'node:child_process';
 import {
@@ -60,6 +64,11 @@ if (existsSync(paraglideMessagesDts)) {
   if (after !== before) writeFileSync(paraglideMessagesDts, after);
 }
 
+// 2c. Server target: real JS + .d.ts via plain tsc, no bundler. Each source
+//     file's pair mirrors its own path (src/server/foo.ts -> server/foo.js
+//     + .d.ts), so there's no bundler-vs-declaration path mismatch here.
+run(`tsc -p tsconfig.server.json --outDir ${join(DIST_BUILD, 'server')}`);
+
 // 3. Svelte target (svelte-preprocess transpiles TS, emits per-file .svelte.d.ts)
 run(`svelte-package -i src/svelte -o ${join(DIST_BUILD, 'svelte')}`);
 
@@ -98,4 +107,6 @@ if (existsSync(DIST)) renameSync(DIST, DIST_OLD);
 renameSync(DIST_BUILD, DIST);
 rmSync(DIST_OLD, { recursive: true, force: true });
 
-console.log('\n✅ Build complete: dist/index.js, dist/svelte/**, dist/flows-auth.css');
+console.log(
+  '\n✅ Build complete: dist/index.js, dist/svelte/**, dist/server/**, dist/flows-auth.css'
+);

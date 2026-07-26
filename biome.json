@@ -115,5 +115,21 @@
       "attributePosition": "auto"
     }
   },
-  "overrides": []
+  "overrides": [
+    {
+      "includes": ["src/server/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [{ "group": ["../core/*", "../core", "../svelte/*", "../svelte"] }]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

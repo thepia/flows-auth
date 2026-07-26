@@ -15,13 +15,17 @@
     // Override the base config's dev-time source alias: resolving
     // @thepia/flows-auth/telemetry to src/core/telemetry.ts would pull that
     // file (and its own src/core/telemetry/** dependencies) into THIS
-    // project, which tsc rejects since they fall outside rootDir. Blanking
-    // `paths` here falls through to plain Node self-reference resolution
-    // (moduleResolution: nodenext already supports a package importing its
-    // own name via its package.json `exports` map) - the same path a real
-    // external consumer resolves through, so it requires core to be built
-    // (dist/telemetry.d.ts to exist) before this project builds.
-    "paths": {}
+    // project, which tsc rejects since they fall outside rootDir. Point it
+    // instead at core's already-emitted declaration in the build's scratch
+    // directory (scripts/build.mjs runs core's tsup+tsc pass into
+    // dist.build/ before this server pass, then atomically swaps
+    // dist.build/ -> dist/ only as its very last step) - resolving against
+    // the live `dist/` here would only work by accident, on a machine that
+    // happens to have a stale dist/ from a prior build; a clean checkout
+    // (CI) has no dist/ at all yet at this point in the pipeline.
+    "paths": {
+      "@thepia/flows-auth/telemetry": ["./dist.build/telemetry.d.ts"]
+    }
   },
   "include": ["src/server/**/*"],
   "exclude": ["node_modules", "dist", "examples", "tests", "**/*.test.ts"]

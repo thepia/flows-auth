@@ -4,6 +4,7 @@
  */
 
 import type { CheckUserResponse } from '../types/index.js';
+import { debug } from './debug.js';
 
 interface CacheEntry extends CheckUserResponse {
   timestamp: number; // Required for cache expiry
@@ -38,7 +39,7 @@ export class UserCache {
       return null;
     }
 
-    console.log(`📋 Cache hit for ${normalizedEmail}`);
+    debug(`📋 Cache hit for ${normalizedEmail}`);
     return entry;
   }
 
@@ -61,7 +62,7 @@ export class UserCache {
       timestamp: Date.now()
     });
 
-    console.log(`📝 Cached user data for ${normalizedEmail}`);
+    debug(`📝 Cached user data for ${normalizedEmail}`);
   }
 
   /**
@@ -70,7 +71,7 @@ export class UserCache {
   clear(email: string): void {
     const normalizedEmail = email.toLowerCase().trim();
     this.cache.delete(normalizedEmail);
-    console.log(`🗑️ Cleared cache for ${normalizedEmail}`);
+    debug(`🗑️ Cleared cache for ${normalizedEmail}`);
   }
 
   /**
@@ -78,7 +79,7 @@ export class UserCache {
    */
   clearAll(): void {
     this.cache.clear();
-    console.log('🗑️ Cleared all user cache entries');
+    debug('🗑️ Cleared all user cache entries');
   }
 
   /**
@@ -116,7 +117,8 @@ export class UserCache {
     }
 
     if (expiredKeys.length > 0) {
-      console.log(`🧹 Cleaned up ${expiredKeys.length} expired cache entries`);
+      const count = expiredKeys.length;
+      debug(`🧹 Cleaned up ${count} expired cache entries`);
     }
   }
 }

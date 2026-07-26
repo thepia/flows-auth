@@ -8,6 +8,7 @@
   import { SvelteFlow, Controls, Background } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { createEventDispatcher } from 'svelte';
+  import { debug } from '../utils/debug.js';
 
   interface Props {
     authState?: string;
@@ -171,7 +172,7 @@
 
   function handleNodeClick(event) {
     const nodeId = event.detail.node.id;
-    console.log('Auth state clicked:', nodeId);
+    debug('Auth state clicked:', nodeId);
     if (onStateClick) {
       onStateClick(nodeId);
     }

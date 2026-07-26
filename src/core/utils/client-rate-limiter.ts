@@ -3,6 +3,8 @@
  * Provides intelligent rate limiting that respects server signals
  */
 
+import { debug } from './debug.js';
+
 export interface ClientRateLimitConfig {
   maxRequestsPerSecond: number;
   burstCapacity?: number;
@@ -164,7 +166,7 @@ export class ClientRateLimiter {
 
   private logDebug(message: string, ...args: any[]): void {
     if (this.config.debugLogging) {
-      console.log(`[ClientRateLimiter] ${message}`, ...args);
+      debug(`[ClientRateLimiter] ${message}`, ...args);
     }
   }
 }

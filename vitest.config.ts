@@ -10,6 +10,10 @@ const { version } = JSON.parse(readFileSync(resolve(__dirname, './package.json')
 export default defineConfig({
   // Mirror the build-time VERSION injection so source-level tests see it too.
   define: { __LIB_VERSION__: JSON.stringify(version) },
+  // Exposes DEBUG=true (in addition to the default VITE_* vars) as
+  // import.meta.env.DEBUG, so `debug()` (src/core/utils/debug.ts) can be
+  // switched on during test runs -- see `pnpm test:debug`.
+  envPrefix: ['VITE_', 'DEBUG'],
   plugins: [
     svelte({
       preprocess: sveltePreprocess(),

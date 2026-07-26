@@ -10,6 +10,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { SignInData } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import { createSessionData } from '../core/session.js';
 import type { StoreOptions } from '../types.js';
 
@@ -101,14 +102,15 @@ export function createEmailAuthStore(options: StoreOptions) {
 
     // Same implementation as above for non-devtools version
     sendCode: async (email: string) => {
+      debug('📧 Sending email code:', { email, appCode: config.appCode });
+
+      let sendResult: { success: boolean; message: string; timestamp: number } | undefined;
       try {
         set({
           isSendingCode: true,
           lastError: null,
           lastSentEmail: email
         });
-
-        console.log('📧 Sending email code:', { email, appCode: config.appCode });
 
         const response = await api.sendAppEmailCode(email);
 
@@ -123,8 +125,7 @@ export function createEmailAuthStore(options: StoreOptions) {
           get().startResendCooldown();
         }
 
-        console.log('✅ Email code sent successfully');
-        return response || { success: true, message: 'Code sent', timestamp: Date.now() };
+        sendResult = response || { success: true, message: 'Code sent', timestamp: Date.now() };
       } catch (error) {
         const sendError = error as Error;
 
@@ -136,16 +137,19 @@ export function createEmailAuthStore(options: StoreOptions) {
         console.error('❌ Failed to send email code:', sendError);
         throw error;
       }
+
+      debug('✅ Email code sent successfully');
+      return sendResult;
     },
 
     verifyCode: async (email: string, code: string) => {
+      debug('🔍 Verifying email code:', { email, hasCode: !!code });
+
       try {
         set({
           isVerifyingCode: true,
           lastError: null
         });
-
-        console.log('🔍 Verifying email code:', { email, hasCode: !!code });
 
         const response = await api.verifyAppEmailCode(email, code);
 
@@ -157,7 +161,7 @@ export function createEmailAuthStore(options: StoreOptions) {
             lastError: null
           });
 
-          console.log('✅ Email code verified successfully');
+          debug('✅ Email code verified successfully');
 
           // Convert SignInResponse to SignInData immediately
           const signInData = createSessionData(
@@ -214,7 +218,7 @@ export function createEmailAuthStore(options: StoreOptions) {
       hasValidPin?: boolean;
       pinRemainingMinutes?: number;
     }> => {
-      console.log('🔍 Checking user:', { email });
+      debug('🔍 Checking user:', { email });
 
       // api.checkEmail() only resolves for genuine "user checked" responses
       // (including exists: false for a not-found user) and throws for real

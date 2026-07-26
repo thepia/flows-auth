@@ -1,4 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { flowsAuthTreeshake } from '@thepia/flows-auth/vite-preset';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -32,6 +33,9 @@ export default defineConfig({
   cacheDir: '.vite-cache',
   build: {
     // Clear output dir before build
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      treeshake: flowsAuthTreeshake
+    }
   }
 });

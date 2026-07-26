@@ -20,7 +20,7 @@ const getTestConfig = (): AuthConfig => {
     apiBaseUrl: API_BASE,
     domain: 'dev.thepia.net',
     clientId: 'flows-auth-integration-test',
-    appCode: 'test',
+    appCode: 'demo',
     enablePasskeys: true,
     branding: {
       companyName: 'Flows Auth Integration Test',

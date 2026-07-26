@@ -8,7 +8,8 @@
     "dev:astro-only": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/svelte": "^9.0.1",
@@ -19,9 +20,11 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@astrojs/node": "^11.0.2",
     "@tailwindcss/vite": "^4.1.14",
     "@thepia/branding": "^1.5.6",
     "concurrently": "^9.0.0",
-    "tailwindcss": "^4.1.14"
+    "tailwindcss": "^4.1.14",
+    "vitest": "^4.1.0"
   }
 }

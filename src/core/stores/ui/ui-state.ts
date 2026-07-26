@@ -18,6 +18,7 @@ import type {
   SignInState,
   StateMessageConfig
 } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import type { StoreOptions, UIState, UIStore } from '../types.js';
 
 /**
@@ -123,7 +124,7 @@ export function createUIStore(options: StoreOptions) {
 
     // Reset to initial state
     resetUIState: () => {
-      console.log('🔄 Resetting UI state to initial');
+      debug('🔄 Resetting UI state to initial');
       set(initialState);
     },
 
@@ -465,7 +466,7 @@ export const signInStateTransitions = {
     // Transition to userChecked state
     setSignInState('userChecked');
 
-    console.log('✅ User discovered, transitioned to userChecked:', userData);
+    debug('✅ User discovered, transitioned to userChecked:', userData);
   },
 
   /**
@@ -477,7 +478,7 @@ export const signInStateTransitions = {
     setEmailCodeSent(true);
     setSignInState('pinEntry');
 
-    console.log('✅ Email code sent, transitioned to pinEntry');
+    debug('✅ Email code sent, transitioned to pinEntry');
   },
 
   /**
@@ -488,7 +489,7 @@ export const signInStateTransitions = {
 
     setSignInState('signedIn');
 
-    console.log('✅ Authentication successful, transitioned to signedIn');
+    debug('✅ Authentication successful, transitioned to signedIn');
   },
 
   /**
@@ -499,7 +500,7 @@ export const signInStateTransitions = {
 
     resetUIState();
 
-    console.log('🔄 Reset to emailEntry state');
+    debug('🔄 Reset to emailEntry state');
   },
 
   /**

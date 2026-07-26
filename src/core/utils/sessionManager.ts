@@ -12,6 +12,7 @@
  */
 
 import type { SignInData, StorageConfig } from '../types/index.js';
+import { debug } from './debug.js';
 import {
   getOptimalStorageConfig,
   getStorageManager,
@@ -34,7 +35,7 @@ export function getSession(): SignInData | null {
     // expiresAt is now an ISO string, parse it for comparison
     const expiresAtMs = session.tokens.expiresAt ? new Date(session.tokens.expiresAt).getTime() : 0;
     if (expiresAtMs < Date.now() && !session.tokens.refreshToken) {
-      console.log('🕐 Session expired: no refresh token and access token expired');
+      debug('🕐 Session expired: no refresh token and access token expired');
       clearSession();
       return null;
     }
@@ -48,6 +49,8 @@ export function getSession(): SignInData | null {
 }
 
 export function saveSession(sessionData: SignInData): void {
+  let storageType: string | undefined;
+
   try {
     const storage = getStorageManager();
     storage.setItem(SESSION_KEY, JSON.stringify(sessionData));
@@ -61,18 +64,19 @@ export function saveSession(sessionData: SignInData): void {
       );
     }
 
-    console.log(
-      '💾 Session saved to',
-      storage.getConfig().type,
-      'for user:',
-      sessionData.user.email
-    );
+    storageType = storage.getConfig().type;
   } catch (error) {
     console.error('Failed to save session:', error);
+  }
+
+  if (storageType !== undefined) {
+    debug('💾 Session saved to', storageType, 'for user:', sessionData.user.email);
   }
 }
 
 export function clearSession(): void {
+  let storageType: string | undefined;
+
   try {
     const storage = getStorageManager();
     storage.removeItem(SESSION_KEY);
@@ -86,9 +90,13 @@ export function clearSession(): void {
       );
     }
 
-    console.log('🗑️ Session cleared from', storage.getConfig().type);
+    storageType = storage.getConfig().type;
   } catch (error) {
     console.error('Failed to clear session:', error);
+  }
+
+  if (storageType !== undefined) {
+    debug('🗑️ Session cleared from', storageType);
   }
 }
 
@@ -176,7 +184,7 @@ export function getAccessToken(): string | null {
  */
 export function configureSessionStorage(config: StorageConfig): void {
   initializeStorageManager(config);
-  console.log('🔧 Session storage configured:', config);
+  debug('🔧 Session storage configured:', config);
 }
 
 /**

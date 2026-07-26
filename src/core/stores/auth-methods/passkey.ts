@@ -11,6 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { SignInData } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import { reportWebAuthnError } from '../../utils/telemetry.js';
 import {
   authenticateWithPasskey,
@@ -119,10 +120,10 @@ export function createPasskeyStore(options: StoreOptions) {
         throw new Error('Invalid email format');
       }
 
+      debug('🔍 Passkey signIn called:', { email, conditional });
+
       try {
         set({ isAuthenticating: true, lastError: null });
-
-        console.log('🔍 Passkey signIn called:', { email, conditional });
 
         // Get userId from email (mirrors thepia.com pattern)
         const userCheck = await api.checkEmail(email);
@@ -151,7 +152,7 @@ export function createPasskeyStore(options: StoreOptions) {
           lastError: null
         });
 
-        console.log('✅ Passkey authentication successful');
+        debug('✅ Passkey authentication successful');
 
         // Convert SignInResponse to SignInData immediately
         if (response.step === 'success' && response.user && response.access_token) {
@@ -205,7 +206,7 @@ export function createPasskeyStore(options: StoreOptions) {
       } catch (error) {
         set({ conditionalActive: false });
         // Conditional auth failures should be silent
-        console.log('⚠️ Conditional authentication failed (expected if no passkeys):', error);
+        debug('⚠️ Conditional authentication failed (expected if no passkeys):', error);
         return false;
       }
     },
@@ -220,10 +221,10 @@ export function createPasskeyStore(options: StoreOptions) {
         throw new Error('Passkey registration not supported on this device');
       }
 
+      debug('🔄 Starting passkey registration:', { email, userId });
+
       try {
         set({ isRegistering: true, lastError: null });
-
-        console.log('🔄 Starting passkey registration:', { email, userId });
 
         // Get WebAuthn registration options from server
         const registrationOptions = await api.getWebAuthnRegistrationOptions({
@@ -249,10 +250,6 @@ export function createPasskeyStore(options: StoreOptions) {
           lastRegistrationTime: Date.now(),
           lastError: null
         });
-
-        console.log('✅ Passkey registration successful');
-
-        return true;
       } catch (error) {
         const regError = error as Error;
 
@@ -269,6 +266,9 @@ export function createPasskeyStore(options: StoreOptions) {
         console.error('❌ Passkey registration failed:', regError);
         throw error;
       }
+
+      debug('✅ Passkey registration successful');
+      return true;
     },
 
     // Capability detection

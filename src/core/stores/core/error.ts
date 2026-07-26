@@ -11,6 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { ApiError } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import type { ErrorState, ErrorStore, StoreOptions } from '../types.js';
 
 /**
@@ -74,10 +75,12 @@ export function createErrorStore(options: StoreOptions) {
       // Clear error state for retry
       set({ apiError: null });
 
+      const lastFailedRequestMethod = state.lastFailedRequest.method;
+      debug('Retrying last failed request:', lastFailedRequestMethod);
+
       try {
         // This would need to be implemented based on the specific method
         // For now, just clear the error and return true
-        console.log('Retrying last failed request:', state.lastFailedRequest.method);
         return true;
       } catch (error) {
         // Restore error state if retry fails

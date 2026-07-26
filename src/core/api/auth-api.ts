@@ -30,6 +30,7 @@ import type {
 } from '../types/onboarding.js';
 import { detectApiServer } from '../utils/api-detection.js';
 import { globalClientRateLimiter } from '../utils/client-rate-limiter.js';
+import { debug } from '../utils/debug.js';
 import { reportApiError } from '../utils/telemetry.js';
 import { globalUserCache } from '../utils/user-cache.js';
 
@@ -56,14 +57,23 @@ export class AuthApiClient {
   private async detectEffectiveBaseUrl(): Promise<string> {
     // If running in browser and config allows detection
     if (typeof window !== 'undefined' && this.config.apiBaseUrl === 'https://api.thepia.com') {
+      let detectedUrl: string | undefined;
+      let debugMessage: string | undefined;
       try {
         // Try to use the detection utility if available
         const apiServer = await detectApiServer();
-        console.log(`🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`);
-        return apiServer.url.replace(/\/$/, '');
+        debugMessage = `🌐 AuthApiClient: Using ${apiServer.type} API: ${apiServer.url}`;
+        detectedUrl = apiServer.url.replace(/\/$/, '');
       } catch (_error) {
         // Fall back to configured URL if detection fails
-        console.log('🌐 AuthApiClient: Using configured API:', this.baseUrl);
+        const baseUrl = this.baseUrl;
+        debug('🌐 AuthApiClient: Using configured API:', baseUrl);
+      }
+      if (debugMessage) {
+        debug(debugMessage);
+      }
+      if (detectedUrl !== undefined) {
+        return detectedUrl;
       }
     }
 
@@ -99,9 +109,13 @@ export class AuthApiClient {
     options: RequestInit = {},
     includeAuth = false
   ): Promise<T> {
+    // Callers that need to target a different origin than the auth API
+    // itself (e.g. errorReporting.endpoint pointing at the consuming app's
+    // own server rather than thepia.com) can pass a full absolute URL here.
+    // Everything else resolves against the effective base URL as before.
+    const isAbsoluteUrl = /^https?:\/\//i.test(endpoint);
     // Resolve the effective base URL (will use cached promise result after first call)
-    const effectiveUrl = await this.effectiveBaseUrl;
-    const url = `${effectiveUrl}${endpoint}`;
+    const url = isAbsoluteUrl ? endpoint : `${await this.effectiveBaseUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -305,14 +319,16 @@ export class AuthApiClient {
    * Complete passkey authentication
    */
   async signInWithPasskey(request: PasskeyRequest): Promise<SignInResponse> {
-    console.log('🔍 signInWithPasskey called with:', {
-      requestKeys: Object.keys(request),
+    const requestKeys = Object.keys(request);
+    const fullRequest = JSON.stringify(request, null, 2);
+    debug('🔍 signInWithPasskey called with:', {
+      requestKeys,
       hasUserId: 'userId' in request,
       hasAuthResponse: 'authResponse' in request,
       hasEmail: 'email' in request,
       hasChallengeId: 'challengeId' in request,
       hasCredential: 'credential' in request,
-      fullRequest: JSON.stringify(request, null, 2)
+      fullRequest
     });
 
     return this.request<SignInResponse>('/auth/webauthn/verify', {
@@ -402,14 +418,17 @@ export class AuthApiClient {
     const endpoint = `/${this.getEffectiveAppCode()}/check-user`;
     const requestUrl = `${this.baseUrl}${endpoint}`;
 
-    console.log('[AuthApiClient] Making check-user request:', {
+    const baseUrl = this.baseUrl;
+    const appCode = this.config.appCode;
+    const timestamp = new Date().toISOString();
+    debug('[AuthApiClient] Making check-user request:', {
       email,
       requestUrl,
-      baseUrl: this.baseUrl,
+      baseUrl,
       endpoint,
-      appCode: this.config.appCode,
+      appCode,
       origin,
-      timestamp: new Date().toISOString()
+      timestamp
     });
 
     // Use rate-limited request with Origin header for RPID determination
@@ -424,11 +443,12 @@ export class AuthApiClient {
       }
     );
 
-    console.log('[AuthApiClient] Raw API response:', {
+    const rawResponseTimestamp = new Date().toISOString();
+    debug('[AuthApiClient] Raw API response:', {
       email,
       requestUrl,
       response: response,
-      timestamp: new Date().toISOString()
+      timestamp: rawResponseTimestamp
     });
 
     // Return the response directly since it's already in CheckUserResponse format
@@ -633,10 +653,12 @@ export class AuthApiClient {
       id: string;
     };
   }> {
-    console.log('🔗 Starting passwordless authentication:', {
+    const clientId = this.config.clientId;
+    const apiBaseUrl = this.config.apiBaseUrl;
+    debug('🔗 Starting passwordless authentication:', {
       email,
-      clientId: this.config.clientId,
-      apiBaseUrl: this.config.apiBaseUrl,
+      clientId,
+      apiBaseUrl,
       requestOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown'
     });
 
@@ -688,11 +710,12 @@ export class AuthApiClient {
     const effectiveAppCode = this.getEffectiveAppCode();
     const endpoint = `/${effectiveAppCode}/send-email`;
 
-    console.log('📧 Sending email signin:', {
+    const clientId = this.config.clientId;
+    debug('📧 Sending email signin:', {
       email,
       endpoint,
       appCode: effectiveAppCode,
-      clientId: this.config.clientId,
+      clientId,
       hasOptions: !!options
     });
 
@@ -761,10 +784,11 @@ export class AuthApiClient {
   async sendAppEmailCode(email: string): Promise<EmailCodeSendResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('📧 Sending app email code:', {
+    const apiBaseUrl = this.config.apiBaseUrl;
+    debug('📧 Sending app email code:', {
       email,
       appCode: effectiveAppCode,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     return this.request<EmailCodeSendResponse>(`/${effectiveAppCode}/send-email`, {
@@ -782,11 +806,12 @@ export class AuthApiClient {
   async verifyAppEmailCode(email: string, code: string): Promise<SignInResponse> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('🔍 Verifying app email code:', {
+    const apiBaseUrl = this.config.apiBaseUrl;
+    debug('🔍 Verifying app email code:', {
       email,
       appCode: effectiveAppCode,
       hasCode: !!code,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     const response = await this.request<SignInResponse>(`/${effectiveAppCode}/verify-email`, {
@@ -797,7 +822,7 @@ export class AuthApiClient {
       })
     });
 
-    console.log('📦 Raw verify-email API response:', {
+    debug('📦 Raw verify-email API response:', {
       email,
       hasUser: 'user' in response,
       hasAccessToken: 'access_token' in response,
@@ -809,7 +834,7 @@ export class AuthApiClient {
       fullResponse: response
     });
 
-    console.log('🔍 Success condition check:', {
+    debug('🔍 Success condition check:', {
       hasUser: !!response.user,
       userValue: response.user,
       hasAccessToken: !!response.access_token,
@@ -826,7 +851,7 @@ export class AuthApiClient {
       // This handles cases where user was previously cached as "doesn't exist"
       // but verification created the user account
       globalUserCache.clear(email);
-      console.log(`🧹 Cleared user cache for ${email} after successful pin verification`);
+      debug(`🧹 Cleared user cache for ${email} after successful pin verification`);
 
       return {
         step: 'success',
@@ -867,11 +892,12 @@ export class AuthApiClient {
   }> {
     const effectiveAppCode = this.getEffectiveAppCode();
 
-    console.log('👤 Creating app user:', {
+    const apiBaseUrl = this.config.apiBaseUrl;
+    debug('👤 Creating app user:', {
       email: userData.email,
       appCode: effectiveAppCode,
       hasInvitation: !!userData.invitationToken,
-      apiBaseUrl: this.config.apiBaseUrl
+      apiBaseUrl
     });
 
     return this.request<{

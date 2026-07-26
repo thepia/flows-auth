@@ -73,7 +73,7 @@ interface StoreOptions {
 }
 
 export function createOnboardingStore(options: StoreOptions) {
-  const { api, config } = options;
+  const { api, config: _config } = options;
 
   const store = createStore<OnboardingState>()(
     devtools(

@@ -23,6 +23,15 @@ const getApiBaseUrl = (): string => {
   return 'https://api.thepia.com';
 };
 
+// Telemetry needs to reach astro-demo's OWN /api/telemetry route (which
+// rate-limits and forwards to PostHog), not thepia.com's auth API base URL -
+// so this must be a full absolute URL (see AuthApiClient.request()'s
+// isAbsoluteUrl handling), not a path relative to apiBaseUrl.
+const getTelemetryEndpoint = (): string | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  return `${window.location.origin}/api/telemetry`;
+};
+
 // Create singleton auth store instance
 // This is the ONLY instance - all islands will share it
 export const sharedAuthStore = createAuthStore({
@@ -32,7 +41,12 @@ export const sharedAuthStore = createAuthStore({
   enablePasskeys: true,
   signInMode: 'login-or-register',
   appCode: 'app', // Use app-based endpoints for PIN authentication
-  enableDevtools: import.meta.env.DEV // Enable devtools in development
+  enableDevtools: import.meta.env.DEV, // Enable devtools in development
+  errorReporting: {
+    enabled: true,
+    endpoint: getTelemetryEndpoint(),
+    debug: import.meta.env.DEV
+  }
 });
 
 // Store is automatically initialized when first accessed

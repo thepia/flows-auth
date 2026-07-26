@@ -7,6 +7,7 @@
  */
 
 import type { StorageConfig } from '../types/index.js';
+import { debug } from './debug.js';
 
 /**
  * Baseline storage config. Spread this at call sites that only want to override
@@ -106,11 +107,12 @@ export class ConfigurableStorageManager {
     this.config = this.getDefaultConfig(config);
     this.adapter = this.createAdapter();
 
-    console.log('🗄️ Storage manager initialized:', {
-      type: this.config.type,
-      sessionTimeout: this.config.sessionTimeout,
-      persistentSessions: this.config.persistentSessions,
-      userRole: this.config.userRole
+    const { type, sessionTimeout, persistentSessions, userRole } = this.config;
+    debug('🗄️ Storage manager initialized:', {
+      type,
+      sessionTimeout,
+      persistentSessions,
+      userRole
     });
   }
 
@@ -196,7 +198,8 @@ export class ConfigurableStorageManager {
     // If storage type changed, create new adapter
     if (this.config.type !== oldType) {
       this.adapter = this.createAdapter();
-      console.log('🔄 Storage adapter changed:', oldType, '->', this.config.type);
+      const newType = this.config.type;
+      debug('🔄 Storage adapter changed:', oldType, '->', newType);
     }
   }
 

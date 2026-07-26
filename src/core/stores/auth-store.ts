@@ -20,6 +20,7 @@ import type {
   SignInData,
   StorageConfigurationUpdate
 } from '../types/index.js';
+import { debug } from '../utils/debug.js';
 import { configureSessionStorage } from '../utils/sessionManager.js';
 // Telemetry
 import { initializeTelemetry, reportAuthState, reportSessionEvent } from '../utils/telemetry.js';
@@ -228,11 +229,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
   setupCrossStoreIntegration();
 
   function setupCrossStoreIntegration() {
-    console.log('🔗 Setting up cross-store integration...');
+    debug('🔗 Setting up cross-store integration...');
 
     // Listen for authentication success events
     events.getState().on('sign_in_success', (data) => {
-      console.log('🎯 Sign-in success event received:', data);
+      debug('🎯 Sign-in success event received:', data);
 
       // Update UI state
       signInStateTransitions.authenticationSuccess(ui);
@@ -246,7 +247,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     // Listen for sign-out events
     events.getState().on('sign_out', () => {
-      console.log('🎯 Sign-out event received');
+      debug('🎯 Sign-out event received');
 
       // Report sign-out event
       reportAuthState({
@@ -265,7 +266,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
     // Listen for errors and update error store
     events.getState().on('sign_in_error', (data) => {
-      console.log('🎯 Sign-in error event received:', data);
+      debug('🎯 Sign-in error event received:', data);
 
       if (data.error) {
         error.getState().setApiError(data.error, {
@@ -275,7 +276,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       }
     });
 
-    console.log('✅ Cross-store integration setup complete');
+    debug('✅ Cross-store integration setup complete');
   }
 
   // Create the composed store object
@@ -421,7 +422,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         // Update core store with the latest refresh token from DB before attempting refresh
         // Use direct state update to avoid triggering side effects like scheduling refresh
         if (coreState.refresh_token !== sessionDataFromDb.refreshToken) {
-          console.log('📥 Using refresh token from database (more recent than in-memory)');
+          debug('📥 Using refresh token from database (more recent than in-memory)');
           core.setState({
             refresh_token: sessionDataFromDb.refreshToken,
             access_token: sessionDataFromDb.accessToken,
@@ -760,7 +761,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     updateConfig: (updates: Partial<AuthConfig>) => {
       // Update config object (shallow merge)
       Object.assign(config, updates);
-      console.log('🔧 Config updated:', updates);
+      debug('🔧 Config updated:', updates);
     },
 
     // Dynamic role configuration
@@ -813,12 +814,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
         };
 
         configureSessionStorage(newStorageConfig);
-
-        console.log('✅ Storage configuration updated successfully');
       } catch (error: unknown) {
         console.error('❌ Storage configuration update failed:', error);
         throw error;
       }
+
+      debug('✅ Storage configuration updated successfully');
     },
 
     // SignIn flow control methods
@@ -846,12 +847,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       // Update UI state
       signInStateTransitions.authenticationSuccess(ui);
 
-      console.log('✅ PIN verification notification processed');
+      debug('✅ PIN verification notification processed');
     },
 
     // Legacy event system for backward compatibility
     sendSignInEvent: (event: LegacySignInEvent) => {
-      console.log('🔄 Processing legacy signin event:', event.type);
+      const eventType = event.type;
+      debug('🔄 Processing legacy signin event:', eventType);
       const { signInState } = ui.getState();
 
       switch (event.type) {
@@ -928,7 +930,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       ui.getState().getExplainerConfig(explainFeatures),
 
     destroy: () => {
-      console.log('🧹 Destroying auth store...');
+      debug('🧹 Destroying auth store...');
 
       core.getState().reset();
       session.getState().clearSession();
@@ -939,11 +941,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       ui.getState().resetUIState();
       onboarding.getState().reset();
 
-      console.log('✅ Auth store destroyed');
+      debug('✅ Auth store destroyed');
     }
   };
 
-  console.log('🚀 Composed auth store ready!');
+  debug('🚀 Composed auth store ready!');
 
   return composedStore;
 }

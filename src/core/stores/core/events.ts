@@ -11,6 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { AuthEvents } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import type {
   AuthEventData,
   AuthEventHandler,
@@ -216,7 +217,7 @@ export const eventDebug = {
 
     const unsubscribes = allEventTypes.map((eventType) =>
       eventStore.getState().on(eventType, (data) => {
-        console.log(`🎯 Auth Event: ${eventType}`, data);
+        debug(`🎯 Auth Event: ${eventType}`, data);
       })
     );
 

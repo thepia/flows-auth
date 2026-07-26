@@ -3,6 +3,7 @@
  * Handles invitation token validation and user status checking
  */
 
+import { debug } from './debug.js';
 import type { InvitationTokenData, TokenValidationResult } from './invitation-tokens.js';
 import {
   decodeInvitationToken,
@@ -55,7 +56,7 @@ export async function processInvitationToken(
     // Step 1: Decode the invitation token
     const tokenData = decodeInvitationToken(invitationToken);
     if (enableDebugLogging) {
-      console.log('Invitation token decoded:', tokenData);
+      debug('Invitation token decoded:', tokenData);
     }
 
     // Step 2: Validate the token
@@ -63,7 +64,7 @@ export async function processInvitationToken(
     const tokenValid = tokenValidationResult.isValid;
 
     if (enableDebugLogging) {
-      console.log('Token validation result:', tokenValidationResult);
+      debug('Token validation result:', tokenValidationResult);
     }
 
     if (!tokenValid) {
@@ -90,13 +91,18 @@ export async function processInvitationToken(
     const userCheck = await authStore.checkUser(tokenData.email);
 
     if (enableDebugLogging) {
-      console.log('User exists, checking passkey status:', userCheck);
-      console.log('🔍 DEBUG: userCheck properties:', {
-        keys: Object.keys(userCheck),
-        hasPasskey: userCheck.hasPasskey,
-        hasWebAuthn: userCheck.hasWebAuthn,
-        invitationTokenHash: userCheck.invitationTokenHash,
-        invitationTokenHashExists: !!userCheck.invitationTokenHash
+      debug('User exists, checking passkey status:', userCheck);
+      const userCheckKeys = Object.keys(userCheck);
+      const userCheckHasPasskey = userCheck.hasPasskey;
+      const userCheckHasWebAuthn = userCheck.hasWebAuthn;
+      const userCheckInvitationTokenHash = userCheck.invitationTokenHash;
+      const userCheckInvitationTokenHashExists = !!userCheck.invitationTokenHash;
+      debug('🔍 DEBUG: userCheck properties:', {
+        keys: userCheckKeys,
+        hasPasskey: userCheckHasPasskey,
+        hasWebAuthn: userCheckHasWebAuthn,
+        invitationTokenHash: userCheckInvitationTokenHash,
+        invitationTokenHashExists: userCheckInvitationTokenHashExists
       });
     }
 
@@ -118,7 +124,7 @@ export async function processInvitationToken(
       if (!hasPasskey && tokenValid) {
         // User exists but no passkey + valid token = resume passkey registration
         if (enableDebugLogging) {
-          console.log('User exists but no passkey, resuming passkey registration with token');
+          debug('User exists but no passkey, resuming passkey registration with token');
         }
 
         // Verify token hash for security (if available)
@@ -128,9 +134,11 @@ export async function processInvitationToken(
           tokenHashMatches = currentTokenHash === userCheck.invitationTokenHash;
 
           if (enableDebugLogging) {
-            console.log('Token hash verification:', {
-              stored: `${userCheck.invitationTokenHash?.substring(0, 8)}...`,
-              current: `${currentTokenHash?.substring(0, 8)}...`,
+            const storedHashPreviewForDebug = `${userCheck.invitationTokenHash?.substring(0, 8)}...`;
+            const currentHashPreviewForDebug = `${currentTokenHash?.substring(0, 8)}...`;
+            debug('Token hash verification:', {
+              stored: storedHashPreviewForDebug,
+              current: currentHashPreviewForDebug,
               matches: tokenHashMatches
             });
           }
@@ -170,7 +178,7 @@ export async function processInvitationToken(
           }
 
           if (enableDebugLogging) {
-            console.log('✅ Token hash verified - resuming passkey registration');
+            debug('✅ Token hash verified - resuming passkey registration');
           }
         } else {
           if (enableDebugLogging) {
@@ -219,7 +227,7 @@ export async function processInvitationToken(
       // User exists and has passkey - show sign-in form
       if (hasPasskey) {
         if (enableDebugLogging) {
-          console.log('User exists with passkey, showing sign-in form');
+          debug('User exists with passkey, showing sign-in form');
         }
         return {
           success: true,
@@ -239,7 +247,7 @@ export async function processInvitationToken(
 
       // User exists but no passkey and no valid token - show error
       if (enableDebugLogging) {
-        console.log('User exists but no passkey and no valid token');
+        debug('User exists but no passkey and no valid token');
       }
       return {
         success: false,
@@ -260,7 +268,7 @@ export async function processInvitationToken(
 
     // User doesn't exist and token is valid - show registration form
     if (enableDebugLogging) {
-      console.log('Valid token for new user, showing registration form');
+      debug('Valid token for new user, showing registration form');
     }
 
     return {

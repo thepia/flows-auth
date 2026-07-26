@@ -423,6 +423,12 @@ describe('AccountCreationForm Integration Tests', () => {
       });
       expect(screen.getByText('Creating Account...').closest('button')).toBeDisabled();
 
+      // loading=true is set before the check-user request is actually
+      // issued, so the button-disabled assertion above can pass slightly
+      // before mockFetch's check-user branch has run (e.g. under client
+      // rate-limiter delay). Wait for resolveCheck to actually exist rather
+      // than assuming it's already assigned by this point.
+      await waitFor(() => expect(resolveCheck).toBeDefined());
       resolveCheck!({ ok: true, json: () => Promise.resolve({ exists: false, hasWebAuthn: false }) });
     });
   });

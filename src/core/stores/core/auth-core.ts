@@ -11,6 +11,7 @@
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { User } from '../../types/index.js';
+import { debug } from '../../utils/debug.js';
 import { reportRefreshEvent } from '../../utils/telemetry.js';
 import type { AuthCoreState, AuthCoreStore, StoreOptions } from '../types.js';
 
@@ -143,6 +144,17 @@ export function createAuthCoreStore(options: StoreOptions) {
 
       // Create and track the refresh promise in GLOBAL lock
       globalRefreshInProgress = (async () => {
+        let tokenRefreshDebugPayload:
+          | {
+              hasAccessToken: boolean;
+              hasRefreshToken: boolean;
+              refreshTokenValue: string;
+              expiresIn: number | undefined;
+              hasSupabaseToken: boolean;
+            }
+          | undefined;
+        let tokensUpdatedDebugMessage: string | undefined;
+
         try {
           const response = await api.refreshToken({
             refresh_token: currentState.refresh_token as string
@@ -150,7 +162,7 @@ export function createAuthCoreStore(options: StoreOptions) {
 
           if (response.access_token) {
             // Log refresh response for debugging
-            console.log('🔄 Token refresh response received:', {
+            tokenRefreshDebugPayload = {
               hasAccessToken: !!response.access_token,
               hasRefreshToken: !!response.refresh_token,
               refreshTokenValue: response.refresh_token
@@ -158,7 +170,7 @@ export function createAuthCoreStore(options: StoreOptions) {
                 : 'none',
               expiresIn: response.expires_in,
               hasSupabaseToken: !!response.supabase_token
-            });
+            };
 
             // CRITICAL: Use updateTokens() to ensure session is persisted to storage
             // This is essential for auto-refresh path (scheduleTokenRefresh) which calls core.refreshTokens() directly
@@ -180,10 +192,9 @@ export function createAuthCoreStore(options: StoreOptions) {
                 : undefined
             });
 
-            console.log(
-              '✅ Tokens updated successfully, new refresh token saved:',
-              response.refresh_token ? `${response.refresh_token.substring(0, 8)}...` : 'none'
-            );
+            tokensUpdatedDebugMessage = response.refresh_token
+              ? `${response.refresh_token.substring(0, 8)}...`
+              : 'none';
 
             // Success - reset retry counter
             refreshRetryState.attempts = 0;
@@ -221,12 +232,17 @@ export function createAuthCoreStore(options: StoreOptions) {
 
             // CRITICAL: Must clear from storage too, otherwise it will retry on next page load
             if (currentState.user) {
+              let staleTokenCleared = false;
               try {
                 // Save back to database adapter
                 await db.saveSession({ refreshToken: '' });
-                console.log('✅ Cleared stale refresh token from storage via SessionPersistence');
+                staleTokenCleared = true;
               } catch (error) {
                 console.error('Failed to clear stale refresh token from storage:', error);
+              }
+
+              if (staleTokenCleared) {
+                debug('✅ Cleared stale refresh token from storage via SessionPersistence');
               }
             }
 
@@ -270,7 +286,7 @@ export function createAuthCoreStore(options: StoreOptions) {
             }
 
             refreshTimeout.current = setTimeout(async () => {
-              console.log(
+              debug(
                 `🔄 Retrying token refresh (attempt ${refreshRetryState.attempts}/${refreshRetryState.maxAttempts})`
               );
               // Call refreshTokens() recursively - it will handle success/failure and counter reset
@@ -289,7 +305,7 @@ export function createAuthCoreStore(options: StoreOptions) {
             }
             refreshRetryState.resetTimeout = setTimeout(
               () => {
-                console.log('🔄 Resetting refresh retry counter after successful period');
+                debug('🔄 Resetting refresh retry counter after successful period');
                 refreshRetryState.attempts = 0;
               },
               60 * 60 * 1000
@@ -310,6 +326,16 @@ export function createAuthCoreStore(options: StoreOptions) {
         } finally {
           // Clear the GLOBAL lock after completion
           globalRefreshInProgress = null;
+        }
+
+        if (tokenRefreshDebugPayload) {
+          debug('🔄 Token refresh response received:', tokenRefreshDebugPayload);
+        }
+        if (tokensUpdatedDebugMessage !== undefined) {
+          debug(
+            '✅ Tokens updated successfully, new refresh token saved:',
+            tokensUpdatedDebugMessage
+          );
         }
       })();
 
@@ -525,8 +551,13 @@ function scheduleTokenRefresh(
     );
   }
 
-  console.log(
-    `🔄 Scheduling token refresh in ${Math.floor(refreshTime / 1000)}s (token expires in ${Math.floor(timeUntilExpiry / 1000)}s, last refreshed ${state.refreshedAt ? `${Math.floor((Date.now() - new Date(state.refreshedAt).getTime()) / 1000)}s ago` : 'never'})`
+  const refreshInSeconds = Math.floor(refreshTime / 1000);
+  const expiresInSeconds = Math.floor(timeUntilExpiry / 1000);
+  const lastRefreshedText = state.refreshedAt
+    ? `${Math.floor((Date.now() - new Date(state.refreshedAt).getTime()) / 1000)}s ago`
+    : 'never';
+  debug(
+    `🔄 Scheduling token refresh in ${refreshInSeconds}s (token expires in ${expiresInSeconds}s, last refreshed ${lastRefreshedText})`
   );
 
   refreshTimeout.current = setTimeout(async () => {

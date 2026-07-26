@@ -1,4 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { flowsAuthTreeshake } from '@thepia/flows-auth/vite-preset';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -22,6 +23,11 @@ export default defineConfig({
     hmr: {
       port: 5177,
       host: 'dev.thepia.net'
+    }
+  },
+  build: {
+    rollupOptions: {
+      treeshake: flowsAuthTreeshake
     }
   }
 });

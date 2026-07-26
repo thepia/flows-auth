@@ -216,7 +216,16 @@ export interface ErrorReportingConfig {
   maxRetries?: number;
   retryDelay?: number;
 
-  // Service Worker persistent logging configuration
+  // Service Worker persistent logging configuration.
+  //
+  // Only useful if the consuming app already runs its own service worker
+  // that handles the LOG_AUTH_EVENT postMessage this posts - flows-auth
+  // doesn't register one itself. flows-client's service worker
+  // (src/service-worker/index.ts) is a real, working consumer: it persists
+  // each event to IndexedDB. flows-auth's own repo-root sw.js does NOT
+  // handle this message type (it's an unrelated experimental caching spike),
+  // so enabling this without a consumer like flows-client is a silent no-op.
+  // See src/core/utils/telemetry.ts's sendToServiceWorker() for details.
   serviceWorkerLogging?: {
     enabled: boolean;
     events?: ('auth' | 'session' | 'refresh' | 'errors' | 'all')[];

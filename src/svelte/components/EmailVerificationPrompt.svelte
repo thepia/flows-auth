@@ -94,7 +94,7 @@
       // Try to open default email client
       window.location.href = 'mailto:';
     } catch (error) {
-      console.log('Could not open email app:', error);
+      console.warn('Could not open email app:', error);
     }
   }
 

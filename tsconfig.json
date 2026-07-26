@@ -21,10 +21,11 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      // Self-reference: the ./svelte target imports core via the package name.
-      // At dev/typecheck time resolve that to source; at publish time Node
-      // resolves it through the package `exports` map (dist/index.d.ts).
-      "@thepia/flows-auth": ["./src/core/index.ts"]
+      // Self-reference: the ./svelte and ./server targets import core via the
+      // package name. At dev/typecheck time resolve that to source; at
+      // publish time Node resolves it through the package `exports` map.
+      "@thepia/flows-auth": ["./src/core/index.ts"],
+      "@thepia/flows-auth/telemetry": ["./src/core/telemetry.ts"]
     },
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },

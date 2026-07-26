@@ -1,11 +1,14 @@
 /**
- * Wire contract for the thepia.com `/dev/error-reports` development endpoint.
+ * Wire contract for telemetry/error reporting.
  *
  * This is the single source of truth shared between:
- * - flows-auth's telemetry client (src/core/utils/telemetry.ts), which POSTs this shape
- * - thepia.com's dev endpoint (src/api/dev/error-reports.ts), which parses this shape
- *
- * Dev-only diagnostic channel - not part of the production auth API contract.
+ * - flows-auth's telemetry core (src/core/telemetry/core.ts), used by both the
+ *   browser client (src/core/utils/telemetry.ts, POSTs to thepia.com's dev-only
+ *   `/dev/error-reports`) and, via the `@thepia/flows-auth/telemetry` export,
+ *   thepia.com's own Deno API server (reporting its own backend errors, e.g.
+ *   'server-error', to whatever production-facing sink it's configured with)
+ * - thepia.com's dev endpoint (src/api/dev/error-reports.ts), which parses this
+ *   shape for the browser-originated events
  */
 
 export type DevErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -17,7 +20,8 @@ export interface ErrorReport {
     | 'unhandled-rejection'
     | 'auth-state-change'
     | 'api-error'
-    | 'webauthn-error';
+    | 'webauthn-error'
+    | 'server-error';
   message: string;
   stack?: string;
   url?: string;

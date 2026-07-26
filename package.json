@@ -25,6 +25,14 @@
       "types": "./dist/vite-preset.d.ts",
       "default": "./dist/vite-preset.js"
     },
+    "./telemetry": {
+      "types": "./dist/telemetry.d.ts",
+      "default": "./dist/telemetry.js"
+    },
+    "./telemetry-otlp": {
+      "types": "./dist/telemetry-otlp.d.ts",
+      "default": "./dist/telemetry-otlp.js"
+    },
     "./style.css": "./dist/flows-auth.css",
     "./package.json": "./package.json"
   },
@@ -50,6 +58,8 @@
     "test:critical": "vitest run tests/critical/ tests/contracts/ tests/unit/response-processing.test.ts tests/unit/ui-ux-integration.test.ts",
     "test:smoke": "vitest run tests/stores/auth-state-machine.test.ts tests/integration/api-environment.test.ts",
     "test:package": "vitest run tests/package",
+    "test:posthog": "node scripts/test-posthog-upload.mjs",
+    "test:posthog:logs": "node scripts/test-posthog-otlp-logs.mjs",
     "test:paraglide-merge": "vitest run tests/integration/paraglide-multi-directory-merge.test.ts",
     "test:demos": "pnpm test:demos:auth && pnpm test:demos:flows-app",
     "test:demos:auth": "cd examples/auth-demo && pnpm build",
@@ -151,6 +161,11 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.4",
+    "@opentelemetry/api-logs": "^0.221.0",
+    "@opentelemetry/core": "^2.10.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.221.0",
+    "@opentelemetry/resources": "^2.10.0",
+    "@opentelemetry/sdk-logs": "^0.221.0",
     "@simplewebauthn/browser": "^13.1.2",
     "@thepia/branding": "^1.5.6",
     "base64url": "^3.0.1",

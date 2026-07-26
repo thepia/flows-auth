@@ -1,131 +1,50 @@
 /**
- * Error and State Reporting Utilities
- * Reports errors through the auth store's API client and optionally to service worker
+ * Browser Telemetry Client
+ * Wraps the runtime-agnostic telemetry core (../telemetry/core.js) with an
+ * AuthApiClient-based transport (POSTing to thepia.com's /dev/error-reports)
+ * and browser-only service worker logging. See ../telemetry/index.ts (the
+ * `@thepia/flows-auth/telemetry` export) for the non-browser entry point.
  */
 
 import type { AuthApiClient } from '../api/auth-api.js';
-import type {
-  AuthConfig,
-  AuthStateReport,
-  ErrorReport,
-  ErrorReportPayload
-} from '../types/index.js';
+import {
+  type AuthStateEvent,
+  type TelemetryEvent as ErrorReportEvent,
+  type SerializedError,
+  TelemetryCore,
+  type WebAuthnErrorEvent
+} from '../telemetry/core.js';
+import type { AuthConfig } from '../types/index.js';
 import { debug } from './debug.js';
 
-export interface SerializedError {
-  name?: string;
-  message?: string;
-  code?: string | number;
-  stack?: string;
-}
-
-export interface AuthStateEvent {
-  type: 'auth-state-change';
-  event:
-    | 'login-attempt'
-    | 'login-success'
-    | 'login-failure'
-    | 'webauthn-start'
-    | 'webauthn-success'
-    | 'webauthn-failure'
-    | 'webauthn-register-start'
-    | 'webauthn-register-success'
-    | 'webauthn-register-failure'
-    | 'sign-in-started'
-    | 'sign-in-success'
-    | 'sign-in-error'
-    | 'token-refreshed'
-    | 'sign-out'
-    | 'registration-start'
-    | 'registration-success'
-    | 'registration-failure';
-  email?: string;
-  userId?: string;
-  authMethod?: 'passkey' | 'password' | 'email' | 'unknown';
-  duration?: number;
-  error?: string;
-  context?: Record<string, unknown>;
-}
-
-export interface WebAuthnErrorEvent {
-  type: 'webauthn-error';
-  operation: 'authentication' | 'registration';
-  error: SerializedError;
-  context?: Record<string, unknown>;
-}
-
-export interface ApiErrorEvent {
-  type: 'api-error';
-  url: string;
-  method: string;
-  status: number;
-  message: string;
-  context?: Record<string, unknown>;
-}
-
-export type ErrorReportEvent = AuthStateEvent | WebAuthnErrorEvent | ApiErrorEvent;
-
-/**
- * Split a telemetry event into the `errors` / `authStates` arrays expected by
- * thepia.com's /dev/error-reports endpoint (see ../types/dev-error-reports.js).
- */
-function toDevReportArrays(
-  event: ErrorReportEvent,
-  timestamp: number
-): { errors: ErrorReport[]; authStates: AuthStateReport[] } {
-  if (event.type === 'auth-state-change') {
-    const authState: AuthStateReport = {
-      type: 'auth-state-change',
-      event: event.event,
-      authMethod: event.authMethod === 'unknown' ? undefined : event.authMethod,
-      userId: event.userId,
-      email: event.email,
-      error: event.error,
-      duration: event.duration,
-      timestamp,
-      context: event.context
-    };
-    return { errors: [], authStates: [authState] };
-  }
-
-  if (event.type === 'webauthn-error') {
-    const errorReport: ErrorReport = {
-      type: 'webauthn-error',
-      message: event.error.message || event.error.name || 'WebAuthn error',
-      stack: event.error.stack,
-      timestamp,
-      context: { operation: event.operation, ...event.context },
-      severity: 'high'
-    };
-    return { errors: [errorReport], authStates: [] };
-  }
-
-  // api-error
-  const errorReport: ErrorReport = {
-    type: 'api-error',
-    message: event.message,
-    timestamp,
-    context: { url: event.url, method: event.method, status: event.status, ...event.context },
-    severity: event.status >= 500 ? 'high' : 'medium'
-  };
-  return { errors: [errorReport], authStates: [] };
-}
+export type { ApiErrorEvent, ServerErrorEvent } from '../telemetry/core.js';
+export type { AuthStateEvent, ErrorReportEvent, SerializedError, WebAuthnErrorEvent };
 
 class Telemetry {
-  private api: AuthApiClient | null = null;
+  private core: TelemetryCore | null = null;
   private config: AuthConfig | null = null;
   private queue: ErrorReportEvent[] = [];
-  private retryQueue: { event: ErrorReportEvent; attempts: number }[] = [];
   private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
   private serviceWorkerInitialized = false;
-  private sessionId =
-    typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   setApiClient(api: AuthApiClient, config: AuthConfig) {
-    this.api = api;
     this.config = config;
+    this.core = new TelemetryCore(
+      async (payload) => {
+        const endpoint = config.errorReporting?.endpoint ?? '/dev/error-reports';
+        // biome-ignore lint/complexity/useLiteralKeys: intentional access to AuthApiClient's private request() method
+        await api['request'](endpoint, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' }
+        });
+      },
+      {
+        maxRetries: config.errorReporting?.maxRetries,
+        retryDelay: config.errorReporting?.retryDelay,
+        onError: (error) => console.warn('📊 [Telemetry] Failed to send event:', error)
+      }
+    );
     debug('📊 [Telemetry] Connected to API client');
 
     // Initialize service worker if logging is enabled (fire and forget)
@@ -173,7 +92,7 @@ class Telemetry {
   }
 
   async report(event: ErrorReportEvent) {
-    if (!this.api || !this.config) {
+    if (!this.core || !this.config) {
       // No API client yet - queue the event
       this.queue.push(event);
       return;
@@ -197,50 +116,32 @@ class Telemetry {
       debug('📊 [Telemetry] Reporting event:', event);
     }
 
-    try {
-      await this.sendEvent(event);
-    } catch (error) {
-      console.warn('📊 [Telemetry] Failed to send event:', error);
-      this.retryQueue.push({ event, attempts: 0 });
-      this.scheduleRetry();
-    }
-  }
+    await this.core.report(event);
 
-  private async sendEvent(event: ErrorReportEvent) {
-    if (!this.api || !this.config) {
-      throw new Error('No API client available');
-    }
-
-    const timestamp = Date.now();
-    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : 'server';
-    const url = typeof window !== 'undefined' ? window.location.href : 'unknown';
-    const { errors, authStates } = toDevReportArrays(event, timestamp);
-
-    const payload: ErrorReportPayload = {
-      errors: errors.map((e) => ({ ...e, userAgent, url, sessionId: this.sessionId })),
-      authStates,
-      sessionId: this.sessionId,
-      timestamp
-    };
-
-    // Use the API client to send the error report
-    const endpoint = '/dev/error-reports';
-    // biome-ignore lint/complexity/useLiteralKeys: intentional access to AuthApiClient's private request() method
-    await this.api['request'](endpoint, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (this.config.errorReporting?.debug) {
+    if (errorConfig?.debug) {
       debug('📊 [Telemetry] Event sent successfully');
     }
   }
 
   /**
-   * Send event to service worker for persistent logging
+   * Send event to service worker for persistent logging.
+   *
+   * Does nothing on its own - this only registers a listener via
+   * navigator.serviceWorker.ready, it doesn't create/register a service
+   * worker. It's meant for web (non-native-shell) deployments where the
+   * consuming app already runs its own service worker and wants flows-auth's
+   * telemetry piggybacked onto it rather than managing a second one.
+   *
+   * flows-client's service worker (../../flows-client/src/service-worker/index.ts)
+   * is a real, working consumer: it handles this exact LOG_AUTH_EVENT message
+   * type and persists each event to IndexedDB ('flows-tmp' db, 'auth-log'
+   * store, see service-worker/logger.ts's logAuthEvent()) - verified
+   * end-to-end. flows-auth's own sw.js (repo root) does NOT implement this
+   * handler (it's an unrelated experimental caching/background-sync spike),
+   * so enabling serviceWorkerLogging.enabled against that one is a no-op
+   * that just warns "Unknown message type" - this feature only does
+   * anything useful when paired with a consumer's own service worker that
+   * actually handles LOG_AUTH_EVENT, like flows-client's.
    */
   private sendToServiceWorker(event: ErrorReportEvent) {
     const swConfig = this.config?.errorReporting?.serviceWorkerLogging;
@@ -292,41 +193,8 @@ class Telemetry {
     }
   }
 
-  private scheduleRetry() {
-    const retryDelay = this.config?.errorReporting?.retryDelay || 1000;
-    setTimeout(() => {
-      this.processRetryQueue();
-    }, retryDelay);
-  }
-
-  private async processRetryQueue() {
-    const failedRetries: { event: ErrorReportEvent; attempts: number }[] = [];
-    const maxRetries = this.config?.errorReporting?.maxRetries || 3;
-
-    for (const { event, attempts } of this.retryQueue) {
-      if (attempts >= maxRetries) {
-        if (this.config?.errorReporting?.debug) {
-          console.warn('📊 [Telemetry] Max retries reached for event:', event);
-        }
-        continue;
-      }
-
-      try {
-        await this.sendEvent(event);
-      } catch {
-        failedRetries.push({ event, attempts: attempts + 1 });
-      }
-    }
-
-    this.retryQueue = failedRetries;
-
-    if (this.retryQueue.length > 0) {
-      this.scheduleRetry();
-    }
-  }
-
   flushQueue() {
-    if (!this.api) {
+    if (!this.core) {
       console.warn('📊 [Telemetry] Cannot flush queue: no API client');
       return;
     }
@@ -340,17 +208,16 @@ class Telemetry {
   }
 
   getQueueSize() {
-    return this.queue.length + this.retryQueue.length;
+    return this.queue.length + (this.core?.getQueueSize() ?? 0);
   }
 
   /**
    * Reset telemetry state (for testing)
    */
   reset() {
-    this.api = null;
+    this.core = null;
     this.config = null;
     this.queue = [];
-    this.retryQueue = [];
     this.serviceWorkerRegistration = null;
     this.serviceWorkerInitialized = false;
   }

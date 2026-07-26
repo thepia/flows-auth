@@ -6,11 +6,16 @@ import { defineConfig } from 'astro/config';
 
 import svelte, { vitePreprocess } from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
+import node from '@astrojs/node';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // https://astro.build/config
 export default defineConfig({
+  // Needed for the /api/telemetry route (see src/pages/api/telemetry.ts),
+  // which forwards browser telemetry to PostHog server-side after rate
+  // limiting - it must run on-demand, not be prerendered as a static file.
+  adapter: node({ mode: 'standalone' }),
   integrations: [
     svelte({
       // @sveltejs/vite-plugin-svelte no longer strips <script lang="ts"> by

@@ -443,7 +443,7 @@ let explainerConfig = $derived(authStore?.getExplainerConfig?.(explainFeatures) 
 
 // Reactive statement to check for existing pins when email changes (handles autocomplete)
 run(() => {
-    if (authStore && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked')) {
+    if (authStore && email && (currentSignInState === 'emailEntry' || currentSignInState === 'userChecked' || currentSignInState === 'generalError')) {
     checkUserForEmail(email);
   }
   });
@@ -541,13 +541,36 @@ run(() => {
       />
     {/if}
 
-  {:else if currentSignInState === 'registrationTerms'}
-    <!-- Registration flow would be handled by parent or separate component -->
+  {:else if currentSignInState === 'generalError' || currentSignInState === 'passkeyPrompt' || currentSignInState === 'passkeyRegistration'}
+    <!-- 'generalError' is reachable today: a failed passkey ceremony (including the
+         browser's own autofill/conditional-UI attempt, independent of the app's own
+         sign-in button) dispatches PASSKEY_FAILED (auth-store.ts sendSignInEvent) or
+         goes through signInStateTransitions.authenticationError (ui-state.ts), both of
+         which set signInState to 'generalError'. Previously this state - along with
+         'passkeyPrompt' and 'passkeyRegistration' (not currently set anywhere in real
+         store logic; they only appear in the aspirational SignInStateMachineFlow.svelte
+         diagram) - had no matching branch at all, so the component rendered nothing:
+         no error, no way to recover, just an empty div.
+
+         Recovery here is via the email field itself, not a dedicated button: retyping
+         the email re-triggers the same debounced checkUserForEmail() used by the
+         'emailEntry'/'userChecked' branch (see the reactive block above, which now also
+         covers 'generalError'), which naturally advances signInState again once the
+         email is re-validated. -->
     <AuthStateMessage
-      type="info"
-      tKey="registration.required"
+      type={currentSignInState === 'generalError' ? 'error' : 'info'}
+      tKey={currentSignInState === 'generalError' ? 'error.authFailed' : 'auth.authenticating'}
       showIcon={true}
     />
+    <EmailInput
+      value={email}
+      label="email.label"
+      placeholder="email.placeholder"
+      disabled={$authStore.loading}
+      enableWebAuthn={false}
+      on:change={handleEmailChange}
+    />
+
   {:else if currentSignInState === 'emailVerification'}
     <!-- Email verification required -->
     {#if stateMessage}

@@ -8,7 +8,12 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 // zod, @simplewebauthn/browser, @dagrejs/dagre, d3, etc. stay external; only the
 // local src/core/** (incl. the committed paraglide output) is bundled in.
 export default defineConfig({
-  entry: { index: 'src/core/index.ts', 'vite-preset': 'src/core/vite-preset.ts' },
+  entry: {
+    index: 'src/core/index.ts',
+    'vite-preset': 'src/core/vite-preset.ts',
+    telemetry: 'src/core/telemetry.ts',
+    'telemetry-otlp': 'src/core/telemetry-otlp.ts'
+  },
   format: ['esm'],
   // Types are emitted by `tsc` (tsconfig.build.json), not tsup: the committed
   // Paraglide output uses ES2022 string-literal exports (`export { x as "a.b" }`)

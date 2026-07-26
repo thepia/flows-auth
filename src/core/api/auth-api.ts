@@ -109,9 +109,13 @@ export class AuthApiClient {
     options: RequestInit = {},
     includeAuth = false
   ): Promise<T> {
+    // Callers that need to target a different origin than the auth API
+    // itself (e.g. errorReporting.endpoint pointing at the consuming app's
+    // own server rather than thepia.com) can pass a full absolute URL here.
+    // Everything else resolves against the effective base URL as before.
+    const isAbsoluteUrl = /^https?:\/\//i.test(endpoint);
     // Resolve the effective base URL (will use cached promise result after first call)
-    const effectiveUrl = await this.effectiveBaseUrl;
-    const url = `${effectiveUrl}${endpoint}`;
+    const url = isAbsoluteUrl ? endpoint : `${await this.effectiveBaseUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

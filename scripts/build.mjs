@@ -4,6 +4,7 @@
  *
  *   core   -> tsup           -> dist/index.js (+ .d.ts)     => "."
  *   svelte -> svelte-package -> dist/svelte/**              => "./svelte"
+ *   react  -> tsup           -> dist/react/** (+ .d.ts)     => "./react"
  *   server -> tsc (no bundler)-> dist/server/** (+ .d.ts)    => "./server"
  *   css    -> vite (css-only)-> dist/flows-auth.css         => "./style.css" (transitional)
  *
@@ -87,9 +88,28 @@ const stripLangTs = (dir) => {
 };
 stripLangTs(resolve(DIST_BUILD, 'svelte'));
 
-// 4. Bundled CSS (transitional ./style.css); JS output is throwaway
+// 3c. React target (tsup, bundled JS + .d.ts) -> dist/react/**
+run(`tsup --config tsup.react.config.ts --out-dir ${join(DIST_BUILD, 'react')}`);
+
+// 3d. esbuild (via tsup) auto-extracts any `import './Foo.css'` it encounters bundling
+//     src/react/index.ts into a sibling dist/react/index.css. That's a redundant, unlisted
+//     byproduct: the canonical stylesheet for BOTH targets is the combined dist/flows-auth.css
+//     produced by step 4 below (see src/react/styles-entry.ts for why they're merged).
+//     Delete it so there's exactly one CSS file for consumers to discover.
+for (const junk of ['react/index.css', 'react/index.css.map']) {
+  const p = resolve(DIST_BUILD, junk);
+  if (existsSync(p)) rmSync(p);
+}
+
+// 4. Bundled CSS (transitional ./style.css); JS output is throwaway. Two lib entries
+//    (Svelte + React, see vite.css.config.mjs) feed the one combined dist/flows-auth.css.
 run(`vite build --config vite.css.config.mjs --outDir ${DIST_BUILD}`);
-for (const junk of ['__css-only.js', '__css-only.js.map']) {
+for (const junk of [
+  'svelte-css-only.js',
+  'svelte-css-only.js.map',
+  'react-css-only.js',
+  'react-css-only.js.map'
+]) {
   const p = resolve(DIST_BUILD, junk);
   if (existsSync(p)) rmSync(p);
 }
@@ -108,5 +128,5 @@ renameSync(DIST_BUILD, DIST);
 rmSync(DIST_OLD, { recursive: true, force: true });
 
 console.log(
-  '\n✅ Build complete: dist/index.js, dist/svelte/**, dist/server/**, dist/flows-auth.css'
+  '\n✅ Build complete: dist/index.js, dist/svelte/**, dist/react/**, dist/server/**, dist/flows-auth.css'
 );

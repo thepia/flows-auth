@@ -1,0 +1,137 @@
+/**
+ * Shared utility classes for the React component port.
+ *
+ * The Svelte core components (`src/svelte/components/core/*.svelte`) sprinkle
+ * Tailwind-named utility classes (`flex`, `gap-2`, `space-y-2`, `sr-only`, ...)
+ * directly in their markup without this package ever declaring a Tailwind
+ * dependency -- see `AuthButton.svelte`'s own `<style>` comment, which already
+ * flags this for the buttons it rewrote as plain CSS ("Layout/spacing/typography
+ * previously assumed Tailwind utility classes, which produce no CSS at all in a
+ * consumer without Tailwind"). The same latent gap exists, unfixed, in
+ * `AuthStateMessage`, `EmailInput`, `CodeInput`, and `AuthExplainer`.
+ *
+ * Rather than reproduce that gap in the React port, this file defines plain-CSS
+ * equivalents (matching Tailwind's default theme scale, so visual output is
+ * unchanged for consumers who *do* also load Tailwind) for exactly the utility
+ * classes those components use. Imported once per component file that needs it
+ * (see e.g. `AuthStateMessage.css`); bundlers dedupe the shared module so this
+ * doesn't multiply output size per-component.
+ *
+ * Not attempting full utility-class coverage or Tailwind's variant system
+ * (`dark:`, `focus:`) here -- see individual component CSS files for how
+ * pseudo-class/dark-mode cases are handled directly instead.
+ */
+
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.shrink-0 {
+  flex-shrink: 0;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.block {
+  display: block;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-mono {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+}
+
+.tracking-widest {
+  letter-spacing: 0.1em;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-px {
+  margin-top: 1px;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.break-words {
+  overflow-wrap: break-word;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.text-semantic-error-600 {
+  color: var(--color-text-error, #dc2626);
+}
+
+/* Screen-reader-only content (Tailwind's `sr-only`) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

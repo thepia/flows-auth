@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
+import react from '@vitejs/plugin-react';
 import sveltePreprocess from 'svelte-preprocess';
 import { defineConfig } from 'vitest/config';
 
@@ -19,7 +20,10 @@ export default defineConfig({
       preprocess: sveltePreprocess(),
       hot: !process.env.VITEST
     }),
-    svelteTesting()
+    svelteTesting(),
+    // Only needed for the React adapter's tests (tests/react/**) -- restricted
+    // to .tsx so it doesn't run its babel transform over the whole .ts codebase.
+    react({ include: /\.tsx$/ })
   ],
   optimizeDeps: {
     include: ['phosphor-svelte']

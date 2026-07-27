@@ -1,0 +1,20 @@
+/* SignInCore.svelte's <style> defines `.email-code-input { text-align: center }` even
+   though that markup lives in PinEntryStep.svelte, not SignInCore.svelte itself -- due to
+   Svelte's per-component style scoping that rule can never actually match anything there
+   (a "svelte-ignore unused-css-selector"-worthy latent bug in the source). Co-located here
+   instead, where the class is actually rendered, since centering the PIN step reads as the
+   intended design rather than something to reproduce as broken. */
+.email-code-input {
+  text-align: center;
+}
+
+/* `.button-section` also appears in SignInCore.css (email-entry step), scoped under
+   `.sign-in-core` there; scoped under `.email-code-input` here for the same reason
+   (avoid a bare, generic class name leaking globally in plain, unscoped CSS) so
+   PinEntryStep's CSS is self-sufficient if imported standalone. */
+.email-code-input .button-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

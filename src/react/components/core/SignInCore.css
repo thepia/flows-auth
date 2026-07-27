@@ -1,0 +1,19 @@
+/* Ported 1:1 from src/svelte/components/core/SignInCore.svelte's <style> block. */
+
+.sign-in-core {
+  width: 100%;
+}
+
+.sign-in-core .button-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Global styling hook for WebAuthn indicator (matches the Svelte version's
+   `:global(.webauthn-indicator)` -- deliberately unscoped for external consumers). */
+.webauthn-indicator {
+  text-align: center;
+  margin-top: 16px;
+}

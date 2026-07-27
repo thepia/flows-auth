@@ -1,5 +1,5 @@
 /* Ported 1:1 from src/svelte/components/core/AuthStateMessage.svelte's <style> block. */
-@import '../shared.css';
+@import "../shared.css";
 
 .auth-message {
   padding: 8px 0 0 0;

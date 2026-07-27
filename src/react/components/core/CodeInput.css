@@ -1,5 +1,5 @@
 /* Ported 1:1 from src/svelte/components/core/CodeInput.svelte's <style> block. */
-@import '../shared.css';
+@import "../shared.css";
 
 .code-input-label {
   color: var(--color-text-secondary, #6b7280);
@@ -12,7 +12,7 @@
   text-align: center;
   font-size: 1.125rem;
   font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
   border: 1px solid #d1d5db;
   border-radius: 6px;

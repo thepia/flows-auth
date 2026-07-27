@@ -136,7 +136,12 @@ button.auth-btn {
   color: var(--color-text-primary, #111827);
 }
 
-/* Disabled state for all variants */
+/* Disabled state for all variants -- ported 1:1 from AuthButton.svelte's `button:disabled`
+   rule. The Svelte original is exempt from this lint (biome.json excludes Svelte files);
+   `!important` is kept intentionally so the disabled state always wins over the
+   variant-specific hover/active rules above, rather than restructure selector specificity
+   and risk a subtly different disabled-state precedence than the Svelte target. Biome flags
+   this as noImportantStyles (warning, not error -- see the Phase C report). */
 .auth-btn:disabled {
   cursor: not-allowed !important;
   opacity: 0.5 !important;

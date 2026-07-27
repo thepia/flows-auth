@@ -54,7 +54,11 @@ function detectAppleDevice(): boolean {
   return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
 }
 
-function getDisplayText(buttonConfig: SingleButtonConfig, loading: boolean, isAppleDevice: boolean): string {
+function getDisplayText(
+  buttonConfig: SingleButtonConfig,
+  loading: boolean,
+  isAppleDevice: boolean
+): string {
   const messages = m as unknown as Record<string, () => string>;
 
   if (loading && buttonConfig.loadingTextKey && buttonConfig.loadingTextKey in m) {
@@ -102,7 +106,11 @@ function getDisplayText(buttonConfig: SingleButtonConfig, loading: boolean, isAp
   }
 }
 
-function getDisplayIconComponent(buttonConfig: SingleButtonConfig, loading: boolean, isAppleDevice: boolean) {
+function getDisplayIconComponent(
+  buttonConfig: SingleButtonConfig,
+  loading: boolean,
+  isAppleDevice: boolean
+) {
   if (loading) return null;
   if (!buttonConfig?.method) return null;
 
@@ -152,7 +160,11 @@ export function AuthButton({
   };
 
   const variantClass =
-    variant === 'primary' ? 'auth-btn-primary' : variant === 'secondary' ? 'auth-btn-secondary' : 'auth-btn-ghost';
+    variant === 'primary'
+      ? 'auth-btn-primary'
+      : variant === 'secondary'
+        ? 'auth-btn-secondary'
+        : 'auth-btn-ghost';
 
   return (
     <button

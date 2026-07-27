@@ -109,7 +109,10 @@ export function EmailInput({
   return (
     <div className={`space-y-2 ${className}`}>
       {showLabel && (
-        <label htmlFor="email-input" className="email-input-label block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="email-input"
+          className="email-input-label block text-sm font-medium text-gray-700"
+        >
           {displayLabel}
         </label>
       )}

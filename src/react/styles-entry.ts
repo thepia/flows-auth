@@ -24,5 +24,3 @@ import './components/core/AuthNewUserInfo.css';
 import './components/core/AuthExplainer.css';
 import './components/core/SignInCore.css';
 import './components/SignInForm.css';
-
-export {};

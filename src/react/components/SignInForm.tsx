@@ -149,7 +149,8 @@ export function SignInForm({
       {authConfig?.branding?.showPoweredBy === true && (
         <div className="auth-footer">
           <p className="powered-by">
-            {getDisplayText('branding.securedBy')} <strong>{getDisplayText('branding.poweredBy')}</strong>
+            {getDisplayText('branding.securedBy')}{' '}
+            <strong>{getDisplayText('branding.poweredBy')}</strong>
           </p>
         </div>
       )}

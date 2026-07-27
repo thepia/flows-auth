@@ -28,7 +28,7 @@
  * but never dispatches it anywhere in the file -- a documented-but-dead part of the contract.
  * Honoring it here matches `docs/components/README.md`'s documented event table.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComposedAuthStore } from '../../../core/stores/auth-store.js';
 import type { AuthError, AuthMethod, User } from '../../../core/types/index.js';
 import { debug } from '../../../core/utils/debug.js';
@@ -94,27 +94,36 @@ export function SignInCore({
   const authConfig = authStoreInstance.getConfig?.();
   const buttonConfig = authStoreInstance.getButtonConfig?.() ?? null;
   const stateMessage =
-    result.signInState || result.apiError !== undefined ? authStoreInstance.getStateMessageConfig?.() ?? null : null;
+    result.signInState || result.apiError !== undefined
+      ? (authStoreInstance.getStateMessageConfig?.() ?? null)
+      : null;
   const explainerConfig = authStoreInstance.getExplainerConfig?.(explainFeatures) ?? null;
 
-  async function handleConditionalAuth(conditionalAuthEmail: string) {
-    const state = authStoreInstance.getState();
-    if (state.conditionalAuthActive || state.loading) return;
+  // useCallback (not a plain function) so its identity only changes with authStoreInstance/
+  // onSuccess, letting the mount effect below list it as a dependency without re-running on
+  // every render (a plain function re-created each render would force that).
+  const handleConditionalAuth = useCallback(
+    async (conditionalAuthEmail: string) => {
+      const state = authStoreInstance.getState();
+      if (state.conditionalAuthActive || state.loading) return;
 
-    debug('🔍 Starting conditional authentication for:', conditionalAuthEmail);
-    try {
-      authStoreInstance.setConditionalAuthActive(true);
-      const success = await authStoreInstance.startConditionalAuthentication(conditionalAuthEmail);
-      if (success) {
-        onSuccess?.({ user: authStoreInstance.getState().user, method: 'passkey' });
+      debug('🔍 Starting conditional authentication for:', conditionalAuthEmail);
+      try {
+        authStoreInstance.setConditionalAuthActive(true);
+        const success =
+          await authStoreInstance.startConditionalAuthentication(conditionalAuthEmail);
+        if (success) {
+          onSuccess?.({ user: authStoreInstance.getState().user, method: 'passkey' });
+        }
+      } catch (error) {
+        // Conditional auth fails silently - expected if no passkeys exist.
+        debug('⚠️ Conditional authentication failed (expected if no passkeys):', error);
+      } finally {
+        authStoreInstance.setConditionalAuthActive(false);
       }
-    } catch (error) {
-      // Conditional auth fails silently - expected if no passkeys exist.
-      debug('⚠️ Conditional authentication failed (expected if no passkeys):', error);
-    } finally {
-      authStoreInstance.setConditionalAuthActive(false);
-    }
-  }
+    },
+    [authStoreInstance, onSuccess]
+  );
 
   // Initialize on mount: if an initial email was provided, check for existing pins /
   // trigger conditional auth (mirrors the Svelte version's `onMount(initializeComponent)`).
@@ -139,14 +148,20 @@ export function SignInCore({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line -- initializeComponent intentionally runs once per (store, initialEmail) pair
-  }, [authStoreInstance, initialEmail]);
+  }, [authStoreInstance, initialEmail, handleConditionalAuth]);
 
   // Debounced check-user-for-email whenever the local email field changes, mirroring the
   // Svelte reactive block that re-triggers `checkUserForEmail` while in emailEntry/userChecked/
   // generalError (also covers autofill, since browsers set the input value programmatically).
   useEffect(() => {
-    if (!(email && (signInState === 'emailEntry' || signInState === 'userChecked' || signInState === 'generalError'))) {
+    if (
+      !(
+        email &&
+        (signInState === 'emailEntry' ||
+          signInState === 'userChecked' ||
+          signInState === 'generalError')
+      )
+    ) {
       return undefined;
     }
 
@@ -239,7 +254,10 @@ export function SignInCore({
         }
       }
 
-      const authMethod = determineAuthMethod(userCheck, authStoreInstance.getState().passkeysEnabled);
+      const authMethod = determineAuthMethod(
+        userCheck,
+        authStoreInstance.getState().passkeysEnabled
+      );
 
       switch (authMethod) {
         case 'passkey-with-fallback':
@@ -328,7 +346,11 @@ export function SignInCore({
           {signInState === 'userChecked' && result.userExists === false && (
             <>
               {stateMessage && (
-                <AuthStateMessage type={stateMessage.type} tKey={stateMessage.textKey} showIcon={stateMessage.showIcon} />
+                <AuthStateMessage
+                  type={stateMessage.type}
+                  tKey={stateMessage.textKey}
+                  showIcon={stateMessage.showIcon}
+                />
               )}
               {authConfig?.signInMode !== 'login-only' && (
                 <AuthNewUserInfo
@@ -343,7 +365,11 @@ export function SignInCore({
 
           {buttonConfig && (
             <div className="button-section">
-              <AuthButton type="submit" buttonConfig={buttonConfig.primary} loading={result.loading} />
+              <AuthButton
+                type="submit"
+                buttonConfig={buttonConfig.primary}
+                loading={result.loading}
+              />
 
               {buttonConfig.secondary && (
                 <AuthButton
@@ -361,7 +387,9 @@ export function SignInCore({
         </form>
       )}
 
-      {signInState === 'pinEntry' && <PinEntryStep store={authStoreInstance} onSuccess={onSuccess} />}
+      {signInState === 'pinEntry' && (
+        <PinEntryStep store={authStoreInstance} onSuccess={onSuccess} />
+      )}
 
       {signInState === 'signedIn' && result.user && (
         // Minimal stand-in for the (out-of-scope) `UserManagement` component -- just
@@ -389,7 +417,9 @@ export function SignInCore({
         </div>
       )}
 
-      {(signInState === 'generalError' || signInState === 'passkeyPrompt' || signInState === 'passkeyRegistration') && (
+      {(signInState === 'generalError' ||
+        signInState === 'passkeyPrompt' ||
+        signInState === 'passkeyRegistration') && (
         // 'generalError' is reachable today: a failed passkey ceremony (including the browser's
         // own autofill/conditional-UI attempt) sets signInState to 'generalError'. Recovery here
         // is via the email field itself, not a dedicated button: retyping the email re-triggers
@@ -412,7 +442,11 @@ export function SignInCore({
       )}
 
       {signInState === 'emailVerification' && stateMessage && (
-        <AuthStateMessage type={stateMessage.type} tKey={stateMessage.textKey} showIcon={stateMessage.showIcon} />
+        <AuthStateMessage
+          type={stateMessage.type}
+          tKey={stateMessage.textKey}
+          showIcon={stateMessage.showIcon}
+        />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 /* Ported 1:1 from src/svelte/components/core/AuthExplainer.svelte's <style> block. */
-@import '../shared.css';
+@import "../shared.css";
 
 /* Paragraph style with inline icon at text start */
 .explainer-paragraph {

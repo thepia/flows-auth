@@ -5,11 +5,11 @@
  * Ported from `src/svelte/components/core/PinEntryStep.svelte`.
  */
 import type { FormEvent } from 'react';
-import { useAuthStore } from '../../hooks/useAuthStore.js';
-import type { UseAuthStoreResult } from '../../hooks/useAuthStore.js';
-import type { AuthMethod, User } from '../../../core/types/index.js';
 import type { ComposedAuthStore } from '../../../core/stores/auth-store.js';
+import type { AuthMethod, User } from '../../../core/types/index.js';
 import { debug } from '../../../core/utils/debug.js';
+import type { UseAuthStoreResult } from '../../hooks/useAuthStore.js';
+import { useAuthStore } from '../../hooks/useAuthStore.js';
 import { AuthButton } from './AuthButton.js';
 import { AuthStateMessage } from './AuthStateMessage.js';
 import { CodeInput } from './CodeInput.js';

@@ -24,7 +24,13 @@ export default defineConfig({
   // on the Svelte target. Icons are imported via deep per-icon paths
   // (`@phosphor-icons/react/dist/csr/Key`, see AuthButton.tsx/AuthExplainer.tsx for why),
   // so the external match needs the subpath, not just the bare package name.
-  external: ['react', 'react-dom', 'react/jsx-runtime', '@phosphor-icons/react', /^@phosphor-icons\/react\//],
+  external: [
+    'react',
+    'react-dom',
+    'react/jsx-runtime',
+    '@phosphor-icons/react',
+    /^@phosphor-icons\/react\//
+  ],
   // Single source of truth for VERSION (see src/core/index.ts).
   define: { __LIB_VERSION__: JSON.stringify(version) }
 });

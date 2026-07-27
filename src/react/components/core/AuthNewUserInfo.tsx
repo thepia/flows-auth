@@ -49,7 +49,12 @@ export function AuthNewUserInfo({
         {error && <span className="error-message">{error}</span>}
       </div>
 
-      <AuthStateMessage type="info" tKey="auth.newUserTermsNotice" showIcon={true} className="terms-notice" />
+      <AuthStateMessage
+        type="info"
+        tKey="auth.newUserTermsNotice"
+        showIcon={true}
+        className="terms-notice"
+      />
     </div>
   );
 }

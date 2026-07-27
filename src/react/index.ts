@@ -34,11 +34,6 @@ export type {
   StateMessageConfig,
   User
 } from '../core/types/index.js';
-export type { AuthProviderProps } from './context.js';
-export { AuthProvider, AuthStoreContext } from './context.js';
-export type { UseAuthStoreResult } from './hooks/useAuthStore.js';
-export { useAuthStore } from './hooks/useAuthStore.js';
-
 // UI components (Phase C)
 export type { AuthButtonProps } from './components/core/AuthButton.js';
 export { AuthButton } from './components/core/AuthButton.js';
@@ -58,3 +53,7 @@ export type { SignInCoreProps } from './components/core/SignInCore.js';
 export { SignInCore } from './components/core/SignInCore.js';
 export type { SignInFormProps } from './components/SignInForm.js';
 export { SignInForm } from './components/SignInForm.js';
+export type { AuthProviderProps } from './context.js';
+export { AuthProvider, AuthStoreContext } from './context.js';
+export type { UseAuthStoreResult } from './hooks/useAuthStore.js';
+export { useAuthStore } from './hooks/useAuthStore.js';

@@ -242,12 +242,67 @@ TS-stripped. No source reorg, no export changes. Demos (workspace dist) build. B
   coordinated codemod rollout — see semver note above).
 
 ### Phase 3 — Add the React target
-1. `src/react/` with React components (`useSyncExternalStore` over the vanilla store
-   adapter — add `src/core/stores/adapters/react.ts` alongside `svelte.ts`/`vanilla.ts`).
-   React imports core via `@thepia/flows-auth` (self-reference), not relative paths.
-2. `tsup src/react/index.ts -o dist/react`; add `./react` export; add `react`/`react-dom` as
-   `peerDependencies`.
-3. A React demo under `examples/` to exercise it.
+
+**Status: shipped** (Phases A–C of the implementation). What actually landed, vs. this
+section's original plan:
+
+**Phase A/B — hook + build wiring (as planned):**
+- `src/core/stores/adapters/react.ts` — `subscribeToComposedAuthStore()`/
+  `getComposedAuthSnapshot()`, subscribing to **all 8** sub-stores (the Svelte adapter's
+  `makeSvelteCompatible()` only subscribes to 7, omitting `onboarding` — a gap deliberately
+  not replicated here).
+- `src/react/context.tsx` (`AuthProvider`, `AuthStoreContext`) and
+  `src/react/hooks/useAuthStore.ts` (`useAuthStore(storeProp?)`, built on
+  `useSyncExternalStore`, prop-first/context-fallback). One deviation from the original plan:
+  these import core via **relative paths**, not the `@thepia/flows-auth` self-reference —
+  esbuild/tsup (this target's bundler) doesn't resolve a package's self-reference to itself
+  the way Node's runtime resolver or `svelte-package`'s type-checker do.
+- `tsup.react.config.ts` → `dist/react/**` (+ `.d.ts`); `./react` export; `react`/`react-dom`
+  as optional `peerDependencies`; `examples/react-demo/` (plain Vite+React), wired into
+  `test:demos:react`.
+
+**Phase C — full UI component parity (beyond the original plan's headless-hook-only scope):**
+The original plan only called for the hook/adapter (`src/react/` "headless binding only").
+Phase C went further and ported the Svelte core UI component library itself, so `./react` is
+a true peer of `./svelte`, not just a lower-level primitive:
+
+- `src/react/components/core/`: `AuthStateMessage`, `AuthButton`, `EmailInput`, `CodeInput`,
+  `PinEntryStep`, `AuthNewUserInfo`, `AuthExplainer` (not in the original component list, but
+  ported anyway — `SignInCore.svelte` renders it directly, so parity required it), `SignInCore`.
+- `src/react/components/SignInForm.tsx` — same `variant: 'inline' | 'popup'` +
+  `popupPosition` contract as the Svelte version (CSS-only positioning, no anchoring).
+- Icons: `@phosphor-icons/react` (added as an optional peer/dev dependency, mirroring
+  `phosphor-svelte`'s existing pattern) rather than inline SVG, for icon-set/visual parity.
+  Imported via **deep per-icon paths**
+  (`@phosphor-icons/react/dist/csr/Key`, not `import { Key } from '@phosphor-icons/react'`):
+  the package barrel's `dist/index.d.ts` re-exports ~1500 icons via `export * from
+  './csr/<Name>'` with extensionless relative specifiers, which this project's
+  `moduleResolution: "nodenext"` cannot resolve through star-re-exports (confirmed by direct
+  testing — explicit/named re-exports like `IconContext` resolve fine; every star-re-exported
+  icon name doesn't). Deep imports sidestep the issue and are also the package's documented
+  tree-shaking-friendly style.
+- **CSS**: ported as plain `.css` files, one per component, co-located and imported directly
+  (`import './AuthButton.css'`) — same class names as the Svelte `<style>` blocks, so the two
+  targets are visually identical and cross-target CSS overrides keep working. These are
+  **merged into the existing shared `dist/flows-auth.css`** (the `./style.css` export) rather
+  than shipped as a separate `./react/style.css`: since the visual design is intentionally
+  identical between targets, one stylesheet serving both avoids consumers having to reason
+  about which target's CSS to load. Mechanically: `vite.css.config.mjs` (the existing
+  Svelte-only CSS-bundling pass) gained a second lib entry,
+  `src/react/styles-entry.ts` (a side-effect-only file that imports every React component's
+  `.css`), and `cssCodeSplit: false` combines both entries' CSS into one output file exactly
+  as it already did for the Svelte entry alone. `tsup.react.config.ts`'s JS bundle also
+  auto-extracts a redundant `dist/react/index.css` as an esbuild side effect (from the same
+  `.css` imports) — `scripts/build.mjs` deletes it so there's exactly one CSS file to import.
+- Deliberately deferred (not ported): `AccountCreationForm`, `UserManagement`, `PolicyViewer`,
+  `EmailVerificationBanner`/`Prompt` (thepia.com's flow doesn't need invitation-based account
+  creation, an in-app account dashboard, or an in-app policy-viewer dialog),
+  `ErrorReportingStatus`/`SessionStateMachineFlow`/`SignInStateMachineFlow`/`TestFlow`
+  (dev/debug/diagram tooling pulling in `@xyflow/svelte`/`d3`, not end-user auth UI).
+  `SignInCore`'s `signedIn` state renders a minimal inline placeholder (message + Sign Out
+  button) instead of the deferred `UserManagement`; its `PolicyViewer` modal + global
+  `window.showPolicyPopup()` hook are dropped entirely. Port these in a follow-up if/when
+  thepia.com (or another consumer) needs them.
 
 ## Risks / watch-items
 

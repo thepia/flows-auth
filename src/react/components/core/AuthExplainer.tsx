@@ -14,8 +14,10 @@
  * `AuthButton.tsx`'s header comment for why (barrel re-exports don't resolve under this
  * project's `moduleResolution: "nodenext"`).
  */
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
+
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Certificate as BadgeCheck } from '@phosphor-icons/react/dist/csr/Certificate';
+import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
 import { DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobile';
 import { Fingerprint } from '@phosphor-icons/react/dist/csr/Fingerprint';
 import { Globe } from '@phosphor-icons/react/dist/csr/Globe';
@@ -25,7 +27,6 @@ import { Pulse } from '@phosphor-icons/react/dist/csr/Pulse';
 import { Shield } from '@phosphor-icons/react/dist/csr/Shield';
 import { ShieldCheck } from '@phosphor-icons/react/dist/csr/ShieldCheck';
 import { UserCheck } from '@phosphor-icons/react/dist/csr/UserCheck';
-import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import type { ApiError, ExplainerConfig } from '../../../core/types/index.js';
 import { m } from '../../../core/utils/i18n.js';
 import './AuthExplainer.css';
@@ -72,7 +73,11 @@ export function AuthExplainer({ config = null, apiError = null }: AuthExplainerP
               const IconComponent = getIconComponent(config.iconName as string);
               return (
                 <div className="flex items-center justify-center shrink-0 mt-px">
-                  <IconComponent size={16} weight={getIconWeight(config.iconWeight)} color="currentColor" />
+                  <IconComponent
+                    size={16}
+                    weight={getIconWeight(config.iconWeight)}
+                    color="currentColor"
+                  />
                 </div>
               );
             })()}
@@ -97,7 +102,11 @@ export function AuthExplainer({ config = null, apiError = null }: AuthExplainerP
             return (
               <div className="flex items-center gap-2" key={feature.iconName + feature.textKey}>
                 <div className="feature-icon">
-                  <FeatureIcon size={20} weight={getIconWeight(feature.iconWeight)} color="currentColor" />
+                  <FeatureIcon
+                    size={20}
+                    weight={getIconWeight(feature.iconWeight)}
+                    color="currentColor"
+                  />
                 </div>
                 <span
                   className="feature-text"
@@ -112,7 +121,12 @@ export function AuthExplainer({ config = null, apiError = null }: AuthExplainerP
 
       {apiError && (
         <div className="flex items-center gap-2">
-          <Pulse size={20} weight="duotone" color="var(--icon-color-error, var(--color-brand-error, #E53E3E))" aria-label="Error icon" />
+          <Pulse
+            size={20}
+            weight="duotone"
+            color="var(--icon-color-error, var(--color-brand-error, #E53E3E))"
+            aria-label="Error icon"
+          />
           <span className="feature-text">{m[apiError.code]()}</span>
         </div>
       )}

@@ -27,7 +27,9 @@ import {
   rmSync,
   writeFileSync
 } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { rollup } from 'rollup';
+import dts from 'rollup-plugin-dts';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const DIST = resolve(ROOT, 'dist');
@@ -65,7 +67,51 @@ if (existsSync(paraglideMessagesDts)) {
   if (after !== before) writeFileSync(paraglideMessagesDts, after);
 }
 
-// 2c. Server target: real JS + .d.ts via plain tsc, no bundler. Each source
+// 2c. Bundle core's per-file .d.ts tree (just emitted by tsc above) into
+//     self-contained per-entry declaration files, so the shipped declarations
+//     structurally match tsup's single-file-per-entry JS bundle (step 2).
+//     Without this, dist/index.d.ts (etc.) contains relative specifiers like
+//     `from './utils/i18n.js'` pointing at files that were never emitted as
+//     JS (only as .d.ts, by tsc) - harmless for plain `import` (which loads
+//     the bundled dist/index.js and never walks the .d.ts graph) but fatal
+//     for tools that resolve modules structurally (e.g. Deno's node_modules
+//     resolution), which see a missing-file error.
+//
+//     tsup's own dts:true (used for react, step 3c) can't be reused here: it
+//     re-parses the *source* .ts/.js from scratch, and rollup-plugin-dts
+//     (tsup's dts engine) can't parse the committed Paraglide output's ES2022
+//     string-literal exports (`export { x as "email.label" }`) embedded in
+//     executable JS. Bundling tsc's *already-emitted* .d.ts (after the 2b
+//     patch) sidesteps that: by that point the string-literal exports are
+//     plain declaration-file syntax, which rollup-plugin-dts parses fine.
+//     Each entry is bundled in its own `rollup()` call (not one multi-entry
+//     call) so entries that share types (e.g. index.d.ts and telemetry.d.ts
+//     both use AuthStateEvent) don't get a shared chunk file - that would
+//     reintroduce the exact cross-file relative-reference problem this step
+//     exists to eliminate, just one level up.
+const CORE_ENTRIES = ['index', 'vite-preset', 'telemetry', 'telemetry-otlp'];
+const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
+const externalNames = [
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
+  'svelte' // tsup.config.ts also externalizes svelte/store, svelte/internal
+];
+const isExternal = (id) => externalNames.some((name) => id === name || id.startsWith(`${name}/`));
+
+for (const entryName of CORE_ENTRIES) {
+  const entryPath = resolve(DIST_BUILD, `${entryName}.d.ts`);
+  const bundle = await rollup({ input: entryPath, plugins: [dts()], external: isExternal });
+  await bundle.write({ file: entryPath, format: 'es' });
+  await bundle.close();
+}
+
+// Delete the now-orphaned per-file .d.ts tree tsc emitted above - everything
+// reachable from the 4 entries was just inlined into them by rollup-plugin-dts.
+for (const orphan of ['api', 'constants', 'paraglide', 'stores', 'telemetry', 'types', 'utils']) {
+  rmSync(resolve(DIST_BUILD, orphan), { recursive: true, force: true });
+}
+
+// 2d. Server target: real JS + .d.ts via plain tsc, no bundler. Each source
 //     file's pair mirrors its own path (src/server/foo.ts -> server/foo.js
 //     + .d.ts), so there's no bundler-vs-declaration path mismatch here.
 run(`tsc -p tsconfig.server.json --outDir ${join(DIST_BUILD, 'server')}`);
@@ -88,10 +134,54 @@ const stripLangTs = (dir) => {
 };
 stripLangTs(resolve(DIST_BUILD, 'svelte'));
 
-// 3c. React target (tsup, bundled JS + .d.ts) -> dist/react/**
+// 3c. A handful of src/svelte/** files import core internals via a deep relative
+//     path (e.g. `import type { X } from '../../core/stores/auth-store.js'`)
+//     instead of the package self-import (`from '@thepia/flows-auth'`) that most
+//     other src/svelte/** files use - deliberately: self-imports resolve via a
+//     tsconfig `paths` alias at dev/typecheck time, but risk resolving through a
+//     stale *installed* copy of this very package for tools that don't honor
+//     that alias, so plain-relative imports are preferred in this codebase.
+//     svelte-package preserves that specifier text verbatim into the emitted
+//     .d.ts. That's structurally unresolvable on the dist side no matter which
+//     relative path source used: src/core/** is nested under a `core/` dir, but
+//     core's dist output is flat at dist/ root (dist/index.js etc, see step 2c),
+//     while dist/svelte/** mirrors src/svelte/**'s full depth - so a `core/`
+//     path segment that's correct in src/ is never correct in dist/, and since
+//     step 2c also bundles core's declarations, the deep file it used to point
+//     at (e.g. dist/stores/auth-store.d.ts) no longer exists standalone anyway.
+//     Rewrite just the emitted specifier (not the source) to point at core's
+//     bundled entry (dist/index.d.ts), which re-exports every public core
+//     symbol - keeps src/svelte/** on plain-relative imports while producing a
+//     dist that actually resolves.
+const CORE_INDEX_DTS = resolve(DIST_BUILD, 'index.d.ts');
+const CROSS_CORE_REF = /((?:\.\.\/)+)core\/[^'"]+\.js/g;
+const fixCrossCoreRefs = (dir) => {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) {
+      fixCrossCoreRefs(p);
+      continue;
+    }
+    if (!e.name.endsWith('.d.ts')) continue;
+    const before = readFileSync(p, 'utf8');
+    if (!CROSS_CORE_REF.test(before)) continue;
+    CROSS_CORE_REF.lastIndex = 0;
+    let relToIndex = relative(dirname(p), CORE_INDEX_DTS).replace(/\.d\.ts$/, '.js');
+    if (!relToIndex.startsWith('.')) relToIndex = `./${relToIndex}`;
+    relToIndex = relToIndex.split(sep).join('/');
+    const after = before.replace(CROSS_CORE_REF, relToIndex);
+    writeFileSync(p, after);
+    console.log(
+      `✅ Rewrote cross-core reference(s) in (staged) ${p.replace(`${DIST_BUILD}/`, 'dist/')}`
+    );
+  }
+};
+fixCrossCoreRefs(resolve(DIST_BUILD, 'svelte'));
+
+// 3d. React target (tsup, bundled JS + .d.ts) -> dist/react/**
 run(`tsup --config tsup.react.config.ts --out-dir ${join(DIST_BUILD, 'react')}`);
 
-// 3d. esbuild (via tsup) auto-extracts any `import './Foo.css'` it encounters bundling
+// 3e. esbuild (via tsup) auto-extracts any `import './Foo.css'` it encounters bundling
 //     src/react/index.ts into a sibling dist/react/index.css. That's a redundant, unlisted
 //     byproduct: the canonical stylesheet for BOTH targets is the combined dist/flows-auth.css
 //     produced by step 4 below (see src/react/styles-entry.ts for why they're merged).

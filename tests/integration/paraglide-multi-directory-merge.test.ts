@@ -40,7 +40,7 @@ describe('Paraglide Multi-Directory Message Merging', () => {
   // Expected app-specific messages (demo only)
   const expectedAppSpecific = {
     'overview.title': 'Thepia Flows Authentication',
-    'overview.subtitle': 'Passwordless authentication with WebAuthn passkeys and magic links'
+    'overview.subtitle': 'Passwordless authentication with WebAuthn passkeys and email codes'
   };
 
   beforeAll(() => {

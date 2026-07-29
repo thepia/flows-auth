@@ -251,16 +251,21 @@ describe('Bundle API Validation (Integration)', () => {
       expect(dts).toContain('export');
     });
 
-    it('should re-export core types and reference siblings via plain .js specifiers', () => {
+    it('should export core types from a single self-contained declaration file', () => {
       const dts = readFileSync(DIST_TYPES_PATH, 'utf-8');
 
       expect(dts).toMatch(/export.*AuthApiClient/);
-      expect(dts).toMatch(/export type \* from/);
 
-      // The old fixDtsImports `.d.ts`-extension rewrite was REMOVED — sibling
-      // declaration imports now use plain `.js` specifiers (tsc default),
-      // never `.d.ts`.
-      expect(dts).toMatch(/from '\.\/utils\/webauthn\.js'/);
+      // dist/index.d.ts is produced by rolling up tsc's per-file declaration
+      // tree (scripts/build.mjs step 2c, via rollup-plugin-dts) into a single
+      // file that structurally matches tsup's single-file dist/index.js.
+      // It must NOT contain relative sibling specifiers (e.g. the old
+      // `export * from './utils/i18n.js'`) — those pointed at files that
+      // tsup never emits (JS is bundled, not per-file), which broke any
+      // tool that resolves modules structurally instead of just importing
+      // dist/index.js directly (e.g. Deno's node_modules resolution). See
+      // tests/package/dist-internal-references-resolve.test.ts.
+      expect(dts).not.toMatch(/from '\.[^']*\.js'/);
       expect(dts).not.toMatch(/from '[^']*\.d\.ts'/);
     });
 

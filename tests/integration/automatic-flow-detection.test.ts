@@ -28,6 +28,7 @@ import { createAuthStore } from '../../src/core/stores/index.js';
 import { makeSvelteCompatible } from '../../src/svelte/adapters/svelte.js';
 import type { AuthConfig } from '../../src/core/types/index.js';
 import { globalUserCache } from '../../src/core/utils/user-cache.js';
+import { globalClientRateLimiter } from '../../src/core/utils/client-rate-limiter.js';
 
 const mockNavigatorCredentials = {
   create: vi.fn(),
@@ -76,6 +77,14 @@ describe('Automatic Flow Detection', () => {
     // a stale cached result from an earlier test/file can silently bypass
     // this test's mockFetch entirely.
     globalUserCache.clearAll();
+    // AuthApiClient.request() routes every call (even against this file's
+    // mocked fetch) through the same process-wide rate limiter, which only
+    // allows 8 requests/sec of burst. Earlier tests in this file each burn
+    // 1-2 of that budget, so without a reset, later tests' requests can get
+    // real setTimeout-based rate-limit delays queued behind them - pushing
+    // this test right up against (and, under load, past) waitFor's default
+    // 1000ms timeout. That's what made "should collect a full name..." flake.
+    globalClientRateLimiter.reset();
 
     Object.defineProperty(navigator, 'credentials', {
       value: mockNavigatorCredentials,

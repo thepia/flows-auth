@@ -111,8 +111,11 @@ describe('Development Environment / Packaging Regression Tests', () => {
       const rootDts = readFileSync(resolve(ROOT, 'dist/index.d.ts'), 'utf-8');
       const svelteDts = readFileSync(resolve(ROOT, 'dist/svelte/index.d.ts'), 'utf-8');
       expect(rootDts).toMatch(/createAuthStore/);
-      expect(rootDts).not.toMatch(/SignInForm/);
-      expect(svelteDts).toMatch(/SignInForm/);
+      // Word-boundary match: core legitimately exports the unrelated
+      // `SignInFormProps` interface (see build-verification.test.ts for why
+      // a plain substring check false-positives on it post-bundling).
+      expect(rootDts).not.toMatch(/\bSignInForm\b/);
+      expect(svelteDts).toMatch(/\bSignInForm\b/);
     });
   });
 

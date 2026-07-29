@@ -1,8 +1,23 @@
 version: 2
+
+registries:
+  # @thepia/branding is published to GitHub Packages (private, authenticated
+  # registry) - without this, Dependabot's sandboxed updater can't resolve
+  # the lockfile at all (401 Unauthorized), which fails EVERY npm update job,
+  # not just ones touching @thepia packages. Requires a `read:packages`-scoped
+  # PAT stored as the DEPENDABOT_NPM_GITHUB_TOKEN secret under this repo's
+  # Settings -> Secrets and variables -> Dependabot.
+  github-packages-thepia:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{secrets.DEPENDABOT_NPM_GITHUB_TOKEN}}
+
 updates:
   # npm / pnpm dependencies (root library + example workspaces)
   - package-ecosystem: npm
     directory: "/"
+    registries:
+      - github-packages-thepia
     schedule:
       interval: weekly
       day: monday

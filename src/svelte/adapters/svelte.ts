@@ -273,7 +273,8 @@ export function makeSvelteCompatible(store: ComposedAuthStore): SvelteAuthStore 
           store.error.subscribe(notify),
           store.events.subscribe(notify),
           store.passkey.subscribe(notify),
-          store.email.subscribe(notify)
+          store.email.subscribe(notify),
+          store.onboarding.subscribe(notify)
         ];
 
         cleanup = () => {

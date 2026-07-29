@@ -1,0 +1,31 @@
+/* Ported 1:1 from src/svelte/components/core/CodeInput.svelte's <style> block. */
+@import "../shared.css";
+
+.code-input-label {
+  color: var(--color-text-secondary, #6b7280);
+}
+
+/* Individual digit input styling */
+.digit-input {
+  width: 3rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 1.125rem;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.digit-input:focus {
+  outline: none;
+  transform: scale(1.05);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.digit-input.error {
+  border-color: #ef4444;
+}

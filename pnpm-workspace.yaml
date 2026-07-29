@@ -4,6 +4,7 @@ packages:
   - 'examples/angular-demo'
   - 'examples/flows-app-demo'
   - 'examples/tasks-app-demo'
+  - 'examples/react-demo'
 
 # Supply-chain hardening (guards against install-script worms, e.g. Shai-Hulud).
 # pnpm 11 is default-deny on lifecycle scripts; only these packages may run

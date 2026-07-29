@@ -1,0 +1,6 @@
+/* Ported 1:1 from src/svelte/components/core/EmailInput.svelte's <style> block. */
+@import "../shared.css";
+
+.email-input-label {
+  color: var(--color-text-secondary, #6b7280);
+}

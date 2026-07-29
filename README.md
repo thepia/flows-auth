@@ -21,6 +21,28 @@ Modular Zustand-based state management:
 - `src/stores/ui/` - UI state and business logic
 - `src/stores/adapters/` - Svelte adapter for reactivity
 
+## Package Exports
+
+The package ships several independent entry points (see `exports` in
+[package.json](package.json)), each with its own `dist/` output shape:
+
+| Import | Source | What it is |
+|---|---|---|
+| `@thepia/flows-auth` | `src/core/` | Framework-agnostic core: stores, API client, WebAuthn utils, types. No Svelte/React dependency. |
+| `@thepia/flows-auth/svelte` | `src/svelte/` | Svelte components (`SignInForm`, `AccountCreationForm`, step components) and adapters, built with `svelte-package`. |
+| `@thepia/flows-auth/react` | `src/react/` | React components and hooks, bundled with `tsup`. |
+| `@thepia/flows-auth/dev` | `src/svelte/dev.ts` | Svelte-only dev/debug helpers, kept out of the main `/svelte` entry. |
+| `@thepia/flows-auth/server` | `src/server/` | Server-side helpers (session verification, etc.) for use in SvelteKit/Node backends. |
+| `@thepia/flows-auth/vite-preset` | `src/core/vite-preset.ts` | Vite plugin preset for consuming apps. |
+| `@thepia/flows-auth/telemetry`, `.../telemetry-otlp` | `src/core/telemetry*` | Optional telemetry/OTLP exporters, split out so consumers who don't use them don't pull in their dependencies. |
+| `@thepia/flows-auth/style.css` | build output | Combined stylesheet for both the Svelte and React targets (`dist/flows-auth.css`). |
+
+Each entry's `.d.ts` is a single self-contained file (e.g. `dist/index.d.ts`,
+`dist/react/index.d.ts`) that mirrors its JS bundle 1:1 rather than a tree of
+per-source-file declarations - see `scripts/build.mjs` for why (in short: the
+JS is bundled per entry, so the declarations are bundled to match, instead of
+leaving relative specifiers that point at files which were never emitted).
+
 ## Quick Start
 
 ### Installation

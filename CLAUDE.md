@@ -1,9 +1,5 @@
 # flows-auth - Claude Code Guide
 
-**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads)
-for issue tracking. Use `bd` commands instead of markdown TODOs.
-See AGENTS.md for workflow details.
-
 **📚 Full documentation**: See [docs/README.md](docs/README.md) and repository README.md
 
 ## ⚠️ CRITICAL Anti-Patterns

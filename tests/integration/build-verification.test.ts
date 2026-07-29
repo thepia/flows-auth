@@ -76,8 +76,15 @@ describe('Build Verification', () => {
     expect(indexDts).toContain('AuthApiClient');
     expect(indexDts).toContain('isWebAuthnSupported');
     expect(indexDts).toContain('VERSION');
-    // No component declarations at the root.
-    expect(indexDts).not.toContain('SignInForm');
+    // No component declarations at the root. Word-boundary match (not
+    // .toContain) because core legitimately exports the unrelated
+    // `SignInFormProps` prop-typing interface (shared across framework
+    // targets) - `.toContain('SignInForm')` would false-positive on that
+    // substring once the bundled dist/index.d.ts inlines full type bodies
+    // (see scripts/build.mjs step 2c: it self-contains the declaration
+    // instead of leaving it behind a `export * from './types/index.js'`
+    // re-export that this string-based check never resolved through).
+    expect(indexDts).not.toMatch(/\bSignInForm\b/);
   });
 
   it('should have correct Svelte-target TypeScript definitions', () => {

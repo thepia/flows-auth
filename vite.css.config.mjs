@@ -8,6 +8,13 @@ import { defineConfig } from 'vite';
 // dist/flows-auth.css for the transitional `./style.css` export (safer for SSR /
 // external consumers than relying solely on runtime injection). The JS output of
 // this build is throwaway and deleted by scripts/build.mjs.
+//
+// Two lib entries feed the one combined stylesheet: the Svelte component tree
+// (compiled via the svelte plugin, `emitCss: true`) and `src/react/styles-entry.ts`
+// (a plain side-effect-only `.ts` file that imports every React component's `.css`).
+// `cssCodeSplit: false` makes Rollup emit a single CSS asset regardless of entry
+// count, so both targets' styles land in the same `dist/flows-auth.css` — see
+// `src/react/styles-entry.ts` for why the two targets intentionally share one file.
 export default defineConfig({
   plugins: [
     svelte({
@@ -18,9 +25,12 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: 'src/svelte/index.ts',
+      entry: {
+        'svelte-css-only': 'src/svelte/index.ts',
+        'react-css-only': 'src/react/styles-entry.ts'
+      },
       formats: ['es'],
-      fileName: () => '__css-only.js'
+      fileName: (_format, entryName) => `${entryName}.js`
     },
     rollupOptions: {
       // Externalize everything except the components we're compiling for CSS.
@@ -32,6 +42,10 @@ export default defineConfig({
         'd3',
         /^d3-/,
         'phosphor-svelte',
+        '@phosphor-icons/react',
+        'react',
+        /^react\//,
+        'react-dom',
         '@dagrejs/dagre'
       ],
       output: { assetFileNames: 'flows-auth.[ext]' }

@@ -7,9 +7,18 @@ registries:
   # not just ones touching @thepia packages. Requires a `read:packages`-scoped
   # PAT stored as the DEPENDABOT_NPM_GITHUB_TOKEN secret under this repo's
   # Settings -> Secrets and variables -> Dependabot.
+  #
+  # `scope` is required here even though the repo has no committed .npmrc:
+  # per GitHub's docs, Dependabot only generates an authenticated .npmrc
+  # entry for a registry when `scope` (or `replaces-base`) is set on it, or
+  # when a committed .npmrc already maps the scope. Without `scope`, it still
+  # infers the *host* to hit from the pnpm lockfile (which is why requests
+  # correctly reached npm.pkg.github.com) but never attaches the token -
+  # exactly the "No authorization header was set" failure seen without this.
   github-packages-thepia:
     type: npm-registry
     url: https://npm.pkg.github.com
+    scope: "@thepia"
     token: ${{secrets.DEPENDABOT_NPM_GITHUB_TOKEN}}
 
 updates:

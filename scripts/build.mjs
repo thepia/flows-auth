@@ -105,6 +105,25 @@ for (const entryName of CORE_ENTRIES) {
   await bundle.close();
 }
 
+// 2c-2. The bundled .d.ts above is now self-contained (no cross-file specifiers
+//     for rollup-plugin-dts to mis-resolve), but consumers still need to be told
+//     it exists at all. Plain `tsc`/Node discover a same-basename .d.ts next to
+//     a .js file via `package.json`'s `exports["."].types` - but Deno consumers
+//     with `"nodeModulesDir": "none"` (e.g. thepia.com's deno.json) resolve
+//     `@thepia/flows-auth` through a raw import-map file path straight to the
+//     .js, bypassing package.json entirely, so that pairing never happens and
+//     every named type import 404s (TS2305) even though the type is genuinely
+//     exported. The `@ts-self-types` pragma is Deno's documented escape hatch
+//     for exactly this: an explicit, in-file pointer from the .js to its .d.ts
+//     that doesn't depend on package.json-mediated resolution at all.
+for (const entryName of CORE_ENTRIES) {
+  const entryJs = resolve(DIST_BUILD, `${entryName}.js`);
+  if (!existsSync(entryJs)) continue;
+  const before = readFileSync(entryJs, 'utf8');
+  const pragma = `// @ts-self-types="./${entryName}.d.ts"\n`;
+  if (!before.startsWith(pragma)) writeFileSync(entryJs, pragma + before);
+}
+
 // Delete the now-orphaned per-file .d.ts tree tsc emitted above - everything
 // reachable from the 4 entries was just inlined into them by rollup-plugin-dts.
 for (const orphan of ['api', 'constants', 'paraglide', 'stores', 'telemetry', 'types', 'utils']) {
@@ -189,6 +208,17 @@ run(`tsup --config tsup.react.config.ts --out-dir ${join(DIST_BUILD, 'react')}`)
 for (const junk of ['react/index.css', 'react/index.css.map']) {
   const p = resolve(DIST_BUILD, junk);
   if (existsSync(p)) rmSync(p);
+}
+
+// 3e-2. Same `@ts-self-types` need as core's step 2c-2 above, for the same reason
+//     (tsup's dts:true here already produces a self-contained react/index.d.ts,
+//     it's the .js->.d.ts pairing that raw-import-map Deno consumers can't do
+//     without this pragma).
+const reactIndexJs = resolve(DIST_BUILD, 'react/index.js');
+if (existsSync(reactIndexJs)) {
+  const before = readFileSync(reactIndexJs, 'utf8');
+  const pragma = '// @ts-self-types="./index.d.ts"\n';
+  if (!before.startsWith(pragma)) writeFileSync(reactIndexJs, pragma + before);
 }
 
 // 4. Bundled CSS (transitional ./style.css); JS output is throwaway. Two lib entries

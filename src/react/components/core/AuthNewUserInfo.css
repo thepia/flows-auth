@@ -1,8 +1,7 @@
 /* Ported 1:1 from src/svelte/components/core/AuthNewUserInfo.svelte's <style> block. */
 
-.auth-new-user-info {
-  margin: 16px 0;
-}
+/* No margin here: spaced from sibling rows by the form's `gap`
+   (SignInCore.css) -- see that file's header comment. */
 
 .auth-new-user-info .input-group {
   margin-bottom: 12px;

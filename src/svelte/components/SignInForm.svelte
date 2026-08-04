@@ -190,6 +190,23 @@
 {/if}
 
 <style>
+  /* Scoped box-sizing reset for the whole sign-in form subtree (inputs,
+     buttons, and anything @thepia/branding's component classes -- e.g.
+     .input-brand -- render inside it). `width: 100%` is content-box by
+     default, so any of these elements that also has padding/border renders
+     wider than a sibling row that happens to be border-box, and wider than
+     .auth-form itself. Scoped to .auth-form (via :global, since it must
+     reach child components' own markup, not just this file's) rather than a
+     page-global reset -- this is a component library embedded in a host
+     app, which may have its own global box-sizing convention we shouldn't
+     override outside our own subtree. */
+  :global(.auth-form),
+  :global(.auth-form *),
+  :global(.auth-form *::before),
+  :global(.auth-form *::after) {
+    box-sizing: border-box;
+  }
+
   /* Container and layout styles */
   .auth-form {
     background: white;

@@ -120,14 +120,22 @@ export function AuthExplainer({ config = null, apiError = null }: AuthExplainerP
       )}
 
       {apiError && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 auth-error">
           <Pulse
             size={20}
             weight="duotone"
             color="var(--icon-color-error, var(--color-brand-error, #E53E3E))"
             aria-label="Error icon"
           />
-          <span className="feature-text">{m[apiError.code]()}</span>
+          <span className="feature-text">
+            {m[apiError.code]()}
+            {/* `diagnostic` is a raw, English, not-localized technical detail
+                (see ApiError's header comment) -- shown alongside the
+                localized headline, not translated like the headline is. */}
+            {apiError.diagnostic && (
+              <span className="auth-error-diagnostic"> See: {apiError.diagnostic}</span>
+            )}
+          </span>
         </div>
       )}
     </div>

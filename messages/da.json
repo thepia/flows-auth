@@ -39,6 +39,7 @@
   "status.signInSuccess": "Velkommen tilbage!",
 
   "error.network": "Netværksfejl.",
+  "error.authUnavailable": "Godkendelse er i øjeblikket utilgængelig på dette site.",
   "error.userNotFound": "Ingen konto fundet med denne e-mail adresse",
   "error.invalidCredentials": "Ugyldig e-mail eller godkendelse mislykkedes",
   "error.serviceUnavailable": "Tjenesten er midlertidigt utilgængelig",

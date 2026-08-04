@@ -41,6 +41,7 @@
   "status.signInSuccess": "Welcome back!",
 
   "error.network": "Networking error.",
+  "error.authUnavailable": "Authentication is currently unavailable on this site.",
   "error.userNotFound": "No account found with this email address",
   "error.invalidCredentials": "Invalid email or authentication failed",
   "error.serviceUnavailable": "Service temporarily unavailable.",

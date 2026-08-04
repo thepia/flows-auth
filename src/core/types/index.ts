@@ -104,6 +104,7 @@ export interface SignInData {
     email: string;
     name: string;
     emailVerified?: boolean; // From server (optional for legacy data)
+    createdAt?: string; // From server (optional for legacy data)
     isNewUser?: boolean; // From server
     metadata?: Record<string, any>; // From server
     // Client-side fields
@@ -194,6 +195,15 @@ export interface AuthConfig {
 
   // Development configuration
   enableDevtools?: boolean; // Enable Zustand devtools integration
+
+  // Fire checkAuthAvailability() once at store creation (a sanity ping
+  // against check-user with a synthetic email -- see that method's header
+  // comment in auth-store.ts) so a misconfigured appCode or unreachable API
+  // surfaces as `error.authUnavailable` immediately, instead of only after a
+  // real visitor's first attempt. Off by default: it's a real network
+  // request against the configured API on every page load, which isn't
+  // something this library should impose on every consumer unasked.
+  checkAuthAvailabilityOnInit?: boolean;
 
   // Database adapter for session persistence
   database?: SessionPersistence; // Optional database adapter for automatic session persistence
@@ -626,6 +636,13 @@ export type KnownAuthErrorCode =
   | 'verification_failed'
   | 'rate_limit_exceeded'
   | 'network_error'
+  // A non-2xx response whose body wasn't JSON (or had no recognizable error
+  // code) -- handleErrorResponse() (auth-api.ts) attaches the real status as
+  // `details.httpStatus` rather than guessing a code. Deliberately distinct
+  // from 'network_error' (fetch() itself failing, e.g. offline/CORS): both
+  // used to collapse into the same code, which meant e.g. a 404 for an
+  // unregistered appCode was indistinguishable from being offline.
+  | 'http_error'
   | 'unknown_error';
 
 export interface AuthError {
@@ -641,15 +658,26 @@ export interface ApiError {
   message: string; // Technical error message for debugging
   retryable: boolean; // Whether the error can be retried
   timestamp: number; // When the error occurred
+  httpStatus?: number; // Real HTTP status, when a response was actually received (absent for network/CORS-level failures)
+  // Raw, English, not-localized technical detail -- for 'error.authUnavailable'
+  // specifically, e.g. "App code \"foo\" was not recognized (404)". Meant for
+  // developers/support, not translated like `code`'s message is.
+  diagnostic?: string;
   context?: {
     method?: string; // Which API method failed
     email?: string; // Email context if relevant
     attempt?: number; // Retry attempt number
+    appCode?: string; // App code in use when the failure occurred
   };
 }
 
 export type AuthErrorCode =
   | 'error.userNotFound'
+  // The app/API itself isn't usable right now (unregistered appCode, CORS/
+  // network unreachable, 403, 5xx on the sanity-gate checkUser call) -- as
+  // opposed to the other codes here, which describe a normal outcome for
+  // *this user's* attempt. See ApiError.diagnostic for the specific cause.
+  | 'error.authUnavailable'
   | 'error.serviceUnavailable'
   | 'error.authCancelled'
   | 'error.authFailed'
@@ -936,6 +964,11 @@ export interface AuthStoreFunctions {
     invitationTokenHash?: string;
     lastPin?: { sentAt: string; expiresAt: string } | null; // PIN metadata from API
   }>;
+  // Opt-in sanity check for the app/API configuration itself (not called
+  // automatically) -- see auth-store.ts's implementation for why. Resolves
+  // `true` if reachable/configured correctly, `false` if not (in which case
+  // `apiError` is set to 'error.authUnavailable' with a diagnostic detail).
+  checkAuthAvailability: () => Promise<boolean>;
   registerUser: (userData: {
     email: string;
     firstName?: string;
@@ -991,7 +1024,10 @@ export interface AuthStoreFunctions {
   setEmailCodeSent: (sent: boolean) => void;
 
   // Error management
-  setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
+  setApiError: (
+    error: unknown,
+    context?: { method?: string; email?: string; appCode?: string }
+  ) => void;
   clearApiError: () => void;
   clearUiError: () => void; // Clear only UI error, keep apiError for debugging
   retryLastFailedRequest: () => Promise<boolean>;
@@ -1011,6 +1047,14 @@ export interface AuthStoreFunctions {
   getExplainerConfig: (explainFeatures?: boolean) => ExplainerConfig | null;
 
   // Events
+  /**
+   * @deprecated No confirmed usage found anywhere in this repo (examples, docs
+   * that match the current API, or tests exercising it as a real consumer
+   * would) -- see `src/core/stores/core/events.ts`'s header comment. Kept for
+   * now in case an out-of-repo consumer depends on it; not verified to be
+   * load-bearing. Prefer subscribing to the composed store's state
+   * (e.g. `signInState`) directly.
+   */
   on: (type: AuthEventType, handler: (data: AuthEventData) => void) => () => void;
 }
 

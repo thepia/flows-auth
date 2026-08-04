@@ -1,5 +1,21 @@
 /* Ported 1:1 from src/svelte/components/SignInForm.svelte's <style> block. */
 
+/* Scoped box-sizing reset for the whole sign-in form subtree (inputs, buttons,
+   and anything `@thepia/branding`'s component classes -- e.g. `.input-brand`
+   -- render inside it). `width: 100%` is content-box by default, so any of
+   these elements that also has padding/border renders wider than a sibling
+   row that happens to be border-box, and wider than `.auth-form` itself.
+   Scoped to `.auth-form` rather than a page-global `*`/`html` reset -- this
+   is a component library embedded in a host app, which may have its own
+   global box-sizing convention we shouldn't override outside our own
+   subtree. */
+.auth-form,
+.auth-form *,
+.auth-form *::before,
+.auth-form *::after {
+  box-sizing: border-box;
+}
+
 .auth-form {
   background: white;
   border: 1px solid var(--color-border-subtle, #e5e7eb);

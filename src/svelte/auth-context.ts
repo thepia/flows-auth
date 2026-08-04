@@ -28,10 +28,19 @@ let _hmrFallbackStore: SvelteAuthStore | null = null;
 
 /**
  * Reset the global auth store (useful for testing)
+ *
+ * Clears persisted session/user storage directly (session.clearSession(), not the
+ * full signOut() -- this is a local reset, not a real sign-out, so it must not
+ * attempt a server-side token revocation call) so the reset actually returns the
+ * app to a signed-out state, then destroys the store instance (timers, listeners,
+ * remaining in-memory state). `destroy()` alone no longer touches storage -- it
+ * only releases the instance -- so the storage clear must run, and be awaited,
+ * first.
  */
-export function resetGlobalAuthStore(): void {
+export async function resetGlobalAuthStore(): Promise<void> {
   const store = getContext<SvelteAuthStore>(AUTH_CONTEXT_KEY);
   if (store) {
+    await store.session.getState().clearSession();
     store.destroy();
   }
   setContext(AUTH_CONTEXT_KEY, null);

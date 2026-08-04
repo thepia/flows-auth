@@ -176,10 +176,11 @@ run(() => {
     color: var(--color-text-warning, #d97706);
   }
 
-  /* Pin status variant - matches SignInCore pin-status-message styling */
+  /* Pin status variant - matches SignInCore pin-status-message styling.
+     No margin: only ever rendered as a direct row inside SignInCore's
+     form, which spaces its rows with `gap` (see that file's <style>). */
   .variant-pin-status {
     padding: 12px 16px;
-    margin: 12px 0;
     background: #f0f9ff;
     border: 1px solid #bae6fd;
     border-radius: 8px;

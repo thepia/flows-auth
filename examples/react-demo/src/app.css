@@ -1,0 +1,8 @@
+/* Base design tokens (colors, spacing, radii, ...) and prebuilt component
+   classes (.input-brand, .btn-brand, .card-brand, ...) that flows-auth's
+   components render but never bundle themselves -- see
+   src/react/components/shared.css in the library for why. Every other
+   example in this repo imports these the same way (auth-demo, astro-demo,
+   flows-app-demo, tasks-app-demo). */
+@import "@thepia/branding/css";
+@import "@thepia/branding/css/components";

@@ -63,9 +63,8 @@ function handleInput(event: Event) {
 </div>
 
 <style>
-  .auth-new-user-info {
-    margin: 16px 0;
-  }
+  /* No margin on .auth-new-user-info: spaced from sibling rows by the
+     form's `gap` (SignInCore.svelte) -- see that file's header comment. */
 
   .input-group {
     margin-bottom: 12px;

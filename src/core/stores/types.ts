@@ -110,7 +110,10 @@ export interface ErrorState {
  * Error store actions
  */
 export interface ErrorActions {
-  setApiError: (error: unknown, context?: { method?: string; email?: string }) => void;
+  setApiError: (
+    error: unknown,
+    context?: { method?: string; email?: string; appCode?: string }
+  ) => void;
   clearApiError: () => void;
   clearUiError: () => void; // Clear only UI error, keep apiError for debugging
   retryLastRequest: () => Promise<boolean>;

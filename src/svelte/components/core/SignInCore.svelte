@@ -600,10 +600,18 @@ run(() => {
     width: 100%;
   }
 
+  /* Grid instead of default block flow + scattered per-row margins: each
+     direct child (EmailInput, AuthStateMessage, AuthNewUserInfo, the button
+     section, AuthExplainer) is a row, spaced by one consistent `gap`. Grid
+     items are `justify-items: stretch` by default, so rows fill the form's
+     width without each one separately declaring `width: 100%`. */
+  form {
+    display: grid;
+    gap: 16px;
+  }
+
   .button-section {
-    margin-top: 16px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
     gap: 12px;
   }
 

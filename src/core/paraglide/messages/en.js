@@ -141,6 +141,10 @@ export const error_network = /** @type {(inputs: {}) => string} */ () => {
 	return `Networking error.`
 };
 
+export const error_authunavailable1 = /** @type {(inputs: {}) => string} */ () => {
+	return `Authentication is currently unavailable on this site.`
+};
+
 export const error_usernotfound2 = /** @type {(inputs: {}) => string} */ () => {
 	return `No account found with this email address`
 };

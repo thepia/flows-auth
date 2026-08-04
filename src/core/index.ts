@@ -25,6 +25,8 @@ export {
   type ComposedAuthStore,
   createAuthStore
 } from './stores/auth-store.js';
+// Global auth store singleton — alternative to Context/Provider (see file header)
+export { getGlobalAuthStore, initializeAuth } from './stores/global-auth-store.js';
 export { createNativeAppSessionAdapter, isThepiaApp } from './stores/index.js';
 // Enhanced auth store interface types
 export type {

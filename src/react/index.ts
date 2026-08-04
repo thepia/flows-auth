@@ -22,6 +22,7 @@
 // package root `.` just to type their config/store/snapshot.
 export type { AuthApiClient } from '../core/api/auth-api.js';
 export type { ComposedAuthStore } from '../core/stores/auth-store.js';
+export { getGlobalAuthStore, initializeAuth } from '../core/stores/global-auth-store.js';
 export type {
   ApiError,
   AuthConfig,

@@ -68,7 +68,11 @@ let hasValidPinStatus = $state(false);
 let pinRemainingMinutes = $state(0);
 
 // Reactive computations from auth store - simplified debugging
-let lastLoggedState = $state(null);
+// Deliberately NOT $state: only read/written inside the run() block below as a
+// log-dedup guard (skip logging when the auth state hasn't actually changed).
+// Making it reactive was what triggered Svelte's legacy_recursive_reactive_block
+// warning -- the block both read and wrote the same tracked value.
+let lastLoggedState = null;
 
 // i18n Configuration options
 let selectedLanguage = 'en'; // 'en', 'da'

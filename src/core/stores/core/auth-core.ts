@@ -523,8 +523,10 @@ function scheduleTokenRefresh(
     : Number.POSITIVE_INFINITY;
   if (timeSinceLastRefresh < MINIMUM_REFRESH_INTERVAL_MS) {
     const waitTime = MINIMUM_REFRESH_INTERVAL_MS - timeSinceLastRefresh;
-    console.warn(
-      `⚠️ Token was refreshed ${Math.floor(timeSinceLastRefresh / 1000)}s ago - waiting ${Math.floor(waitTime / 1000)}s before scheduling next refresh`
+    // Expected on every token update (refreshedAt was just set moments ago) -- not a warning-worthy
+    // event. Real spam protection is the recursive setTimeout below; this is debug-only visibility.
+    debug(
+      `🔄 Token was refreshed ${Math.floor(timeSinceLastRefresh / 1000)}s ago - waiting ${Math.floor(waitTime / 1000)}s before scheduling next refresh`
     );
 
     // Schedule refresh after the minimum interval has passed

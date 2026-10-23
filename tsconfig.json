@@ -20,7 +20,10 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
+    // TS6 bridge: some build tools (tsup/rollup-plugin-dts) still inject the
+    // now-deprecated `baseUrl` when `paths` is present. Silence the 6.0
+    // deprecation-as-error until the 7.0 migration; options still function in 6.x.
+    "ignoreDeprecations": "6.0",
     "paths": {
       // Self-reference: the ./svelte and ./server targets import core via the
       // package name. At dev/typecheck time resolve that to source; at

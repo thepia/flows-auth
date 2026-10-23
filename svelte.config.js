@@ -10,5 +10,12 @@ import sveltePreprocess from 'svelte-preprocess';
 // redundant lang="ts" attribute, which scripts/build.mjs strips afterward so the
 // shipped components compile without a consumer-side TS preprocessor.
 export default {
-  preprocess: sveltePreprocess()
+  // Pin a non-deprecated module resolution for the standalone per-file TS
+  // transpile: without this, svelte-preprocess falls back to the legacy
+  // `node10` resolution, which TypeScript 6 rejects as a hard error (TS5107).
+  preprocess: sveltePreprocess({
+    typescript: {
+      compilerOptions: { module: 'esnext', moduleResolution: 'bundler' }
+    }
+  })
 };

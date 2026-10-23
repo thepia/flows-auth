@@ -248,8 +248,8 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
     z-index: 1050;
@@ -301,7 +301,7 @@
   }
 
   .modal-title {
-    font-size: var(--font-size-2xl);
+    font-size: var(--size-font-2xl);
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary, #111827);
     margin: 0 0 var(--size-space-2, 0.5rem) 0;
@@ -309,7 +309,7 @@
   }
 
   .modal-subtitle {
-    font-size: var(--font-size-base);
+    font-size: var(--size-font-base);
     color: var(--color-text-secondary, #4b5563);
     margin: 0;
     line-height: var(--font-lineHeight-normal, 1.5);
@@ -365,7 +365,7 @@
     background: var(--color-bg-secondary, #f3f4f6);
     color: var(--color-text-3, #6b7280);
     border-radius: var(--size-radius-full, 9999px);
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
     transition: all 150ms ease;
   }
@@ -389,7 +389,7 @@
     display: flex;
     align-items: center;
     gap: var(--size-space-2, 0.5rem);
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     text-align: center;
     justify-content: center;
@@ -454,7 +454,7 @@
     }
     
     .modal-title {
-      font-size: var(--font-size-xl);
+      font-size: var(--size-font-xl);
     }
     
     .auth-features {

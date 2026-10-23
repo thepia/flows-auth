@@ -21,6 +21,7 @@
 // Re-exported so React consumers don't need a separate import from the
 // package root `.` just to type their config/store/snapshot.
 export type { AuthApiClient } from '../core/api/auth-api.js';
+export type { Locale } from '../core/paraglide/runtime.js';
 export type { ComposedAuthStore } from '../core/stores/auth-store.js';
 export { getGlobalAuthStore, initializeAuth } from '../core/stores/global-auth-store.js';
 export type {
@@ -35,6 +36,7 @@ export type {
   StateMessageConfig,
   User
 } from '../core/types/index.js';
+export { setLocaleReactive } from '../core/utils/i18n.js';
 // UI components (Phase C)
 export type { AuthButtonProps } from './components/core/AuthButton.js';
 export { AuthButton } from './components/core/AuthButton.js';

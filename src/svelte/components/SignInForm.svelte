@@ -5,13 +5,12 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
 
-  import { WarningCircle as AlertTriangle, CheckCircle, User as UserIcon, Key, Lock, Shield, Certificate as BadgeCheck } from 'phosphor-svelte';
-
   import type { User, AuthError, AuthMethod } from '@thepia/flows-auth';
   import type { SvelteAuthStore } from '../adapters/svelte.js';
   import { getAuthStoreFromContext } from '../auth-context.js';
   import SignInCore from './core/SignInCore.svelte';
   import { m } from '@thepia/flows-auth';
+  import { locale } from '../locale.js';
 
   interface Props {
     // Auth store prop (preferred)
@@ -75,8 +74,11 @@
   let logoConfig = $derived(authConfig?.branding);
 
   function getDisplayText(key: string, variables?: Record<string, any>): string {
-    const fn = (m as unknown as Record<string, (vars?: any) => string>)[key];
-    return typeof fn === 'function' ? fn(variables) : key;
+    const fn = (m as unknown as Record<string, (vars?: any, options?: any) => string>)[key];
+    // Reads $locale here (not just relying on ambient getLocale()) so calls
+    // made directly from the template -- {getDisplayText(titleKey)} -- track
+    // $locale as a dependency and re-evaluate on locale change.
+    return typeof fn === 'function' ? fn(variables, { locale: $locale }) : key;
   }
 
   // Popup close functionality

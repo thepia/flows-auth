@@ -346,7 +346,7 @@ function handleViewDetails(task) {
 
 <style>
 	.page {
-		min-height: 100vh;
+		min-height: 100dvh;
 		background: #f8f9fa;
 	}
 	

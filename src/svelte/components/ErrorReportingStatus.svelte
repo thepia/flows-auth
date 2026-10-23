@@ -367,7 +367,7 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		font-family: var(--font-fontFamily-brand-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 		font-size: 0.8rem;
-		line-height: var(--size-line-normal, 1.5);
+		line-height: var(--height-line-normal, 1.5);
 		z-index: 1000;
 		min-width: 120px;
 		max-width: 300px;

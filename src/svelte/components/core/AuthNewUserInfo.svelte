@@ -6,6 +6,7 @@
 import { createEventDispatcher } from 'svelte';
 import AuthStateMessage from './AuthStateMessage.svelte';
 import { m } from '@thepia/flows-auth';
+import { locale } from '../../locale.js';
 
 
   interface Props {
@@ -33,14 +34,14 @@ function handleInput(event: Event) {
 <div class="auth-new-user-info">
   <div class="input-group">
     <label for="fullName" class="input-label">
-      {m['auth.fullName']()}
+      {m['auth.fullName']({}, { locale: $locale })}
     </label>
     <input
       id="fullName"
       type="text"
       bind:value={fullName}
       oninput={handleInput}
-      placeholder={m['auth.fullNamePlaceholder']()}
+      placeholder={m['auth.fullNamePlaceholder']({}, { locale: $locale })}
       class="auth-input"
       class:error
       autocomplete="name"

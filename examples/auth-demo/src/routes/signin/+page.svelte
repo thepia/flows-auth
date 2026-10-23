@@ -7,8 +7,8 @@ import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 import { ErrorReportingStatus, SignInCore, SignInForm } from '@thepia/flows-auth/svelte';
 
 // Paraglide i18n setup
-import * as m from '../../paraglide/messages';
-import { getLocale } from '../../paraglide/runtime.js';
+import { m } from '@thepia/flows-auth';
+import { locale } from '@thepia/flows-auth/svelte';
 
 // Error testing components
 import ErrorTestMenu from '$lib/components/ErrorTestMenu.svelte';
@@ -278,7 +278,7 @@ run(() => {
   }
   });
 // 🔑 Reactive locale tracking for component rerenders
-let currentLocale = $derived(getLocale() || 'en'); // Fallback to 'en' if locale not ready
+let currentLocale = $derived($locale);
 run(() => {
   if (authStore) {
     const storeValue = $authStore;
@@ -316,8 +316,8 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
 {#if currentLocale}
 <div class="signin-page">
   <div class="page-header">
-    <h1>{m["signIn.title"]()}</h1>
-    <p>{m["signIn.subtitleGeneric"]()}</p>
+    <h1>{m["signIn.title"]({}, { locale: $locale })}</h1>
+    <p>{m["signIn.subtitleGeneric"]({}, { locale: $locale })}</p>
   </div>
   
   <div class="demo-layout">
@@ -563,7 +563,7 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
             />
           {:else}
             <div class="signin-loading">
-              <p>{m["signIn.loading_form"]()}</p>
+              <p>{m["signIn.loading_form"]({}, { locale: $locale })}</p>
             </div>
           {/if}
         {:else}
@@ -587,7 +587,7 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
                   />
                 {:else}
                   <div class="signin-loading">
-                    <p>{m["signIn.loading_form"]()}</p>
+                    <p>{m["signIn.loading_form"]({}, { locale: $locale })}</p>
                   </div>
                 {/if}
               {:else}
@@ -616,7 +616,7 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
                   />
               {:else}
                 <div class="signin-loading">
-                  <p>{m["signIn.loading_core"]()}</p>
+                  <p>{m["signIn.loading_core"]({}, { locale: $locale })}</p>
                 </div>
               {/if}
             </div>
@@ -629,8 +629,8 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
     <!-- State Machine Sidebar (Right) -->
     <div class="state-machine-sidebar">
       <div class="sidebar-header">
-        <h3>{m["signIn.state_machine_title"]()}</h3>
-        <p class="text-secondary">{m["signIn.state_machine_description"]()}</p>
+        <h3>{m["signIn.state_machine_title"]({}, { locale: $locale })}</h3>
+        <p class="text-secondary">{m["signIn.state_machine_description"]({}, { locale: $locale })}</p>
       </div>
 
       {#if authStore && authStore.stateMachine}
@@ -683,7 +683,7 @@ let combinedTranslations = $derived(selectedClientVariant === 'custom'
             </div>
           {:else}
             <div class="graph-error">
-              <p>{m["signIn.loading_state_machines"]()}</p>
+              <p>{m["signIn.loading_state_machines"]({}, { locale: $locale })}</p>
               <!-- Fallback to simple state display -->
               <div class="state-display-compact">
                 <div class="state-item-compact">

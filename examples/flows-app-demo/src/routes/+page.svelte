@@ -262,7 +262,7 @@
 
 <style>
   .demo-app {
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     background: var(--color-bg-secondary, #f9fafb);
@@ -295,7 +295,7 @@
   }
 
   .brand-text h1 {
-    font-size: var(--font-size-4xl);
+    font-size: var(--size-font-4xl);
     font-weight: var(--font-weight-bold);
     color: var(--color-brand-primary, #0066cc);
     margin-bottom: var(--size-space-2, 0.5rem);
@@ -305,7 +305,7 @@
 
   .brand-text p {
     color: var(--color-text-secondary, #4b5563);
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     margin: 0;
   }
 
@@ -318,7 +318,7 @@
   .method-badge {
     padding: var(--size-space-1, 0.25rem) var(--size-space-3, 0.75rem);
     border-radius: var(--size-radius-full, 9999px);
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
     background: var(--color-bg-secondary, #f3f4f6);
     color: var(--color-text-3, #6b7280);
@@ -356,7 +356,7 @@
   }
 
   .info-card h2 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--size-font-2xl);
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary, #111827);
     margin-bottom: var(--size-space-4, 1rem);
@@ -373,7 +373,7 @@
   }
 
   .config-summary h3, .features-list h3 {
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary, #1f2937);
     margin-bottom: var(--size-space-3, 0.75rem);
@@ -398,13 +398,13 @@
   }
 
   .config-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary, #374151);
   }
 
   .config-value {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     text-align: right;
@@ -421,7 +421,7 @@
     align-items: center;
     gap: var(--size-space-3, 0.75rem);
     padding: var(--size-space-2, 0.5rem) 0;
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
   }
 
@@ -430,7 +430,7 @@
   }
 
   .feature-icon {
-    font-size: var(--font-size-base);
+    font-size: var(--size-font-base);
   }
 
   .cta-icon {
@@ -453,11 +453,11 @@
   }
 
   .success-icon {
-    font-size: var(--font-size-4xl);
+    font-size: var(--size-font-4xl);
   }
 
   .success-header h2 {
-    font-size: var(--font-size-3xl);
+    font-size: var(--size-font-3xl);
     font-weight: var(--font-weight-bold);
     color: var(--color-text-primary, #111827);
     margin: 0;
@@ -465,7 +465,7 @@
 
   .auth-success .welcome-message {
     color: var(--color-text-secondary, #4b5563);
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     margin-bottom: var(--size-space-6, 1.5rem);
     text-align: center;
   }
@@ -478,7 +478,7 @@
   }
 
   .user-info h3 {
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary, #1f2937);
     margin-bottom: var(--size-space-4, 1rem);
@@ -498,7 +498,7 @@
   }
 
   .dashboard-preview h3 {
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary, #1f2937);
     margin-bottom: var(--size-space-3, 0.75rem);
@@ -532,19 +532,19 @@
   }
 
   .dashboard-icon {
-    font-size: var(--font-size-2xl);
+    font-size: var(--size-font-2xl);
     flex-shrink: 0;
   }
 
   .dashboard-text h4 {
-    font-size: var(--font-size-base);
+    font-size: var(--size-font-base);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary, #111827);
     margin-bottom: var(--size-space-1, 0.25rem);
   }
 
   .dashboard-text p {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     margin: 0;
     line-height: var(--font-lineHeight-normal, 1.5);
@@ -557,13 +557,13 @@
   }
 
   .info-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary, #374151);
   }
 
   .info-value {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   }
@@ -617,7 +617,7 @@
   }
 
   .footer-meta {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-3, #6b7280);
   }
 
@@ -629,7 +629,7 @@
   .footer-links a {
     color: var(--color-brand-primary, #0066cc);
     text-decoration: none;
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
   }
 
@@ -651,7 +651,7 @@
     }
 
     .brand-info h1 {
-      font-size: var(--font-size-3xl);
+      font-size: var(--size-font-3xl);
     }
 
     .demo-layout {

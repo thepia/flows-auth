@@ -4,8 +4,8 @@
 import { browser } from '$app/environment';
 import { onMount, getContext } from 'svelte';
 // Paraglide demo translations
-import * as m from '../paraglide/messages.js';
-import { getLocale } from '../paraglide/runtime.js';
+import { m } from '@thepia/flows-auth';
+import { locale } from '@thepia/flows-auth/svelte';
 
 import { CaretRight, Envelope, Key, Shield, Pulse, Gear } from 'phosphor-svelte';
 import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
@@ -26,7 +26,6 @@ let authSubscribed = false;
 // Auth config will be retrieved from the auth store (created in layout)
 let authConfig = $state(null);
 
-
 // State Machine components - loaded dynamically in onMount
 let SessionStateMachineComponent = $state(null);
 let SignInStateMachineComponent = $state(null);
@@ -35,7 +34,6 @@ let SignInStateMachineComponent = $state(null);
 let selectedDemo = 'overview';
 let emailInput = '';
 let testEmail = 'demo@example.com';
-
 
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
@@ -157,7 +155,6 @@ let signInCoreLayout = 'full-width'; // 'full-width', 'hero-centered'
 let registrationError = null;
 let registrationSuccess = null;
 let registrationLoading = false;
-
 
 onMount(async () => {
   if (!browser) return;
@@ -472,10 +469,8 @@ function getPinTimeRemaining(state) {
   }
 }
 
-
-
 // 🔑 Reactive locale tracking for component rerenders
-let currentLocale = $derived(getLocale());
+let currentLocale = $derived($locale);
 // Get authConfig from authStore when available
 run(() => {
     if (authStore && authStore.getConfig) {
@@ -549,32 +544,30 @@ let dynamicAuthConfig = $derived(authConfig ? {
 {#if currentLocale}
 <div class="demo-container">
 
-
-
   <!-- Demo Content -->
   <div class="demo-content">
     
     {#if selectedDemo === 'overview'}
       <div class="content-section">
-        <h2>{m["overview.title"]()}</h2>
-        <p>{m["overview.subtitle"]()}</p>
+        <h2>{m["overview.title"]({}, { locale: $locale })}</h2>
+        <p>{m["overview.subtitle"]({}, { locale: $locale })}</p>
         
         <div class="feature-grid">
           <div class="feature-card">
             <Shield size={48} weight="regular" class="feature-icon" />
-            <h3>{m["overview.features.passkeys.title"]()}</h3>
-            <p>{m["overview.features.passkeys.description"]()}</p>
-            <a href="/signin" class="feature-link">{m["overview.try_signin"]()}</a>
+            <h3>{m["overview.features.passkeys.title"]({}, { locale: $locale })}</h3>
+            <p>{m["overview.features.passkeys.description"]({}, { locale: $locale })}</p>
+            <a href="/signin" class="feature-link">{m["overview.try_signin"]({}, { locale: $locale })}</a>
           </div>
           <div class="feature-card">
             <Pulse size={48} weight="bold" class="feature-icon" />
-            <h3>{m["overview.features.state_machine.title"]()}</h3>
-            <p>{m["overview.features.state_machine.description"]()}</p>
+            <h3>{m["overview.features.state_machine.title"]({}, { locale: $locale })}</h3>
+            <p>{m["overview.features.state_machine.description"]({}, { locale: $locale })}</p>
           </div>
           <div class="feature-card">
             <Gear size={48} weight="regular" class="feature-icon" />
-            <h3>{m["overview.features.multi_language.title"]()}</h3>
-            <p>{m["overview.features.multi_language.description"]()}</p>
+            <h3>{m["overview.features.multi_language.title"]({}, { locale: $locale })}</h3>
+            <p>{m["overview.features.multi_language.description"]({}, { locale: $locale })}</p>
           </div>
 
           <!-- Phosphor Icons Demo Section -->
@@ -687,20 +680,20 @@ let dynamicAuthConfig = $derived(authConfig ? {
 
     {:else if selectedDemo === 'signin'}
       <div class="content-section">
-        <h2>{m["signIn.title"]()}</h2>
-        <p>{m["signIn.subtitle"]()}</p>
+        <h2>{m["signIn.title"]({}, { locale: $locale })}</h2>
+        <p>{m["signIn.subtitle"]({}, { locale: $locale })}</p>
         <div class="signin-redirect-notice">
-          <p>{m["signIn.redirect_notice"]()}</p>
-          <a href="/signin" class="btn btn-primary">{m["signIn.go_to_demo"]()}</a>
+          <p>{m["signIn.redirect_notice"]({}, { locale: $locale })}</p>
+          <a href="/signin" class="btn btn-primary">{m["signIn.go_to_demo"]({}, { locale: $locale })}</a>
         </div>
       </div>
     {:else if selectedDemo === 'register'}
       <div class="content-section">
-        <h2>{m["register.title"]()}</h2>
-        <p>{m["register.subtitle"]()}</p>
+        <h2>{m["register.title"]({}, { locale: $locale })}</h2>
+        <p>{m["register.subtitle"]({}, { locale: $locale })}</p>
         <div class="signin-redirect-notice">
-          <p>{m["register.redirect_notice"]()}</p>
-          <a href="/register" class="btn btn-primary">{m["register.go_to_demo"]()}</a>
+          <p>{m["register.redirect_notice"]({}, { locale: $locale })}</p>
+          <a href="/register" class="btn btn-primary">{m["register.go_to_demo"]({}, { locale: $locale })}</a>
         </div>
       </div>
 
@@ -762,8 +755,6 @@ let dynamicAuthConfig = $derived(authConfig ? {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-
-
 
   /* Phosphor Icons Demo Styles */
   .phosphor-demo-card {
@@ -943,12 +934,10 @@ let dynamicAuthConfig = $derived(authConfig ? {
     overflow: hidden;
   }
 
-
   @media (max-width: 1200px) {
     .machine-grid {
       grid-template-columns: 1fr;
     }
   }
-
 
 </style>

@@ -218,8 +218,7 @@ describe('Bundle API Validation (Integration)', () => {
         getAuthStoreFromContext,
         createAuthContext,
         assertAuthConfig,
-        resetGlobalAuthStore,
-        createParaglideI18n
+        resetGlobalAuthStore
       } = await import(SVELTE);
 
       for (const fn of [
@@ -228,8 +227,7 @@ describe('Bundle API Validation (Integration)', () => {
         getAuthStoreFromContext,
         createAuthContext,
         assertAuthConfig,
-        resetGlobalAuthStore,
-        createParaglideI18n
+        resetGlobalAuthStore
       ]) {
         expect(typeof fn).toBe('function');
       }
@@ -381,17 +379,22 @@ describe('Bundle API Validation (Integration)', () => {
 
   describe('Internationalization Exports', () => {
     it('should export the i18n message proxy and locale helpers from core', async () => {
-      const { m, setI18nMessages, paraglideMessages, getLocale, setLocale } = await import(CORE);
+      const { m, setI18nMessages, paraglideMessages, getLocale, setLocale, subscribeToLocale, setLocaleReactive } =
+        await import(CORE);
       expect(m).toBeDefined();
       expect(typeof setI18nMessages).toBe('function');
       expect(paraglideMessages).toBeDefined();
       expect(typeof getLocale).toBe('function');
       expect(typeof setLocale).toBe('function');
+      expect(typeof subscribeToLocale).toBe('function');
+      expect(typeof setLocaleReactive).toBe('function');
     });
 
-    it('should export createParaglideI18n from ./svelte', async () => {
-      const { createParaglideI18n } = await import(SVELTE);
-      expect(typeof createParaglideI18n).toBe('function');
+    it('should export the reactive locale store + detectUserLanguage from ./svelte', async () => {
+      const { locale, detectUserLanguage } = await import(SVELTE);
+      // `locale` is a Svelte readable store (has .subscribe), not a function.
+      expect(typeof locale?.subscribe).toBe('function');
+      expect(typeof detectUserLanguage).toBe('function');
     });
   });
 

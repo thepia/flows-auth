@@ -21,6 +21,7 @@
   } from 'phosphor-svelte';
   import type { ApiError, ExplainerConfig } from '@thepia/flows-auth';
   import { m } from '@thepia/flows-auth';
+  import { locale } from '../../locale.js';
   import Icon from '../icons/Icon.svelte';
 
   
@@ -78,9 +79,9 @@
         <span class="flex-1 text-left">
           {#if config.textKey}
             {#if config.useCompanyName && config.companyName}
-              {@html messages[config.textKey]({ companyName: config.companyName })}
+              {@html messages[config.textKey]({ companyName: config.companyName }, { locale: $locale })}
             {:else}
-              {@html messages[config.textKey]()}
+              {@html messages[config.textKey]({}, { locale: $locale })}
             {/if}
           {/if}
         </span>
@@ -99,7 +100,7 @@
               />
             </div>
             <span class="feature-text">
-              {@html messages[feature.textKey](config.params)}
+              {@html messages[feature.textKey](config.params, { locale: $locale })}
             </span>
           </div>
         {/each}
@@ -107,10 +108,16 @@
     {/if}
 
     {#if apiError}
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 auth-error">
         <Icon weight="duotone" size={20} ariaLabel="Error icon" variant="error" color="error" icon={Pulse} />
         <span class="feature-text">
-          {m[apiError.code]()}
+          {m[apiError.code]({}, { locale: $locale })}
+          <!-- `diagnostic` is a raw, English, not-localized technical detail
+               (see ApiError's header comment) -- shown alongside the
+               localized headline, not translated like the headline is. -->
+          {#if apiError.diagnostic}
+            <span class="auth-error-diagnostic"> See: {apiError.diagnostic}</span>
+          {/if}
         <!-- {#if apiError.retryable}
           <button type="button" class="retry-button" on:click={() => store.retryLastFailedRequest()}>
             Try Again
@@ -157,6 +164,16 @@
     font-size: 0.875rem;
     color: var(--color-text-secondary, #6b7280);
     line-height: 1.4;
+  }
+
+  /* Raw technical detail (ApiError.diagnostic) shown alongside the localized
+     error headline -- deliberately more muted/smaller, since it's aimed at
+     developers/support, not the site visitor reading the headline. */
+  .auth-error-diagnostic {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary, #9ca3af);
   }
 
   /* Responsive adjustments */

@@ -11,6 +11,7 @@ import type { SvelteAuthStore } from '@thepia/flows-auth';
 import type { AuthError, AuthMethod, User } from '@thepia/flows-auth';
 import { getAuthStoreFromContext } from '../../auth-context.js';
 import { m } from '@thepia/flows-auth';
+import { locale } from '../../locale.js';
 import { debug } from '../../utils/debug.js';
 
 import AuthButton from './AuthButton.svelte';
@@ -472,14 +473,14 @@ run(() => {
           {m["status.pinValid"]({
             minutes: $authStore.pinRemainingMinutes,
             s: $authStore.pinRemainingMinutes !== 1 ? 's' : ''
-          })}
+          }, { locale: $locale })}
           <button
             type="button"
             class="pin-direct-link"
             onclick={() => authStore.notifyPinSent()}
             disabled={$authStore.loading}
           >
-            {m["status.pinDirectAction"]()}
+            {m["status.pinDirectAction"]({}, { locale: $locale })}
           </button>
         </AuthStateMessage>
       {/if}

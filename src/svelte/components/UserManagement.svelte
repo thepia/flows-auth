@@ -9,6 +9,7 @@ import type { User } from '@thepia/flows-auth';
 import Icon from './icons/Icon.svelte';
 import { ArrowsClockwise } from 'phosphor-svelte';
 import { m } from '@thepia/flows-auth';
+import { locale } from '../locale.js';
 
 
   interface Props {
@@ -48,7 +49,7 @@ async function handleRefreshTokens() {
 <div class="user-management">
   <div class="user-profile-header">
     <div class="user-info">
-      <h3>{m['user.welcomeBack']()}</h3>
+      <h3>{m['user.welcomeBack']({}, { locale: $locale })}</h3>
       <p class="user-name">{user.name || user.email}</p>
       <p class="user-email">{user.email}</p>
     </div>
@@ -77,9 +78,9 @@ async function handleRefreshTokens() {
         type="button"
         class="sign-out-button"
         onclick={handleSignOut}
-        title={m['user.signOut']()}
+        title={m['user.signOut']({}, { locale: $locale })}
       >
-        {m['user.signOut']()}
+        {m['user.signOut']({}, { locale: $locale })}
       </button>
     </div>
   </div>
@@ -88,17 +89,17 @@ async function handleRefreshTokens() {
     <!-- Security & Passkeys Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{m['user.security.title']()}</h4>
+        <h4>{m['user.security.title']({}, { locale: $locale })}</h4>
         <span class="card-icon">🔐</span>
       </div>
-      <p class="card-description">{m['user.security.description']()}</p>
+      <p class="card-description">{m['user.security.description']({}, { locale: $locale })}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button primary"
           onclick={() => dispatch('navigate', { section: 'passkeys' })}
         >
-          {m['user.security.managePasskeys']()}
+          {m['user.security.managePasskeys']({}, { locale: $locale })}
         </button>
       </div>
     </div>
@@ -106,17 +107,17 @@ async function handleRefreshTokens() {
     <!-- Profile Management -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{m['user.profile.title']()}</h4>
+        <h4>{m['user.profile.title']({}, { locale: $locale })}</h4>
         <span class="card-icon">👤</span>
       </div>
-      <p class="card-description">{m['user.profile.description']()}</p>
+      <p class="card-description">{m['user.profile.description']({}, { locale: $locale })}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           onclick={() => dispatch('navigate', { section: 'profile' })}
         >
-          {m['user.profile.editProfile']()}
+          {m['user.profile.editProfile']({}, { locale: $locale })}
         </button>
       </div>
     </div>
@@ -124,24 +125,24 @@ async function handleRefreshTokens() {
     <!-- Privacy & Data Policy -->
     <div class="management-card">
       <div class="card-header">
-        <h4>{m['user.privacy.title']()}</h4>
+        <h4>{m['user.privacy.title']({}, { locale: $locale })}</h4>
         <span class="card-icon">🛡️</span>
       </div>
-      <p class="card-description">{m['user.privacy.description']()}</p>
+      <p class="card-description">{m['user.privacy.description']({}, { locale: $locale })}</p>
       <div class="card-actions">
         <button
           type="button"
           class="action-button secondary"
           onclick={() => dispatch('navigate', { section: 'privacy' })}
         >
-          {m['user.privacy.dataPolicy']()}
+          {m['user.privacy.dataPolicy']({}, { locale: $locale })}
         </button>
         <button
           type="button"
           class="action-button secondary"
           onclick={() => dispatch('navigate', { section: 'terms' })}
         >
-          {m['user.privacy.termsOfService']()}
+          {m['user.privacy.termsOfService']({}, { locale: $locale })}
         </button>
       </div>
     </div>

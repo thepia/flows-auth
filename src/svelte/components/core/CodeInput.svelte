@@ -9,6 +9,7 @@
 
 import { createEventDispatcher } from 'svelte';
 import { m } from '@thepia/flows-auth';
+import { locale } from '../../locale.js';
 
 // Internal state (non-controlled)
 let value = $state('');
@@ -226,11 +227,20 @@ run(() => {
     setTimeout(focusInput, 0); // Use setTimeout to ensure DOM is ready
   }
   });
-// Reactive values for i18n
-let displayPlaceholder = $derived(getDisplayText(placeholder || 'code_placeholder'));
-let displayLabel = $derived(getDisplayText(label || 'code_label'));
+// Reactive values for i18n. $derived.by (not a plain $derived(getDisplayText(...))
+// call) so `$locale` is read directly in the tracked expression -- see
+// src/svelte/locale.ts -- instead of relying on the read happening inside
+// getDisplayText() to be picked up through the function call.
+let displayPlaceholder = $derived.by(() => {
+  void $locale;
+  return getDisplayText(placeholder || 'code_placeholder');
+});
+let displayLabel = $derived.by(() => {
+  void $locale;
+  return getDisplayText(label || 'code_label');
+});
 // Use existing translation keys for accessibility
-let ariaLabel = $derived(`${m['code.label']()} (${maxlength} digits)`);
+let ariaLabel = $derived(`${m['code.label']({}, { locale: $locale })} (${maxlength} digits)`);
 let helpText = $derived(`Enter ${maxlength}-digit verification code`);
 </script>
 

@@ -70,7 +70,7 @@ let user: User | null = $derived($authStore.user);
 	}
 	
 	.app {
-		min-height: 100vh;
+		min-height: 100svh;
 		display: flex;
 		flex-direction: column;
 	}

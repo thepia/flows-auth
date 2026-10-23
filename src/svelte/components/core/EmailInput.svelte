@@ -5,6 +5,7 @@
 <script lang="ts">
 import { m } from '@thepia/flows-auth';
 import { createEventDispatcher } from 'svelte';
+import { locale } from '../../locale.js';
 
 
   interface Props {
@@ -106,9 +107,18 @@ function getDisplayText(key: string): string {
     return key;
   }
 }
-// Reactive values for i18n
-let displayPlaceholder = $derived(getDisplayText(placeholder || 'email.placeholder'));
-let displayLabel = $derived(getDisplayText(label || 'email.label'));
+// Reactive values for i18n. $derived.by (not a plain $derived(getDisplayText(...))
+// call) so `$locale` is read directly in the tracked expression -- see
+// src/svelte/locale.ts -- instead of relying on the read happening inside
+// getDisplayText() to be picked up through the function call.
+let displayPlaceholder = $derived.by(() => {
+  void $locale;
+  return getDisplayText(placeholder || 'email.placeholder');
+});
+let displayLabel = $derived.by(() => {
+  void $locale;
+  return getDisplayText(label || 'email.label');
+});
 </script>
 
 <div class="space-y-2 {className}">

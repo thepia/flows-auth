@@ -39,5 +39,8 @@ export { default as Icon } from './components/icons/Icon.svelte';
 export type { IconProps, IconSize, IconVariant, IconWeight } from './components/icons/types.js';
 export { default as SignInForm } from './components/SignInForm.svelte';
 
-// Paraglide/Svelte i18n glue
-export { createParaglideI18n } from './paraglide-i18n.js';
+// Reactive locale store (readable, wraps core's subscribeToLocale/getLocale) --
+// pair with `{#key $locale}` at your app's root to re-render the whole subtree
+// on locale change. See locale.ts's header comment.
+export { locale } from './locale.js';
+export { detectUserLanguage } from './paraglide-i18n.js';

@@ -10,7 +10,21 @@ export default defineConfig(({ mode }) => ({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',
-      strategy: ['localStorage', 'cookie', 'globalVariable', 'baseLocale'],
+      // Must match flows-auth's own src/core/paraglide strategy exactly.
+      // auth-demo compiles its own separate Paraglide runtime (for its own
+      // page-level messages), independent from flows-auth's -- SvelteKit's
+      // paraglide plugin auto-wires this runtime's own getLocale()/setLocale()
+      // into routing/hydration regardless of what our own code calls. The two
+      // runtimes only stay in sync because they share the same cookie name
+      // and (with this fix) the same strategy order. Previously this had
+      // 'localStorage' first: the first automatic getLocale() call (before
+      // any of our code ran) would freeze whatever locale it saw into
+      // localStorage, and since localStorage was checked before cookie on
+      // every later call, no locale change made via setLocaleReactive()
+      // (which only ever writes the cookie) could ever reach this runtime
+      // again -- explaining why translations were stuck and reload never
+      // picked up a chosen language.
+      strategy: ['cookie', 'globalVariable', 'baseLocale'],
       // Pin the output layout to match flows-auth's own src/paraglide. Paraglide
       // 2.4.0 defaults to "message-modules" (per-message barrel, no en.js/da.js,
       // no dot-notation aliases), which breaks the dot-notation `m["auth.signIn"]`

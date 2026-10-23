@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-23
+
+### Changed (BREAKING - `./svelte` consumers must migrate)
+- **Reactive locale replaces `createParaglideI18n`.** `@thepia/flows-auth/svelte` no
+  longer exports `createParaglideI18n`. Locale reactivity is now a framework-agnostic
+  core primitive (`subscribeToLocale` / `setLocaleReactive` / `getLocale` on the root
+  `.` entry) with a thin adapter per framework: a Svelte `locale` readable store
+  (`@thepia/flows-auth/svelte`) and a React `useLocale` hook (`@thepia/flows-auth/react`).
+  Subscribe once near your app root (Svelte: wrap content in `{#key $locale}`; React:
+  call `useLocale()` high in the tree) and every `m['key']()` below re-evaluates on
+  locale change, with no change at the call site. `detectUserLanguage` is still exported
+  from `/svelte`.
+
+### Added
+- Core locale observability: `subscribeToLocale`, `setLocaleReactive`, `getLocale`.
+- Svelte `locale` store and React `useLocale` hook.
+
+### Build / toolchain
+- Upgraded TypeScript to `^6.0.3`. Removed the deprecated `baseUrl` from `tsconfig.json`
+  (relative `paths` keep resolving; this also stops the build from emitting stray,
+  invalid declaration files into `src/` that broke `tsc --noEmit`). Added
+  `"ignoreDeprecations": "6.0"` as a bridge for build tools that still inject `baseUrl`,
+  and pinned `svelte-preprocess` to a non-deprecated module resolution. The shipped-dist
+  declaration quote-patch (`build.mjs` step 2b) is unchanged.
+
 ## [1.2.0] - Core / Svelte target split (breaking, coordinated)
 
 Packaging refactor (Phase 1 of `docs/MULTI_FRAMEWORK_PACKAGING_PLAN.md`): the library

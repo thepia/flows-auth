@@ -46,8 +46,14 @@
   gap: 0.5rem;
 }
 
-.space-y-2 > * + * {
-  margin-top: 0.5rem;
+/* Tailwind's `space-y-2` is normally an adjacent-sibling margin hack
+   (`> * + * { margin-top: ... }`); grid + gap is the modern equivalent and
+   also means children fill the row's width by default (grid's
+   `justify-items: stretch`) without each one separately declaring
+   `width: 100%`. */
+.space-y-2 {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .shrink-0 {

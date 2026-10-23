@@ -505,15 +505,15 @@
   /* Responsive */
   @media (max-width: 768px) {
     .policy-viewer-dialog {
-      max-width: 100vw;
-      max-height: 100vh;
+      max-width: 100dvw;
+      max-height: 100dvh;
       border-radius: 0;
     }
 
     .policy-viewer-content {
-      width: 100vw;
-      height: 100vh;
-      max-height: 100vh;
+      width: 100dvw;
+      height: 100svh;
+      max-height: 100dvh;
       border-radius: 0;
     }
 

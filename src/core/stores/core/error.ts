@@ -35,7 +35,10 @@ export function createErrorStore(options: StoreOptions) {
   ) => ({
     ...initialState,
 
-    setApiError: (error: unknown, context?: { method?: string; email?: string }) => {
+    setApiError: (
+      error: unknown,
+      context?: { method?: string; email?: string; appCode?: string }
+    ) => {
       const apiError = classifyError(error, context);
 
       set({
@@ -98,11 +101,105 @@ export function createErrorStore(options: StoreOptions) {
 }
 
 /**
+ * checkUser is the first network call any sign-in flow makes -- a failure
+ * there essentially always means the *app* isn't configured/reachable
+ * (unregistered appCode, CORS/network unreachable, 403, 5xx), not that this
+ * particular user did something wrong. Classify those as one distinct
+ * 'error.authUnavailable' state with a diagnostic detail, ahead of the
+ * generic per-code/per-message classification below, which would otherwise
+ * either misclassify them (a bare 404 used to map to 'error.network' via
+ * handleErrorResponse's old 'network_error' mislabeling) or produce a
+ * message ("Networking error.") that doesn't tell anyone what's actually
+ * wrong.
+ *
+ * Returns null (falls through to the generic classification) for anything
+ * that isn't a recognized availability failure -- notably a *successful*
+ * checkUser response is never routed through classifyError at all (it's
+ * only called from a catch block), so a normal "user not found" result
+ * never reaches here in the first place.
+ */
+function classifyAvailabilityFailure(
+  error: unknown,
+  context: { method?: string; email?: string; appCode?: string }
+): ApiError | null {
+  const timestamp = Date.now();
+  const errObj =
+    error && typeof error === 'object'
+      ? (error as { message?: string; details?: { httpStatus?: number } })
+      : null;
+  const httpStatus = errObj?.details?.httpStatus;
+  const appCode = context.appCode || 'unknown';
+
+  if (typeof httpStatus === 'number') {
+    let diagnostic: string;
+    let retryable: boolean;
+
+    if (httpStatus === 404) {
+      diagnostic = `App code "${appCode}" was not recognized by the API server (404 from /${appCode}/check-user). It may not be registered.`;
+      retryable = false;
+    } else if (httpStatus === 403) {
+      diagnostic =
+        'The API server rejected this origin/app (403 Forbidden). Check CORS/app permissions.';
+      retryable = false;
+    } else if (httpStatus >= 500) {
+      diagnostic = `The API server returned an error (HTTP ${httpStatus}).`;
+      retryable = true;
+    } else {
+      // Some other status (e.g. a 400 for a malformed sanity-check email) --
+      // not a recognized availability failure, let the generic path below
+      // classify it.
+      return null;
+    }
+
+    return {
+      code: 'error.authUnavailable',
+      message: errObj?.message || `HTTP ${httpStatus}`,
+      retryable,
+      timestamp,
+      httpStatus,
+      diagnostic,
+      context
+    };
+  }
+
+  // No HTTP status at all -- fetch() itself failed (network down, DNS
+  // failure, or a CORS-blocked request, which browsers deliberately report
+  // identically to a network failure for security reasons; there is no way
+  // to tell these apart from JS alone).
+  const message =
+    error instanceof Error
+      ? error.message
+      : errObj
+        ? String(errObj.message || errObj)
+        : String(error);
+  if (/fetch|network/i.test(message)) {
+    return {
+      code: 'error.authUnavailable',
+      message,
+      retryable: true,
+      timestamp,
+      diagnostic: `Could not reach the API server (network error or CORS block) for app code "${appCode}".`,
+      context
+    };
+  }
+
+  return null;
+}
+
+/**
  * Classify technical errors into user-friendly ApiError objects
  * Extracted from the original auth-store.ts implementation
  */
-function classifyError(error: unknown, context?: { method?: string; email?: string }): ApiError {
+function classifyError(
+  error: unknown,
+  context?: { method?: string; email?: string; appCode?: string }
+): ApiError {
   const timestamp = Date.now();
+
+  if (context?.method === 'checkUser') {
+    const availability = classifyAvailabilityFailure(error, context);
+    if (availability) return availability;
+  }
 
   // If error is already an AuthError object from the API, use its code directly
   if (error && typeof error === 'object') {

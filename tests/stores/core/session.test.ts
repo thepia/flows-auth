@@ -266,6 +266,8 @@ describe('Session Conversion Functions', () => {
         id: 'user-123',
         email: 'test@example.com',
         name: 'Jane Doe',
+        emailVerified: true,
+        createdAt: '2024-01-01T00:00:00Z',
         initials: 'JD',
         preferences: { theme: 'light' }
       });

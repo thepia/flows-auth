@@ -59,7 +59,10 @@ export interface ComposedAuthStore extends AuthStoreFunctions {
   // API client access
   api: AuthApiClient;
 
-  // Event methods
+  /**
+   * @deprecated Same status as `AuthStoreFunctions.on` -- see its comment and
+   * `src/core/stores/core/events.ts`'s header.
+   */
   emit: <K extends keyof AuthEvents>(type: K, data: AuthEvents[K]) => void;
 
   // Dynamic role configuration methods
@@ -131,6 +134,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       const isExpired = expiresAtMs <= Date.now();
       const hasRefreshToken = !!sessionData.refreshToken;
 
+      // SessionData (tokens) doesn't carry createdAt -- it's persisted separately via
+      // db.saveUser()/UserData. Look it up so restored sessions show the real account
+      // creation date instead of fabricating "now".
+      const persistedUser = await db.getUser(sessionData.userId).catch(() => null);
+
       // Log session restoration details for debugging "already exchanged" errors
       reportSessionEvent('RESTORE', {
         userId: sessionData.userId,
@@ -159,7 +167,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           email: sessionData.email,
           name: sessionData.name,
           emailVerified: sessionData.emailVerified ?? true,
-          createdAt: new Date().toISOString(),
+          createdAt: persistedUser?.createdAt || new Date().toISOString(),
           metadata: sessionData.metadata
         };
 
@@ -188,7 +196,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           email: sessionData.email,
           name: sessionData.name,
           emailVerified: sessionData.emailVerified ?? true,
-          createdAt: new Date().toISOString(),
+          createdAt: persistedUser?.createdAt || new Date().toISOString(),
           metadata: sessionData.metadata
         };
 
@@ -231,19 +239,14 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
   function setupCrossStoreIntegration() {
     debug('🔗 Setting up cross-store integration...');
 
-    // Listen for authentication success events
-    events.getState().on('sign_in_success', (data) => {
-      debug('🎯 Sign-in success event received:', data);
-
-      // Update UI state
-      signInStateTransitions.authenticationSuccess(ui);
-
-      // Save session if we have user and tokens
-      if (data.user && data.tokens) {
-        const sessionData = createSessionData(data.user, data.tokens, data.method || 'passkey');
-        session.getState().saveSession(sessionData);
-      }
-    });
+    // NOTE: sign-in success/error used to be wired here too (an internal
+    // listener on 'sign_in_success'/'sign_in_error' calling
+    // signInStateTransitions.authenticationSuccess()/error.setApiError()).
+    // That's gone -- signInWithPasskey/sendEmailCode/verifyEmailCode now call
+    // those directly instead of routing through the events system for their
+    // own internal effects; see events.ts's header comment for why. The
+    // events still fire (eventEmitters.signInSuccess/signInError) for any
+    // *external* consumer subscribed via store.on(...), just not for this.
 
     // Listen for sign-out events
     events.getState().on('sign_out', () => {
@@ -262,18 +265,6 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       passkey.getState().reset();
       email.getState().reset();
       onboarding.getState().reset();
-    });
-
-    // Listen for errors and update error store
-    events.getState().on('sign_in_error', (data) => {
-      debug('🎯 Sign-in error event received:', data);
-
-      if (data.error) {
-        error.getState().setApiError(data.error, {
-          method: data.method,
-          email: ui.getState().email
-        });
-      }
     });
 
     debug('✅ Cross-store integration setup complete');
@@ -311,7 +302,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           supabase_expires_at: signInData.tokens.supabaseExpiresAt // Already ISO string from SignInData
         });
 
-        // Emit success event
+        // Update UI state directly -- do NOT rely on the (deprecated for internal
+        // use) events system for this; see events.ts's header comment.
+        signInStateTransitions.authenticationSuccess(ui);
+
+        // Emit for external consumers only (store.on('sign_in_success', ...)) --
+        // no internal listener depends on this anymore.
         eventEmitters.signInSuccess({
           user: convertSessionUserToUser(signInData.user),
           method: 'passkey'
@@ -319,6 +315,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         return signInData;
       } catch (err) {
+        // Set API error for display in UI, directly -- see events.ts's header comment.
+        error.getState().setApiError(err, {
+          method: 'signInWithPasskey',
+          email: emailAddress
+        });
+
+        // Emit for external consumers only.
         eventEmitters.signInError({
           error: { code: 'passkey_failed', message: (err as Error).message },
           method: 'passkey'
@@ -344,6 +347,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           timestamp: Date.now()
         };
       } catch (err) {
+        // Set API error for display in UI, directly -- see events.ts's header comment.
+        error.getState().setApiError(err, {
+          method: 'sendEmailCode',
+          email: emailAddress
+        });
+
+        // Emit for external consumers only.
         eventEmitters.signInError({
           error: { code: 'email_failed', message: (err as Error).message },
           method: 'email-code'
@@ -369,6 +379,12 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
           supabase_expires_at: signInData.tokens.supabaseExpiresAt // Already ISO string from SignInData
         });
 
+        // Update UI state directly -- do NOT rely on the (deprecated for internal
+        // use) events system for this; see events.ts's header comment.
+        signInStateTransitions.authenticationSuccess(ui);
+
+        // Emit for external consumers only (store.on('sign_in_success', ...)) --
+        // no internal listener depends on this anymore.
         eventEmitters.signInSuccess({
           user: convertSessionUserToUser(signInData.user),
           method: 'email-code'
@@ -379,7 +395,10 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       } catch (err) {
         ui.getState().setLoading(false);
 
-        // Set API error for display in UI
+        // Set API error for display in UI, directly -- see events.ts's header
+        // comment. Deliberately does NOT transition signInState (stays on
+        // 'pinEntry' so the inline error renders next to the code input,
+        // matching authenticationError() never having been wired to this path).
         error.getState().setApiError(err, {
           method: 'verifyEmailCode',
           email: ui.getState().email
@@ -393,6 +412,7 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
               ? String((err as any).message)
               : String(err);
 
+        // Emit for external consumers only.
         eventEmitters.signInError({
           error: { code: 'verification_failed', message: errorMessage },
           method: 'email-code'
@@ -490,16 +510,56 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
 
         return result;
       } catch (err) {
-        // The code here is mostly informational: classifyError() (in
-        // stores/core/error.ts) only recognizes a fixed set of snake_case
-        // server-style codes and otherwise re-derives an error.* code from
-        // err.message content, so whatever we pass as `code` is generally
-        // overridden anyway.
-        eventEmitters.signInError({
-          error: { code: 'check_user_failed', message: (err as Error).message },
-          method: 'email-code'
+        // checkUser is the sign-in flow's first network call -- classifyError()
+        // treats a failure here as an app-availability problem (unregistered
+        // appCode, CORS/network unreachable, 403, 5xx), not a normal per-user
+        // error, but only when `context.method === 'checkUser'` and the raw
+        // error's `details.httpStatus` survives intact. Call setApiError()
+        // directly with the original `err` (matching verifyEmailCode/
+        // registerUser's pattern below) rather than through
+        // eventEmitters.signInError -- that event rebuilds a plain
+        // {code, message} object (dropping `details.httpStatus`) with a
+        // hardcoded `method: 'email-code'`, and its cross-store listener
+        // would call setApiError a second time with that worse
+        // classification, clobbering the correct one set here.
+        error.getState().setApiError(err, {
+          method: 'checkUser',
+          email: emailAddress,
+          appCode: config.appCode
         });
         throw err;
+      }
+    },
+
+    // Opt-in sanity check for the app/API configuration itself -- pings
+    // check-user with a sentinel, obviously-synthetic email so a
+    // misconfigured appCode, a CORS/network-unreachable API, or a down
+    // server surfaces as `error.authUnavailable` (see AuthExplainer)
+    // immediately, rather than only after a real visitor types their email
+    // and the same failure happens silently.
+    //
+    // Deliberately NOT called automatically on store creation: this fires a
+    // real network request against the configured API on every invocation,
+    // which isn't something a component library should impose on every
+    // consumer by default (extra load on the API server, an extra request
+    // on every page load, decoy-email noise in server logs) -- callers (e.g.
+    // AuthProvider, or an app's own startup code) can invoke it explicitly
+    // if they want proactive checking. Uses the raw email store (not
+    // `checkUser` above) so it never touches `signInState`/`userExists` -- a
+    // real visitor's own checkUser call still drives the UI normally
+    // regardless of whether this ran.
+    checkAuthAvailability: async (): Promise<boolean> => {
+      const SANITY_CHECK_EMAIL = 'auth-sanity-check@flows-auth.internal';
+      try {
+        await email.getState().checkUser(SANITY_CHECK_EMAIL);
+        return true;
+      } catch (err) {
+        error.getState().setApiError(err, {
+          method: 'checkUser',
+          email: SANITY_CHECK_EMAIL,
+          appCode: config.appCode
+        });
+        return false;
       }
     },
 
@@ -744,13 +804,13 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     setEmailCodeSent: (sent: boolean) => ui.getState().setEmailCodeSent(sent),
 
     // Error management
-    setApiError: (err: unknown, context?: { method?: string; email?: string }) =>
+    setApiError: (err: unknown, context?: { method?: string; email?: string; appCode?: string }) =>
       error.getState().setApiError(err, context),
     clearApiError: () => error.getState().clearApiError(),
     clearUiError: () => error.getState().clearUiError(),
     retryLastFailedRequest: () => error.getState().retryLastRequest(),
 
-    // Events
+    // Events -- deprecated, see ComposedAuthStore.emit's comment above
     on: (event: AuthEventType, handler: (data: AuthEventData) => void) =>
       events.getState().on(event, handler),
     emit: <K extends keyof AuthEvents>(type: K, data: AuthEvents[K]) =>
@@ -932,8 +992,11 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
     destroy: () => {
       debug('🧹 Destroying auth store...');
 
+      // Reset in-memory state only -- must NOT touch persisted storage. `destroy()` releases
+      // this store *instance* (timers, listeners); it says nothing about whether the user is
+      // still signed in. Persisted storage is cleared separately, only on an actual sign-out,
+      // via the 'sign_out' event listener above (session.getState().clearSession()).
       core.getState().reset();
-      session.getState().clearSession();
       error.getState().clearApiError();
       events.getState().removeAllListeners();
       passkey.getState().reset();
@@ -944,6 +1007,18 @@ export function createAuthStore(config: AuthConfig, apiClient?: AuthApiClient): 
       debug('✅ Auth store destroyed');
     }
   };
+
+  // Opt-in (config.checkAuthAvailabilityOnInit): fire the sanity ping once,
+  // right here at store creation, rather than requiring every consumer to
+  // remember to call checkAuthAvailability() themselves after mount --
+  // matches the session-restoration pattern above (also fire-and-forget at
+  // creation time). Framework-agnostic by construction, so this covers
+  // React/Svelte/any other adapter uniformly; still opt-in by default for
+  // the reasons in checkAuthAvailability()'s own header comment (extra
+  // network request + decoy-email log noise on every page load).
+  if (config.checkAuthAvailabilityOnInit) {
+    composedStore.checkAuthAvailability();
+  }
 
   debug('🚀 Composed auth store ready!');
 

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@thepia/branding": "^1.5.6",
     "@thepia/flows-auth": "workspace:*",
     "react": "19.2.0",
     "react-dom": "19.2.0"

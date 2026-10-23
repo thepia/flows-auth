@@ -2,8 +2,8 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 import * as authDemoMessages from '../paraglide/messages/_index.js';
-import { createAuthStore, setI18nMessages } from '@thepia/flows-auth';
-import { makeSvelteCompatible, setupAuthContext, ErrorReportingStatus } from '@thepia/flows-auth/svelte'; // ✅ Static imports
+import { createAuthStore, setI18nMessages, setLocaleReactive } from '@thepia/flows-auth';
+import { makeSvelteCompatible, setupAuthContext, ErrorReportingStatus, detectUserLanguage } from '@thepia/flows-auth/svelte'; // ✅ Static imports
 import TabNavigation from '$lib/components/TabNavigation.svelte';
 import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 import '../app.css';
@@ -26,6 +26,22 @@ let initError = $state(null);
 // 🌐 Set up Paraglide message context for library components
 // This allows library components to use auth-demo's merged messages
 setI18nMessages(authDemoMessages);
+
+// 🌐 Initial locale for the whole app, backed by flows-auth's own
+// setLocale/getLocale -- not auth-demo's separate local Paraglide instance.
+// Live changes after this are reactive without a reload or remount: components
+// that display translated text read the `locale` store directly (see
+// LanguageSelector.svelte, and flows-auth's own SignInCore.svelte and
+// siblings), not a page-level {#key} wrapping everything.
+//
+// Only auto-detect from the browser on a visitor's first-ever visit. Once the
+// user has explicitly picked a language (LanguageSelector.svelte writes
+// 'flows-auth-locale-choice' to localStorage), respect that choice on every
+// later load/reload -- calling detectUserLanguage() unconditionally here would
+// silently overwrite the saved choice back to the browser default on every
+// reload, which is exactly the bug this guard fixes.
+const savedLocale = browser ? localStorage.getItem('flows-auth-locale-choice') : null;
+setLocaleReactive(savedLocale || detectUserLanguage());
 
 // Create auth store during initialization (not in onMount)
 const authConfig = {
@@ -168,7 +184,7 @@ onMount(() => {
 	}
 	
 	.app {
-		min-height: 100vh;
+		min-height: 100svh;
 		display: flex;
 		flex-direction: column;
 	}

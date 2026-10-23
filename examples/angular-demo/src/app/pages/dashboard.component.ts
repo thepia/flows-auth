@@ -60,7 +60,7 @@ import { RouterModule } from '@angular/router';
   `,
   styles: [`
     .dashboard-container {
-      min-height: 100vh;
+      min-height: 100svh;
       background-color: #f5f7fa;
     }
 

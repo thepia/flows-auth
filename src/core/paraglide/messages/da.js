@@ -141,6 +141,10 @@ export const error_network = /** @type {(inputs: {}) => string} */ () => {
 	return `Netværksfejl.`
 };
 
+export const error_authunavailable1 = /** @type {(inputs: {}) => string} */ () => {
+	return `Godkendelse er i øjeblikket utilgængelig på dette site.`
+};
+
 export const error_usernotfound2 = /** @type {(inputs: {}) => string} */ () => {
 	return `Ingen konto fundet med denne e-mail adresse`
 };

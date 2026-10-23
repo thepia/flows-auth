@@ -189,6 +189,11 @@ export class AuthApiClient {
    * @see https://github.com/thepia/thepia.com/blob/main/docs/auth/api-contracts/error-codes-catalog.md
    */
   private async handleErrorResponse(response: Response): Promise<AuthError> {
+    // Attached to every return path below so classifyError() can branch on
+    // the real status instead of only having a message string to sniff --
+    // see AuthErrorCode's 'http_error' for why this matters.
+    const httpStatus = response.status;
+
     try {
       const errorData = await response.json();
 
@@ -197,7 +202,7 @@ export class AuthApiClient {
         return {
           code: 'rate_limit_exceeded',
           message: 'Too many requests. Please try again in a moment.',
-          details: errorData.details
+          details: { ...errorData.details, httpStatus }
         };
       }
 
@@ -208,13 +213,13 @@ export class AuthApiClient {
           return {
             code: errorData.error,
             message: errorData.message || errorData.error,
-            details: errorData.details
+            details: { ...errorData.details, httpStatus }
           };
         }
         return {
           code: errorData.error.code || 'unknown_error',
           message: errorData.error.message || 'An unknown error occurred',
-          details: errorData.error.details
+          details: { ...errorData.error.details, httpStatus }
         };
       }
 
@@ -231,20 +236,28 @@ export class AuthApiClient {
       return {
         code: errorCode,
         message: errorMessage,
-        details: errorData.details
+        details: { ...errorData.details, httpStatus }
       };
     } catch {
       // Enhanced error handling for rate limits
       if (response.status === 429) {
         return {
           code: 'rate_limit_exceeded',
-          message: 'Too many requests. Please try again in a moment.'
+          message: 'Too many requests. Please try again in a moment.',
+          details: { httpStatus }
         };
       }
 
+      // Non-JSON body and no recognizable error code -- e.g. a plain-text/
+      // empty 404 for an unregistered appCode, or a raw 403/5xx from a proxy
+      // in front of the API. Previously mislabeled 'network_error' here,
+      // which made this indistinguishable from actually being offline (see
+      // classifyError's checkUser-specific branch, which relies on
+      // `details.httpStatus` to tell these apart).
       return {
-        code: 'network_error',
-        message: `HTTP ${response.status}: ${response.statusText}`
+        code: 'http_error',
+        message: `HTTP ${response.status}: ${response.statusText}`,
+        details: { httpStatus }
       };
     }
   }

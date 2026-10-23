@@ -196,7 +196,7 @@
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     border: 1px solid #e5e7eb;
     max-width: 400px;
-    width: calc(100vw - 40px);
+    width: calc(100dvw - 40px);
     transform: translateY(100px);
     opacity: 0;
     transition: all 0.3s ease;

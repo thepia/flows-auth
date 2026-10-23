@@ -6,8 +6,8 @@ import { AUTH_CONTEXT_KEY } from '@thepia/flows-auth';
 import { ErrorReportingStatus } from '@thepia/flows-auth/svelte';
 
 // Paraglide i18n setup
-import * as m from '../../paraglide/messages.js';
-import { getLocale } from '../../paraglide/runtime.js';
+import { m } from '@thepia/flows-auth';
+import { locale } from '@thepia/flows-auth/svelte';
 
 // ✅ RECEIVE AUTH STORE VIA CONTEXT (to avoid slot prop timing issues)
 // Get authStore from context
@@ -24,7 +24,7 @@ let emailInput = $state('');
 let testEmail = 'demo@example.com';
 
 // 🔑 Reactive locale tracking for component rerenders
-let currentLocale = $derived(getLocale());
+let currentLocale = $derived($locale);
 let currentDomain = 'dev.thepia.net';
 let domainOptions = ['dev.thepia.net', 'thepia.net'];
 let userStateResult = $state(null);
@@ -271,8 +271,8 @@ async function updateDomain() {
   <!-- Demo Content -->
   <div class="demo-content">
     <div class="content-section">
-      <h2>{m["register.page_title"]()}</h2>
-      <p>{m["register.description"]()}</p>
+      <h2>{m["register.page_title"]({}, { locale: $locale })}</h2>
+      <p>{m["register.description"]({}, { locale: $locale })}</p>
       
       <!-- Debug Panel -->
       <div class="debug-panel card">

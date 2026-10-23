@@ -6,6 +6,7 @@
   import { run } from 'svelte/legacy';
 
 import { m } from '@thepia/flows-auth';
+import { locale } from '../../locale.js';
 
 
   interface Props {
@@ -71,8 +72,13 @@ function dismiss() {
   }
 }
 
-// Computed message - use Paraglide message functions directly
-let displayMessage = $derived(getDisplayMessage());
+// Computed message - use Paraglide message functions directly. $derived.by (not
+// a plain $derived(getDisplayMessage())) so `$locale` is read directly in the
+// tracked expression -- see src/svelte/locale.ts.
+let displayMessage = $derived.by(() => {
+  void $locale;
+  return getDisplayMessage();
+});
 // Check if we have slot content
 let hasSlotContent = $derived(children);
 // Auto-dismiss for success messages
@@ -176,10 +182,11 @@ run(() => {
     color: var(--color-text-warning, #d97706);
   }
 
-  /* Pin status variant - matches SignInCore pin-status-message styling */
+  /* Pin status variant - matches SignInCore pin-status-message styling.
+     No margin: only ever rendered as a direct row inside SignInCore's
+     form, which spaces its rows with `gap` (see that file's <style>). */
   .variant-pin-status {
     padding: 12px 16px;
-    margin: 12px 0;
     background: #f0f9ff;
     border: 1px solid #bae6fd;
     border-radius: 8px;

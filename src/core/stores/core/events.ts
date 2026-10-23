@@ -1,17 +1,44 @@
 /**
  * Event System Store
  *
+ * @deprecated Do not build new internal logic on this. It's a plain synchronous
+ * pub/sub map (`Map<eventType, handler[]>`) with no persistence and no replay --
+ * `emit()` never touches Zustand state, so if a call happens while zero listeners
+ * are registered for that type, the event is silently gone with no trace anywhere
+ * (no error, no queued-for-later, nothing to inspect). It was previously used for
+ * *internal* cross-store orchestration too (an internal 'sign_in_success'/
+ * 'sign_in_error' listener in auth-store.ts calling
+ * signInStateTransitions.authenticationSuccess()/error.setApiError()) -- that
+ * made the actual sign-in-completes-visually behavior dependent on this bus, and
+ * a listener-wiping bug (React StrictMode double-invoking `AuthProvider`'s
+ * cleanup, unrelated to this file) silently broke sign-in for an entire session
+ * with no error anywhere in the chain. auth-store.ts now calls
+ * `signInStateTransitions.*`/`error.getState().setApiError()` directly wherever
+ * it already holds a reference to the target sub-store -- which is everywhere,
+ * since auth-store.ts constructs all of them. Prefer that pattern for anything
+ * new.
+ *
+ * What's left here backs the *external*-facing half: `ComposedAuthStore.on(...)`/
+ * `.emit(...)` (auth-store.ts), themselves also `@deprecated` now. Checked: no
+ * usage anywhere in this repo -- not in any example app, not as a real
+ * consumer in any test (only tests of the mechanism itself), and the one
+ * doc reference (docs/development/README.md) describes a store shape that
+ * doesn't match the current API (a `signIn()` method that doesn't exist,
+ * numeric `expiresAt` when it's been an ISO string), so it's stale, not
+ * evidence of a real contract. Kept rather than removed only because an
+ * out-of-repo consumer *might* depend on it and that can't be verified from
+ * here -- not because it's confirmed to still be needed.
+ *
  * Handles auth event emission and subscription:
  * - Event type definitions
  * - Event listener management
- * - Cross-store communication
+ * - Cross-store communication (deprecated -- see above)
  * - Event debugging and logging
  */
 
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 import type { AuthEvents } from '../../types/index.js';
-import { debug } from '../../utils/debug.js';
 import type {
   AuthEventData,
   AuthEventHandler,
@@ -30,6 +57,10 @@ const initialState: EventState = {
 
 /**
  * Create the event system store
+ *
+ * @deprecated See this file's header comment. Still required for
+ * `ComposedAuthStore.on()`/`.emit()` (external consumers); do not add new
+ * internal listeners against it.
  */
 export function createEventStore(options: StoreOptions) {
   const { devtools: enableDevtools = false, name = 'events' } = options;
@@ -124,6 +155,11 @@ export type { AuthEvents };
 
 /**
  * Type-safe event emitter functions
+ *
+ * @deprecated See this file's header comment. Kept for `signInStarted`/`signOut`/
+ * `tokenRefreshed`/etc. notifications to external `store.on(...)` consumers.
+ * Internal code should call the target sub-store directly instead of emitting
+ * and hoping something is listening.
  */
 export function createTypedEventEmitters(eventStore: ReturnType<typeof createEventStore>) {
   const { emit } = eventStore.getState();
@@ -155,169 +191,7 @@ export function createTypedEventEmitters(eventStore: ReturnType<typeof createEve
   };
 }
 
-/**
- * Type-safe event listener functions
- */
-export function createTypedEventListeners(eventStore: ReturnType<typeof createEventStore>) {
-  const { on } = eventStore.getState();
-
-  return {
-    onSignInStarted: (handler: (data: AuthEvents['sign_in_started']) => void) =>
-      on('sign_in_started', handler as AuthEventHandler),
-
-    onSignInSuccess: (handler: (data: AuthEvents['sign_in_success']) => void) =>
-      on('sign_in_success', handler as AuthEventHandler),
-
-    onSignInError: (handler: (data: AuthEvents['sign_in_error']) => void) =>
-      on('sign_in_error', handler as AuthEventHandler),
-
-    onSignOut: (handler: (data: AuthEvents['sign_out']) => void) =>
-      on('sign_out', handler as AuthEventHandler),
-
-    onTokenRefreshed: (handler: (data: AuthEvents['token_refreshed']) => void) =>
-      on('token_refreshed', handler as AuthEventHandler),
-
-    onSessionExpired: (handler: (data: AuthEvents['session_expired']) => void) =>
-      on('session_expired', handler as AuthEventHandler),
-
-    onPasskeyUsed: (handler: (data: AuthEvents['passkey_used']) => void) =>
-      on('passkey_used', handler as AuthEventHandler),
-
-    onRegistrationStarted: (handler: (data: AuthEvents['registration_started']) => void) =>
-      on('registration_started', handler as AuthEventHandler),
-
-    onRegistrationSuccess: (handler: (data: AuthEvents['registration_success']) => void) =>
-      on('registration_success', handler as AuthEventHandler),
-
-    onRegistrationError: (handler: (data: AuthEvents['registration_error']) => void) =>
-      on('registration_error', handler as AuthEventHandler)
-  };
-}
-
-/**
- * Event debugging utilities
- */
-export const eventDebug = {
-  /**
-   * Log all events for debugging
-   */
-  logAllEvents: (eventStore: ReturnType<typeof createEventStore>) => {
-    const allEventTypes: AuthEventType[] = [
-      'sign_in_started',
-      'sign_in_success',
-      'sign_in_error',
-      'sign_out',
-      'token_refreshed',
-      'session_expired',
-      'passkey_used',
-      'registration_started',
-      'registration_success',
-      'registration_error'
-    ];
-
-    const unsubscribes = allEventTypes.map((eventType) =>
-      eventStore.getState().on(eventType, (data) => {
-        debug(`🎯 Auth Event: ${eventType}`, data);
-      })
-    );
-
-    // Return cleanup function
-    return () => {
-      for (const unsub of unsubscribes) {
-        unsub();
-      }
-    };
-  },
-
-  /**
-   * Count event emissions
-   */
-  createEventCounter: (eventStore: ReturnType<typeof createEventStore>) => {
-    const counts = new Map<AuthEventType, number>();
-
-    const allEventTypes: AuthEventType[] = [
-      'sign_in_started',
-      'sign_in_success',
-      'sign_in_error',
-      'sign_out',
-      'token_refreshed',
-      'session_expired',
-      'passkey_used',
-      'registration_started',
-      'registration_success',
-      'registration_error'
-    ];
-
-    const unsubscribes = allEventTypes.map((eventType) =>
-      eventStore.getState().on(eventType, () => {
-        counts.set(eventType, (counts.get(eventType) || 0) + 1);
-      })
-    );
-
-    return {
-      getCounts: () => Object.fromEntries(counts),
-      getCount: (eventType: AuthEventType) => counts.get(eventType) || 0,
-      reset: () => counts.clear(),
-      destroy: () => {
-        for (const unsub of unsubscribes) {
-          unsub();
-        }
-      }
-    };
-  }
-};
-
-/**
- * Helper to create a scoped event emitter
- */
-export function createScopedEventEmitter(
-  eventStore: ReturnType<typeof createEventStore>,
-  scope: string
-) {
-  const { emit } = eventStore.getState();
-
-  return {
-    emit: (type: AuthEventType, data: AuthEventData = {}) => {
-      const scopedData = { ...data, scope };
-      emit(type as keyof AuthEvents, scopedData as any);
-    }
-  };
-}
-
-/**
- * Event middleware for cross-store communication
- */
-export function createEventMiddleware(eventStore: ReturnType<typeof createEventStore>) {
-  return {
-    /**
-     * Bridge events between stores
-     */
-    bridge: <T>(fromEvent: AuthEventType, toCallback: (data: AuthEventData) => T) => {
-      return eventStore.getState().on(fromEvent, (data) => {
-        try {
-          toCallback(data);
-        } catch (error) {
-          console.error(`Error in event bridge for ${fromEvent}:`, error);
-        }
-      });
-    },
-
-    /**
-     * Transform events
-     */
-    transform: (
-      fromEvent: AuthEventType,
-      toEvent: AuthEventType,
-      transformer: (data: AuthEventData) => AuthEventData
-    ) => {
-      return eventStore.getState().on(fromEvent, (data) => {
-        try {
-          const transformedData = transformer(data);
-          eventStore.getState().emit(toEvent as keyof AuthEvents, transformedData as any);
-        } catch (error) {
-          console.error(`Error in event transform ${fromEvent} -> ${toEvent}:`, error);
-        }
-      });
-    }
-  };
-}
+// createTypedEventListeners, eventDebug, createScopedEventEmitter, and
+// createEventMiddleware were removed here (unused anywhere in this repo --
+// no imports outside this file) rather than merely deprecated. See this
+// file's header comment for what's still in use and why.

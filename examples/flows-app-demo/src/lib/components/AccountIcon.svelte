@@ -373,7 +373,7 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   }
 
   .profile-initials {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
   }
 
@@ -416,7 +416,7 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     font-weight: var(--font-weight-semibold);
   }
 
@@ -426,7 +426,7 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   }
 
   .profile-name {
-    font-size: var(--font-size-base);
+    font-size: var(--size-font-base);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary, #111827);
     margin-bottom: var(--size-space-1, 0.25rem);
@@ -436,7 +436,7 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
   }
 
   .profile-email {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -456,7 +456,7 @@ import { getAuthStoreFromContext } from '@thepia/flows-auth/svelte';
     border: none;
     background: none;
     color: var(--color-text-secondary, #374151);
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     text-align: left;
     cursor: pointer;
     border-radius: var(--size-radius-3, 0.375rem);

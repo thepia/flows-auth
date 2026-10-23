@@ -152,6 +152,8 @@ export function convertUserToSessionUser(user: User) {
     id: user.id,
     email: user.email,
     name: user.name || user.email,
+    emailVerified: user.emailVerified,
+    createdAt: user.createdAt,
     initials: generateInitials(user.name || user.email),
     preferences: user.metadata
   };
@@ -165,8 +167,9 @@ export function convertSessionUserToUser(sessionUser: SignInData['user']): User 
     id: sessionUser.id,
     email: sessionUser.email,
     name: sessionUser.name,
-    emailVerified: true, // Assume verified if they have a session
-    createdAt: new Date().toISOString(), // Fallback value
+    emailVerified: sessionUser.emailVerified ?? true, // Assume verified if they have a session
+    // Fallback only covers legacy/pre-fix session data that never carried createdAt.
+    createdAt: sessionUser.createdAt || new Date().toISOString(),
     metadata: sessionUser.preferences
   };
 }

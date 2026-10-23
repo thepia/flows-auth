@@ -231,7 +231,7 @@
     position: fixed;
     top: 0;
     right: 0;
-    height: 100vh;
+    height: 100dvh;
     width: 360px;
     background: white;
     border-left: 1px solid var(--color-border-default, #e5e7eb);
@@ -257,7 +257,7 @@
 
   .sidebar-header h3 {
     margin: 0;
-    font-size: var(--font-size-lg);
+    font-size: var(--size-font-lg);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary, #111827);
   }
@@ -286,7 +286,7 @@
 
   .scenario-section h4 {
     margin: 0 0 var(--size-space-3, 0.75rem) 0;
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-secondary, #374151);
     text-transform: uppercase;
@@ -304,13 +304,13 @@
     display: inline-block;
     padding: var(--size-space-1, 0.25rem) var(--size-space-2, 0.5rem);
     border-radius: var(--size-radius-2, 0.25rem);
-    font-size: var(--font-size-xs);
+    font-size: var(--size-font-xs);
     font-weight: var(--font-weight-medium);
     margin-bottom: var(--size-space-2, 0.5rem);
   }
 
   .scenario-desc {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     color: var(--color-text-secondary, #4b5563);
     margin-bottom: var(--size-space-2, 0.5rem);
   }
@@ -322,7 +322,7 @@
   }
 
   .scenario-details small {
-    font-size: var(--font-size-xs);
+    font-size: var(--size-font-xs);
     color: var(--color-text-3, #6b7280);
   }
 
@@ -354,14 +354,14 @@
   }
 
   .scenario-name {
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary, #111827);
     margin-bottom: var(--size-space-1, 0.25rem);
   }
 
   .scenario-company {
-    font-size: var(--font-size-xs);
+    font-size: var(--size-font-xs);
     color: var(--color-text-3, #6b7280);
   }
 
@@ -376,7 +376,7 @@
     border: 1px solid var(--color-border-default, #d1d5db);
     border-radius: var(--size-radius-2, 0.25rem);
     padding: var(--size-space-2, 0.5rem);
-    font-size: var(--font-size-xs);
+    font-size: var(--size-font-xs);
     cursor: pointer;
     transition: all 150ms ease;
   }
@@ -401,7 +401,7 @@
     border: 1px solid var(--color-border-default, #d1d5db);
     border-radius: var(--size-radius-2, 0.25rem);
     padding: var(--size-space-2, 0.5rem);
-    font-size: var(--font-size-sm);
+    font-size: var(--size-font-sm);
     cursor: pointer;
     transition: all 150ms ease;
   }
@@ -421,7 +421,7 @@
   }
 
   .env-info small {
-    font-size: var(--font-size-xs);
+    font-size: var(--size-font-xs);
     color: var(--color-text-secondary, #4b5563);
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   }
@@ -430,8 +430,8 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100svw;
+    height: 100svh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1040;
   }
@@ -439,7 +439,7 @@
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .dev-sidebar {
-      width: 100vw;
+      width: 100svw;
     }
     
     .trigger-buttons {

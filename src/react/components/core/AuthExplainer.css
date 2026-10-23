@@ -37,6 +37,16 @@
   line-height: 1.4;
 }
 
+/* Raw technical detail (ApiError.diagnostic) shown alongside the localized
+   error headline -- deliberately more muted/smaller, since it's aimed at
+   developers/support, not the site visitor reading the headline. */
+.auth-error-diagnostic {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
 @media (max-width: 480px) {
   .explainer-paragraph {
     font-size: 0.7rem;

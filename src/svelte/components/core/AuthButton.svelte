@@ -8,6 +8,7 @@
 import { createEventDispatcher } from 'svelte';
 import type { SingleButtonConfig } from '@thepia/flows-auth';
 import { m } from '@thepia/flows-auth';
+import { locale } from '../../locale.js';
 import { Key, Envelope, Fingerprint, SmileyWink } from 'phosphor-svelte';
 
 
@@ -167,8 +168,10 @@ run(() => {
 });
 // Dynamic content based on method and state - explicitly depend on effective values
 run(() => {
-  // Reference all dependencies to make this reactive
-  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased;
+  // Reference all dependencies to make this reactive ($locale so displayText
+  // re-resolves the m[...]() calls inside getDisplayText() on locale change --
+  // see src/svelte/locale.ts)
+  effectiveSupportsWebAuthn; loading; buttonConfig; isAppleDevice; isAppCodeBased; $locale;
   displayText = getDisplayText();
 });
 let displayIconComponent = $derived(getDisplayIconComponent());
@@ -248,19 +251,19 @@ let iconSize = $derived(iconSizeBySize[size]);
   .auth-btn-size-sm {
     min-height: 2rem; /* 32px: --icon-size-sm (16px) + padding */
     padding: 0.375rem var(--size-space-3, 0.75rem);
-    font-size: var(--font-size-sm, 0.875rem);
+    font-size: var(--size-font-sm, 0.875rem);
   }
 
   .auth-btn-size-md {
     min-height: 2.5rem; /* 40px: --icon-size-md (20px) + padding - matches AccountIcon's default 40px button */
     padding: var(--size-space-2, 0.5rem) var(--size-space-4, 1rem);
-    font-size: var(--font-size-base, 1rem);
+    font-size: var(--size-font-base, 1rem);
   }
 
   .auth-btn-size-lg {
     min-height: 3rem; /* 48px: --icon-size-lg (24px) + padding - matches AccountIcon's 48px avatar variant */
     padding: var(--size-space-3, 0.75rem) var(--size-space-5, 1.25rem);
-    font-size: var(--font-size-lg, 1.125rem);
+    font-size: var(--size-font-lg, 1.125rem);
   }
 
   .auth-btn-spinner {

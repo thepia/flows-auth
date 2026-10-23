@@ -1,77 +1,26 @@
 <script>
-  import { run } from 'svelte/legacy';
-
-  import { onMount } from 'svelte';
-  import { browser } from '$app/environment';
   import { Globe } from 'phosphor-svelte';
-  import { baseLocale, setLocale, getLocale } from '../../paraglide/runtime.js';
+  import { setLocaleReactive } from '@thepia/flows-auth';
+  import { locale } from '@thepia/flows-auth/svelte';
 
-  // Paraglide language management
-  let currentLocale = $state('en'); // Default fallback
-
-  // Supported languages (matching Paraglide configuration)
+  // `locale` is a plain Svelte store wrapping flows-auth's core locale
+  // observability -- no bespoke context object, no manual sync. Pairs with
+  // `{#key $locale}` in +layout.svelte, which is what actually makes the rest
+  // of the app's `m['key']()` calls pick up the change; this component only
+  // needs to read the current value and call setLocaleReactive() to change it.
   const languages = [
     { code: 'en', name: 'English', flag: '🇺🇸' },
     { code: 'da', name: 'Dansk', flag: '🇩🇰' }
   ];
 
   let isOpen = $state(false);
-  let currentLanguage = $state(languages.find(lang => lang.code === currentLocale) || languages[0]);
-
-  // Load current locale from Paraglide on mount
-  onMount(() => {
-    if (browser) {
-      try {
-        currentLocale = getLocale();
-        currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
-        console.log('✅ Language selector initialized with locale:', currentLocale);
-      } catch (error) {
-        console.warn('⚠️ Failed to get current locale, falling back to base locale:', error);
-        currentLocale = baseLocale;
-        currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
-      }
-    }
-  });
-
-  // Update current language when locale changes
-  run(() => {
-    currentLanguage = languages.find(lang => lang.code === currentLocale) || languages[0];
-  });
-
-  // Reactive sync with Paraglide locale changes (e.g., from other components or external changes)
-  run(() => {
-    if (browser) {
-      try {
-        const paraglideLoc = getLocale();
-        if (paraglideLoc !== currentLocale) {
-          currentLocale = paraglideLoc;
-          console.log('🔄 Language selector synced with Paraglide locale:', currentLocale);
-        }
-      } catch (error) {
-        // Ignore errors during reactive updates
-      }
-    }
-  });
+  let activeLanguage = $derived(languages.find(lang => lang.code === $locale) || languages[0]);
 
   function selectLanguage(language) {
-    if (browser) {
-      // ✅ Use Paraglide's setLocale function to actually switch language
-      setLocale(language.code, { reload: false });
-
-      // Update local component state
-      currentLocale = language.code;
-      currentLanguage = language;
-
-      // Manual localStorage backup (in case Paraglide localStorage strategy isn't working)
-      try {
-        localStorage.setItem('PARAGLIDE_LOCALE', language.code);
-      } catch (error) {
-        console.warn('⚠️ Failed to store locale in localStorage:', error);
-      }
-
-      console.log('🌐 Language switched to:', language.code, 'via Paraglide setLocale()');
-      console.log('🔍 Current Paraglide locale:', getLocale());
-    }
+    setLocaleReactive(language.code);
+    // Remember this as an explicit user choice so +layout.svelte's
+    // browser-detection on the next load/reload doesn't overwrite it.
+    localStorage.setItem('flows-auth-locale-choice', language.code);
     isOpen = false;
   }
 
@@ -97,8 +46,8 @@
   >
     <Globe size={16} />
     <span class="current-language">
-      <span class="flag">{currentLanguage.flag}</span>
-      <span class="name">{currentLanguage.name}</span>
+      <span class="flag">{activeLanguage.flag}</span>
+      <span class="name">{activeLanguage.name}</span>
     </span>
     <svg 
       class="chevron" 
@@ -120,15 +69,15 @@
 
   {#if isOpen}
     <div class="language-dropdown">
-      {#each languages as language}
+      {#each languages as language (language.code)}
         <button
           class="language-option"
-          class:active={language.code === currentLocale}
+          class:active={language.code === $locale}
           onclick={() => selectLanguage(language)}
         >
           <span class="flag">{language.flag}</span>
           <span class="name">{language.name}</span>
-          {#if language.code === currentLocale}
+          {#if language.code === $locale}
             <svg class="check" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path 
                 d="M13.5 4.5L6 12L2.5 8.5" 

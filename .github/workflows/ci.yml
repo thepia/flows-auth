@@ -87,6 +87,13 @@ jobs:
         # coverage run because that job does not build.
         run: pnpm run test:package
 
+      - name: Run example-app validation tests
+        # These build a real example app (vite build) that imports the library's
+        # own built output (e.g. @thepia/flows-auth/style.css -> dist/), so they
+        # need the build step above. Like test:package, they are excluded from the
+        # build-free coverage run.
+        run: pnpm run test:examples
+
       # - name: Run integration tests (CI-safe)
       #   run: pnpm run test:integration:env
       #   env:

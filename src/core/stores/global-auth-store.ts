@@ -17,6 +17,17 @@
  * Consumers who need multiple independently-configured stores in the same page
  * (e.g. two differently-scoped auth widgets) should use `createAuthStore(config)`
  * directly instead — this module assumes exactly one.
+ *
+ * Framework export policy (intentional asymmetry, not drift): this module-level
+ * singleton is re-exported from the React entry (`@thepia/flows-auth/react`) but
+ * deliberately NOT from the Svelte entry (`@thepia/flows-auth/svelte`). React is
+ * client-side, where one module global is the StrictMode-safe way to hold the
+ * store. In SvelteKit SSR a module global is shared across every request/user
+ * (cross-request state leak), so the Svelte target uses a per-request context
+ * layer instead (`src/svelte/auth-context.ts`: `setupAuthContext` /
+ * `getAuthStoreFromContext`), per ADR 0004. A Svelte app that truly wants this
+ * singleton can still import it from the agnostic root `@thepia/flows-auth`, but
+ * must not rely on it during SSR.
  */
 import type { AuthApiClient } from '../api/auth-api.js';
 import type { AuthConfig } from '../types/index.js';

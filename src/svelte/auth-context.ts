@@ -9,11 +9,17 @@
  *
  * Usage for Pure Svelte Apps:
  * 1. Call setupAuthContext(config) in root layout during initialization
- * 2. Use getGlobalAuthStore() in any child component to access the store
+ * 2. Use getAuthStoreFromContext() in any child component to access the store
  *
  * Usage for SvelteKit Apps:
  * - Consider explicit prop passing (see ADR 0004) for maximum reliability
  * - Use context only when synchronous initialization is guaranteed
+ *
+ * This is deliberately NOT the core module-level singleton
+ * (`src/core/stores/global-auth-store.ts`: initializeAuth / getGlobalAuthStore,
+ * which the React target re-exports). A module global leaks across SSR
+ * requests/users, so the Svelte target holds the store in per-request context
+ * instead. `resetGlobalAuthStore` below resets THIS context, not that singleton.
  */
 
 import type { AuthConfig, SvelteAuthStore } from '@thepia/flows-auth';

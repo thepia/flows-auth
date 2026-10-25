@@ -26,5 +26,9 @@ export function createAstroAuthStore(config: AuthConfig) {
  */
 export function getAstroApiUrl(fallback = 'https://api.thepia.com'): string {
   if (typeof window === 'undefined') return fallback;
-  return import.meta.env.PUBLIC_API_URL || fallback;
+  // `import.meta.env?.` (not plain member access): the published build leaves
+  // `import.meta.env` for the consumer's bundler to replace, so a non-Vite
+  // consumer sees it as undefined at runtime and a plain `.PUBLIC_API_URL`
+  // would throw. See src/core/utils/debug.ts for the full rationale.
+  return import.meta.env?.PUBLIC_API_URL || fallback;
 }
